@@ -1,0 +1,8 @@
+# Output files
+*.a
+*.o
+source/*.o
+
+# Generated Documentation
+doc/*.tag
+doc/generated

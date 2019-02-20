@@ -1,0 +1,11 @@
+.tags
+*.o
+*.a
+docs/
+*.tag
+*.patch
+test/test_app
+makefile
+.cproject
+.project
+.settings/

@@ -1,0 +1,7 @@
+/*
+ * CA821X_ASYNC_CALLBACK enables the asynchronous, automatic calling of the
+ * callback functions from a secondary thread. If synchronous polling of
+ * indications is required, then ca821x_util_dispatch_poll should
+ * be regularly called from a polling loop.
+ */
+#cmakedefine01 CA821X_ASYNC_CALLBACK

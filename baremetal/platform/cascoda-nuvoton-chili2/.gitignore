@@ -1,0 +1,5 @@
+vendor/Library/StdDriver/src/*.o
+vendor/Library/Device/Nuvoton/Nano100Series/Source/*.o
+port/source/*.o
+apps/test15_4/build/gcc-arm-none-eabi/out
+docs

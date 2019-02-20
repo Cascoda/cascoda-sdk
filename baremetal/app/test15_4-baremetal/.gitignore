@@ -1,0 +1,3 @@
+source/*.o
+docs
+*.tag

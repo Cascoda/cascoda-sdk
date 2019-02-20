@@ -1,0 +1,122 @@
+/**
+ * @file   cascoda_evbme.h
+ * @brief  EvaBoard Management Entity (EVBME) Definitions/Declarations
+ * @author Wolfgang Bruchner
+ * @date   19/07/14
+ *//*
+ * Copyright (C) 2016  Cascoda, Ltd.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "cascoda-bm/cascoda_types.h"
+
+#ifndef CASCODA_EVBME_H
+#define CASCODA_EVBME_H
+
+/***************************************************************************/ /**
+ * \defgroup EVBMEEnums EVBME Enumerations
+ ************************************************************************** @{*/
+/** EVBME message id codes */
+enum evbme_msg_id_code
+{
+	EVBME_SET_REQUEST         = 0x5F,
+	EVBME_GUI_CONNECTED       = 0x81,
+	EVBME_GUI_DISCONNECTED    = 0x82,
+	EVBME_MESSAGE_INDICATION  = 0xA0,
+	EVBME_TERMINAL_INDICATION = 0xFE,
+	EVBME_ERROR_INDICATION    = 0xF0
+};
+
+/** EVBME status codes */
+enum evbme_status
+{
+	EVBME_SUCCESS   = 0x00,
+	EVBME_FAIL      = 0x01,
+	EVBME_UNKNOWN   = 0x02,
+	EVBME_INVALID   = 0x03,
+	EVBME_NO_ACCESS = 0x04
+};
+
+enum evbme_error_code
+{
+	EVBME_SPI_WAIT_TIMEOUT       = 0x01,
+	EVBME_SPI_NACK_TIMEOUT       = 0x02,
+	EVBME_SPI_EXCH_RX_PUSH_FAIL  = 0x03,
+	EVBME_SPI_SCAN_IN_PROGRESS   = 0x04,
+	EVBME_SPI_SEND_EXCHANGE_FAIL = 0x05,
+	EVBME_SPI_WAIT_EXCHANGE_FAIL = 0x06,
+	EVBME_SPI_WAIT_RX_PUSH_FAIL  = 0x07
+};
+
+/** EVBME attribute ids */
+enum evbme_attribute
+{
+	EVBME_RESETRF  = 0x00,
+	EVBME_CFGPINS  = 0x01,
+	EVBME_WAKEUPRF = 0x02
+};
+/**@}*/
+
+/******************************************************************************/
+/****** Message Definitions for UpStream (Serial) and  DownStream (SPI)  ******/
+/******************************************************************************/
+#define SERIAL_RX_CMD_ID (SerialRxBuffer->Header[SERIAL_CMD_ID])
+#define SERIAL_RX_CMD_LEN (SerialRxBuffer->Header[SERIAL_CMD_LEN])
+#define SERIAL_RX_DATA (SerialRxBuffer->Data)
+
+#define SERIAL_TX_CMD_ID (SerialTxBuffer.Header[SERIAL_CMD_ID])
+#define SERIAL_TX_CMD_LEN (SerialTxBuffer.Header[SERIAL_CMD_LEN])
+#define SERIAL_TX_DATA (SerialTxBuffer.Data)
+
+struct MAC_Message;
+struct SerialBuffer;
+struct ca821x_dev;
+
+/******************************************************************************/
+/****** Global Parameters that can by set via EVBME_SET_request          ******/
+/******************************************************************************/
+extern u8_t EVBME_HasReset;
+extern u8_t EVBME_UseMAC;
+
+extern void (*EVBME_Message)(char *message, size_t len, void *pDeviceRef);
+extern void (*MAC_Message)(u8_t CommandId, u8_t Count, u8_t *pBuffer);
+extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/****** EVBME API Functions                                              ******/
+/******************************************************************************/
+u8_t EVBMEInitialise(uint8_t *version, struct ca821x_dev *dev);
+void EVBMEHandler(struct ca821x_dev *pDeviceRef);
+int  EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
+void EVBMESendUpStream(struct MAC_Message *msg);
+int  EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+void EVBMECheckSPICommand(struct MAC_Message *cmd, struct ca821x_dev *pDeviceRef);
+u8_t EVBME_SET_request(u8_t Attribute, u8_t AttributeLength, u8_t *AttributeValue, struct ca821x_dev *pDeviceRef);
+u8_t EVBME_ResetRF(u8_t ms, struct ca821x_dev *pDeviceRef);
+u8_t EVBME_Connect(u8_t *version, struct ca821x_dev *pDeviceRef);
+void EVBME_Disconnect(void);
+void EVBME_Dispatch(struct ca821x_dev *pDeviceRef);
+void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
+
+void EVBME_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+u8_t EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
+void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
+void EVBME_CAX_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+void EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
+void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
+void EVBME_WakeUpRF(void);
+void EVBME_ERROR_Indication(u8_t error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef);
+
+#endif // CASCODA_EVBME_H
