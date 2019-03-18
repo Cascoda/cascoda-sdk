@@ -19,7 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_bm.h"
+#include "ca821x_api.h"
 #include "mac_messages.h"
 
 #ifndef CASCODA_WAIT_H
@@ -40,18 +41,52 @@
  * It will fail if you try to call it while it is already waiting.
  * Do not use from an IRQ context.
  *
- * \param aTargetCallback - Pointer to the callback function in the pDeviceRef callback struct that is to be waited upon
+ * \param aCommandId - Asynchronous, incoming command ID that is to be waited upon
+ * \param aTimeoutMs - Timeout in milliseconds to wait for message before giving up
+ * \param aCallbackContext - Generic pointer that can be retreived in the callback using WAIT_GetContext()
+ * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
+ *
+ * \return Status  CA_ERROR_SUCCESS, Success
+ *                 CA_ERROR_INVALID_STATE, System in invalid state - did you try and use from a callback?
+ *                 CA_ERROR_SPI_WAIT_TIMEOUT, Timed out waiting for message
+ *
+ */
+ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef);
+
+/**
+ * \brief Wait for an asynchronous callback to be triggered, with a given callback swapped in
+ *
+ * This is a helper function which blocks until a specific SPI indication/confirm
+ * message has been received from the CA821x. Think carefully before using this
+ * function, as overuse can lead to programs which are inflexible in their flow.
+ * It has been designed specifically for use with asynchronous messages, and can
+ * correctly handle other commands received out of order. This function preserves
+ * message order, so every callback will be triggered in order, regardless of whether
+ * it is the one being waited on or not.
+ *
+ * The callback should return a value following the normal callback rules defined in
+ * ca821x_api.c (return 1 to consume the callback, return 0 to not consume, return a
+ * negative number for error).
+ *
+ * This function is strictly not re-entrant.
+ * It will fail if you try to call it while it is already waiting.
+ * Do not use from an IRQ context.
+ *
+ * \param aCommandId - The commandId of the Asynchronous upstream command to be captured
+ * \param aCallback  - A function pointer to the callback to be swapped in during the wait
  * \param aTimeoutMs - Timeout in milliseconds to wait for message before giving up
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
- * \return Status  EVBME_SUCCESS, 0 - Success
- *                 EVBME_SPI_WAIT_TIMEOUT, 1 - Timed out waiting for message
+ * \return Status  CA_ERROR_SUCCESS, Success
+ *                 CA_ERROR_INVALID_STATE, System in invalid state - did you try and use from a callback?
+ *                 CA_ERROR_SPI_WAIT_TIMEOUT, Timed out waiting for message
  *
  */
-int WAIT_Callback(union ca821x_api_callback *aTargetCallback,
-                  int                        timeout,
-                  void *                     aCallbackContext,
-                  struct ca821x_dev *        pDeviceRef);
+ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
+                           ca821x_generic_callback aCallback,
+                           int                     aTimeoutMs,
+                           void *                  aCallbackContext,
+                           struct ca821x_dev *     pDeviceRef);
 
 /**
  * \brief Get the callback context from within a callback being waited for
@@ -75,10 +110,10 @@ void *WAIT_GetContext(void);
  *
  * \deprecated Unsupported, inefficient & encourages bad design
  *
- * \return Status  EVBME_SUCCESS, 0 - Success
- *                 EVBME_SPI_WAIT_TIMEOUT, 1 - Timed out waiting for message
- *                 EVBME_FAIL, 1 - Failed
+ * \return Status  CA_ERROR_SUCCESS, Success
+ *                 CA_ERROR_INVALID_STATE, System in invalid state - did you try and use from a callback?
+ *                 CA_ERROR_SPI_WAIT_TIMEOUT, Timed out waiting for message
  */
-int WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
+ca_error WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
 
 #endif //CASCODA_WAIT_H

@@ -8,6 +8,8 @@
 #ifndef PLATFORM_SELFPIPE_H_
 #define PLATFORM_SELFPIPE_H_
 
+#include <sys/select.h>
+
 void selfpipe_init(void);
 
 void selfpipe_push(void);

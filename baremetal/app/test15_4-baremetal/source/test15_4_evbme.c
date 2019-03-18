@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cascoda-bm/cascoda_debug.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
@@ -65,10 +64,8 @@ unsigned long test15_4_getms(void)
  ******************************************************************************/
 void TEST15_4_Initialise(struct ca821x_dev *pDeviceRef)
 {
-	struct ca821x_api_callbacks callbacks = {0};
-	callbacks.MLME_ASSOCIATE_indication   = &TEST15_4_AssociateIndication;
-	callbacks.MLME_ORPHAN_indication      = &TEST15_4_OrphanIndication;
-	ca821x_register_callbacks(&callbacks, pDeviceRef);
+	pDeviceRef->callbacks.MLME_ASSOCIATE_indication = &TEST15_4_AssociateIndication;
+	pDeviceRef->callbacks.MLME_ORPHAN_indication    = &TEST15_4_OrphanIndication;
 }
 
 /******************************************************************************/
@@ -149,7 +146,7 @@ u8_t EVBME_PHY_TESTMODE_request(u8_t TestMode, struct ca821x_dev *pDeviceRef)
 	if (TestMode > PHY_TEST_MAX)
 	{
 		PHY_TESTMODE = PHY_TEST_OFF;
-		return (EVBME_INVALID);
+		return (CA_ERROR_INVALID);
 	}
 
 	if (TestMode)
@@ -165,7 +162,7 @@ u8_t EVBME_PHY_TESTMODE_request(u8_t TestMode, struct ca821x_dev *pDeviceRef)
 
 	TEST15_4_RegisterCallbacks(pDeviceRef);
 
-	return (EVBME_SUCCESS);
+	return (CA_ERROR_SUCCESS);
 } // End of EVBME_PHY_TESTMODE_request()
 
 /******************************************************************************/
@@ -181,7 +178,7 @@ u8_t EVBME_PHY_TESTMODE_request(u8_t TestMode, struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 u8_t EVBME_PHY_SET_request(u8_t Parameter, u8_t ParameterLength, u8_t *ParameterValue)
 {
-	u8_t status = EVBME_INVALID;
+	u8_t status = CA_ERROR_INVALID;
 
 	switch (Parameter)
 	{
@@ -189,14 +186,14 @@ u8_t EVBME_PHY_SET_request(u8_t Parameter, u8_t ParameterLength, u8_t *Parameter
 		if (ParameterLength == 2)
 		{
 			PHY_TESTPAR.PACKETPERIOD = ((u16_t)(ParameterValue[1]) << 8) + (u16_t)(ParameterValue[0]);
-			status                   = EVBME_SUCCESS;
+			status                   = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_PACKETLENGTH:
 		if (ParameterValue[0] < 128)
 		{
 			PHY_TESTPAR.PACKETLENGTH = ParameterValue[0];
-			status                   = EVBME_SUCCESS;
+			status                   = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_NUMBEROFPKTS:
@@ -204,21 +201,21 @@ u8_t EVBME_PHY_SET_request(u8_t Parameter, u8_t ParameterLength, u8_t *Parameter
 		{
 			PHY_TESTPAR.NUMBEROFPKTS = ((u32_t)(ParameterValue[3]) << 24) + ((u32_t)(ParameterValue[2]) << 16) +
 			                           ((u32_t)(ParameterValue[1]) << 8) + (u32_t)(ParameterValue[0]);
-			status = EVBME_SUCCESS;
+			status = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_PACKETDATATYPE:
-		if (ParameterValue[0] <= TDME_MAX_TXD)
+		if (ParameterValue[0] <= TDME_TXD_APPENDED)
 		{
 			PHY_TESTPAR.PACKETDATATYPE = ParameterValue[0];
-			status                     = EVBME_SUCCESS;
+			status                     = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_CHANNEL:
 		if ((ParameterValue[0] >= 11) && (ParameterValue[0] <= 26))
 		{
 			PHY_TESTPAR.CHANNEL = ParameterValue[0];
-			status              = EVBME_SUCCESS;
+			status              = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_TXPOWER:
@@ -227,35 +224,35 @@ u8_t EVBME_PHY_SET_request(u8_t Parameter, u8_t ParameterLength, u8_t *Parameter
 			PHY_TESTPAR.TXPOWER_IB    = ParameterValue[0];
 			PHY_TESTPAR.TXPOWER_PB    = ParameterValue[1];
 			PHY_TESTPAR.TXPOWER_BOOST = ParameterValue[2];
-			status                    = EVBME_SUCCESS;
+			status                    = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_EDTHRESHOLD:
 		if (ParameterLength == 1)
 		{
 			PHY_TESTPAR.EDTHRESHOLD = ParameterValue[0];
-			status                  = EVBME_SUCCESS;
+			status                  = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_RX_FFSYNC:
 		if (ParameterValue[0] <= 1)
 		{
 			PHY_TESTPAR.RX_FFSYNC = ParameterValue[0];
-			status                = EVBME_SUCCESS;
+			status                = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_LO_1_RXTXB:
 		if (ParameterValue[0] <= 1)
 		{
 			PHY_TESTPAR.LO_1_RXTXB = ParameterValue[0];
-			status                 = EVBME_SUCCESS;
+			status                 = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_LO_2_FDAC:
 		if (ParameterValue[0] <= 48)
 		{
 			PHY_TESTPAR.LO_2_FDAC = ParameterValue[0];
-			status                = EVBME_SUCCESS;
+			status                = CA_ERROR_SUCCESS;
 		}
 		break;
 
@@ -263,36 +260,36 @@ u8_t EVBME_PHY_SET_request(u8_t Parameter, u8_t ParameterLength, u8_t *Parameter
 		if (ParameterLength == 1)
 		{
 			PHY_TESTPAR.LO_3_LOCKS = ParameterValue[0];
-			status                 = EVBME_SUCCESS;
+			status                 = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_LO_3_PERIOD:
 		if (ParameterLength == 1)
 		{
 			PHY_TESTPAR.LO_3_PERIOD = ParameterValue[0];
-			status                  = EVBME_SUCCESS;
+			status                  = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_ATM:
 		if (ParameterValue[0] <= 31)
 		{
 			PHY_TESTPAR.ATM = ParameterValue[0];
-			status          = EVBME_SUCCESS;
+			status          = CA_ERROR_SUCCESS;
 		}
 		break;
 	case PHY_TESTPAR_MPW2_OVWR:
 		if (ParameterValue[0] <= 3)
 		{
 			PHY_TESTPAR.MPW2_OVWR = ParameterValue[0];
-			status                = EVBME_SUCCESS;
+			status                = CA_ERROR_SUCCESS;
 		}
 		break;
 	default:
-		status = EVBME_INVALID;
+		status = CA_ERROR_INVALID;
 		break;
 	}
 
-	if (status == EVBME_SUCCESS)
+	if (status == CA_ERROR_SUCCESS)
 		PHYTestReportTestParameters(Parameter);
 
 	return (status);
@@ -346,17 +343,18 @@ void TEST15_4_SetupAwaitOrphan(uint8_t *pDeviceAddress, uint16_t OrphanShortAddr
  * \brief Callback for MLME_ASSOCIATE_indication
  *******************************************************************************
  ******************************************************************************/
-static int TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params,
+                                             struct ca821x_dev *                    pDeviceRef)
 {
 	if (MAC_AWAITING_ASSOC_INDICATION)
 	{
 		if (memcmp(params->DeviceAddress, EVBME_AssocDeviceAddress, 8))
-			return 0;
-		MLME_ASSOCIATE_response(params->DeviceAddress, EVBME_StoredAssocShortAddress, EVBME_StoredAssocStatus, 0,
-		                        pDeviceRef);
+			return CA_ERROR_NOT_HANDLED;
+		MLME_ASSOCIATE_response(
+		    params->DeviceAddress, EVBME_StoredAssocShortAddress, EVBME_StoredAssocStatus, 0, pDeviceRef);
 		MAC_AWAITING_ASSOC_INDICATION = 0;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEST15_4_AssociateIndication()
 
 /******************************************************************************/
@@ -364,16 +362,16 @@ static int TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *p
  * \brief Callback for MLME_ORPHAN_indication
  *******************************************************************************
  ******************************************************************************/
-static int TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (MAC_AWAITING_ORPHAN_INDICATION)
 	{
 		if (memcmp(params->OrphanAddr, EVBME_OrphanDeviceAddress, 8))
-			return 0;
+			return CA_ERROR_NOT_HANDLED;
 		MLME_ORPHAN_response(params->OrphanAddr, EVBME_StoredOrphanShortAddress, 1, &params->Security, pDeviceRef);
 		MAC_AWAITING_ORPHAN_INDICATION = 0;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEST15_4_OrphanIndication()
 
 /******************************************************************************/
@@ -381,17 +379,17 @@ static int TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params,
  * \brief Callback for TDME_RXPKT_indication
  *******************************************************************************
  ******************************************************************************/
-static int TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (!PHY_TESTPAR.MACENABLED)
 	{
 		if ((PHY_TESTMODE == PHY_TEST_RX_PER) || (PHY_TESTMODE == PHY_TEST_RX_PSN))
 		{
 			PHY_RXPKT_indication(params, pDeviceRef);
-			return 1;
+			return CA_ERROR_SUCCESS;
 		}
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEST15_4_PHY_RXPKT_indication()
 
 /******************************************************************************/
@@ -399,17 +397,17 @@ static int TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *para
  * \brief Callback for MCPS_DATA_indication
  *******************************************************************************
  ******************************************************************************/
-static int TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (PHY_TESTPAR.MACENABLED)
 	{
 		if ((PHY_TESTMODE == PHY_TEST_RX_PER) || (PHY_TESTMODE == PHY_TEST_RX_PSN))
 		{
 			PHY_RXPKT_MAC_indication(params, pDeviceRef);
-			return 1;
+			return CA_ERROR_SUCCESS;
 		}
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEST15_4_MAC_RXPKT_indication()
 
 /******************************************************************************/
@@ -417,14 +415,14 @@ static int TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *param
  * \brief Callback for TDME_EDDET_indication
  *******************************************************************************
  ******************************************************************************/
-static int TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (PHY_TESTMODE == PHY_TEST_RX_EDSN)
 	{
 		PHY_EDDET_indication(params, pDeviceRef);
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEST15_4_PHY_EDDET_indication()
 
 /******************************************************************************/

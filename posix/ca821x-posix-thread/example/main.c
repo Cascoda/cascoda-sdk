@@ -50,13 +50,14 @@ int main(int argc, char *argv[])
 
 	if (argc > 1)
 		NODE_ID = atoi(argv[1]);
-	isRunning = 1;
-	signal(SIGINT, quit);
 
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
 	otCliUartInit(OT_INSTANCE);
+
+	isRunning = 1;
+	signal(SIGINT, quit);
 
 	/* Test harness specific config */
 #ifdef TESTHARNESS

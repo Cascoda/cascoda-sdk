@@ -42,10 +42,17 @@ cd ..
 #Now cross compile for the Chili2
 mkdir sdk-chili2
 cd sdk-chili2
-cmake ../cascoda-sdk -DCMAKE_TOOLCHAIN_FILE="../cascoda-sdk/arm_none_eabi_m2351.cmake"
+cmake ../cascoda-sdk -DCMAKE_TOOLCHAIN_FILE="../cascoda-sdk/toolchain/arm_gcc_m2351.cmake"
 make -j12
 # Built for Chili 2! To change configuration, the 'ccmake .' command can be used
 ```
+
+Libraries will be built into the ``lib/`` directory, while application binaries will be built into the ``bin/`` directory. For the Chili platforms, both elf format and binary .bin format files will be created.
+
+In order to compile for the chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
+
+### Debugging
+The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
 
 ## Directory layout
 

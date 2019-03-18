@@ -47,7 +47,7 @@ static u32_t CHILI_TEST_Timeout = 0;                   /* device timeout */
 void CHILI_TEST_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
 	/* store no-comms status */
-	if (status == EVBME_FAIL)
+	if (status == CA_ERROR_FAIL)
 	{
 		BSP_LEDSigMode(LED_M_SETERROR);
 		CHILI_TEST_RESULT = CHILI_TEST_ST_NOCOMMS;
@@ -301,14 +301,7 @@ void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 	cs_ref = params->Msdu[1];
 	ed_ref = params->Msdu[2];
 	cs_dut = params->MpduLinkQuality;
-	if (!pDeviceRef->MAC_Workarounds)
-	{
-		HWME_GET_request_sync(HWME_EDVALLP, &len, &ed_dut, pDeviceRef);
-	}
-	else
-	{
-		ed_dut = CHILI_TEST_ED_LIMIT;
-	}
+	HWME_GET_request_sync(HWME_EDVALLP, &len, &ed_dut, pDeviceRef);
 
 	if (cs_ref < CHILI_TEST_CS_LIMIT)
 		CHILI_TEST_RESULT = CHILI_TEST_ST_CS_REF_LOW;
@@ -450,10 +443,11 @@ u8_t CHILI_TEST_IsInTestMode(void)
  * \brief Reference Device Callback for MCPS_DATA_indication in CHILI_TEST_MODE
  *******************************************************************************
  ******************************************************************************/
-static int CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                    struct ca821x_dev *               pDeviceRef)
 {
 	CHILI_TEST_REF_ProcessDataInd(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_REF_MCPS_DATA_indication()
 
 /******************************************************************************/
@@ -461,10 +455,11 @@ static int CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_pset 
  * \brief DUT Callback for MCPS_DATA_indication in CHILI_TEST_MODE
  *******************************************************************************
  ******************************************************************************/
-static int CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                    struct ca821x_dev *               pDeviceRef)
 {
 	CHILI_TEST_DUT_ProcessDataInd(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_DUT_MCPS_DATA_indication()
 
 /******************************************************************************/
@@ -472,10 +467,10 @@ static int CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset 
  * \brief Reference Device Callback for MCPS_DATA_confirm in CHILI_TEST_MODE
  *******************************************************************************
  ******************************************************************************/
-static int CHILI_TEST_REF_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error CHILI_TEST_REF_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	CHILI_TEST_REF_ProcessDataCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_REF_MCPS_DATA_confirm()
 
 /******************************************************************************/
@@ -483,10 +478,10 @@ static int CHILI_TEST_REF_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *param
  * \brief DUT Callback for MCPS_DATA_confirm in CHILI_TEST_MODE
  *******************************************************************************
  ******************************************************************************/
-static int CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	CHILI_TEST_DUT_ProcessDataCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_DUT_MCPS_DATA_confirm()
 
 /******************************************************************************/

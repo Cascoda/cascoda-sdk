@@ -179,8 +179,8 @@ static void processReceived(struct inst_priv *target, uint32_t payload)
 			return;
 		}
 	}
-	fprintf(stderr, "Unexpected payload: %x, last sent: %x\r\n", payload,
-	        target->mExpectedData[target->mExpectedIndex]);
+	fprintf(
+	    stderr, "Unexpected payload: %x, last sent: %x\r\n", payload, target->mExpectedData[target->mExpectedIndex]);
 	target->mUnexpected++;
 }
 
@@ -281,7 +281,7 @@ int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDevic
 	return 0;
 }
 
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *other, *priv = pDeviceRef->context;
 	pthread_mutex_lock(&out_mutex);
@@ -300,7 +300,7 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct
 		pthread_mutex_unlock(&out_mutex);
 	}
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 static void fillIndirectJunk(struct inst_priv *priv)
@@ -326,7 +326,7 @@ static void fillIndirectJunk(struct inst_priv *priv)
 	}
 }
 
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *other, *priv = pDeviceRef->context;
 	pthread_mutex_t * confirm_mutex = &(priv->confirm_mutex);
@@ -337,7 +337,7 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 	if (params->MsduHandle < INDIRECTJUNK)
 	{
 		priv->mJunkInQueue[params->MsduHandle] = 0;
-		return 0;
+		return CA_ERROR_SUCCESS;
 	}
 
 	pthread_mutex_lock(confirm_mutex);
@@ -413,10 +413,10 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 	}
 	pthread_mutex_unlock(confirm_mutex);
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *priv = pDeviceRef->context;
 	/*
@@ -430,7 +430,7 @@ static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca8
 	}
 	fprintf(stderr, "\r\n");
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 static void *inst_worker(void *arg)
@@ -536,8 +536,8 @@ static void *inst_worker(void *arg)
 		priv->lastAddress = insts[i].mAddress;
 		pthread_mutex_unlock(confirm_mutex);
 		PUTLE32(payload, priv->msdu);
-		MCPS_DATA_request(curAddrMode, dest, M_MSDU_LENGTH, priv->msdu, priv->lastHandle, txOpts, &sSecSpec,
-		                  pDeviceRef);
+		MCPS_DATA_request(
+		    curAddrMode, dest, M_MSDU_LENGTH, priv->msdu, priv->lastHandle, txOpts, &sSecSpec, pDeviceRef);
 
 		fillIndirectJunk(priv);
 	}
@@ -563,8 +563,17 @@ void drawTableHeader()
 		       "\n\tsent %d packets that weren't acknowledged (but %d made it through anyway)"
 		       "\n\tTriggered %d Transaction Overflows"
 		       "\n\tLost %d Confirms, got %d duplicates\n",
-		       i, insts[i].mRepeats, insts[i].mMissed, insts[i].mMissedAcked, insts[i].mUnexpected, insts[i].mCAF,
-		       insts[i].mNack, insts[i].mAckLost, insts[i].mTO, insts[i].mConfirmLost, insts[i].mConfirmDup);
+		       i,
+		       insts[i].mRepeats,
+		       insts[i].mMissed,
+		       insts[i].mMissedAcked,
+		       insts[i].mUnexpected,
+		       insts[i].mCAF,
+		       insts[i].mNack,
+		       insts[i].mAckLost,
+		       insts[i].mTO,
+		       insts[i].mConfirmLost,
+		       insts[i].mConfirmDup);
 		pthread_mutex_unlock(&out_mutex);
 	}
 	printf("|----|");
@@ -606,8 +615,14 @@ void drawTableRow(unsigned int time)
 	pthread_mutex_lock(&out_mutex);
 	for (int i = 0; i < numInsts; i++)
 	{
-		printf("|" COLOR_SET(GREEN, "%4d") "|%4d|%4d|%4d|" COLOR_SET(RED, "%3d|%3d|%3d|%3d") "|", insts[i].mTx,
-		       insts[i].mSourced, insts[i].mRx, insts[i].mAckRemote, insts[i].mErr, insts[i].mBadRx, insts[i].mBadTx,
+		printf("|" COLOR_SET(GREEN, "%4d") "|%4d|%4d|%4d|" COLOR_SET(RED, "%3d|%3d|%3d|%3d") "|",
+		       insts[i].mTx,
+		       insts[i].mSourced,
+		       insts[i].mRx,
+		       insts[i].mAckRemote,
+		       insts[i].mErr,
+		       insts[i].mBadRx,
+		       insts[i].mBadTx,
 		       insts[i].mRestarts);
 	}
 	pthread_mutex_unlock(&out_mutex);
@@ -656,7 +671,11 @@ void initInst(struct inst_priv *cur)
 	if (INDIRECT && (cur == insts))
 		rxOnWhenIdle = 0;
 	MLME_SET_request_sync( //enable Rx when Idle
-	    macRxOnWhenIdle, 0, sizeof(rxOnWhenIdle), &rxOnWhenIdle, pDeviceRef);
+	    macRxOnWhenIdle,
+	    0,
+	    sizeof(rxOnWhenIdle),
+	    &rxOnWhenIdle,
+	    pDeviceRef);
 }
 
 int main(int argc, char *argv[])
@@ -679,7 +698,8 @@ int main(int argc, char *argv[])
 		struct ca821x_dev *pDeviceRef = &(cur->pDeviceRef);
 		cur->mAddress                 = atoi(argv[i + 1]);
 		cur->confirm_done             = 1;
-		memset(cur->mExpectedStatus, STATUS_RECEIVED | STATUS_ACKNOWLEDGED | STATUS_CONFIRMED,
+		memset(cur->mExpectedStatus,
+		       STATUS_RECEIVED | STATUS_ACKNOWLEDGED | STATUS_CONFIRMED,
 		       sizeof(cur->mExpectedStatus));
 
 		pthread_mutex_init(&(cur->confirm_mutex), NULL);
@@ -692,11 +712,9 @@ int main(int argc, char *argv[])
 		pDeviceRef->context = cur;
 
 		//Register callbacks for async messages
-		struct ca821x_api_callbacks callbacks = {0};
-		callbacks.MCPS_DATA_indication        = &handleDataIndication;
-		callbacks.MCPS_DATA_confirm           = &handleDataConfirm;
-		callbacks.generic_dispatch            = &handleGenericDispatchFrame;
-		ca821x_register_callbacks(&callbacks, pDeviceRef);
+		pDeviceRef->callbacks.MCPS_DATA_indication = &handleDataIndication;
+		pDeviceRef->callbacks.MCPS_DATA_confirm    = &handleDataConfirm;
+		pDeviceRef->callbacks.generic_dispatch     = &handleGenericDispatchFrame;
 		exchange_register_user_callback(&handleUserCallback, pDeviceRef);
 
 		initInst(cur);

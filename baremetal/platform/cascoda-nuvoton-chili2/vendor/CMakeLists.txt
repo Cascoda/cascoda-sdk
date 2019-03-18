@@ -41,8 +41,17 @@ add_library(nuvoton-vendor-m2351 OBJECT
 	${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/wdt.c
 	${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/wwdt.c
 	${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/system_M2351.c
-	${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/GCC/startup_M2351.S
 	)
+
+if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
+	target_sources(nuvoton-vendor-m2351 PRIVATE
+		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/GCC/startup_M2351.S
+		)
+elseif(CMAKE_C_COMPILER MATCHES armclang)
+	target_sources(nuvoton-vendor-m2351 PRIVATE
+		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/ARM/startup_M2351.s
+		)
+endif()
 
 target_include_directories(nuvoton-vendor-m2351
 	PUBLIC

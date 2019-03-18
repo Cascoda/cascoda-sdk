@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "ca821x-posix/ca821x-posix-config.h"
+#include "ca821x_error.h"
 
 struct ca821x_dev;
 

@@ -18,7 +18,7 @@ target_include_directories(test15-4
 # test15-4-api provided by the ca821x-api
 target_link_libraries(test15-4
 	PUBLIC
-		cascoda-bm-plat
+		cascoda-bm
 		test15-4-api
 	)
 
@@ -28,7 +28,3 @@ target_link_libraries(test15-4-app test15-4)
 
 # convert to bin file format
 cascoda_make_binary(test15-4-app)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests

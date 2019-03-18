@@ -32,7 +32,6 @@
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
 
-#include "cascoda_debug_chili.h"
 #include "tempsense_app.h"
 #include "tempsense_debug.h"
 
@@ -65,9 +64,6 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 	/* local debug variables */
 	u32_t app_debug_reg    = 0;
 	u32_t app_debug_sysclk = 0;
-	/* callback handling for data confirms */
-	union ca821x_api_callback *callbackRef = ca821x_get_callback(SPI_MCPS_DATA_CONFIRM, pDeviceRef);
-	union ca821x_api_callback  swappedOut;
 
 #if defined(USE_DEBUG)
 	report_error = Debug_App_Error || Debug_BSP_Error;
@@ -187,10 +183,7 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 	}
 	else
 	{
-		swappedOut                     = *callbackRef;
-		callbackRef->MCPS_DATA_confirm = &APP_Debug_Sent;
-		status                         = WAIT_Callback(callbackRef, 100, &status, pDeviceRef);
-		*callbackRef                   = swappedOut;
+		status = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, (ca821x_generic_callback)&APP_Debug_Sent, 100, NULL, pDeviceRef);
 		if (status)
 		{
 			BSP_LEDSigMode(LED_M_SETERROR);

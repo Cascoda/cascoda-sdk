@@ -251,11 +251,16 @@ otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 	uint8_t error;
 	otError otErr;
 
-	error = MLME_START_request_sync(aStartReq->mPanId, aStartReq->mLogicalChannel, aStartReq->mBeaconOrder,
-	                                aStartReq->mSuperframeOrder, aStartReq->mPanCoordinator,
-	                                aStartReq->mBatteryLifeExtension, aStartReq->mCoordRealignment,
+	error = MLME_START_request_sync(aStartReq->mPanId,
+	                                aStartReq->mLogicalChannel,
+	                                aStartReq->mBeaconOrder,
+	                                aStartReq->mSuperframeOrder,
+	                                aStartReq->mPanCoordinator,
+	                                aStartReq->mBatteryLifeExtension,
+	                                aStartReq->mCoordRealignment,
 	                                (struct SecSpec *)&(aStartReq->mCoordRealignSecurity),
-	                                (struct SecSpec *)&(aStartReq->mBeaconSecurity), pDeviceRef);
+	                                (struct SecSpec *)&(aStartReq->mBeaconSecurity),
+	                                pDeviceRef);
 
 	switch (error)
 	{
@@ -284,8 +289,11 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 {
 	uint8_t error;
 
-	error = MLME_SCAN_request(aScanRequest->mScanType, aScanRequest->mScanChannelMask, aScanRequest->mScanDuration,
-	                          (struct SecSpec *)&(aScanRequest->mSecSpec), pDeviceRef);
+	error = MLME_SCAN_request(aScanRequest->mScanType,
+	                          aScanRequest->mScanChannelMask,
+	                          aScanRequest->mScanDuration,
+	                          (struct SecSpec *)&(aScanRequest->mSecSpec),
+	                          pDeviceRef);
 
 	return error == MAC_SUCCESS ? OT_ERROR_NONE : OT_ERROR_FAILED;
 }
@@ -296,11 +304,13 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 
 #if CASCODA_CA_VER == 8210
 	uint8_t interval[2] = {0, 0};
-	error               = MLME_POLL_request_sync(*((struct FullAddr *)&(aPollRequest->mCoordAddress)), interval,
-                                   (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
+	error               = MLME_POLL_request_sync(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
+                                   interval,
+                                   (struct SecSpec *)&(aPollRequest->mSecurity),
+                                   pDeviceRef);
 #else
-	error = MLME_POLL_request_sync(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
-	                               (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
+	error = MLME_POLL_request_sync(
+	    *((struct FullAddr *)&(aPollRequest->mCoordAddress)), (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
 #endif
 
 	if (error == MAC_SUCCESS)
@@ -313,9 +323,14 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 {
 	uint8_t error;
 
-	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode, *(struct FullAddr *)&aDataRequest->mDst,
-	                          aDataRequest->mMsduLength, aDataRequest->mMsdu, aDataRequest->mMsduHandle,
-	                          aDataRequest->mTxOptions, (struct SecSpec *)&(aDataRequest->mSecurity), pDeviceRef);
+	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
+	                          *(struct FullAddr *)&aDataRequest->mDst,
+	                          aDataRequest->mMsduLength,
+	                          aDataRequest->mMsdu,
+	                          aDataRequest->mMsduHandle,
+	                          aDataRequest->mTxOptions,
+	                          (struct SecSpec *)&(aDataRequest->mSecurity),
+	                          pDeviceRef);
 
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
 }
@@ -329,7 +344,7 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_ALREADY;
 }
 
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	int16_t rssi;
 	//TODO: Move this off the stack
@@ -353,10 +368,11 @@ static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct
 
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params,
+                                           struct ca821x_dev *                      pDeviceRef)
 {
 	//TODO: Move this off the stack
 	otCommStatusIndication commInd = {0};
@@ -377,17 +393,18 @@ static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *p
 
 	otPlatMlmeCommStatusIndication(OT_INSTANCE, &commInd);
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	otPlatMcpsDataConfirm(OT_INSTANCE, params->MsduHandle, params->Status);
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
+                                   struct ca821x_dev *                        pDeviceRef) //Async
 {
 	//TODO: Move this off the stack
 	otBeaconNotify beaconNotify = {0};
@@ -407,14 +424,14 @@ static int handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
 
 	otPlatMlmeBeaconNotifyIndication(OT_INSTANCE, &beaconNotify);
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	otPlatMlmeScanConfirm(OT_INSTANCE, (otScanConfirm *)params);
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
 void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
@@ -462,24 +479,22 @@ void initIeeeEui64()
 	sIeeeEui64[0] |= 2;  //Set local bit
 }
 
-int handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	//	printf( "Woke Up with status %02x\n", params->WakeUpCondition);
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
 int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 {
 	pDeviceRef = apDeviceRef;
 
-	struct ca821x_api_callbacks callbacks   = {0};
-	callbacks.MCPS_DATA_indication          = &handleDataIndication;
-	callbacks.MLME_COMM_STATUS_indication   = &handleCommStatusIndication;
-	callbacks.MCPS_DATA_confirm             = &handleDataConfirm;
-	callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
-	callbacks.MLME_SCAN_confirm             = &handleScanConfirm;
-	callbacks.HWME_WAKEUP_indication        = &handleWakeupIndication;
-	ca821x_register_callbacks(&callbacks, pDeviceRef);
+	pDeviceRef->callbacks.MCPS_DATA_indication          = &handleDataIndication;
+	pDeviceRef->callbacks.MLME_COMM_STATUS_indication   = &handleCommStatusIndication;
+	pDeviceRef->callbacks.MCPS_DATA_confirm             = &handleDataConfirm;
+	pDeviceRef->callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
+	pDeviceRef->callbacks.MLME_SCAN_confirm             = &handleScanConfirm;
+	pDeviceRef->callbacks.HWME_WAKEUP_indication        = &handleWakeupIndication;
 
 	//Reset the MAC to a default state
 	otPlatMlmeReset(NULL, true);

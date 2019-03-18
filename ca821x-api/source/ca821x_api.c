@@ -58,73 +58,80 @@
 /** LQI limit, below which received frames should be rejected */
 #define API_LQI_LIMIT (75)
 
-/**
- * @brief Table for pairing synchronous requests with their confirms. Each
- * confirm is aligned so that their index in the table is the request's command
- * id.
- *
- * Request                       | Confirm
- * ----------------------------- | ---------------------------
- * SPI_MCPS_DATA_request         | SPI_IDLE
- * SPI_MCPS_PURGE_request        | SPI_MCPS_PURGE_CONFIRM
- * SPI_MLME_ASSOCIATE_REQUEST    | SPI_IDLE
- * SPI_MLME_ASSOCIATE_RESPONSE   | SPI_IDLE
- * SPI_MLME_DISASSOCIATE_REQUEST | SPI_IDLE
- * SPI_MLME_GET_REQUEST          | SPI_MLME_GET_CONFIRM
- * SPI_MLME_ORPHAN_RESPONSE      | SPI_IDLE
- * SPI_MLME_RESET_REQUEST        | SPI_MLME_RESET_CONFIRM
- * SPI_MLME_RX_ENABLE_REQUEST    | SPI_MLME_RX_ENABLE_CONFIRM
- * SPI_MLME_SCAN_REQUEST         | SPI_IDLE
- * SPI_MLME_SET_REQUEST          | SPI_MLME_SET_CONFIRM
- * SPI_MLME_START_REQUEST        | SPI_MLME_START_CONFIRM
- * SPI_MLME_SYNC_REQUEST         | SPI_IDLE
- * SPI_MLME_POLL_REQUEST         | SPI_MLME_POLL_CONFIRM
- * SPI_HWME_SET_REQUEST          | SPI_HWME_SET_CONFIRM
- * SPI_HWME_GET_REQUEST          | SPI_HWME_GET_CONFIRM
- * SPI_HWME_HAES_REQUEST         | SPI_HWME_HAES_CONFIRM
- * SPI_TDME_SETSFR_REQUEST       | SPI_TDME_SETSFR_CONFIRM
- * SPI_TDME_GETSFR_REQUEST       | SPI_TDME_GETSFR_CONFIRM
- * SPI_TDME_TESTMODE_REQUEST     | SPI_TDME_TESTMODE_CONFIRM
- * SPI_TDME_SET_REQUEST          | SPI_TDME_SET_CONFIRM
- * SPI_TDME_TXPKT_REQUEST        | SPI_TDME_TXPKT_CONFIRM
- * SPI_TDME_LOTLK_REQUEST        | SPI_TDME_LOTLK_CONFIRM
- */
-const uint8_t sync_pairings[23] = {SPI_IDLE,
-                                   SPI_MCPS_PURGE_CONFIRM,
-                                   SPI_IDLE,
-                                   SPI_IDLE,
-                                   SPI_IDLE,
-                                   SPI_MLME_GET_CONFIRM,
-                                   SPI_IDLE,
-                                   SPI_MLME_RESET_CONFIRM,
-                                   SPI_MLME_RX_ENABLE_CONFIRM,
-                                   SPI_IDLE,
-                                   SPI_MLME_SET_CONFIRM,
-                                   SPI_MLME_START_CONFIRM,
-                                   SPI_IDLE,
-                                   SPI_MLME_POLL_CONFIRM,
-                                   SPI_HWME_SET_CONFIRM,
-                                   SPI_HWME_GET_CONFIRM,
-                                   SPI_HWME_HAES_CONFIRM,
-                                   SPI_TDME_SETSFR_CONFIRM,
-                                   SPI_TDME_GETSFR_CONFIRM,
-                                   SPI_TDME_TESTMODE_CONFIRM,
-                                   SPI_TDME_SET_CONFIRM,
-                                   SPI_TDME_TXPKT_CONFIRM,
-                                   SPI_TDME_LOTLK_CONFIRM};
+ca_error (*ca821x_wait_for_message)(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
 
-int (*ca821x_wait_for_message)(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
+uint8_t ca821x_get_sync_response_id(uint8_t cmdid)
+{
+	uint8_t rval = 0;
 
-int ca821x_api_init(struct ca821x_dev *pDeviceRef)
+	switch (cmdid)
+	{
+	case SPI_MCPS_PURGE_REQUEST:
+		rval = SPI_MCPS_PURGE_CONFIRM;
+		break;
+	case SPI_MLME_GET_REQUEST:
+		rval = SPI_MLME_GET_CONFIRM;
+		break;
+	case SPI_MLME_RESET_REQUEST:
+		rval = SPI_MLME_RESET_CONFIRM;
+		break;
+	case SPI_MLME_RX_ENABLE_REQUEST:
+		rval = SPI_MLME_RX_ENABLE_CONFIRM;
+		break;
+	case SPI_MLME_SET_REQUEST:
+		rval = SPI_MLME_SET_CONFIRM;
+		break;
+	case SPI_MLME_START_REQUEST:
+		rval = SPI_MLME_START_CONFIRM;
+		break;
+	case SPI_MLME_POLL_REQUEST:
+		rval = SPI_MLME_POLL_CONFIRM;
+		break;
+	case SPI_HWME_SET_REQUEST:
+		rval = SPI_HWME_SET_CONFIRM;
+		break;
+	case SPI_HWME_GET_REQUEST:
+		rval = SPI_HWME_GET_CONFIRM;
+		break;
+	case SPI_HWME_HAES_REQUEST:
+		rval = SPI_HWME_HAES_CONFIRM;
+		break;
+	case SPI_TDME_SETSFR_REQUEST:
+		rval = SPI_TDME_SETSFR_CONFIRM;
+		break;
+	case SPI_TDME_GETSFR_REQUEST:
+		rval = SPI_TDME_GETSFR_CONFIRM;
+		break;
+	case SPI_TDME_TESTMODE_REQUEST:
+		rval = SPI_TDME_TESTMODE_CONFIRM;
+		break;
+	case SPI_TDME_SET_REQUEST:
+		rval = SPI_TDME_SET_CONFIRM;
+		break;
+	case SPI_TDME_TXPKT_REQUEST:
+		rval = SPI_TDME_TXPKT_CONFIRM;
+		break;
+	case SPI_TDME_LOTLK_REQUEST:
+		rval = SPI_TDME_LOTLK_CONFIRM;
+		break;
+	}
+
+	return rval;
+}
+
+ca_error ca821x_api_init(struct ca821x_dev *pDeviceRef)
 {
 	if (pDeviceRef == NULL)
-		return -1;
+		return CA_ERROR_INVALID_ARGS;
 
 	memset(pDeviceRef, 0, sizeof(*pDeviceRef));
+
+#if (CASCODA_CA_VER == 8210)
 	pDeviceRef->shortaddr = 0xFFFF;
 	pDeviceRef->lqi_mode  = HWME_LQIMODE_CS;
+#endif
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -143,14 +150,14 @@ int ca821x_api_init(struct ca821x_dev *pDeviceRef)
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MCPS_DATA_request(uint8_t            SrcAddrMode,
-                          struct FullAddr    DstAddr,
-                          uint8_t            MsduLength,
-                          uint8_t *          pMsdu,
-                          uint8_t            MsduHandle,
-                          uint8_t            TxOptions,
-                          struct SecSpec *   pSecurity,
-                          struct ca821x_dev *pDeviceRef)
+ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
+                                struct FullAddr    DstAddr,
+                                uint8_t            MsduLength,
+                                uint8_t *          pMsdu,
+                                uint8_t            MsduHandle,
+                                uint8_t            TxOptions,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef)
 {
 	struct SecSpec *   pSec;
 	struct MAC_Message Command;
@@ -192,7 +199,7 @@ uint8_t MCPS_DATA_request(uint8_t            SrcAddrMode,
  * \return: 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef)
+ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId     = SPI_MCPS_PURGE_REQUEST;
@@ -207,7 +214,7 @@ uint8_t MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceR
 
 	*MsduHandle = Response.PData.PurgeCnf.MsduHandle;
 
-	return Response.PData.PurgeCnf.Status;
+	return (ca_mac_status)Response.PData.PurgeCnf.Status;
 } // End of MCPS_PURGE_request_sync()
 
 /******************************************************************************/
@@ -224,11 +231,11 @@ uint8_t MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceR
  *******************************************************************************
  ******************************************************************************/
 #if CASCODA_CA_VER >= 8211
-uint8_t PCPS_DATA_request(uint8_t            PsduHandle,
-                          uint8_t            TxOpts,
-                          uint8_t            PsduLength,
-                          uint8_t *          pPsdu,
-                          struct ca821x_dev *pDeviceRef)
+ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
+                                uint8_t            TxOpts,
+                                uint8_t            PsduLength,
+                                uint8_t *          pPsdu,
+                                struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command;
 
@@ -266,18 +273,18 @@ uint8_t PCPS_DATA_request(uint8_t            PsduHandle,
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
-                               struct FullAddr    DstAddr,
-                               uint8_t            CapabilityInfo,
-                               struct SecSpec *   pSecurity,
-                               struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
+                                     struct FullAddr    DstAddr,
+                                     uint8_t            CapabilityInfo,
+                                     struct SecSpec *   pSecurity,
+                                     struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
 	struct MAC_Message Command;
 #define ASSOCREQ (Command.PData.AssocReq)
 	status = TDME_ChannelInit(LogicalChannel, pDeviceRef);
 	if (status)
-		return status;
+		return (ca_mac_status)status;
 
 	Command.CommandId       = SPI_MLME_ASSOCIATE_REQUEST;
 	Command.Length          = sizeof(struct MLME_ASSOCIATE_request_pset);
@@ -314,11 +321,11 @@ uint8_t MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_ASSOCIATE_response(uint8_t *          pDeviceAddress,
-                                uint16_t           AssocShortAddress,
-                                uint8_t            Status,
-                                struct SecSpec *   pSecurity,
-                                struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_ASSOCIATE_response(uint8_t *          pDeviceAddress,
+                                      uint16_t           AssocShortAddress,
+                                      uint8_t            Status,
+                                      struct SecSpec *   pSecurity,
+                                      struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command;
 	Command.CommandId = SPI_MLME_ASSOCIATE_RESPONSE;
@@ -358,11 +365,11 @@ uint8_t MLME_ASSOCIATE_response(uint8_t *          pDeviceAddress,
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_DISASSOCIATE_request(struct FullAddr    DevAddr,
-                                  uint8_t            DisassociateReason,
-                                  uint8_t            TxIndirect,
-                                  struct SecSpec *   pSecurity,
-                                  struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_DISASSOCIATE_request(struct FullAddr    DevAddr,
+                                        uint8_t            DisassociateReason,
+                                        uint8_t            TxIndirect,
+                                        struct SecSpec *   pSecurity,
+                                        struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command;
 	Command.CommandId = SPI_MLME_DISASSOCIATE_REQUEST;
@@ -401,11 +408,11 @@ uint8_t MLME_DISASSOCIATE_request(struct FullAddr    DevAddr,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_GET_request_sync(uint8_t            PIBAttribute,
-                              uint8_t            PIBAttributeIndex,
-                              uint8_t *          pPIBAttributeLength,
-                              void *             pPIBAttributeValue,
-                              struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_GET_request_sync(uint8_t            PIBAttribute,
+                                    uint8_t            PIBAttributeIndex,
+                                    uint8_t *          pPIBAttributeLength,
+                                    void *             pPIBAttributeValue,
+                                    struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 #define GETREQ (Command.PData.GetReq)
@@ -435,7 +442,7 @@ uint8_t MLME_GET_request_sync(uint8_t            PIBAttribute,
 		}
 	}
 
-	return GETCNF.Status;
+	return (ca_mac_status)GETCNF.Status;
 #undef GETREQ
 #undef GETCNF
 } // End of MLME_GET_request_sync()
@@ -453,11 +460,11 @@ uint8_t MLME_GET_request_sync(uint8_t            PIBAttribute,
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
-                             uint16_t           ShortAddress,
-                             uint8_t            AssociatedMember,
-                             struct SecSpec *   pSecurity,
-                             struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
+                                   uint16_t           ShortAddress,
+                                   uint8_t            AssociatedMember,
+                                   struct SecSpec *   pSecurity,
+                                   struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command;
 #define ORPHANRSP (Command.PData.OrphanRsp)
@@ -494,7 +501,7 @@ uint8_t MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
 	struct MAC_Message Command, Response;
@@ -512,16 +519,14 @@ uint8_t MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDevic
 
 	status = SIMPLECNF.Status;
 
+#if (CASCODA_CA_VER == 8210)
 	if (SetDefaultPIB && status == MAC_SUCCESS)
 	{
 		pDeviceRef->shortaddr = 0xFFFF;
 	}
+#endif
 
-	/* reset COORD Bit for Channel Filtering as Coordinator */
-	if (pDeviceRef->MAC_Workarounds && SetDefaultPIB && (!status))
-		status = TDME_SETSFR_request_sync(0, 0xD8, 0, pDeviceRef);
-
-	return status;
+	return (ca_mac_status)status;
 #undef SIMPLEREQ
 #undef SIMPLECNF
 } // End of MLME_RESET_request_sync()
@@ -538,10 +543,10 @@ uint8_t MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDevic
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
-                                    uint32_t           RxOnTime,
-                                    uint32_t           RxOnDuration,
-                                    struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
+                                          uint32_t           RxOnTime,
+                                          uint32_t           RxOnDuration,
+                                          struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId = SPI_MLME_RX_ENABLE_REQUEST;
@@ -564,7 +569,7 @@ uint8_t MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
 	if (Response.CommandId != SPI_MLME_RX_ENABLE_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.Status;
+	return (ca_mac_status)Response.PData.Status;
 } // End of MLME_RX_ENABLE_request_sync()
 
 /******************************************************************************/
@@ -580,11 +585,11 @@ uint8_t MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
  * \return: 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_SCAN_request(uint8_t            ScanType,
-                          uint32_t           ScanChannels,
-                          uint8_t            ScanDuration,
-                          struct SecSpec *   pSecurity,
-                          struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_SCAN_request(uint8_t            ScanType,
+                                uint32_t           ScanChannels,
+                                uint8_t            ScanDuration,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command;
 #define SCANREQ (Command.PData.ScanReq)
@@ -626,11 +631,11 @@ uint8_t MLME_SCAN_request(uint8_t            ScanType,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_SET_request_sync(uint8_t            PIBAttribute,
-                              uint8_t            PIBAttributeIndex,
-                              uint8_t            PIBAttributeLength,
-                              const void *       pPIBAttributeValue,
-                              struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
+                                    uint8_t            PIBAttributeIndex,
+                                    uint8_t            PIBAttributeLength,
+                                    const void *       pPIBAttributeValue,
+                                    struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
 	struct MAC_Message Command, Response;
@@ -645,7 +650,7 @@ uint8_t MLME_SET_request_sync(uint8_t            PIBAttribute,
 		status = TDME_ChannelInit(*((uint8_t *)pPIBAttributeValue), pDeviceRef);
 		if (status)
 		{
-			return status;
+			return (ca_mac_status)status;
 		}
 	}
 	else if (PIBAttribute == phyTransmitPower)
@@ -666,6 +671,7 @@ uint8_t MLME_SET_request_sync(uint8_t            PIBAttribute,
 	if (Response.CommandId != SPI_MLME_SET_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
+#if (CASCODA_CA_VER == 8210)
 	if (SIMPLECNF.Status == MAC_SUCCESS)
 	{
 		if (PIBAttribute == macShortAddress)
@@ -677,8 +683,9 @@ uint8_t MLME_SET_request_sync(uint8_t            PIBAttribute,
 			memcpy(pDeviceRef->extaddr, pPIBAttributeValue, 8);
 		}
 	}
+#endif
 
-	return SIMPLECNF.Status;
+	return (ca_mac_status)SIMPLECNF.Status;
 #undef SETREQ
 #undef SIMPLECNF
 } // End of MLME_SET_request_sync()
@@ -703,16 +710,16 @@ uint8_t MLME_SET_request_sync(uint8_t            PIBAttribute,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_START_request_sync(uint16_t           PANId,
-                                uint8_t            LogicalChannel,
-                                uint8_t            BeaconOrder,
-                                uint8_t            SuperframeOrder,
-                                uint8_t            PANCoordinator,
-                                uint8_t            BatteryLifeExtension,
-                                uint8_t            CoordRealignment,
-                                struct SecSpec *   pCoordRealignSecurity,
-                                struct SecSpec *   pBeaconSecurity,
-                                struct ca821x_dev *pDeviceRef)
+ca_mac_status MLME_START_request_sync(uint16_t           PANId,
+                                      uint8_t            LogicalChannel,
+                                      uint8_t            BeaconOrder,
+                                      uint8_t            SuperframeOrder,
+                                      uint8_t            PANCoordinator,
+                                      uint8_t            BatteryLifeExtension,
+                                      uint8_t            CoordRealignment,
+                                      struct SecSpec *   pCoordRealignSecurity,
+                                      struct SecSpec *   pBeaconSecurity,
+                                      struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
 	struct SecSpec *   pBS;
@@ -721,7 +728,7 @@ uint8_t MLME_START_request_sync(uint16_t           PANId,
 
 	status = TDME_ChannelInit(LogicalChannel, pDeviceRef);
 	if (status)
-		return status;
+		return (ca_mac_status)status;
 
 	Command.CommandId             = SPI_MLME_START_REQUEST;
 	Command.Length                = sizeof(struct MLME_START_request_pset);
@@ -760,7 +767,7 @@ uint8_t MLME_START_request_sync(uint16_t           PANId,
 	if (Response.CommandId != SPI_MLME_START_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.Status;
+	return (ca_mac_status)Response.PData.Status;
 #undef STARTREQ
 } // End of MLME_START_request_sync()
 
@@ -776,14 +783,14 @@ uint8_t MLME_START_request_sync(uint16_t           PANId,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t MLME_POLL_request_sync(struct FullAddr CoordAddress,
+ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 #if CASCODA_CA_VER == 8210
-                               uint8_t Interval[2], /* polling interval in 0.1 seconds res */
-                                                    /* 0 means poll once */
-                                                    /* 0xFFFF means stop polling */
+                                     uint8_t Interval[2], /* polling interval in 0.1 seconds res */
+                                                          /* 0 means poll once */
+                                                          /* 0xFFFF means stop polling */
 #endif
-                               struct SecSpec *   pSecurity,
-                               struct ca821x_dev *pDeviceRef)
+                                     struct SecSpec *   pSecurity,
+                                     struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 #define POLLREQ (Command.PData.PollReq)
@@ -810,7 +817,7 @@ uint8_t MLME_POLL_request_sync(struct FullAddr CoordAddress,
 	if (Response.CommandId != SPI_MLME_POLL_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.Status;
+	return (ca_mac_status)Response.PData.Status;
 #undef POLLREQ
 } // End of MLME_POLL_request_sync()
 
@@ -826,10 +833,10 @@ uint8_t MLME_POLL_request_sync(struct FullAddr CoordAddress,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t HWME_SET_request_sync(uint8_t            HWAttribute,
-                              uint8_t            HWAttributeLength,
-                              uint8_t *          pHWAttributeValue,
-                              struct ca821x_dev *pDeviceRef)
+ca_mac_status HWME_SET_request_sync(uint8_t            HWAttribute,
+                                    uint8_t            HWAttributeLength,
+                                    uint8_t *          pHWAttributeValue,
+                                    struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                          = SPI_HWME_SET_REQUEST;
@@ -844,10 +851,12 @@ uint8_t HWME_SET_request_sync(uint8_t            HWAttribute,
 	if (Response.CommandId != SPI_HWME_SET_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
+#if (CASCODA_CA_VER == 8210)
 	if (HWAttribute == HWME_LQIMODE && Response.PData.Status == MAC_SUCCESS)
 		pDeviceRef->lqi_mode = *pHWAttributeValue;
+#endif
 
-	return Response.PData.HWMESetCnf.Status;
+	return (ca_mac_status)Response.PData.HWMESetCnf.Status;
 } // End of HWME_SET_request_sync()
 
 /******************************************************************************/
@@ -862,10 +871,10 @@ uint8_t HWME_SET_request_sync(uint8_t            HWAttribute,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t HWME_GET_request_sync(uint8_t            HWAttribute,
-                              uint8_t *          HWAttributeLength,
-                              uint8_t *          pHWAttributeValue,
-                              struct ca821x_dev *pDeviceRef)
+ca_mac_status HWME_GET_request_sync(uint8_t            HWAttribute,
+                                    uint8_t *          HWAttributeLength,
+                                    uint8_t *          pHWAttributeValue,
+                                    struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                    = SPI_HWME_GET_REQUEST;
@@ -884,7 +893,7 @@ uint8_t HWME_GET_request_sync(uint8_t            HWAttribute,
 		memcpy(pHWAttributeValue, Response.PData.HWMEGetCnf.HWAttributeValue, *HWAttributeLength);
 	}
 
-	return Response.PData.HWMEGetCnf.Status;
+	return (ca_mac_status)Response.PData.HWMEGetCnf.Status;
 } // End of HWME_GET_request_sync()
 
 /******************************************************************************/
@@ -898,7 +907,7 @@ uint8_t HWME_GET_request_sync(uint8_t            HWAttribute,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca821x_dev *pDeviceRef)
+ca_mac_status HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                  = SPI_HWME_HAES_REQUEST;
@@ -915,7 +924,7 @@ uint8_t HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca82
 	if (Response.PData.HWMEHAESCnf.Status == MAC_SUCCESS)
 		memcpy(pHAESData, Response.PData.HWMEHAESCnf.HAESData, 16);
 
-	return Response.PData.HWMEHAESCnf.Status;
+	return (ca_mac_status)Response.PData.HWMEHAESCnf.Status;
 } // End of HWME_HAES_request_sync()
 
 /******************************************************************************/
@@ -930,7 +939,10 @@ uint8_t HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca82
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_SETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t SFRValue, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_SETSFR_request_sync(uint8_t            SFRPage,
+                                       uint8_t            SFRAddress,
+                                       uint8_t            SFRValue,
+                                       struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                      = SPI_TDME_SETSFR_REQUEST;
@@ -945,7 +957,7 @@ uint8_t TDME_SETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t SF
 	if (Response.CommandId != SPI_TDME_SETSFR_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.TDMESetSFRCnf.Status;
+	return (ca_mac_status)Response.PData.TDMESetSFRCnf.Status;
 } // End of TDME_SETSFR_request_sync()
 
 /******************************************************************************/
@@ -960,7 +972,10 @@ uint8_t TDME_SETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t SF
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_GETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t *SFRValue, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_GETSFR_request_sync(uint8_t            SFRPage,
+                                       uint8_t            SFRAddress,
+                                       uint8_t *          SFRValue,
+                                       struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                      = SPI_TDME_GETSFR_REQUEST;
@@ -976,7 +991,7 @@ uint8_t TDME_GETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t *S
 
 	*SFRValue = Response.PData.TDMEGetSFRCnf.SFRValue;
 
-	return Response.PData.TDMEGetSFRCnf.Status;
+	return (ca_mac_status)Response.PData.TDMEGetSFRCnf.Status;
 } // End of TDME_GETSFR_request_sync()
 
 /******************************************************************************/
@@ -989,7 +1004,7 @@ uint8_t TDME_GETSFR_request_sync(uint8_t SFRPage, uint8_t SFRAddress, uint8_t *S
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                      = SPI_TDME_TESTMODE_REQUEST;
@@ -1002,7 +1017,7 @@ uint8_t TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceR
 	if (Response.CommandId != SPI_TDME_TESTMODE_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.TDMETestModeCnf.Status;
+	return (ca_mac_status)Response.PData.TDMETestModeCnf.Status;
 } // End of TDME_TESTMODE_request_sync()
 
 /******************************************************************************/
@@ -1017,10 +1032,10 @@ uint8_t TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceR
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_SET_request_sync(uint8_t            TestAttribute,
-                              uint8_t            TestAttributeLength,
-                              void *             pTestAttributeValue,
-                              struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_SET_request_sync(uint8_t            TestAttribute,
+                                    uint8_t            TestAttributeLength,
+                                    void *             pTestAttributeValue,
+                                    struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
 	struct MAC_Message Command, Response;
@@ -1028,7 +1043,7 @@ uint8_t TDME_SET_request_sync(uint8_t            TestAttribute,
 	{
 		status = TDME_ChannelInit(*((uint8_t *)pTestAttributeValue), pDeviceRef);
 		if (status)
-			return status;
+			return (ca_mac_status)status;
 	}
 
 	Command.CommandId                          = SPI_TDME_SET_REQUEST;
@@ -1043,7 +1058,7 @@ uint8_t TDME_SET_request_sync(uint8_t            TestAttribute,
 	if (Response.CommandId != SPI_TDME_SET_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-	return Response.PData.TDMESetCnf.Status;
+	return (ca_mac_status)Response.PData.TDMESetCnf.Status;
 } // End of TDME_SET_request_sync()
 
 /******************************************************************************/
@@ -1059,11 +1074,11 @@ uint8_t TDME_SET_request_sync(uint8_t            TestAttribute,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
-                                uint8_t *          TestPacketSequenceNumber,
-                                uint8_t *          TestPacketLength,
-                                void *             pTestPacketData,
-                                struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
+                                      uint8_t *          TestPacketSequenceNumber,
+                                      uint8_t *          TestPacketLength,
+                                      void *             pTestPacketData,
+                                      struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId = SPI_TDME_TXPKT_REQUEST;
@@ -1096,7 +1111,7 @@ uint8_t TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
 		memcpy(pTestPacketData, Response.PData.TDMETxPktCnf.TestPacketData, *TestPacketLength);
 	}
 
-	return Response.PData.TDMETxPktCnf.Status;
+	return (ca_mac_status)Response.PData.TDMETxPktCnf.Status;
 } // End of TDME_TXPKT_request_sync()
 
 /******************************************************************************/
@@ -1113,12 +1128,12 @@ uint8_t TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_LOTLK_request_sync(uint8_t *          TestChannel,
-                                uint8_t *          TestRxTxb,
-                                uint8_t *          TestLOFDACValue,
-                                uint8_t *          TestLOAMPValue,
-                                uint8_t *          TestLOTXCALValue,
-                                struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_LOTLK_request_sync(uint8_t *          TestChannel,
+                                      uint8_t *          TestRxTxb,
+                                      uint8_t *          TestLOFDACValue,
+                                      uint8_t *          TestLOAMPValue,
+                                      uint8_t *          TestLOTXCALValue,
+                                      struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message Command, Response;
 	Command.CommandId                      = SPI_TDME_LOTLK_REQUEST;
@@ -1141,7 +1156,7 @@ uint8_t TDME_LOTLK_request_sync(uint8_t *          TestChannel,
 		*TestLOTXCALValue = Response.PData.TDMELOTlkCnf.TestLOTXCALValue;
 	}
 
-	return Response.PData.TDMELOTlkCnf.Status;
+	return (ca_mac_status)Response.PData.TDMELOTlkCnf.Status;
 } // End of TDME_LOTLK_request_sync()
 
 /******************************************************************************/
@@ -1153,38 +1168,38 @@ uint8_t TDME_LOTLK_request_sync(uint8_t *          TestChannel,
  * \return 802.15.4 status of constituent commands
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_ChipInit(struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
 
 	if ((status = TDME_SETSFR_request_sync(1, 0xE1, 0x29, pDeviceRef))) // LNA Gain Settings
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE2, 0x54, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE3, 0x6C, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE4, 0x7A, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE5, 0x84, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE6, 0x8B, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE7, 0x92, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xE9, 0x96, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xD3, 0x5B, pDeviceRef))) // Preamble Timing Config
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xD1, 0x5A, pDeviceRef))) // Preamble Threshold High
-		return (status);
+		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(0, 0xFE, 0x3F, pDeviceRef))) // Tx Output Power 8 dBm
-		return (status);
+		return (ca_mac_status)(status);
 
 #if CASCODA_CA_VER == 8210
 	/* Set hardware lqi limit to 0 to disable lqi-based frame filtering */
 	uint8_t lqi_limit = 0;
 	if ((status = HWME_SET_request_sync(0x11, 1, &lqi_limit, pDeviceRef)))
-		return (status);
+		return (ca_mac_status)(status);
 #endif
 
 	return MAC_SUCCESS;
@@ -1200,7 +1215,7 @@ uint8_t TDME_ChipInit(struct ca821x_dev *pDeviceRef)
  * \return: 802.15.4 status of constituent commands
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t txcalval;
 
@@ -1255,7 +1270,7 @@ uint8_t TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef)
  * \return 802.15.4 status
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength, const void *pPIBAttributeValue)
+ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength, const void *pPIBAttributeValue)
 {
 	uint8_t status = MAC_SUCCESS;
 	uint8_t value;
@@ -1339,7 +1354,7 @@ uint8_t TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength,
 		break;
 	}
 
-	return status;
+	return (ca_mac_status)status;
 }
 
 /******************************************************************************/
@@ -1356,7 +1371,7 @@ uint8_t TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength,
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
 	int8_t  txp_val;
@@ -1433,7 +1448,7 @@ uint8_t TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
 		status = TDME_SETSFR_request_sync(0, 0xFE, paib, pDeviceRef);
 	}
 
-	return status;
+	return (ca_mac_status)status;
 }
 
 /******************************************************************************/
@@ -1450,7 +1465,7 @@ uint8_t TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-uint8_t TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
+ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
 	uint8_t paib;
@@ -1506,19 +1521,7 @@ uint8_t TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 		// txp += (0x02 << 6);  /* tolerance +-6 dB */
 	}
 
-	return status;
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Register callback routines for processing received commands
- *******************************************************************************
- * \param *in_callbacks - Set of available functions
- *******************************************************************************
- ******************************************************************************/
-void ca821x_register_callbacks(struct ca821x_api_callbacks *in_callbacks, struct ca821x_dev *pDeviceRef)
-{
-	memcpy(&(pDeviceRef->callbacks), in_callbacks, sizeof(struct ca821x_api_callbacks));
+	return (ca_mac_status)status;
 }
 
 /******************************************************************************/
@@ -1534,7 +1537,8 @@ void ca821x_register_callbacks(struct ca821x_api_callbacks *in_callbacks, struct
  *         -EFAULT: Address mismatch (unix)
  *******************************************************************************
  ******************************************************************************/
-static int check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct ca821x_dev *pDeviceRef)
+#if (CASCODA_CA_VER == 8210)
+static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct ca821x_dev *pDeviceRef)
 {
 	int i;
 	if (ind->Dst.AddressMode == MAC_MODE_SHORT_ADDR)
@@ -1542,11 +1546,7 @@ static int check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct
 		if (GETLE16(ind->Dst.Address) != MAC_BROADCAST_ADDRESS &&
 		    memcmp(ind->Dst.Address, &(pDeviceRef->shortaddr), 2) && pDeviceRef->shortaddr != 0xFFFF)
 		{
-#ifdef __unix__
-			return -EFAULT;
-#else
-			return -1;
-#endif
+			return (CA_ERROR_FAIL);
 		}
 	}
 	else if (ind->Dst.AddressMode == MAC_MODE_LONG_ADDR)
@@ -1556,19 +1556,16 @@ static int check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct
 			for (i = 0; i < 9; i++)
 			{
 				if (i == 8)
-					return 0;
+					return (CA_ERROR_SUCCESS);
 				else if (pDeviceRef->extaddr[i] != 0)
 					break;
 			}
-#ifdef __unix__
-			return -EFAULT;
-#else
-			return -1;
-#endif
+			return (CA_ERROR_FAIL);
 		}
 	}
-	return 0;
+	return (CA_ERROR_SUCCESS);
 }
+#endif //(CASCODA_CA_VER == 8210)
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -1577,6 +1574,7 @@ static int check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct
  * \param *assoc_cnf - Associate confirm parameter set
  *******************************************************************************
  ******************************************************************************/
+#if CASCODA_CA_VER == 8210
 static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf, struct ca821x_dev *pDeviceRef)
 {
 	if (GETLE16(assoc_cnf->AssocShortAddress) != 0xFFFF)
@@ -1584,6 +1582,7 @@ static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf
 		pDeviceRef->shortaddr = GETLE16(assoc_cnf->AssocShortAddress);
 	}
 }
+#endif
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -1593,6 +1592,7 @@ static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf
  * \param *scan_cnf - Scan confirm message buffer
  *******************************************************************************
  ******************************************************************************/
+#if CASCODA_CA_VER == 8210
 static void verify_scancnf_results(struct MAC_Message *scan_cnf, struct ca821x_dev *pDeviceRef)
 {
 	struct MLME_SCAN_confirm_pset *scan_cnf_pset;
@@ -1635,6 +1635,7 @@ static void verify_scancnf_results(struct MAC_Message *scan_cnf, struct ca821x_d
 		scan_cnf_pset->Status = MAC_NO_BEACON;
 	}
 }
+#endif
 
 union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev *pDeviceRef)
 {
@@ -1715,47 +1716,45 @@ union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev 
  * \param len - Length of command in octets
  * \param *pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
- * \return 0: command was unhandled<br>
- *         1: command was handled<br>
- *         -: errno status
+ * \return CA_ERROR_NOT_HANDLED: command was unhandled<br>
+ *         CA_ERROR_SUCCESS: command was handled<br>
+ *         CA_ERROR_*: any other error
  *******************************************************************************
  ******************************************************************************/
-int ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	int ret = 0;
+	ca_error ret = CA_ERROR_NOT_HANDLED;
 
 	union ca821x_api_callback *rval = ca821x_get_callback(buf[0], pDeviceRef);
 
 	if (!rval) //Unrecognised command ID
 	{
-#ifdef __unix__
-		return -EINVAL;
-#else
-		return -ERANGE;
-#endif
+		ret = CA_ERROR_INVALID_ARGS;
+		goto exit;
 	}
 
 	/* call appropriate checks/updates/workarounds */
+#if CASCODA_CA_VER == 8210
 	switch (buf[0])
 	{
 	case SPI_MCPS_DATA_INDICATION:
-#if CASCODA_CA_VER == 8210
 		ret = check_data_ind_destaddr((struct MCPS_DATA_indication_pset *)(buf + 2), pDeviceRef);
 		if (ret)
 		{
-			return ret;
+			goto exit;
 		}
-#endif
-		break;
-	case SPI_MLME_ASSOCIATE_CONFIRM:
-		get_assoccnf_shortaddr((struct MLME_ASSOCIATE_confirm_pset *)(buf + 2), pDeviceRef);
 		break;
 	case SPI_MLME_SCAN_CONFIRM:
 		verify_scancnf_results((struct MAC_Message *)buf, pDeviceRef);
 		break;
+	case SPI_MLME_ASSOCIATE_CONFIRM:
+		get_assoccnf_shortaddr((struct MLME_ASSOCIATE_confirm_pset *)(buf + 2), pDeviceRef);
+		break;
 	}
+#endif
 
 	//If there is a callback registered, call it. Otherwise, call the generic dispatch.
+	ret = CA_ERROR_NOT_HANDLED;
 	if (rval->generic_callback)
 	{
 		ret = rval->generic_callback(buf + 2, pDeviceRef);
@@ -1765,5 +1764,6 @@ int ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDev
 		ret = pDeviceRef->callbacks.generic_dispatch(buf, len, pDeviceRef);
 	}
 
+exit:
 	return ret;
 }

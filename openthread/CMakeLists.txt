@@ -27,13 +27,10 @@ set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
        "The arguments to be passed to configure when configuring openthread"
 )
 
-set(CASCODA_LOG_LEVELS NONE CRIT WARN NOTE INFO DEBG)
-set(CASCODA_LOG_LEVEL CRIT CACHE STRING "The minimum log level to print messages for. eg. NONE, CRIT, WARN, NOTE, INFO, DEBG")
-set_property(CACHE CASCODA_LOG_LEVEL PROPERTY STRINGS ${CASCODA_LOG_LEVELS})
-
-if(NOT CASCODA_LOG_LEVEL IN_LIST CASCODA_LOG_LEVELS)
-	message(FATAL_ERROR "CASCODA_LOG_LEVEL must be one of ${CASCODA_LOG_LEVELS}")
-endif()
+cascoda_dropdown(CASCODA_LOG_LEVEL
+	"The minimum log level to print messages for"
+	CRIT WARN NOTE INFO DEBG
+	)
 
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
@@ -60,7 +57,7 @@ ExternalProject_Add(
   openthread-build
   SOURCE_DIR ${openthread_SOURCE_DIR}
   BINARY_DIR ${openthread_BINARY_DIR}
-  CONFIGURE_COMMAND cd ${openthread_SOURCE_DIR} && ./bootstrap && cd ${openthread_SOURCE_DIR}
+  CONFIGURE_COMMAND cd ${openthread_SOURCE_DIR}
 	    COMMAND ${openthread_SOURCE_DIR}/configure ${CASCODA_OPENTHREAD_CONFIGURE_OPTS}
 	    "CXX=${CMAKE_CXX_COMPILER}"
 	    "CPP=${CMAKE_C_COMPILER} -E"
@@ -75,7 +72,8 @@ ExternalProject_Add(
 	    "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS}"
 	    "--host=${MACHINE_NAME}"
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
-  DOWNLOAD_COMMAND  ""
+  BUILD_ALWAYS ON
+  DOWNLOAD_COMMAND  cd ${openthread_SOURCE_DIR} && ./bootstrap
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""
 )
@@ -150,7 +148,3 @@ configure_file(
 	"${PROJECT_SOURCE_DIR}/include/ca821x-openthread-config.h.in"
 	"${PROJECT_BINARY_DIR}/include/ca821x-openthread-config.h"
 	)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests

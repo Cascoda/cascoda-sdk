@@ -308,7 +308,7 @@ void PHYTestReceivePacketPER(struct ca821x_dev *pDeviceRef)
 	/* 1.0 * PACKETPERIOD when previous packet was missed */
 	/* 1.5 * PACKETPERIOD when previous packet was received */
 	if (((msElapsed > PHY_TESTPAR.PACKETPERIOD) && missed_last) ||
-	    ((msElapsed > M1P5(PHY_TESTPAR.PACKETPERIOD)) && ~missed_last))
+	    ((msElapsed > M1P5(PHY_TESTPAR.PACKETPERIOD)) && !missed_last))
 		missed_packet = 1;
 	else
 		missed_packet = 0;
@@ -398,6 +398,8 @@ void PHYTestReceivePacketPSN(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 void PHYTestReceiveED(struct ca821x_dev *pDeviceRef)
 {
+	(void)pDeviceRef;
+
 	if (PHY_TESTRES.PACKET_RECEIVED)
 	{
 		PHY_TESTRES.PACKET_RECEIVED = 0;
@@ -809,7 +811,9 @@ void PHYTestReportTestParameters(uint8_t parameter)
 	if ((parameter == PHY_TESTPAR_ALL) || (parameter == PHY_TESTPAR_CHANNEL))
 		printf("CHANNEL        = %u (%02X)\n", PHY_TESTPAR.CHANNEL, PHY_TESTPAR.CHANNEL);
 	if ((parameter == PHY_TESTPAR_ALL) || (parameter == PHY_TESTPAR_TXPOWER))
-		printf("TXPOWER        = IB: %u; PB: %u; BOOST: %u\n", PHY_TESTPAR.TXPOWER_IB, PHY_TESTPAR.TXPOWER_PB,
+		printf("TXPOWER        = IB: %u; PB: %u; BOOST: %u\n",
+		       PHY_TESTPAR.TXPOWER_IB,
+		       PHY_TESTPAR.TXPOWER_PB,
 		       PHY_TESTPAR.TXPOWER_BOOST);
 	if ((parameter == PHY_TESTPAR_ALL) || (parameter == PHY_TESTPAR_EDTHRESHOLD))
 		printf("EDTHRESHOLD    = %u\n", PHY_TESTPAR.EDTHRESHOLD);
@@ -842,7 +846,8 @@ void PHYTestReportPacketTransmitted(struct MAC_Message *msg, uint8_t status)
 	}
 	else
 	{
-		printf("Tx: SN=%3u PL=%3u:", msg->PData.TDMETxPktReq.TestPacketSequenceNumber,
+		printf("Tx: SN=%3u PL=%3u:",
+		       msg->PData.TDMETxPktReq.TestPacketSequenceNumber,
 		       msg->PData.TDMETxPktReq.TestPacketLength);
 		for (i = 0; i < msg->PData.TDMETxPktReq.TestPacketLength - 2; ++i)
 			printf(" %02X", msg->PData.TDMETxPktReq.TestPacketData[i]);
@@ -909,8 +914,11 @@ void PHYTestReportReceivedPacketAnalysis(void)
 	{
 		if (PHY_TESTPAR.RX_FFSYNC)
 		{
-			printf("Rx Error  Analysis: CRC: %u; PHR: %u; SHR: %u; PRE: %u; Missed: %u\n", PHY_TESTRES.CRCERR_COUNT,
-			       PHY_TESTRES.PHRERR_COUNT, PHY_TESTRES.SHRERR_COUNT, PHY_TESTRES.PREERR_COUNT,
+			printf("Rx Error  Analysis: CRC: %u; PHR: %u; SHR: %u; PRE: %u; Missed: %u\n",
+			       PHY_TESTRES.CRCERR_COUNT,
+			       PHY_TESTRES.PHRERR_COUNT,
+			       PHY_TESTRES.SHRERR_COUNT,
+			       PHY_TESTRES.PREERR_COUNT,
 			       PHY_TESTRES.MISSED_COUNT);
 		}
 		else
@@ -938,17 +946,26 @@ void PHYTestReportTestResult(void)
 
 	if (PHY_TESTPAR.RX_FFSYNC)
 	{
-		printf("Error Analysis: CRC: %u; PHR: %u; SHR: %u; PRE: %u Missed: %u\n", PHY_TESTRES.CRCERR_COUNT,
-		       PHY_TESTRES.PHRERR_COUNT, PHY_TESTRES.SHRERR_COUNT, PHY_TESTRES.PREERR_COUNT, PHY_TESTRES.MISSED_COUNT);
+		printf("Error Analysis: CRC: %u; PHR: %u; SHR: %u; PRE: %u Missed: %u\n",
+		       PHY_TESTRES.CRCERR_COUNT,
+		       PHY_TESTRES.PHRERR_COUNT,
+		       PHY_TESTRES.SHRERR_COUNT,
+		       PHY_TESTRES.PREERR_COUNT,
+		       PHY_TESTRES.MISSED_COUNT);
 	}
 	else
 	{
 		printf("Error Analysis: CRC: %u; Missed: %u\n", PHY_TESTRES.CRCERR_COUNT, PHY_TESTRES.MISSED_COUNT);
 	}
-	printf("Rx Overall Averages: ED: %u; CS: %u; FO: %d\n", PHY_TESTRES.ED_AVG_TOTAL, PHY_TESTRES.CS_AVG_TOTAL,
+	printf("Rx Overall Averages: ED: %u; CS: %u; FO: %d\n",
+	       PHY_TESTRES.ED_AVG_TOTAL,
+	       PHY_TESTRES.CS_AVG_TOTAL,
 	       PHY_TESTRES.FO_AVG_TOTAL);
-	printf("Rx Min/Max Analysis: ED Max: %u; ED Min: %u; CS Max: %u; CS Min: %u\n", PHY_TESTRES.ED_MAX,
-	       PHY_TESTRES.ED_MIN, PHY_TESTRES.CS_MAX, PHY_TESTRES.CS_MIN);
+	printf("Rx Min/Max Analysis: ED Max: %u; ED Min: %u; CS Max: %u; CS Min: %u\n",
+	       PHY_TESTRES.ED_MAX,
+	       PHY_TESTRES.ED_MIN,
+	       PHY_TESTRES.CS_MAX,
+	       PHY_TESTRES.CS_MIN);
 	if (PHY_TESTPAR.RX_FFSYNC)
 	{
 		printf("Rx Missed Pkt Analysis: SHR: %u; PHR: %u\n", PHY_TESTRES.SHRERR_COUNT, PHY_TESTRES.PHRERR_COUNT);
@@ -968,8 +985,12 @@ void PHYTestReportEDReceived(struct TDME_EDDET_indication_pset *params)
 
 	tat = ((uint16_t)(params->TestTimeAboveThreshold_us[1]) << 8) + (uint16_t)(params->TestTimeAboveThreshold_us[0]);
 
-	printf("ED above %3u: ED=%3u; CS=%3u; THigh=%5u us; N=%u\n", params->TestEDThreshold, params->TestEDValue,
-	       params->TestCSValue, tat, PHY_TESTRES.PACKET_COUNT);
+	printf("ED above %3u: ED=%3u; CS=%3u; THigh=%5u us; N=%u\n",
+	       params->TestEDThreshold,
+	       params->TestEDValue,
+	       params->TestCSValue,
+	       tat,
+	       PHY_TESTRES.PACKET_COUNT);
 
 } // End of PHYTestReportEDReceived()
 
@@ -986,8 +1007,8 @@ void PHYTestReportLOLocking(struct TDME_LOTLK_confirm_pset *params, uint8_t ntes
 		printf("Rx");
 	else
 		printf("Tx");
-	printf(" Ch=%3u N=%3u FDAC=%3u AMP=%3u", params->TestChannel, ntest, params->TestLOFDACValue,
-	       params->TestLOAMPValue);
+	printf(
+	    " Ch=%3u N=%3u FDAC=%3u AMP=%3u", params->TestChannel, ntest, params->TestLOFDACValue, params->TestLOAMPValue);
 	if (!params->TestRxTxb)
 		printf(" TXCAL=%3u", params->TestLOTXCALValue);
 	if (params->Status == TDME_LO_ERROR)
@@ -1155,9 +1176,11 @@ uint8_t PHY_TXPKT_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef
 			msg->PData.TDMETxPktReq.TestPacketData[i] = 0x00; /* currently filled with 0's */
 	}
 
-	status = TDME_TXPKT_request_sync(
-	    msg->PData.TDMETxPktReq.TestPacketDataType, &msg->PData.TDMETxPktReq.TestPacketSequenceNumber,
-	    &msg->PData.TDMETxPktReq.TestPacketLength, msg->PData.TDMETxPktReq.TestPacketData, pDeviceRef);
+	status = TDME_TXPKT_request_sync(msg->PData.TDMETxPktReq.TestPacketDataType,
+	                                 &msg->PData.TDMETxPktReq.TestPacketSequenceNumber,
+	                                 &msg->PData.TDMETxPktReq.TestPacketLength,
+	                                 msg->PData.TDMETxPktReq.TestPacketData,
+	                                 pDeviceRef);
 
 	++PHY_TESTRES.SEQUENCENUMBER;
 	return status;
@@ -1181,8 +1204,12 @@ uint8_t PHY_LOTLK_request(uint8_t ch, uint8_t rx_txb, uint8_t ntest, struct ca82
 	params.TestChannel = ch;
 	params.TestRxTxb   = rx_txb;
 
-	params.Status = TDME_LOTLK_request_sync(&params.TestChannel, &params.TestRxTxb, &params.TestLOFDACValue,
-	                                        &params.TestLOAMPValue, &params.TestLOTXCALValue, pDeviceRef);
+	params.Status = TDME_LOTLK_request_sync(&params.TestChannel,
+	                                        &params.TestRxTxb,
+	                                        &params.TestLOFDACValue,
+	                                        &params.TestLOAMPValue,
+	                                        &params.TestLOTXCALValue,
+	                                        pDeviceRef);
 
 	PHYTestReportLOLocking(&params, ntest);
 
@@ -1204,6 +1231,8 @@ uint8_t PHY_LOTLK_request(uint8_t ch, uint8_t rx_txb, uint8_t ntest, struct ca82
  ******************************************************************************/
 int PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
+	(void)pDeviceRef;
+
 	switch (params->Status)
 	{
 	case TDME_LO_ERROR:
@@ -1224,8 +1253,8 @@ int PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821
 
 	PHY_TESTRES.PACKET_RECEIVED = 1; /* Flag indication */
 
-	PHYTestStatistics(TEST_STAT_ACCUM, params->TestPacketEDValue, params->TestPacketCSValue,
-	                  params->TestPacketFoffsValue);
+	PHYTestStatistics(
+	    TEST_STAT_ACCUM, params->TestPacketEDValue, params->TestPacketCSValue, params->TestPacketFoffsValue);
 
 	if ((PHY_TESTPAR.PACKETPERIOD >= 500) || (PHY_TESTMODE == PHY_TEST_RX_PSN))
 		PHYTestReportPacketReceived(params);
@@ -1245,8 +1274,9 @@ int PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821
  ******************************************************************************/
 int PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
-	PHY_TESTRES.PACKET_RECEIVED = 1; /* Flag indication */
+	(void)pDeviceRef;
 
+	PHY_TESTRES.PACKET_RECEIVED = 1; /* Flag indication */
 	PHYTestReportEDReceived(params);
 
 	return 0;

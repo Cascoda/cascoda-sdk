@@ -46,11 +46,12 @@ void EVBME_PHY_REPORT_request(void);
 void TEST15_4_SetupAwaitAssoc(uint8_t *pDeviceAddress, uint16_t AssocShortAddress, uint8_t Status);
 void TEST15_4_SetupAwaitOrphan(uint8_t *pDeviceAddress, uint16_t OrphanShortAddress);
 /* Callbacks */
-static int TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static int TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static int TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static int TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static int TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
-void       TEST15_4_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
+static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params,
+                                             struct ca821x_dev *                    pDeviceRef);
+static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
+void            TEST15_4_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
 
 #endif // TEST15_4_EVBME_H

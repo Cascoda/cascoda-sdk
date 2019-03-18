@@ -60,6 +60,7 @@ target_include_directories( ca821x-posix
 		${PROJECT_SOURCE_DIR}/include
 		${PROJECT_BINARY_DIR}/include
 	)
+	cascoda_use_warnings(ca821x-posix)
 
 # Test app config -------------------------------------------------------------
 add_executable(example_app
@@ -72,7 +73,3 @@ add_executable(security_test
 
 target_link_libraries(example_app ca821x-api ca821x-posix)
 target_link_libraries(security_test ca821x-api ca821x-posix)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests

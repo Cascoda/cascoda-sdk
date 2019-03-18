@@ -573,7 +573,7 @@ void populate_response(uint8_t request_id, uint8_t *response)
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-int verify_command(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error verify_command(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t *reference_buffer = NULL;
 	int      reference_len    = 0;
@@ -755,8 +755,14 @@ int api_functions_test(void)
 	memcpy(msdu_buffer, (uint8_t[]){TEST_MSDU}, TEST_MSDULENGTH);
 	memcpy(haesdata, (uint8_t[]){TEST_HAESDATA}, sizeof(haesdata));
 	printf("%-35s", "MCPS_DATA_request()... ");
-	ret = MCPS_DATA_request(MAC_MODE_SHORT_ADDR, full_address, TEST_MSDULENGTH, msdu_buffer, TEST_MSDUHANDLE, 0x00,
-	                        &test_secspec, &test_dev);
+	ret = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,
+	                        full_address,
+	                        TEST_MSDULENGTH,
+	                        msdu_buffer,
+	                        TEST_MSDUHANDLE,
+	                        0x00,
+	                        &test_secspec,
+	                        &test_dev);
 	print_result(ret);
 	printf("%-35s", "MCPS_PURGE_request_sync()... ");
 	ret = MCPS_PURGE_request_sync(&msduhandle, &test_dev);
@@ -789,15 +795,16 @@ int api_functions_test(void)
 	ret = MLME_SCAN_request(ACTIVE_SCAN, 0x07FFF800, 0x01, &test_secspec, &test_dev);
 	print_result(ret);
 	printf("%-35s", "MLME_START_request_sync()... ");
-	ret = MLME_START_request_sync(GETLE16(full_address.PANId), TEST_CHANNEL, 0x0F, 0x0F, 0, 0, 0, &test_secspec,
-	                              &test_secspec, &test_dev);
+	ret = MLME_START_request_sync(
+	    GETLE16(full_address.PANId), TEST_CHANNEL, 0x0F, 0x0F, 0, 0, 0, &test_secspec, &test_secspec, &test_dev);
 	print_result(ret);
 	printf("%-35s", "MLME_POLL_request_sync()... ");
 	ret = MLME_POLL_request_sync(full_address,
 #if CASCODA_CA_VER == 8210
 	                             interval,
 #endif
-	                             &test_secspec, &test_dev);
+	                             &test_secspec,
+	                             &test_dev);
 	print_result(ret);
 	printf("%-35s", "HWME_SET_request_sync()... ");
 	ret = HWME_SET_request_sync(TEST_HWATTRIBUTE, 1, &hwattributevalue, &test_dev);
@@ -837,18 +844,18 @@ int api_functions_test(void)
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.data_ind)
 	{
 		tcontext->dflags.data_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -858,18 +865,18 @@ int test_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params, struct c
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.data_cnf)
 	{
 		tcontext->dflags.data_cnf = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -879,18 +886,18 @@ int test_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.assoc_ind)
 	{
 		tcontext->dflags.assoc_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -900,18 +907,18 @@ int test_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_indication_pset *params
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.assoc_cnf)
 	{
 		tcontext->dflags.assoc_cnf = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -921,18 +928,19 @@ int test_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params, stru
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_DISASSOCIATE_indication(struct MLME_DISASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_DISASSOCIATE_indication(struct MLME_DISASSOCIATE_indication_pset *params,
+                                           struct ca821x_dev *                       pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.disassoc_ind)
 	{
 		tcontext->dflags.disassoc_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -942,18 +950,18 @@ int test_MLME_DISASSOCIATE_indication(struct MLME_DISASSOCIATE_indication_pset *
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_DISASSOCIATE_confirm(struct MLME_DISASSOCIATE_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_DISASSOCIATE_confirm(struct MLME_DISASSOCIATE_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.disassoc_cnf)
 	{
 		tcontext->dflags.disassoc_cnf = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -963,18 +971,19 @@ int test_MLME_DISASSOCIATE_confirm(struct MLME_DISASSOCIATE_confirm_pset *params
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_BEACON_NOTIFY_indication(struct MLME_BEACON_NOTIFY_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_BEACON_NOTIFY_indication(struct MLME_BEACON_NOTIFY_indication_pset *params,
+                                            struct ca821x_dev *                        pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.beacon_notify_ind)
 	{
 		tcontext->dflags.beacon_notify_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -984,18 +993,18 @@ int test_MLME_BEACON_NOTIFY_indication(struct MLME_BEACON_NOTIFY_indication_pset
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_ORPHAN_indication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_ORPHAN_indication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.orphan_ind)
 	{
 		tcontext->dflags.orphan_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1005,18 +1014,18 @@ int test_MLME_ORPHAN_indication(struct MLME_ORPHAN_indication_pset *params, stru
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.scan_cnf)
 	{
 		tcontext->dflags.scan_cnf = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1026,18 +1035,19 @@ int test_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
+                                          struct ca821x_dev *                      pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.comm_status_ind)
 	{
 		tcontext->dflags.comm_status_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1047,18 +1057,18 @@ int test_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *pa
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_MLME_SYNC_LOSS_indication(struct MLME_SYNC_LOSS_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_MLME_SYNC_LOSS_indication(struct MLME_SYNC_LOSS_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.sync_loss_ind)
 	{
 		tcontext->dflags.sync_loss_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1068,18 +1078,18 @@ int test_MLME_SYNC_LOSS_indication(struct MLME_SYNC_LOSS_indication_pset *params
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.wakeup_ind)
 	{
 		tcontext->dflags.wakeup_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1089,18 +1099,18 @@ int test_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params, stru
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_TDME_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_TDME_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.rxpkt_ind)
 	{
 		tcontext->dflags.rxpkt_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1110,18 +1120,18 @@ int test_TDME_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_TDME_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_TDME_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.eddet_ind)
 	{
 		tcontext->dflags.eddet_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1131,18 +1141,18 @@ int test_TDME_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct
  * \param params - Primitive parameters
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_TDME_ERROR_indication(struct TDME_ERROR_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error test_TDME_ERROR_indication(struct TDME_ERROR_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.error_ind)
 	{
 		tcontext->dflags.error_ind = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1153,18 +1163,18 @@ int test_TDME_ERROR_indication(struct TDME_ERROR_indication_pset *params, struct
  * \param len - Length of message
  * \param pDeviceRef - Device reference
  *******************************************************************************
- * \return 1 if this callback was expected, 0 otherwise
+ * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-int test_generic_dispatch(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error test_generic_dispatch(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.generic)
 	{
 		tcontext->dflags.generic = 0;
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /******************************************************************************/
@@ -1180,7 +1190,7 @@ int test_generic_dispatch(const uint8_t *buf, size_t len, struct ca821x_dev *pDe
  ******************************************************************************/
 void call_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	if (ca821x_downstream_dispatch(buf, len, pDeviceRef))
+	if (ca821x_downstream_dispatch(buf, len, pDeviceRef) == CA_ERROR_SUCCESS)
 	{
 		printf(ANSI_COLOR_GREEN "Success\n" ANSI_COLOR_RESET);
 	}

@@ -82,14 +82,6 @@ void TEMPSENSE_APP_Coordinator_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	u8_t i;
 
-#if defined(USE_USB)
-	EVBME_Message = EVBME_Message_USB;
-	MAC_Message   = MAC_Message_USB;
-#elif defined(USE_UART)
-	EVBME_Message = EVBME_Message_UART;
-	MAC_Message   = MAC_Message_UART;
-#endif
-
 	/* disable watchdog timer for coordinator */
 	if (APP_USE_WATCHDOG)
 		BSP_WatchdogDisable();
@@ -365,10 +357,7 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 	u8_t            len;
 
 	/* get ed / rssi value for last data packet */
-	if (!pDeviceRef->MAC_Workarounds)
-	{
-		HWME_GET_request_sync(HWME_EDVALLP, &len, &edvallp, pDeviceRef);
-	}
+	HWME_GET_request_sync(HWME_EDVALLP, &len, &edvallp, pDeviceRef);
 
 	/* analyse packet */
 	panid    = (u16_t)(params->Src.PANId[1] << 8) + params->Src.PANId[0];
@@ -589,10 +578,7 @@ void TEMPSENSE_APP_Coordinator_DisplayData(u8_t                              dev
 	TEMPSENSE_APP_Coordinator_CheckLQI(params->Msdu[4], params->MpduLinkQuality);
 
 	/* ed / rssi */
-	if (!pDeviceRef->MAC_Workarounds)
-	{
-		TEMPSENSE_APP_Coordinator_CheckED(params->Msdu[5], edcoord);
-	}
+	TEMPSENSE_APP_Coordinator_CheckED(params->Msdu[5], edcoord);
 
 	printf("\n");
 
@@ -624,8 +610,10 @@ void TEMPSENSE_APP_Coordinator_CheckTimeouts(struct ca821x_dev *pDeviceRef)
 			if (tdiff > (1000 * APP_TIMEOUTINTERVALL))
 			{
 				TEMPSENSE_APP_PrintSeconds();
-				printf("Sensor %u (0x%08X) Timeout, disconnected; Devices connected: %u\n", i + 1,
-				       APP_DevLongAddrLSBs[i], (APP_NDEVICES - 1));
+				printf("Sensor %u (0x%08X) Timeout, disconnected; Devices connected: %u\n",
+				       i + 1,
+				       APP_DevLongAddrLSBs[i],
+				       (APP_NDEVICES - 1));
 				APP_DevState[i]        = APP_CST_DONE;
 				APP_DevAssociated[i]   = 0;
 				APP_DevTimeout[i]      = 0;

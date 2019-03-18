@@ -42,8 +42,11 @@
 #ifndef CASCODA_TYPES_H
 #define CASCODA_TYPES_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "cascoda-bm/cascoda_bm.h"
 
 /***************************************************************************/ /**
  * \defgroup FWidths Fixed width types
@@ -75,35 +78,5 @@ typedef int64_t  i64_t;
 /**@}*/
 
 #define NULLP 0 /**< NULL packet */
-
-/******************************************************************************/
-/****** Macros                                                           ******/
-/******************************************************************************/
-#ifndef _CASCODA_MACROS
-#define _CASCODA_MACROS
-
-#define LS_BYTE(x) ((u8_t)((x)&0xFF))
-#define MS_BYTE(x) ((u8_t)(((x) >> 8) & 0xFF))
-#define LS0_BYTE(x) ((u8_t)((x)&0xFF))
-#define LS1_BYTE(x) ((u8_t)(((x) >> 8) & 0xFF))
-#define LS2_BYTE(x) ((u8_t)(((x) >> 16) & 0xFF))
-#define LS3_BYTE(x) ((u8_t)(((x) >> 24) & 0xFF))
-
-#define GETLE16(x) (((u16_t)(x)[1] << 8) + (x)[0])
-#define GETLE32(x) (((u32_t)(x)[3] << 24) + ((u32_t)(x)[2] << 16) + ((u32_t)(x)[1] << 8) + (x)[0])
-#define PUTLE16(x, y)        \
-	{                        \
-		(y)[0] = ((x)&0xff); \
-		(y)[1] = ((x) >> 8); \
-	}
-#define PUTLE32(x, y)                  \
-	{                                  \
-		(y)[0] = ((x)&0xff);           \
-		(y)[1] = (((x) >> 8) & 0xff);  \
-		(y)[2] = (((x) >> 16) & 0xff); \
-		(y)[3] = (((x) >> 24) & 0xff); \
-	}
-
-#endif
 
 #endif // CASCODA_TYPES_H

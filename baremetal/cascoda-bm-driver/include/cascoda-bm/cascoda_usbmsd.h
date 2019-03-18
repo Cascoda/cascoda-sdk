@@ -32,16 +32,6 @@
 #define MSD_BULK_MAX_PKT_SIZE (64)
 
 /******************************************************************************/
-/****** Other descriptor defines                                         ******/
-/******************************************************************************/
-#define USB_BCDUSBVER 0x10, 0x01
-#define USB_BCDDEVVER 0x00, 0x00
-//#define USB_IDVENDOR            0x16, 0x04      //nuvoton
-//#define USB_IDPRODUCT           0x20, 0x50      //nuvoton
-#define USB_IDVENDOR 0x55, 0x1F     //fujitsu
-#define USB_IDPRODUCTMSD 0x0D, 0x00 //fujitsu
-
-/******************************************************************************/
 /****** Mass Storage Class-Specific Request Codes                        ******/
 /******************************************************************************/
 

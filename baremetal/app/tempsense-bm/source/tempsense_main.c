@@ -21,7 +21,6 @@
  */
 #include <stdlib.h>
 
-#include "cascoda-bm/cascoda_debug.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
@@ -35,9 +34,9 @@
 #include "test15_4_evbme.h"
 
 /******************************************************************************/
-/****** Function and Version                                             ******/
+/****** Application Name                                                 ******/
 /******************************************************************************/
-#define FUNCTION_VERSION "TEMPSENSE V6.0"
+#define APP_NAME "TEMPSENSE"
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -77,9 +76,9 @@ int main(void)
 	cascoda_serial_dispatch = tempsense_serial_dispatch;
 
 	/* Initialisation of Chip and EVBME */
-	/* Returns a Status of EVBME_SUCCESS/EVBME_FAIL for further Action */
+	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
 	/* in case there is no UpStream Communications Channel available */
-	StartupStatus = EVBMEInitialise((uint8_t *)FUNCTION_VERSION, &dev);
+	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
 	/* Insert Application-Specific Initialisation Routines here */
 	TEST15_4_Initialise(&dev);
 	TEMPSENSE_Initialise(StartupStatus, &dev);

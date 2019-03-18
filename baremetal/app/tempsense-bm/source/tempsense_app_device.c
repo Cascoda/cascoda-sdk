@@ -92,9 +92,6 @@ void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 	APP_DEVICE_RETRIES = 0;
 	APP_DevTimeout     = TIME_ReadAbsoluteTime();
 
-	EVBME_Message = NULL;
-	MAC_Message   = NULL;
-
 	/* initialise PIB */
 	/* IEEE Address: upper 4 bytes are CA 5C 0D A0, lower 4 bytes are random */
 	APP_PANId        = MAC_PANID;
@@ -331,10 +328,7 @@ void TEMPSENSE_APP_Device_ProcessDataInd(struct MCPS_DATA_indication_pset *param
 	/* analyse C_DATA from coordinator */
 	lqi_device = params->MpduLinkQuality; /* cs */
 	ed_device  = 0;
-	if (!pDeviceRef->MAC_Workarounds)
-	{
-		HWME_GET_request_sync(HWME_EDVALLP, &len, &ed_device, pDeviceRef); /* ed */
-	}
+	HWME_GET_request_sync(HWME_EDVALLP, &len, &ed_device, pDeviceRef); /* ed */
 
 	/* coordinator address */
 	CoordFAdd.AddressMode = MAC_MODE_LONG_ADDR;

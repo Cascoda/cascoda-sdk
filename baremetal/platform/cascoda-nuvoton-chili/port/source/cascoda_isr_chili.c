@@ -1,10 +1,5 @@
-/**
- * @file cascoda_isr_chili.c
- * @brief This file contains interrupt service routines
- * @date 04, September, 2012
- *//*
- * Copyright (C) 2012-2014 Nuvoton Technology Corp. All rights reserved.
- * Copyright (C) 2016  Cascoda, Ltd.
+/*
+ * Copyright (C) 2019  Cascoda, Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//System
+/*
+ * Cascoda Interface to Vendor BSP/Library Support Package.
+ * MCU:    Nuvoton Nano120
+ * MODULE: Chili 1 (1.2, 1.3)
+ * Interrupt Service Routines (ISRs)
+*/
+/* System */
 #include <stdio.h>
-
-//Platform
+/* Platform */
+#include "Nano100Series.h"
+#include "gpio.h"
+#include "pwm.h"
+#include "timer.h"
+/* Cascoda */
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
@@ -31,68 +36,86 @@
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_usb.h"
-
-#include "Nano100Series.h"
-#include "gpio.h"
-#include "pwm.h"
-#include "timer.h"
 #if defined(USE_DEBUG)
 #include "cascoda_debug_chili.h"
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-extern u8_t asleep;
+extern volatile u8_t asleep;
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Hard Fault interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void HAL_IrqHandlerHardFault(void)
 {
 #if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_HARDFAULT; // just in case this returns without reset
-#endif                                     // USE_DEBUG
+	Debug_IRQ_State = DEBUG_IRQ_HARDFAULT; /* just in case this returns without reset */
+#endif                                     /* USE_DEBUG */
 
 	while (1)
 	{
 	}
 }
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Timer0 interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void TMR0_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER0;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-	// clear all timer interrupt status bits
+	/* clear all timer interrupt status bits */
 	TIMER0->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
 
 	if (asleep && USE_WATCHDOG_POWEROFF)
-		WDTimeout = 1; // timer0 acts as watchdog
+		WDTimeout = 1; /* timer0 acts as watchdog */
 	else
-		TIME_1msTick();
+		TIME_1msTick(); /* timer0 for system ticks */
 }
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Timer1 interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void TMR1_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER1;
-#endif // USE_DEBUG
-
-	// clear all timer interrupt status bits
+#endif /* USE_DEBUG */
+	/* clear all timer interrupt status bits */
 	TIMER1->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
 }
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Timer2 interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void TMR2_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER2;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-	// clear all timer interrupt status bits
+	/* clear all timer interrupt status bits */
 	TIMER2->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
-
-	CHILI_LEDBlink();
+	CHILI_LEDBlink(); /* timer2 for LED control */
 }
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Timer3 interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void TMR3_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
@@ -100,50 +123,50 @@ void TMR3_IRQHandler(void)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER3;
 	else
 		Debug_IRQ_State = DEBUG_IRQ_TIMER3;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-	// clear all timer interrupt status bits
+	/* clear all timer interrupt status bits */
 	TIMER3->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
-
 	printf("WD ISR\n");
-
-	// timer3 acts as watchdog
-	WDTimeout = 1;
+	WDTimeout = 1; /* timer3 acts as watchdog */
 }
 
-/**
-  * @brief  HIRC_IRQHandler, HIRC trim interrupt handler.
-  * @param  None.
-  * @retval None.
-  */
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: HIRC trim interrupt handler
+ *******************************************************************************
+ ******************************************************************************/
 void HIRC_IRQHandler(void)
 {
 	__IO uint32_t reg = SYS_GET_IRCTRIM_INT_FLAG();
-
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_HIRC;
 	else
 		Debug_IRQ_State = DEBUG_IRQ_HIRC;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
 	if (reg & BIT1)
 	{
+		/* Display HIRC trim status */
 		printf("Trim Failure Interrupt\n");
+		/* Clear Trim Failure Interrupt */
 		SYS_CLEAR_IRCTRIM_INT_FLAG(SYS_IRCTRIMINT_FAIL_INT);
 	}
 	if (reg & BIT2)
 	{
+		/* Display HIRC trim status */
+		printf("LXT Clock Error Interrupt\n");
+		/* Clear LXT Clock Error Interrupt */
 		SYS_CLEAR_IRCTRIM_INT_FLAG(SYS_IRCTRIMINT_32KERR_INT);
-		printf("LXT Clock Error Lock\n");
 	}
 }
 
-/**
-  * @brief  USBD_IRQHandler, USB interrupt handler.
-  * @param  None.
-  * @retval None.
-  */
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: USB device interrupt
+ *******************************************************************************
+ ******************************************************************************/
 void USBD_IRQHandler(void)
 {
 #if defined(USE_USB)
@@ -152,7 +175,7 @@ void USBD_IRQHandler(void)
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_USBD;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
 	if (u32INTSTS & USBD_INTSTS_FLDET)
 	{
@@ -175,17 +198,14 @@ void USBD_IRQHandler(void)
 		USBD_CLR_INT_FLAG(USBD_INTSTS_WAKEUP);
 	}
 
-#endif // USE_USB
+#endif /* USE_USB */
 }
 
-/*---------------------------------------------------------------------------------------------------------*/
-/* GPIO A,B,C ISR                                                                                          */
-/*---------------------------------------------------------------------------------------------------------*/
-/**
-  * @brief  GPABC_IRQHandler, GPIO PortA, PortB, PortC interrupt handler.
-  * @param  None.
-  * @retval None.
-  */
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: External interrupt from PA, PB and PC ports
+ *******************************************************************************
+ ******************************************************************************/
 void GPABC_IRQHandler(void)
 {
 	uint32_t            u32Status;
@@ -215,9 +235,9 @@ void GPABC_IRQHandler(void)
 				Debug_IRQ_State = DEBUG_IRQ_PA_SW2;
 		}
 	}
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-	// PA.9
+	/* PA.9: SW2 */
 	if (u32Status & BIT9)
 	{
 		if (button1_pressed)
@@ -226,7 +246,7 @@ void GPABC_IRQHandler(void)
 		}
 	}
 
-	// PA.10
+	/* PA.10: RFIRQ */
 	if (u32Status & BIT10)
 	{
 		if (asleep)
@@ -268,12 +288,12 @@ void GPABC_IRQHandler(void)
 				Debug_IRQ_State = DEBUG_IRQ_PBC_USBPRESENT;
 		}
 	}
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
-	// USBPresent GPIO
+	/* USBPresent GPIO */
 	if (u32Status & USBP_PINMASK)
 	{
-		// get USBPresent State and re-initialise System
+		/* get USBPresent State and re-initialise System */
 		USBPresent = USBP_GPIO;
 		if (!USBPresent)
 		{
@@ -286,11 +306,11 @@ void GPABC_IRQHandler(void)
 	}
 }
 
-/**
-  * @brief  PDWU_IRQ Handler.
-  * @param  None.
-  * @return None.
-  */
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Clock controller interrupt for wake-up from power-down state
+ *******************************************************************************
+ ******************************************************************************/
 void PDWU_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
@@ -298,73 +318,22 @@ void PDWU_IRQHandler(void)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_PDWU;
 	else
 		Debug_IRQ_State = DEBUG_IRQ_PDWU;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
 	CLK->WK_INTSTS = CLK_WK_INTSTS_IS; /* clear interrupt */
 }
 
-void BOD_IRQHandler(void) // Brownout low voltage detected interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_BOD;
-#endif // USE_DEBUG
-}
-
-void WDT_IRQHandler(void) // Watch Dog Timer interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_WDT;
-#endif // USE_DEBUG
-}
-
-void EINT0_IRQHandler(void) // External signal interrupt from PB.14 pin
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_EINT0;
-#endif // USE_DEBUG
-}
-
-void EINT1_IRQHandler(void) // External signal interrupt from PB.15 pin
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_EINT1;
-#endif // USE_DEBUG
-}
-
-void GPDEF_IRQHandler(void) // External interrupt from PD[15:0]/PE[15:0]/PF[7:0]
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_GPDEF;
-#endif // USE_DEBUG
-}
-
-void PWM0_IRQHandler(void) // PWM 0 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_PWM0;
-#endif // USE_DEBUG
-}
-
-void PWM1_IRQHandler(void) // PWM 1 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_PWM1;
-#endif // USE_DEBUG
-}
-
-void UART0_IRQHandler(void) // UART0 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_UART0;
-#endif // USE_DEBUG
-}
-
-void UART1_IRQHandler(void) // UART1 interrupt
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: UART1
+ *******************************************************************************
+ ******************************************************************************/
+void UART1_IRQHandler(void)
 {
 #if defined(USE_DEBUG)
 	if (asleep)
 		Debug_IRQ_State = DEBUG_IRQ_WKUP_UART;
-#endif // USE_DEBUG
+#endif /* USE_DEBUG */
 
 #if defined(USE_UART)
 
@@ -376,103 +345,5 @@ void UART1_IRQHandler(void) // UART1 interrupt
 		}
 	}
 
-#endif // USE_UART
-}
-
-void SPI0_IRQHandler(void) // SPI0 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SPI0;
-#endif // USE_DEBUG
-}
-
-void SPI1_IRQHandler(void) // SPI1 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SPI1;
-#endif // USE_DEBUG
-}
-
-void SPI2_IRQHandler(void) // SPI2 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SPI2;
-#endif // USE_DEBUG
-}
-
-void I2C0_IRQHandler(void) // I2C0 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_I2C0;
-#endif // USE_DEBUG
-}
-
-void I2C1_IRQHandler(void) // I2C1 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_I2C1;
-#endif // USE_DEBUG
-}
-
-void SC0_IRQHandler(void) // SC0 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SC0;
-#endif // USE_DEBUG
-}
-
-void SC1_IRQHandler(void) // SC1 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SC1;
-#endif // USE_DEBUG
-}
-
-void SC2_IRQHandler(void) // SC2 interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_SC2;
-#endif // USE_DEBUG
-}
-
-void LCD_IRQHandler(void) // LCD interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_LCD;
-#endif // USE_DEBUG
-}
-
-void PDMA_IRQHandler(void) // PDMA interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_PDMA;
-#endif // USE_DEBUG
-}
-
-void I2S_IRQHandler(void) // I2S interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_I2S;
-#endif // USE_DEBUG
-}
-
-void ADC_IRQHandler(void) // ADC interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_ADC;
-#endif // USE_DEBUG
-}
-
-void DAC_IRQHandler(void) // DAC interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_DAC;
-#endif // USE_DEBUG
-}
-
-void RTC_IRQHandler(void) // Real time clock interrupt
-{
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_RTC;
-#endif // USE_DEBUG
+#endif /* USE_UART */
 }

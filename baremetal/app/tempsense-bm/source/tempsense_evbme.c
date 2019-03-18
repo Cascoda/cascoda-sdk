@@ -48,7 +48,7 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	usb_present_changed = TEMPSENSE_usb_present_changed;
 	app_reinitialise    = TEMPSENSE_reinitialise;
 
-	if (status == EVBME_FAIL)
+	if (status == CA_ERROR_FAIL)
 	{
 		APP_INITIALISE = 0;
 		BSP_LEDSigMode(LED_M_SETERROR);
@@ -65,7 +65,7 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	EVBME_SwitchClock(pDeviceRef, APP_USE_EXTERNAL_CLOCK);
 
 	if (BSP_IsUSBPresent())
-		APP_STATE = APP_STATE_new = APP_ST_NORMAL;
+		APP_STATE = APP_STATE_new = APP_ST_COORDINATOR; // APP_ST_NORMAL;
 	else
 		APP_STATE = APP_STATE_new = APP_ST_DEVICE;
 
@@ -170,11 +170,11 @@ static int TEMPSENSE_reinitialise(struct ca821x_dev *pDeviceRef)
  * \brief Callback for MCPS_DATA_indication in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
-                                                    struct ca821x_dev *               pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                         struct ca821x_dev *               pDeviceRef)
 {
 	TEMPSENSE_APP_Coordinator_ProcessDataInd(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_COORD_MCPS_DATA_indication()
 
 /******************************************************************************/
@@ -182,11 +182,11 @@ static int TEMPSENSE_APP_COORD_MCPS_DATA_indication(struct MCPS_DATA_indication_
  * \brief Callback for MCPS_DATA_indication in TEMPSENSE DEVICE Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_DEV_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
-                                                  struct ca821x_dev *               pDeviceRef)
+static ca_error TEMPSENSE_APP_DEV_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                       struct ca821x_dev *               pDeviceRef)
 {
 	TEMPSENSE_APP_Device_ProcessDataInd(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_COORD_MCPS_DATA_indication()
 
 /******************************************************************************/
@@ -194,10 +194,11 @@ static int TEMPSENSE_APP_DEV_MCPS_DATA_indication(struct MCPS_DATA_indication_ps
  * \brief Callback for MCPS_DATA_confirm in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params,
+                                                      struct ca821x_dev *            pDeviceRef)
 {
 	TEMPSENSE_APP_Coordinator_ProcessDataCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_COORD_MCPS_DATA_confirm()
 
 /******************************************************************************/
@@ -205,10 +206,11 @@ static int TEMPSENSE_APP_COORD_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *
  * \brief Callback for MCPS_DATA_confirm in TEMPSENSE DEVICE Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_DEV_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEMPSENSE_APP_DEV_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params,
+                                                    struct ca821x_dev *            pDeviceRef)
 {
 	TEMPSENSE_APP_Device_ProcessDataCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_COORD_MCPS_DATA_confirm()
 
 /******************************************************************************/
@@ -216,15 +218,15 @@ static int TEMPSENSE_APP_DEV_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *pa
  * \brief Callback for MLME_ASSOCIATE_indication in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_indication_pset *params,
-                                                         struct ca821x_dev *                    pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_indication_pset *params,
+                                                              struct ca821x_dev *                    pDeviceRef)
 {
 	if (APP_STATE == APP_ST_COORDINATOR)
 	{
 		TEMPSENSE_APP_Coordinator_AssociateResponse(params, pDeviceRef);
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication()
 
 /******************************************************************************/
@@ -232,18 +234,18 @@ static int TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication(struct MLME_ASSOCIATE_i
  * \brief Callback for MLME_COMM_STATUS_indication in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
-                                                           struct ca821x_dev *                      pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
+                                                                struct ca821x_dev *                      pDeviceRef)
 {
 	if (APP_STATE == APP_ST_COORDINATOR)
 	{
 		/* only supress message */
 		if ((params->Status == MAC_SUCCESS) || (params->Status == MAC_TRANSACTION_EXPIRED))
 		{
-			return 1;
+			return CA_ERROR_SUCCESS;
 		}
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication()
 
 /******************************************************************************/
@@ -251,15 +253,15 @@ static int TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication(struct MLME_COMM_STAT
  * \brief Callback for MLME_COMM_STATUS_indication in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params,
-                                                      struct ca821x_dev *                 pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params,
+                                                           struct ca821x_dev *                 pDeviceRef)
 {
 	if (APP_STATE == APP_ST_COORDINATOR)
 	{
-		/* only supress message */
-		return 1;
+		/* only suppress message */
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 } // End of TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication()
 
 /******************************************************************************/
@@ -267,11 +269,11 @@ static int TEMPSENSE_APP_COORD_HWME_WAKEUP_indication(struct HWME_WAKEUP_indicat
  * \brief Callback for MLME_ASSOCIATE_confirm in TEMPSENSE DEVICE Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_DEV_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params,
-                                                    struct ca821x_dev *                 pDeviceRef)
+static ca_error TEMPSENSE_APP_DEV_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params,
+                                                         struct ca821x_dev *                 pDeviceRef)
 {
 	TEMPSENSE_APP_Device_ProcessAssociateCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_DEV_MLME_ASSOCIATE_confirm()
 
 /******************************************************************************/
@@ -279,10 +281,11 @@ static int TEMPSENSE_APP_DEV_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confir
  * \brief Callback for MLME_SCAN_confirm in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_COORD_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEMPSENSE_APP_COORD_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params,
+                                                      struct ca821x_dev *            pDeviceRef)
 {
 	TEMPSENSE_APP_Coordinator_ProcessScanCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_COORD_MLME_SCAN_confirm()
 
 /******************************************************************************/
@@ -290,10 +293,11 @@ static int TEMPSENSE_APP_COORD_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *
  * \brief Callback for MLME_SCAN_confirm in TEMPSENSE DEVICE Mode
  *******************************************************************************
  ******************************************************************************/
-static int TEMPSENSE_APP_DEV_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error TEMPSENSE_APP_DEV_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params,
+                                                    struct ca821x_dev *            pDeviceRef)
 {
 	TEMPSENSE_APP_Device_ProcessScanCnf(params, pDeviceRef);
-	return 1;
+	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_DEV_MLME_SCAN_confirm()
 
 /******************************************************************************/

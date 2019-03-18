@@ -21,90 +21,37 @@
 #ifndef IEEE_802_15_4_H
 #define IEEE_802_15_4_H
 
-/******************************************************************************/
-/****** MAC Frame Control Field Definitions                              ******/
-/******************************************************************************/
-/** Frame control frame type mask */
-#define MAC_FC_FT_MASK (0x0003)
-/** Frame control beacon frame type */
-#define MAC_FC_FT_BEACON (0x0000)
-/** Frame control data frame type */
-#define MAC_FC_FT_DATA (0x0001)
-/** Frame control acknowledgement frame type */
-#define MAC_FC_FT_ACK (0x0002)
-/** Frame control command frame type */
-#define MAC_FC_FT_COMMAND (0x0003)
-
-/** Frame control security enabled bit */
-#define MAC_FC_SEC_ENA (0x0008)
-/** Frame control frame pending bit */
-#define MAC_FC_FP (0x0010)
-/** Frame control acknowledgement requested bit */
-#define MAC_FC_ACK_REQ (0x0020)
-/** Frame control pan id compression bit */
-#define MAC_FC_PAN_COMP (0x0040)
-/** Offset for frame control short destination addressing mode */
-#define MAC_FC_DAM_SHORT (MAC_MODE_SHORT_ADDR << 10)
-/** Offset for frame control extended destination addressing mode */
-#define MAC_FC_DAM_LONG (MAC_MODE_LONG_ADDR << 10)
-/** Frame control 2006 version code */
-#define MAC_FC_VER2006 (0x1000)
-/** Frame control version code getter */
-#define MAC_FC_VER(fc) ((fc >> 12) & 3)
-/** Offset for frame control short source addressing mode */
-#define MAC_FC_SAM_SHORT (MAC_MODE_SHORT_ADDR << 14)
-/** Offset for frame control extended source addressing mode */
-#define MAC_FC_SAM_LONG (MAC_MODE_LONG_ADDR << 14)
-/** Frame control destination addressing mode getter */
-#define MAC_FC_DAM(fc) ((fc >> 10) & 3)
-/** Frame control source addressing mode getter */
-#define MAC_FC_SAM(fc) ((fc >> 14) & 3)
-
-/******************************************************************************/
-/****** MAC TxOption Bits Definitions                                    ******/
-/******************************************************************************/
-#define TXOPT_ACKREQ (0x01)   //!< Request acknowledgement from receiving node
-#define TXOPT_GTS (0x02)      //!< Use guaranteed time slot
-#define TXOPT_INDIRECT (0x04) //!< Transmit indirectly
-
 /***************************************************************************/ /**
  * \defgroup PMConstants PHY/MAC Constants
  ************************************************************************** @{*/
-#define aMaxPHYPacketSize (127)
-#define aMaxMACSafePayloadSize (102)
-#define aTurnaroundTime (12)
-#define aSymbolPeriod_us (16)
-#define aNumSuperframeSlots (16)
+enum mac_constants
+{
+	aMaxPHYPacketSize       = 127,
+	aMaxMACSafePayloadSize  = 102,
+	aTurnaroundTime         = 12,
+	aSymbolPeriod_us        = 16,
+	aNumSuperframeSlots     = 16,
+	aBaseSlotDuration       = 60,
+	aBaseSuperframeDuration = aBaseSlotDuration * aNumSuperframeSlots,
+	aMaxBeaconOverhead      = 75,
+	aMaxBeaconPayloadLength = aMaxPHYPacketSize - aMaxBeaconOverhead,
+	aUnitBackoffPeriod      = 20,
+	MAX_ATTRIBUTE_SIZE      = 122,
+	MAX_DATA_SIZE           = aMaxPHYPacketSize,
+	M_MinimumChannel        = 11,
+	M_MaximumChannel        = 26,
+	M_ValidChannels         = 0x07FFF800,
+	MAX_FRAME_DURATION      = 266,
+	MAC_BROADCAST_ADDRESS   = 0xFFFF
+};
 
-#define aBaseSlotDuration (60)
-#define aBaseSuperframeDuration (aBaseSlotDuration * aNumSuperframeSlots)
-#define aMaxBeaconOverhead (75)
-#define aMaxBeaconPayloadLength (aMaxPHYPacketSize - aMaxBeaconOverhead)
-#define aUnitBackoffPeriod (20)
-
-#define MAX_ATTRIBUTE_SIZE (122)
-#define MAX_DATA_SIZE (aMaxPHYPacketSize)
-
-#define M_MinimumChannel (11)
-#define M_MaximumChannel (26)
-#define M_ValidChannels (0x07FFF800)
-
-#define MAX_FRAME_DURATION (266)
 /**@}*/
-
-#define MAC_BROADCAST_ADDRESS (0xFFFF)
-
-/******************************************************************************/
-/****** Length Definitions for different Commands                        ******/
-/******************************************************************************/
-// Data Request includes 1 phylen, 2 fc, 1 dsn, 12 address, 1 payload, 2 fcs
-#define BASELEN_DATA_REQUEST (19)
 
 /***************************************************************************/ /**
 * \defgroup MACEnums MAC Enumerations
 ************************************************************************** @{*/
 /** MAC Status Codes (see 802.15.4 2006 spec table 78) */
-enum mac_status
+typedef enum mac_status
 {
 	MAC_SUCCESS                 = 0x00,
 	MAC_ERROR                   = 0x01,
@@ -146,7 +93,7 @@ enum mac_status
 	MAC_SCAN_IN_PROGRESS        = 0xFC,
 	MAC_SUPERFRAME_OVERLAP      = 0xFD,
 	MAC_SYSTEM_ERROR            = 0xFF
-};
+} ca_mac_status;
 
 /** MAC Address Mode Definitions */
 enum mac_addr_mode
@@ -157,39 +104,12 @@ enum mac_addr_mode
 	MAC_MODE_LONG_ADDR  = 0x03  //!< 64-bit extended address
 };
 
-/**
- * MAC Address Code Definitions
- *
- * Made from Combinations of Source and Destination Addressing Modes
- */
-enum mac_addr_code
+/** Enumeration of different MAC TxOptions */
+enum MAC_TXOPT
 {
-	/** Invalid addressing parameter combination */
-	AC_INVALID = 0xFF,
-	/** No dst pan id, no dst address, src pan id, short src address */
-	AC_DP0DA0SP2SA2 = 0,
-	/** No dst pan id, no dst address, src pan id, extended src address */
-	AC_DP0DA0SP2SA8 = 1,
-	/** Dst pan id, short dst address, no src pan id, no src address */
-	AC_DP2DA2SP0SA0 = 2,
-	/** Dst pan id, extended dst address, no src pan id, no src address */
-	AC_DP2DA8SP0SA0 = 3,
-	/** Dst pan id, short dst address, no src pan id, short src address */
-	AC_DP2DA2SP0SA2 = 4,
-	/** Dst pan id, extended dst address, no src pan id, short src address */
-	AC_DP2DA8SP0SA2 = 5,
-	/** Dst pan id, short dst address, no src pan id, extended src address */
-	AC_DP2DA2SP0SA8 = 6,
-	/** Dst pan id, extended dst address, no src pan id, extended src address */
-	AC_DP2DA8SP0SA8 = 7,
-	/** Dst pan id, short dst address, src pan id, short src address */
-	AC_DP2DA2SP2SA2 = 8,
-	/** Dst pan id, extended dst address, src pan id, short src address */
-	AC_DP2DA8SP2SA2 = 9,
-	/** Dst pan id, short dst address, src pan id, extended src address */
-	AC_DP2DA2SP2SA8 = 10,
-	/** Dst pan id, extended dst address, src pan id, extended src address */
-	AC_DP2DA8SP2SA8 = 11
+	TXOPT_ACKREQ   = 0x01, //!< Request acknowledgement from receiving node
+	TXOPT_GTS      = 0x02, //!< Use guaranteed time slot (Not supported)
+	TXOPT_INDIRECT = 0x04  //!< Transmit indirectly
 };
 
 /**
@@ -203,6 +123,35 @@ enum mlme_scan_type
 	ACTIVE_SCAN   = 0x01,
 	PASSIVE_SCAN  = 0x02,
 	ORPHAN_SCAN   = 0x03
+};
+
+/** Real time translations for MLME-SCAN ScanDuration (per channel) */
+enum ca821x_scan_durations
+{
+	SCAN_DURATION_30MS  = 0,
+	SCAN_DURATION_46MS  = 1,
+	SCAN_DURATION_77MS  = 2,
+	SCAN_DURATION_138MS = 3,
+	SCAN_DURATION_261MS = 4,
+	SCAN_DURATION_507MS = 5,
+	SCAN_DURATION_998MS = 6,
+	SCAN_DURATION_2S    = 7,
+	SCAN_DURATION_4S    = 8,
+	SCAN_DURATION_8S    = 9,
+	SCAN_DURATION_16S   = 10,
+	SCAN_DURATION_31S   = 11,
+	SCAN_DURATION_63S   = 12,
+	SCAN_DURATION_126S  = 13,
+	SCAN_DURATION_252S  = 14
+};
+
+/** Enumeration of different MAC Frame Types */
+enum mac_frame_type
+{
+	MAC_FRAME_TYPE_BEACON  = 0,
+	MAC_FRAME_TYPE_DATA    = 1,
+	MAC_FRAME_TYPE_ACK     = 2,
+	MAC_FRAME_TYPE_COMMAND = 3
 };
 
 /** MAC Command Frame Identifiers */

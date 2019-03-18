@@ -166,17 +166,17 @@ int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDevic
 	return 0;
 }
 
-static int handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *priv = pDeviceRef->context;
 	pthread_mutex_lock(&out_mutex);
 	priv->mRx++;
 	pthread_mutex_unlock(&out_mutex);
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *priv          = pDeviceRef->context;
 	pthread_mutex_t * confirm_mutex = &(priv->confirm_mutex);
@@ -215,18 +215,24 @@ static int handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821
 	else
 	{
 		pthread_mutex_lock(&out_mutex);
-		printf(COLOR_SET(RED, "Dev %x: Expected handle %x, got %x") "\r\n", priv->mAddress, priv->lastHandle,
+		printf(COLOR_SET(RED, "Dev %x: Expected handle %x, got %x") "\r\n",
+		       priv->mAddress,
+		       priv->lastHandle,
 		       params->MsduHandle);
 		pthread_mutex_unlock(&out_mutex);
 	}
 	pthread_mutex_unlock(confirm_mutex);
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params,
+                                           struct ca821x_dev *                      pDeviceRef)
 {
-	fprintf(stderr, "COMM-STATUS.indication status %x, kID %d, kInd %d\n", params->Status, params->Security.KeyIdMode,
+	fprintf(stderr,
+	        "COMM-STATUS.indication status %x, kID %d, kInd %d\n",
+	        params->Status,
+	        params->Security.KeyIdMode,
 	        params->Security.KeyIndex);
 
 	for (int i = 0; i < 2; i++)
@@ -244,20 +250,23 @@ static int handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *p
 	{
 		uint8_t len;
 		MLME_GET_request_sync(macKeyTable, i, &len, &kd, pDeviceRef);
-		printf("KLE%d KDE%d KUE%d KDL%x\n", kd.Fixed.KeyIdLookupListEntries, kd.Fixed.KeyDeviceListEntries,
-		       kd.Fixed.KeyUsageListEntries, kd.KeyDeviceList[0].Flags);
+		printf("KLE%d KDE%d KUE%d KDL%x\n",
+		       kd.Fixed.KeyIdLookupListEntries,
+		       kd.Fixed.KeyDeviceListEntries,
+		       kd.Fixed.KeyUsageListEntries,
+		       kd.KeyDeviceList[0].Flags);
 	}
 
-	return 1;
+	return CA_ERROR_SUCCESS;
 }
 
-static int handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
 {
 	/*
 	 * This is a debugging function for unhandled incoming MAC data
 	 */
 
-	return 0;
+	return CA_ERROR_NOT_HANDLED;
 }
 
 static void *inst_worker(void *arg)
@@ -299,8 +308,8 @@ static void *inst_worker(void *arg)
 		pthread_mutex_unlock(confirm_mutex);
 		//TDME_SETSFR_request_sync(0, 0xdb, 0x0E, pDeviceRef);
 		//if(i == 1)
-		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, dest, M_MSDU_LENGTH, msdu, priv->lastHandle, 0x01, &priv->mSecSpec,
-		                  pDeviceRef);
+		MCPS_DATA_request(
+		    MAC_MODE_SHORT_ADDR, dest, M_MSDU_LENGTH, msdu, priv->lastHandle, 0x01, &priv->mSecSpec, pDeviceRef);
 	}
 	return NULL;
 }
@@ -346,8 +355,8 @@ void drawTableRow(unsigned int time)
 	pthread_mutex_lock(&out_mutex);
 	for (int i = 0; i < numInsts; i++)
 	{
-		printf("|" COLOR_SET(GREEN, "%4d") "|%4d|" COLOR_SET(RED, "%3d") "|", insts[i].mTx, insts[i].mRx,
-		       insts[i].mErr);
+		printf(
+		    "|" COLOR_SET(GREEN, "%4d") "|%4d|" COLOR_SET(RED, "%3d") "|", insts[i].mTx, insts[i].mRx, insts[i].mErr);
 	}
 	pthread_mutex_unlock(&out_mutex);
 	printf("\n");
@@ -392,7 +401,11 @@ void initInst(struct inst_priv *cur)
 
 	uint8_t rxOnWhenIdle = 1;
 	MLME_SET_request_sync( //enable Rx when Idle
-	    macRxOnWhenIdle, 0, sizeof(rxOnWhenIdle), &rxOnWhenIdle, pDeviceRef);
+	    macRxOnWhenIdle,
+	    0,
+	    sizeof(rxOnWhenIdle),
+	    &rxOnWhenIdle,
+	    pDeviceRef);
 
 	uint8_t se = 1;
 	MLME_SET_request_sync(macSecurityEnabled, 0, sizeof(se), &se, pDeviceRef);
@@ -431,7 +444,7 @@ void initInst(struct inst_priv *cur)
 	kd.Fixed.KeyIdLookupListEntries = 1;
 	kd.Fixed.KeyDeviceListEntries   = 1;
 	kd.Fixed.KeyUsageListEntries    = 1;
-	kd.KeyUsageList[0].Flags        = MAC_FC_FT_DATA;
+	kd.KeyUsageList[0].Flags        = MAC_FRAME_TYPE_DATA;
 	memset(kd.KeyIdLookupList[0].LookupData, 0xFF, 9);
 	kd.KeyIdLookupList[0].LookupDataSizeCode = 1;
 
@@ -483,12 +496,10 @@ int main(int argc, char *argv[])
 		pDeviceRef->context = cur;
 
 		//Register callbacks for async messages
-		struct ca821x_api_callbacks callbacks = {0};
-		callbacks.MCPS_DATA_indication        = &handleDataIndication;
-		callbacks.MCPS_DATA_confirm           = &handleDataConfirm;
-		callbacks.MLME_COMM_STATUS_indication = &handleCommStatusIndication;
-		callbacks.generic_dispatch            = &handleGenericDispatchFrame;
-		ca821x_register_callbacks(&callbacks, pDeviceRef);
+		pDeviceRef->callbacks.MCPS_DATA_indication        = &handleDataIndication;
+		pDeviceRef->callbacks.MCPS_DATA_confirm           = &handleDataConfirm;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &handleCommStatusIndication;
+		pDeviceRef->callbacks.generic_dispatch            = &handleGenericDispatchFrame;
 		exchange_register_user_callback(&handleUserCallback, pDeviceRef);
 
 		initInst(cur);

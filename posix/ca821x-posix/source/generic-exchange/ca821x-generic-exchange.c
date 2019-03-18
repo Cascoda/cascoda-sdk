@@ -59,7 +59,7 @@ int ca821x_run_downstream_dispatch()
 	struct ca821x_dev *          pDeviceRef;
 	struct ca821x_exchange_base *priv;
 	uint8_t                      buffer[MAX_BUF_SIZE];
-	int                          rval;
+	ca_error                     rval;
 	int                          len;
 
 	len = pop_from_queue(&downstream_dispatch_queue, &downstream_queue_mutex, buffer, MAX_BUF_SIZE, &pDeviceRef);
@@ -69,7 +69,7 @@ int ca821x_run_downstream_dispatch()
 		priv = pDeviceRef->exchange_context;
 		rval = ca821x_downstream_dispatch(buffer, len, pDeviceRef);
 
-		if (rval < 0 && priv->user_callback)
+		if (rval != CA_ERROR_SUCCESS && priv->user_callback)
 		{
 			priv->user_callback(buffer, len, pDeviceRef);
 		}
@@ -80,6 +80,8 @@ int ca821x_run_downstream_dispatch()
 
 static void *ca821x_downstream_dispatch_worker(void *arg)
 {
+	(void)arg;
+
 	pthread_mutex_lock(&s_flag_mutex);
 	while (s_worker_run_flag)
 	{
@@ -254,8 +256,8 @@ int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef)
 	priv->error = error;
 
 	//Swap contents of queues into restore buffers:
-	reseat_queue(&priv->out_buffer_queue, &priv->restore_out_buffer_queue, &priv->out_queue_mutex,
-	             &priv->out_queue_mutex);
+	reseat_queue(
+	    &priv->out_buffer_queue, &priv->restore_out_buffer_queue, &priv->out_queue_mutex, &priv->out_queue_mutex);
 
 	reseat_queue(&priv->in_buffer_queue, &priv->restore_in_buffer_queue, &priv->in_queue_mutex, &priv->in_queue_mutex);
 
@@ -275,8 +277,8 @@ int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef)
 	{
 		uint8_t buffer[] = {0};
 		//Push a fake response to unblock sync waiter
-		add_to_waiting_queue(&(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, 0,
-		                     pDeviceRef);
+		add_to_waiting_queue(
+		    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, 0, pDeviceRef);
 	}
 
 	pthread_create(&priv->rescue_thread, NULL, &ca821x_recovery_worker, pDeviceRef);
@@ -305,14 +307,14 @@ void *ca8210_io_worker(void *arg)
 			if (buffer[0] & SPI_SYN)
 			{
 				//Add to queue for synchronous processing
-				add_to_waiting_queue(&(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, len,
-				                     pDeviceRef);
+				add_to_waiting_queue(
+				    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, len, pDeviceRef);
 			}
 			else
 			{
 				//Add to queue for dispatching downstream
-				add_to_waiting_queue(&downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, buffer, len,
-				                     pDeviceRef);
+				add_to_waiting_queue(
+				    &downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, buffer, len, pDeviceRef);
 			}
 		}
 		else if (len < 0)
@@ -339,7 +341,7 @@ void *ca8210_io_worker(void *arg)
 	return 0;
 }
 
-int ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	const uint8_t                isSynchronous = ((buf[0] & SPI_SYN) && response);
 	struct ca821x_exchange_base *priv          = pDeviceRef->exchange_context;
@@ -348,7 +350,7 @@ int ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, 
 	uint8_t                      is_rescuer = 0;
 
 	if (!s_generic_initialised)
-		return -1;
+		return CA_ERROR_INVALID_STATE;
 	//Synchronous must execute synchronously
 	//Get sync responses from the in queue
 	//Send messages by adding them to the out queue
@@ -384,20 +386,20 @@ int ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, 
 			priv->signal_func(pDeviceRef);
 
 		if (!isSynchronous)
-			return 0;
+			return CA_ERROR_SUCCESS;
 
 		//A rval of zero here is an error packet notifying of a driver error during
 		//sync command. The original command will be resent after recovery so sync
 		//behaviour should be upheld.
 		success = wait_on_queue(&(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond));
 
-		pop_from_queue(&(priv->in_buffer_queue), &(priv->in_queue_mutex), response, sizeof(struct MAC_Message),
-		               &ref_out);
+		pop_from_queue(
+		    &(priv->in_buffer_queue), &(priv->in_queue_mutex), response, sizeof(struct MAC_Message), &ref_out);
 	}
 
 	assert(ref_out == pDeviceRef);
 	if (!is_rescuer)
 		pthread_mutex_unlock(&(priv->sync_mutex));
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }

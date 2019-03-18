@@ -142,7 +142,7 @@ u8_t SerialGetCommand(void)
 			SerialRxBuffer[SerialRxWrIndex].SOM                    = SERIAL_SOM;
 			SerialRxBuffer[SerialRxWrIndex].Header[SERIAL_CMD_ID]  = UsbRxFrag[1]; // CommandId
 			SerialRxBuffer[SerialRxWrIndex].Header[SERIAL_CMD_LEN] = UsbRxFrag[2]; // Length
-			for (size_t i = 0; i < Count - 2; i++)
+			for (size_t i = 0; i < Count - 2u; i++)
 			{
 				SerialRxBuffer[SerialRxWrIndex].Data[i] = UsbRxFrag[3 + i];
 			}
@@ -174,8 +174,8 @@ u8_t SerialGetCommand(void)
  ******************************************************************************/
 void EVBME_Message_USB(char *pBuffer, size_t Count, void *pDeviceRef)
 {
+	(void)pDeviceRef;
 	SerialUSBSend(Serial_Stdout, (u8_t *)pBuffer, Count);
-
 } // End of EVBME_Message()
 
 /******************************************************************************/

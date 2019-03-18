@@ -51,12 +51,12 @@ u8_t SPI_MLME_SCANNING = 0;
 /******************************************************************************/
 /****** Static function declarations for cascoda_spi.c                   ******/
 /******************************************************************************/
-static int                 SPI_SyncWait(uint8_t cmdid, struct ca821x_dev *pDeviceRef);
+static ca_error            SPI_SyncWait(uint8_t cmdid);
 static struct MAC_Message *SPI_GetFreeBuf();
 static struct MAC_Message *getBuf(uint8_t cmdid);
-static u8_t                SPI_WaitSlave(void);
+static ca_error            SPI_WaitSlave(void);
 static void                SPI_BulkExchange(uint8_t *RxBuf, uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen);
-static void                SPI_Error(u8_t errcode, u8_t restart, struct ca821x_dev *pDeviceRef);
+static void                SPI_Error(ca_error errcode, struct ca821x_dev *pDeviceRef);
 
 bool SPI_IsFifoFull()
 {
@@ -152,7 +152,7 @@ exit:
  *\brief Wait until the slave is available to exchange SPI Data.
  */
 #if CASCODA_CA_VER == 8211
-static u8_t SPI_WaitSlave(void)
+static ca_error SPI_WaitSlave(void)
 {
 	u32_t T_Start, T_Now;
 
@@ -176,17 +176,17 @@ static u8_t SPI_WaitSlave(void)
 			BSP_SetRFSSBHigh();
 			continue;
 		}
-		return 0; //Success
+		return CA_ERROR_SUCCESS;
 	} while (T_Now - T_Start < SPI_T_TIMEOUT);
 
 	printf("SPI_WaitSlave timed out\n");
-	return -1; //Wait timed out
+	return CA_ERROR_SPI_WAIT_TIMEOUT;
 }
 #elif CASCODA_CA_VER == 8210
-static u8_t SPI_WaitSlave(void)
+static ca_error SPI_WaitSlave(void)
 {
 	BSP_WaitUs(SPI_T_HOLD_8210);
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 #else
 #error "Need SPI_WaitSlave definition for CA_VER"
@@ -243,7 +243,7 @@ static void SPI_BulkExchange(uint8_t *RxBuf, uint8_t *TxBuf, uint8_t RxLen, uint
  * CA-8211.
  */
 #if CASCODA_CA_VER == 8211
-static u8_t SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
+static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 {
 	if (pTxBuffer)
 	{
@@ -254,10 +254,10 @@ static u8_t SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 	ReadBytes[0] = BSP_SPIExchangeByte(ReadBytes[0]);
 	ReadBytes[1] = BSP_SPIExchangeByte(ReadBytes[1]);
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 #elif CASCODA_CA_VER == 8210
-static u8_t SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
+static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 {
 	u32_t T_Start, T_Now = TIME_ReadAbsoluteTime();
 	T_Start = T_Now;
@@ -282,9 +282,9 @@ static u8_t SPI_GetFirst2Bytes(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 
 	} while (T_Now - T_Start < SPI_T_TIMEOUT);
 	if (T_Now - T_Start >= SPI_T_TIMEOUT)
-		return -1;
+		return CA_ERROR_SPI_NACK_TIMEOUT;
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 #else
 #error "Need SPI_GetFirst2Bytes definition for CA_VER"
@@ -312,23 +312,27 @@ static u8_t SPI_CA8210_Align(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 #else
 static u8_t SPI_CA8210_Align(u8_t *ReadBytes, struct MAC_Message *pTxBuffer)
 {
+	(void)ReadBytes;
+	(void)pTxBuffer;
 	return 0;
 }
 #endif
 
-int SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef)
+ca_error SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef)
 {
 	u8_t                TxLen = 0, RxLen = 0, AlignMod = 0;
 	u8_t                triageBuf[2] = {0xFF, 0xFF}; //For the first 2 bytes of transfer
 	struct MAC_Message *pRxBuffer;
+	ca_error            error = CA_ERROR_SUCCESS;
+	(void)pDeviceRef;
 
 	BSP_SetRFSSBHigh();
 
 	//Wait for slave or time out and get first 2 bytes (commandId and Length)
-	if (SPI_WaitSlave())
-		return -1;
-	if (SPI_GetFirst2Bytes(triageBuf, pTxBuffer))
-		return -1;
+	if ((error = SPI_WaitSlave()))
+		return error;
+	if ((error = SPI_GetFirst2Bytes(triageBuf, pTxBuffer)))
+		return error;
 
 	AlignMod = SPI_CA8210_Align(triageBuf, pTxBuffer);
 
@@ -354,37 +358,36 @@ int SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef)
 	else if ((triageBuf[0] == SPI_MLME_SCAN_CONFIRM) || (triageBuf[0] == SPI_HWME_WAKEUP_INDICATION))
 		SPI_MLME_SCANNING = 0; // re-enable SPI sends
 
-	if (pRxBuffer)
-	{
-		EVBMECheckSPICommand(pRxBuffer, pDeviceRef); // check if API command requires modification
-	}
-
 exit:
 	BSP_SetRFSSBHigh(); // end access
-	return (pRxBuffer != NULL);
+	return error;
 }
 
 /**
- * \brief Wait for synchronous command SPI
+ * \brief Wait for synchronous command response over SPI
  *
- * This function waits until a synchronous command is received over SPI
+ * This function waits until a synchronous command response is received over SPI
  *
- * \param cmdid - The id of the command to wait for
+ * \param cmdid - The command id of the synchronous request
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return  0 or \ref evbme_error_code
  *
  */
-static int SPI_SyncWait(uint8_t cmdid, struct ca821x_dev *pDeviceRef)
+static ca_error SPI_SyncWait(uint8_t cmdid)
 {
-	int status     = EVBME_SPI_WAIT_TIMEOUT;
-	int startticks = TIME_ReadAbsoluteTime();
+	ca_error status     = CA_ERROR_SPI_WAIT_TIMEOUT;
+	int      startticks = TIME_ReadAbsoluteTime();
+	uint8_t  rspid      = ca821x_get_sync_response_id(cmdid);
+
+	if (!rspid)
+		return CA_ERROR_INVALID_ARGS;
 
 	do
 	{
-		if (SPI_Wait_Buf->CommandId == cmdid)
+		if (SPI_Wait_Buf->CommandId == rspid)
 		{
-			status = EVBME_SUCCESS;
+			status = CA_ERROR_SUCCESS;
 			break;
 		}
 		TIME_WaitTicks(1);
@@ -395,15 +398,16 @@ static int SPI_SyncWait(uint8_t cmdid, struct ca821x_dev *pDeviceRef)
 	return status;
 }
 
-int SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
 {
-	int  Status;
-	bool sync = (buf[0] & SPI_SYN) && (buf[0] != SPI_IDLE);
+	ca_error Status = CA_ERROR_SUCCESS;
+	bool     sync   = (buf[0] & SPI_SYN) && (buf[0] != SPI_IDLE);
+	(void)len;
 
 	if (SPI_MLME_SCANNING == 1)
 	{
-		SPI_Error(EVBME_SPI_SCAN_IN_PROGRESS, 0, pDeviceRef);
-		return 1;
+		Status = CA_ERROR_SPI_SCAN_IN_PROGRESS;
+		goto exit;
 	}
 
 	BSP_DisableRFIRQ();
@@ -417,27 +421,22 @@ int SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *
 
 	BSP_EnableRFIRQ();
 
-	if (Status < 0)
+	if (Status)
 	{
 		if (sync)
 			SPI_Wait_Buf = NULL;
-		SPI_Error(EVBME_SPI_SEND_EXCHANGE_FAIL, 0, pDeviceRef);
-		return 1;
+		goto exit;
 	}
 
 	if (sync)
 	{
-		int ret;
-
-		ret = SPI_SyncWait(sync_pairings[buf[0] & SPI_MID_MASK], pDeviceRef);
-		if (ret)
-		{
-			SPI_Error(ret, 0, pDeviceRef);
-			return 1;
-		}
+		Status = SPI_SyncWait(buf[0]);
 	}
 
-	return 0;
+exit:
+	if (Status)
+		SPI_Error(Status, pDeviceRef);
+	return Status;
 }
 
 /**
@@ -448,15 +447,11 @@ int SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  */
-static void SPI_Error(u8_t errcode, u8_t restart, struct ca821x_dev *pDeviceRef)
+static void SPI_Error(ca_error errcode, struct ca821x_dev *pDeviceRef)
 {
 	BSP_SetRFSSBHigh();
-	printf("SPI %dms: Error code %02x\n", TIME_ReadAbsoluteTime(), errcode);
-	if (restart)
-	{
-		EVBME_CAX_Restart(pDeviceRef);
-	}
-	EVBME_ERROR_Indication(errcode, restart, pDeviceRef);
+	printf("SPI %ums: Error code %02x\n", (unsigned int)TIME_ReadAbsoluteTime(), errcode);
+	EVBME_ERROR_Indication(errcode, 0, pDeviceRef);
 }
 
 void SPI_Initialise(void)

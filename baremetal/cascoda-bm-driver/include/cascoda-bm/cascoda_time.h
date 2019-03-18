@@ -13,11 +13,6 @@
 
 #include "cascoda-bm/cascoda_types.h"
 
-extern u16_t Ticks;   //!< Global %Timer ms
-extern u8_t  Seconds; //!< Global %Timer Seconds
-extern u8_t  Minutes; //!< Global %Timer Minutes
-extern u16_t Hours;   //!< Global %Timer Hours
-
 void TIME_1msTick(void);            //The BSP Should call this at 1ms Intervals
 void TIME_FastForward(u32_t ticks); //Used by bm-driver to fast-forward time after sleeping
 

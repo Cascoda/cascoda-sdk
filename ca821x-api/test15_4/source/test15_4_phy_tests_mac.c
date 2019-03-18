@@ -97,7 +97,9 @@ uint8_t PHYTestMACTxInitialise(struct ca821x_dev *pDeviceRef)
 		return status;
 
 	param = PHY_TESTPAR.EDTHRESHOLD;
-	if ((status = HWME_SET_request_sync(HWME_EDTHRESHOLD, 1, &param,
+	if ((status = HWME_SET_request_sync(HWME_EDTHRESHOLD,
+	                                    1,
+	                                    &param,
 	                                    pDeviceRef))) // set ED threshold to PHY_TESTPAR.EDTHRESHOLD
 		return status;
 
@@ -310,8 +312,8 @@ uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struc
 	tdmeind.TestPacketLength     = params->MsduLength;
 	memcpy(tdmeind.TestPacketData, params->Msdu, params->MsduLength);
 
-	PHYTestStatistics(TEST_STAT_ACCUM, tdmeind.TestPacketEDValue, tdmeind.TestPacketCSValue,
-	                  tdmeind.TestPacketFoffsValue);
+	PHYTestStatistics(
+	    TEST_STAT_ACCUM, tdmeind.TestPacketEDValue, tdmeind.TestPacketCSValue, tdmeind.TestPacketFoffsValue);
 
 	if ((PHY_TESTPAR.PACKETPERIOD >= 500) || (PHY_TESTMODE == PHY_TEST_RX_PSN))
 		PHYTestReportPacketReceived(&tdmeind);

@@ -41,7 +41,7 @@ add_dependencies(ca821x-openthread-bm-plat openthread-build)
 
 target_link_libraries(ca821x-openthread-bm-plat
 	PUBLIC
-		cascoda-bm-plat
+		cascoda-bm
 	PRIVATE
 		m
 		openthread-plat-api
@@ -81,20 +81,23 @@ target_link_libraries(ca821x-openthread-bm-mtd
 	)
 
 # Test app config -------------------------------------------------------------
-add_executable(utdapp
-	${PROJECT_SOURCE_DIR}/source/utd_main.c
-	${PROJECT_SOURCE_DIR}/source/utd_api.c
+add_executable(mtdapp
+	${PROJECT_SOURCE_DIR}/source/mtd_main.c
+	${PROJECT_SOURCE_DIR}/source/mtd_api.c
 	)
-
-target_include_directories(utdapp
+target_include_directories(mtdapp
 	PRIVATE ${PROJECT_SOURCE_DIR}/platform
 	)
+target_link_libraries(mtdapp ca821x-openthread-bm-mtd)
 
-target_link_libraries(utdapp ca821x-openthread-bm-mtd)
+add_executable(sed-standalone
+	${PROJECT_SOURCE_DIR}/source/sed_standalone.c
+	)
+target_include_directories(sed-standalone
+	PRIVATE ${PROJECT_SOURCE_DIR}/platform
+	)
+target_link_libraries(sed-standalone ca821x-openthread-bm-mtd)
 
 # convert to bin file format
-cascoda_make_binary(utdapp)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests
+cascoda_make_binary(mtdapp)
+cascoda_make_binary(sed-standalone)

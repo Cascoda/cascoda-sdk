@@ -37,14 +37,24 @@
 /** Contains full addressing information for a node */
 struct FullAddr
 {
-	/** Clarifies the contents of \ref Address (empty, short, extended)*/
-	uint8_t AddressMode;
-	uint8_t PANId[2];
-	/** Holds either short or extended address (little-endian) */
-	uint8_t Address[8];
+	uint8_t AddressMode; /** Clarifies the contents of \ref Address (empty, short, extended)*/
+	uint8_t PANId[2];    /** PanId (little-endian) */
+	uint8_t Address[8];  /** Short or Extended Address, based on AddressMode (little-endian) */
 };
 
-/** Holds either short or extended address (little-endian) */
+/** Contains raw little endian short address */
+struct ShortAddr
+{
+	uint8_t Address[2]; /** Short Address (little-endian) */
+};
+
+/** Contains raw extended address */
+struct ExtAddr
+{
+	uint8_t Address[8]; /** Extended Address */
+};
+
+/** Holds either short or extended address */
 union MacAddr
 {
 	uint16_t ShortAddress;
@@ -54,14 +64,10 @@ union MacAddr
 /** Security specification to be applied to MAC frames */
 struct SecSpec
 {
-	/** Specifies level of authentication and encryption */
-	uint8_t SecurityLevel;
-	/** How the key is to be retrieved */
-	uint8_t KeyIdMode;
-	/** Source part of key lookup data (commonly addressing info) */
-	uint8_t KeySource[8];
-	/** Index part of key lookup data */
-	uint8_t KeyIndex;
+	uint8_t SecurityLevel; /**< Specifies level of authentication and encryption */
+	uint8_t KeyIdMode;     /**< How the key is to be retrieved */
+	uint8_t KeySource[8];  /**< Source part of key lookup data (commonly addressing info) */
+	uint8_t KeyIndex;      /**< Index part of key lookup data */
 };
 
 /** Describes a discovered PAN */
@@ -70,24 +76,11 @@ struct PanDescriptor
 	struct FullAddr Coord;             /**< PAN coordinator addressing information */
 	uint8_t         LogicalChannel;    /**< Current operating channel */
 	uint8_t         SuperframeSpec[2]; /**< Superframe specification */
-	/** True if the beacon originator is a PAN coordinator accepting
-	  * guaranteed time slot requests*/
-	uint8_t GTSPermit;
-	uint8_t LinkQuality; /**< LQI of the received beacon */
-	/** Time at which the beacon was received, in symbols*/
-	uint8_t TimeStamp[4];
-	/** Security processing status of the beacon frame */
-	uint8_t SecurityFailure;
-	/** Security specification of the beacon */
-	struct SecSpec Security;
-};
-
-struct PendAddrSpec
-{
-	uint8_t ShortAddrCount : 3;
-	uint8_t /* Reserved */ : 1;
-	uint8_t ExtAddrCount : 3;
-	uint8_t /* Reserved */ : 1;
+	uint8_t         GTSPermit;         /**< True if the beacon originator is a PAN coordinator accepting GTS requests*/
+	uint8_t         LinkQuality;       /**< LQI of the received beacon */
+	uint8_t         TimeStamp[4];      /**< Time at which the beacon was received, in symbols*/
+	uint8_t         SecurityFailure;   /**< Security processing status of the beacon frame */
+	struct SecSpec  Security;          /**< Security specification of the beacon */
 };
 
 /***************************************************************************/ /**
@@ -125,16 +118,14 @@ struct MLME_ASSOCIATE_request_pset
 {
 	uint8_t         LogicalChannel; /**< Channel number */
 	struct FullAddr Dst;            /**< Destination addressing information */
-	/** Bitmap of operational capabilities */
-	uint8_t        CapabilityInfo;
-	struct SecSpec Security; /**< Security specification */
+	uint8_t         CapabilityInfo; /**< Bitmap of operational capabilities */
+	struct SecSpec  Security;       /**< Security specification */
 };
 
 /** MLME_ASSOCIATE_response parameter set */
 struct MLME_ASSOCIATE_response_pset
 {
-	/** IEEE address to give to associating device */
-	uint8_t        DeviceAddress[8];
+	uint8_t        DeviceAddress[8]; /**< IEEE address to give to associating device */
 	uint8_t        AssocShortAddress[2];
 	uint8_t        Status;
 	struct SecSpec Security;
@@ -401,10 +392,9 @@ struct MLME_GET_confirm_pset
 	uint8_t PIBAttributeValue[MAX_ATTRIBUTE_SIZE];
 };
 
-#define MLME_GET_CONFIRM_BASE_SIZE (sizeof(struct MLME_GET_confirm_pset) - MAX_ATTRIBUTE_SIZE)
-
 /** Default size of scan results list */
 #define DEFAULT_RESULT_LIST_SIZE (16)
+
 /** MLME_SCAN_confirm parameter set */
 struct MLME_SCAN_confirm_pset
 {
@@ -567,28 +557,22 @@ struct TDME_LOTLK_confirm_pset
 /******************************************************************************/
 /****** Security PIB Table Size Definitions                              ******/
 /******************************************************************************/
-/** Maximum value of macKeyTableEntries */
-#define KEY_TABLE_SIZE (4)
-/** Maximum value of KeyIdLookupListEntries */
-#define LOOKUP_DESC_TABLE_SIZE (5)
-/** Maximum value of KeyUsageListEntries */
-#define KEY_USAGE_TABLE_SIZE (12)
-/** Maximum value of macSecurityLevelTableEntries */
-#define SECURITY_LEVEL_TABLE_SIZE (2)
-
-#if CASCODA_CA_VER == 8210
-/** Maximum value of KeyDeviceListEntries */
-#define KEY_DEVICE_TABLE_SIZE (10)
-/** Maximum value of macDeviceTableEntries */
-#define DEVICE_TABLE_SIZE (10)
-#elif CASCODA_CA_VER == 8211
-/** Maximum value of KeyDeviceListEntries */
-#define KEY_DEVICE_TABLE_SIZE (32)
-/** Maximum value of macDeviceTableEntries */
-#define DEVICE_TABLE_SIZE (32)
+enum SecurityPibSize
+{
+	KEY_TABLE_SIZE            = 4,  /** Maximum value of macKeyTableEntries */
+	LOOKUP_DESC_TABLE_SIZE    = 5,  /** Maximum value of KeyIdLookupListEntries */
+	KEY_USAGE_TABLE_SIZE      = 12, /** Maximum value of KeyUsageListEntries */
+	SECURITY_LEVEL_TABLE_SIZE = 2,  /** Maximum value of macSecurityLevelTableEntries */
+#if (CASCODA_CA_VER == 8210)
+	KEY_DEVICE_TABLE_SIZE = 10, /** Maximum value of KeyDeviceListEntries */
+	DEVICE_TABLE_SIZE     = 10, /** Maximum value of macDeviceTableEntries */
+#elif (CASCODA_CA_VER == 8211)
+	KEY_DEVICE_TABLE_SIZE = 32, /** Maximum value of KeyDeviceListEntries */
+	DEVICE_TABLE_SIZE     = 32, /** Maximum value of macDeviceTableEntries */
 #elif
 #error "Security table sizes undefined"
 #endif
+};
 
 /***************************************************************************/ /**
  * \defgroup SecPIBStructs Security PIB attribute structures
@@ -624,17 +608,17 @@ struct M_KeyDeviceDesc
 	// uint8_t      Blacklisted : 1;
 	uint8_t Flags;
 };
-/* Masks for KeyDeviceDesc Flags*/
-/** Key Device Descriptor handle mask */
-#define KDD_DeviceDescHandleMask (0x3F)
+
+/** Masks for \ref M_KeyDeviceDesc Flags*/
+enum kdd_mask
+{
+	KDD_DeviceDescHandleMask = 0x3F, /** Key Device Descriptor handle mask */
+	KDD_BlacklistedMask      = 0x80, /** Key Device Descriptor is blacklisted mask */
+	KDD_UniqueDeviceMask     = 0x40, /** Key Device Descriptor is unique device mask */
 #if CASCODA_CA_VER == 8211
-/** Key Device Descriptor nonstandard 'is new' key-device pair */
-#define KDD_NewMask (0x20)
+	KDD_NewMask = 0x20, /** Key Device Descriptor nonstandard 'is new' key-device pair */
 #endif
-/** Key Device Descriptor is unique device mask */
-#define KDD_UniqueDeviceMask (0x40)
-/** Key Device Descriptor is blacklisted mask */
-#define KDD_BlacklistedMask (0x80)
+};
 
 struct M_KeyUsageDesc
 {
@@ -642,13 +626,14 @@ struct M_KeyUsageDesc
 	// uint8_t      CommandFrameIdentifier : 4;
 	uint8_t Flags;
 };
-/* Masks for KeyUsageDesc Flags*/
-/** Key Usage Descriptor frame type mask */
-#define KUD_FrameTypeMask (0x03)
-/** Key Usage Descriptor command frame identifier mask */
-#define KUD_CommandFrameIdentifierMask (0xF0)
-/** Key Usage Descriptor command frame identifier offset shift */
-#define KUD_CommandFrameIdentifierShift (4)
+
+/** Masks for \ref M_KeyUsageDesc Flags*/
+enum kud_mask
+{
+	KUD_FrameTypeMask               = 0x03, /** Key Usage Descriptor frame type mask */
+	KUD_CommandFrameIdentifierMask  = 0xF0, /** Key Usage Descriptor command frame identifier mask */
+	KUD_CommandFrameIdentifierShift = 4,    /** Key Usage Descriptor command frame identifier offset shift */
+};
 
 struct M_KeyTableEntryFixed
 {
@@ -668,69 +653,68 @@ struct M_KeyDescriptor
 
 /**@}*/
 
-/** Message ID codes in SPI commands (Downstream) */
-enum msg_id_code_down
-{
-	MCPS_DATA_REQUEST         = 0x00,
-	MCPS_PURGE_REQUEST        = 0x01,
-	MLME_ASSOCIATE_REQUEST    = 0x02,
-	MLME_ASSOCIATE_RESPONSE   = 0x03,
-	MLME_DISASSOCIATE_REQUEST = 0x04,
-	MLME_GET_REQUEST          = 0x05,
-	MLME_ORPHAN_RESPONSE      = 0x06,
-	MLME_RESET_REQUEST        = 0x07,
-	MLME_RX_ENABLE_REQUEST    = 0x08,
-	MLME_SCAN_REQUEST         = 0x09,
-	MLME_SET_REQUEST          = 0x0A,
-	MLME_START_REQUEST        = 0x0B,
-	MLME_SYNC_REQUEST         = 0x0C,
-	MLME_POLL_REQUEST         = 0x0D,
-	HWME_SET_REQUEST          = 0x0E,
-	HWME_GET_REQUEST          = 0x0F,
-	HWME_HAES_REQUEST         = 0x10,
-	TDME_SETSFR_REQUEST       = 0x11,
-	TDME_GETSFR_REQUEST       = 0x12,
-	TDME_TESTMODE_REQUEST     = 0x13,
-	TDME_SET_REQUEST          = 0x14,
-	TDME_TXPKT_REQUEST        = 0x15,
-	TDME_LOTLK_REQUEST        = 0x16
-};
+/***************************************************************************/ /**
+ * SPI Callback templates
+ ******************************************************************************/
+struct ca821x_dev;
 
-/** Message ID codes in SPI commands (Upstream) */
-enum msg_id_code_up
+typedef ca_error (*HWME_WAKEUP_indication_callback)(struct HWME_WAKEUP_indication_pset *params,
+                                                    struct ca821x_dev *                 pDeviceRef);
+typedef ca_error (*MLME_ASSOCIATE_indication_callback)(struct MLME_ASSOCIATE_indication_pset *params,
+                                                       struct ca821x_dev *                    pDeviceRef);
+typedef ca_error (*MLME_ASSOCIATE_confirm_callback)(struct MLME_ASSOCIATE_confirm_pset *params,
+                                                    struct ca821x_dev *                 pDeviceRef);
+typedef ca_error (*MLME_DISASSOCIATE_indication_callback)(struct MLME_DISASSOCIATE_indication_pset *params,
+                                                          struct ca821x_dev *                       pDeviceRef);
+typedef ca_error (*MLME_DISASSOCIATE_confirm_callback)(struct MLME_DISASSOCIATE_confirm_pset *params,
+                                                       struct ca821x_dev *                    pDeviceRef);
+typedef ca_error (*MLME_BEACON_NOTIFY_indication_callback)(struct MLME_BEACON_NOTIFY_indication_pset *params,
+                                                           struct ca821x_dev *                        pDeviceRef);
+typedef ca_error (*MLME_ORPHAN_indication_callback)(struct MLME_ORPHAN_indication_pset *params,
+                                                    struct ca821x_dev *                 pDeviceRef);
+typedef ca_error (*MLME_COMM_STATUS_indication_callback)(struct MLME_COMM_STATUS_indication_pset *params,
+                                                         struct ca821x_dev *                      pDeviceRef);
+typedef ca_error (*MLME_SYNC_LOSS_indication_callback)(struct MLME_SYNC_LOSS_indication_pset *params,
+                                                       struct ca821x_dev *                    pDeviceRef);
+typedef ca_error (*MLME_POLL_indication_callback)(struct MLME_POLL_indication_pset *params,
+                                                  struct ca821x_dev *               pDeviceRef);
+typedef ca_error (*MLME_SCAN_confirm_callback)(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*MCPS_DATA_indication_callback)(struct MCPS_DATA_indication_pset *params,
+                                                  struct ca821x_dev *               pDeviceRef);
+typedef ca_error (*MCPS_DATA_confirm_callback)(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*PCPS_DATA_indication_callback)(struct PCPS_DATA_indication_pset *params,
+                                                  struct ca821x_dev *               pDeviceRef);
+typedef ca_error (*PCPS_DATA_confirm_callback)(struct PCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*TDME_RXPKT_indication_callback)(struct TDME_RXPKT_indication_pset *params,
+                                                   struct ca821x_dev *                pDeviceRef);
+typedef ca_error (*TDME_EDDET_indication_callback)(struct TDME_EDDET_indication_pset *params,
+                                                   struct ca821x_dev *                pDeviceRef);
+typedef ca_error (*TDME_ERROR_indication_callback)(struct TDME_ERROR_indication_pset *params,
+                                                   struct ca821x_dev *                pDeviceRef);
+typedef ca_error (*ca821x_generic_callback)(void *params, struct ca821x_dev *pDeviceRef);
+
+/** Union of all compatible callback types */
+union ca821x_api_callback
 {
-	MCPS_DATA_INDICATION          = 0x00,
-	MCPS_DATA_CONFIRM             = 0x01,
-	MCPS_PURGE_CONFIRM            = 0x02,
-	MLME_ASSOCIATE_INDICATION     = 0x03,
-	MLME_ASSOCIATE_CONFIRM        = 0x04,
-	MLME_DISASSOCIATE_INDICATION  = 0x05,
-	MLME_DISASSOCIATE_CONFIRM     = 0x06,
-	MLME_BEACON_NOTIFY_INDICATION = 0x07,
-	MLME_GET_CONFIRM              = 0x08,
-	MLME_ORPHAN_INDICATION        = 0x09,
-	MLME_RESET_CONFIRM            = 0x0A,
-	MLME_RX_ENABLE_CONFIRM        = 0x0B,
-	MLME_SCAN_CONFIRM             = 0x0C,
-	MLME_COMM_STATUS_INDICATION   = 0x0D,
-	MLME_SET_CONFIRM              = 0x0E,
-	MLME_START_CONFIRM            = 0x0F,
-	MLME_SYNC_LOSS_INDICATION     = 0x10,
-	MLME_POLL_CONFIRM             = 0x11,
-	MLME_POLL_INDICATION          = 0x11,
-	HWME_SET_CONFIRM              = 0x12,
-	HWME_GET_CONFIRM              = 0x13,
-	HWME_HAES_CONFIRM             = 0x14,
-	HWME_WAKEUP_INDICATION        = 0x15,
-	TDME_SETSFR_CONFIRM           = 0x17,
-	TDME_GETSFR_CONFIRM           = 0x18,
-	TDME_TESTMODE_CONFIRM         = 0x19,
-	TDME_SET_CONFIRM              = 0x1A,
-	TDME_TXPKT_CONFIRM            = 0x1B,
-	TDME_RXPKT_INDICATION         = 0x1C,
-	TDME_EDDET_INDICATION         = 0x1D,
-	TDME_ERROR_INDICATION         = 0x1E,
-	TDME_LOTLK_CONFIRM            = 0x1F
+	MCPS_DATA_indication_callback          MCPS_DATA_indication;
+	MCPS_DATA_confirm_callback             MCPS_DATA_confirm;
+	PCPS_DATA_indication_callback          PCPS_DATA_indication;
+	PCPS_DATA_confirm_callback             PCPS_DATA_confirm;
+	MLME_ASSOCIATE_indication_callback     MLME_ASSOCIATE_indication;
+	MLME_ASSOCIATE_confirm_callback        MLME_ASSOCIATE_confirm;
+	MLME_DISASSOCIATE_indication_callback  MLME_DISASSOCIATE_indication;
+	MLME_DISASSOCIATE_confirm_callback     MLME_DISASSOCIATE_confirm;
+	MLME_BEACON_NOTIFY_indication_callback MLME_BEACON_NOTIFY_indication;
+	MLME_ORPHAN_indication_callback        MLME_ORPHAN_indication;
+	MLME_SCAN_confirm_callback             MLME_SCAN_confirm;
+	MLME_COMM_STATUS_indication_callback   MLME_COMM_STATUS_indication;
+	MLME_POLL_indication_callback          MLME_POLL_indication;
+	MLME_SYNC_LOSS_indication_callback     MLME_SYNC_LOSS_indication;
+	HWME_WAKEUP_indication_callback        HWME_WAKEUP_indication;
+	TDME_RXPKT_indication_callback         TDME_RXPKT_indication;
+	TDME_EDDET_indication_callback         TDME_EDDET_indication;
+	TDME_ERROR_indication_callback         TDME_ERROR_indication;
+	ca821x_generic_callback                generic_callback;
 };
 
 /***************************************************************************/ /**
@@ -808,87 +792,86 @@ struct MAC_Message
 /******************************************************************************/
 /****** SPI Command IDs                                                  ******/
 /******************************************************************************/
-/** Mask to derive the Message ID Code from the Command ID */
-#define SPI_MID_MASK (0x1F)
-/** Bit indicating a Confirm or Indication from Slave to Master */
-#define SPI_S2M (0x20)
-/** Bit indicating a Synchronous Message */
-#define SPI_SYN (0x40)
+enum spi_command_masks
+{
+	SPI_MID_MASK = 0x1F, /** Mask to derive the Message ID Code from the Command ID */
+	SPI_S2M      = 0x20, /** Bit indicating a Confirm or Indication from Slave to Master */
+	SPI_SYN      = 0x40, /** Bit indicating a Synchronous Message */
+};
 
 /** SPI Command IDs */
 enum spi_command_ids
 {
-	/** Present on SPI when stream is idle - No Data */
-	SPI_IDLE = 0xFF,
-	/** Present on SPI when buffer full or busy - resend Request */
-	SPI_NACK = 0xF0,
+	//CA821x control bytes
+	SPI_IDLE = 0xFF, /** Present on SPI when stream is idle - No Data */
+	SPI_NACK = 0xF0, /** Present on SPI when buffer full or busy - resend Request */
 	// MAC MCPS
-	SPI_MCPS_DATA_REQUEST    = MCPS_DATA_REQUEST,
-	SPI_MCPS_PURGE_REQUEST   = MCPS_PURGE_REQUEST + SPI_SYN,
-	SPI_MCPS_DATA_INDICATION = MCPS_DATA_INDICATION + SPI_S2M,
-	SPI_MCPS_DATA_CONFIRM    = MCPS_DATA_CONFIRM + SPI_S2M,
-	SPI_MCPS_PURGE_CONFIRM   = MCPS_PURGE_CONFIRM + SPI_S2M + SPI_SYN,
+	SPI_MCPS_DATA_REQUEST    = 0x00,
+	SPI_MCPS_PURGE_REQUEST   = 0x41,
+	SPI_MCPS_DATA_INDICATION = 0x20,
+	SPI_MCPS_DATA_CONFIRM    = 0x21,
+	SPI_MCPS_PURGE_CONFIRM   = 0x62,
 // MAC PCPS
 #if CASCODA_CA_VER >= 8211
 	SPI_PCPS_DATA_REQUEST    = 0x07,
 	SPI_PCPS_DATA_CONFIRM    = 0x38,
 	SPI_PCPS_DATA_INDICATION = 0x28,
-#endif //CASCODA_CA_VER >= 8211
+#endif
 	// MAC MLME
-	SPI_MLME_ASSOCIATE_REQUEST        = MLME_ASSOCIATE_REQUEST,
-	SPI_MLME_ASSOCIATE_RESPONSE       = MLME_ASSOCIATE_RESPONSE,
-	SPI_MLME_DISASSOCIATE_REQUEST     = MLME_DISASSOCIATE_REQUEST,
-	SPI_MLME_GET_REQUEST              = MLME_GET_REQUEST + SPI_SYN,
-	SPI_MLME_ORPHAN_RESPONSE          = MLME_ORPHAN_RESPONSE,
-	SPI_MLME_RESET_REQUEST            = MLME_RESET_REQUEST + SPI_SYN,
-	SPI_MLME_RX_ENABLE_REQUEST        = MLME_RX_ENABLE_REQUEST + SPI_SYN,
-	SPI_MLME_SCAN_REQUEST             = MLME_SCAN_REQUEST,
-	SPI_MLME_SET_REQUEST              = MLME_SET_REQUEST + SPI_SYN,
-	SPI_MLME_START_REQUEST            = MLME_START_REQUEST + SPI_SYN,
-	SPI_MLME_SYNC_REQUEST             = MLME_SYNC_REQUEST,
-	SPI_MLME_POLL_REQUEST             = MLME_POLL_REQUEST + SPI_SYN,
-	SPI_MLME_ASSOCIATE_INDICATION     = MLME_ASSOCIATE_INDICATION + SPI_S2M,
-	SPI_MLME_ASSOCIATE_CONFIRM        = MLME_ASSOCIATE_CONFIRM + SPI_S2M,
-	SPI_MLME_DISASSOCIATE_INDICATION  = MLME_DISASSOCIATE_INDICATION + SPI_S2M,
-	SPI_MLME_DISASSOCIATE_CONFIRM     = MLME_DISASSOCIATE_CONFIRM + SPI_S2M,
-	SPI_MLME_BEACON_NOTIFY_INDICATION = MLME_BEACON_NOTIFY_INDICATION + SPI_S2M,
-	SPI_MLME_GET_CONFIRM              = MLME_GET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_MLME_ORPHAN_INDICATION        = MLME_ORPHAN_INDICATION + SPI_S2M,
-	SPI_MLME_RESET_CONFIRM            = MLME_RESET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_MLME_RX_ENABLE_CONFIRM        = MLME_RX_ENABLE_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_MLME_SCAN_CONFIRM             = MLME_SCAN_CONFIRM + SPI_S2M,
-	SPI_MLME_COMM_STATUS_INDICATION   = MLME_COMM_STATUS_INDICATION + SPI_S2M,
-	SPI_MLME_SET_CONFIRM              = MLME_SET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_MLME_START_CONFIRM            = MLME_START_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_MLME_SYNC_LOSS_INDICATION     = MLME_SYNC_LOSS_INDICATION + SPI_S2M,
-	SPI_MLME_POLL_CONFIRM             = MLME_POLL_CONFIRM + SPI_S2M + SPI_SYN,
+	SPI_MLME_ASSOCIATE_REQUEST        = 0x02,
+	SPI_MLME_ASSOCIATE_RESPONSE       = 0x03,
+	SPI_MLME_DISASSOCIATE_REQUEST     = 0x04,
+	SPI_MLME_GET_REQUEST              = 0x45,
+	SPI_MLME_ORPHAN_RESPONSE          = 0x06,
+	SPI_MLME_RESET_REQUEST            = 0x47,
+	SPI_MLME_RX_ENABLE_REQUEST        = 0x48,
+	SPI_MLME_SCAN_REQUEST             = 0x09,
+	SPI_MLME_SET_REQUEST              = 0x4A,
+	SPI_MLME_START_REQUEST            = 0x4B,
+	SPI_MLME_SYNC_REQUEST             = 0x0C,
+	SPI_MLME_POLL_REQUEST             = 0x4D,
+	SPI_MLME_ASSOCIATE_INDICATION     = 0x23,
+	SPI_MLME_ASSOCIATE_CONFIRM        = 0x24,
+	SPI_MLME_DISASSOCIATE_INDICATION  = 0x25,
+	SPI_MLME_DISASSOCIATE_CONFIRM     = 0x26,
+	SPI_MLME_BEACON_NOTIFY_INDICATION = 0x27,
+	SPI_MLME_GET_CONFIRM              = 0x68,
+	SPI_MLME_ORPHAN_INDICATION        = 0x29,
+	SPI_MLME_RESET_CONFIRM            = 0x6A,
+	SPI_MLME_RX_ENABLE_CONFIRM        = 0x6B,
+	SPI_MLME_SCAN_CONFIRM             = 0x2C,
+	SPI_MLME_COMM_STATUS_INDICATION   = 0x2D,
+	SPI_MLME_SET_CONFIRM              = 0x6E,
+	SPI_MLME_START_CONFIRM            = 0x6F,
+	SPI_MLME_SYNC_LOSS_INDICATION     = 0x30,
+	SPI_MLME_POLL_CONFIRM             = 0x71,
 #if CASCODA_CA_VER >= 8211
-	SPI_MLME_POLL_INDICATION = MLME_POLL_INDICATION + SPI_S2M,
+	SPI_MLME_POLL_INDICATION = 0x31,
 #endif
 	// HWME
-	SPI_HWME_SET_REQUEST       = HWME_SET_REQUEST + SPI_SYN,
-	SPI_HWME_GET_REQUEST       = HWME_GET_REQUEST + SPI_SYN,
-	SPI_HWME_HAES_REQUEST      = HWME_HAES_REQUEST + SPI_SYN,
-	SPI_HWME_SET_CONFIRM       = HWME_SET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_HWME_GET_CONFIRM       = HWME_GET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_HWME_HAES_CONFIRM      = HWME_HAES_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_HWME_WAKEUP_INDICATION = HWME_WAKEUP_INDICATION + SPI_S2M,
+	SPI_HWME_SET_REQUEST       = 0x4E,
+	SPI_HWME_GET_REQUEST       = 0x4F,
+	SPI_HWME_HAES_REQUEST      = 0x50,
+	SPI_HWME_SET_CONFIRM       = 0x72,
+	SPI_HWME_GET_CONFIRM       = 0x73,
+	SPI_HWME_HAES_CONFIRM      = 0x74,
+	SPI_HWME_WAKEUP_INDICATION = 0x35,
 	// TDME
-	SPI_TDME_SETSFR_REQUEST   = TDME_SETSFR_REQUEST + SPI_SYN,
-	SPI_TDME_GETSFR_REQUEST   = TDME_GETSFR_REQUEST + SPI_SYN,
-	SPI_TDME_TESTMODE_REQUEST = TDME_TESTMODE_REQUEST + SPI_SYN,
-	SPI_TDME_SET_REQUEST      = TDME_SET_REQUEST + SPI_SYN,
-	SPI_TDME_TXPKT_REQUEST    = TDME_TXPKT_REQUEST + SPI_SYN,
-	SPI_TDME_LOTLK_REQUEST    = TDME_LOTLK_REQUEST + SPI_SYN,
-	SPI_TDME_SETSFR_CONFIRM   = TDME_SETSFR_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_TDME_GETSFR_CONFIRM   = TDME_GETSFR_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_TDME_TESTMODE_CONFIRM = TDME_TESTMODE_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_TDME_SET_CONFIRM      = TDME_SET_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_TDME_TXPKT_CONFIRM    = TDME_TXPKT_CONFIRM + SPI_S2M + SPI_SYN,
-	SPI_TDME_RXPKT_INDICATION = TDME_RXPKT_INDICATION + SPI_S2M,
-	SPI_TDME_EDDET_INDICATION = TDME_EDDET_INDICATION + SPI_S2M,
-	SPI_TDME_ERROR_INDICATION = TDME_ERROR_INDICATION + SPI_S2M,
-	SPI_TDME_LOTLK_CONFIRM    = TDME_LOTLK_CONFIRM + SPI_S2M + SPI_SYN
+	SPI_TDME_SETSFR_REQUEST   = 0x51,
+	SPI_TDME_GETSFR_REQUEST   = 0x52,
+	SPI_TDME_TESTMODE_REQUEST = 0x53,
+	SPI_TDME_SET_REQUEST      = 0x54,
+	SPI_TDME_TXPKT_REQUEST    = 0x55,
+	SPI_TDME_LOTLK_REQUEST    = 0x56,
+	SPI_TDME_SETSFR_CONFIRM   = 0x77,
+	SPI_TDME_GETSFR_CONFIRM   = 0x78,
+	SPI_TDME_TESTMODE_CONFIRM = 0x79,
+	SPI_TDME_SET_CONFIRM      = 0x7A,
+	SPI_TDME_TXPKT_CONFIRM    = 0x7B,
+	SPI_TDME_RXPKT_INDICATION = 0x3C,
+	SPI_TDME_EDDET_INDICATION = 0x3D,
+	SPI_TDME_ERROR_INDICATION = 0x3E,
+	SPI_TDME_LOTLK_CONFIRM    = 0x7F,
 };
 
 #endif // MAC_MESSAGES_H

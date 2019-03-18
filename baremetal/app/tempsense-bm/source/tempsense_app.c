@@ -115,15 +115,7 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 	}
 	else
 	{
-/* normal */
-#if defined(USE_USB)
-		EVBME_Message = EVBME_Message_USB;
-		MAC_Message   = MAC_Message_USB;
-#elif defined(USE_UART)
-		EVBME_Message = EVBME_Message_UART;
-		MAC_Message   = MAC_Message_UART;
-#endif
-
+		/* normal */
 		/* disable watchdog timer for normal mode */
 		if (APP_USE_WATCHDOG)
 			BSP_WatchdogDisable();

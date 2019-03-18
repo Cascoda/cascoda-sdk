@@ -19,7 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_bm.h"
+#include "ca821x_api.h"
 
 #ifndef CASCODA_EVBME_H
 #define CASCODA_EVBME_H
@@ -36,27 +37,6 @@ enum evbme_msg_id_code
 	EVBME_MESSAGE_INDICATION  = 0xA0,
 	EVBME_TERMINAL_INDICATION = 0xFE,
 	EVBME_ERROR_INDICATION    = 0xF0
-};
-
-/** EVBME status codes */
-enum evbme_status
-{
-	EVBME_SUCCESS   = 0x00,
-	EVBME_FAIL      = 0x01,
-	EVBME_UNKNOWN   = 0x02,
-	EVBME_INVALID   = 0x03,
-	EVBME_NO_ACCESS = 0x04
-};
-
-enum evbme_error_code
-{
-	EVBME_SPI_WAIT_TIMEOUT       = 0x01,
-	EVBME_SPI_NACK_TIMEOUT       = 0x02,
-	EVBME_SPI_EXCH_RX_PUSH_FAIL  = 0x03,
-	EVBME_SPI_SCAN_IN_PROGRESS   = 0x04,
-	EVBME_SPI_SEND_EXCHANGE_FAIL = 0x05,
-	EVBME_SPI_WAIT_EXCHANGE_FAIL = 0x06,
-	EVBME_SPI_WAIT_RX_PUSH_FAIL  = 0x07
 };
 
 /** EVBME attribute ids */
@@ -96,27 +76,26 @@ extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 /******************************************************************************/
 /****** EVBME API Functions                                              ******/
 /******************************************************************************/
-u8_t EVBMEInitialise(uint8_t *version, struct ca821x_dev *dev);
-void EVBMEHandler(struct ca821x_dev *pDeviceRef);
-int  EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
-void EVBMESendUpStream(struct MAC_Message *msg);
-int  EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-void EVBMECheckSPICommand(struct MAC_Message *cmd, struct ca821x_dev *pDeviceRef);
-u8_t EVBME_SET_request(u8_t Attribute, u8_t AttributeLength, u8_t *AttributeValue, struct ca821x_dev *pDeviceRef);
-u8_t EVBME_ResetRF(u8_t ms, struct ca821x_dev *pDeviceRef);
-u8_t EVBME_Connect(u8_t *version, struct ca821x_dev *pDeviceRef);
-void EVBME_Disconnect(void);
-void EVBME_Dispatch(struct ca821x_dev *pDeviceRef);
-void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
+ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *dev);
+void     EVBMEHandler(struct ca821x_dev *pDeviceRef);
+int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+void     EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
+void     EVBMESendUpStream(struct MAC_Message *msg);
+int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+ca_error EVBME_SET_request(u8_t Attribute, u8_t AttributeLength, u8_t *AttributeValue, struct ca821x_dev *pDeviceRef);
+ca_error EVBME_ResetRF(u8_t ms, struct ca821x_dev *pDeviceRef);
+ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRef);
+void     EVBME_Disconnect(void);
+ca_error EVBME_Dispatch(struct ca821x_dev *pDeviceRef);
+void     cascoda_io_handler(struct ca821x_dev *pDeviceRef);
 
-void EVBME_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
-u8_t EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
-void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
-void EVBME_CAX_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
-void EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
-void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
-void EVBME_WakeUpRF(void);
-void EVBME_ERROR_Indication(u8_t error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef);
+void     EVBME_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
+void     EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
+void     EVBME_CAX_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+void     EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
+void     EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
+void     EVBME_WakeUpRF(void);
+void     EVBME_ERROR_Indication(ca_error error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef);
 
 #endif // CASCODA_EVBME_H

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "cascoda-bm/cascoda-bm-config.h"
+#include "cascoda-bm/cascoda_bm.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 
@@ -238,16 +238,12 @@ void BSP_UseExternalClock(u8_t useExternalClock);
 /*******************************************************************************/
 
 /**
- * \brief Put Title on LCD
+ * \brief This function will be called repeatedly when the Baremetal drivers
+ * are blocking & waiting (eg. TIME_WaitTicks or WAIT_Callback), in case the
+ * BSP needs to do any system maintenance or wants to reduce power consumption.
  *
  */
-void BSP_ShowTitle(u8_t *pString);
-
-/**
- * \brief Put Time on LCD
- *
- */
-void BSP_ShowTime(void);
+void BSP_Waiting(void);
 
 /**
  * \brief Get Microchip MCP73831 Charge Status
@@ -379,5 +375,13 @@ void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize);
  *
  */
 void BSP_ClearDataFlash(void);
+
+#if defined(USE_DEBUG)
+// Debug globals
+extern u8_t Debug_IRQ_State; //!<  IRQ State (wakeup, occasional or invalid)
+extern u8_t Debug_BSP_Error; //!<  BSP Error Status
+void        BSP_Debug_Reset(void);
+void        BSP_Debug_Error(u8_t code);
+#endif
 
 #endif // CASCODA_BSP_H

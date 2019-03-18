@@ -27,7 +27,6 @@
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_wait.h"
-#include "ca821x_api.h"
 #include "mac_messages.h"
 
 static union ca821x_api_callback sTargetCallback;
@@ -40,11 +39,11 @@ static bool                      sWaiting            = false;
  * \brief Internal callback function for wait. It logs the fact that the command
  *        was received, and then calls the actual callback.
  *
- * \return Status 1 handled, 0 unhandled
+ * \return Status CA_ERROR_SUCCESS handled, CA_ERROR_NOT_HANDLED unhandled
  */
-static int WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRef)
+static ca_error WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRef)
 {
-	int status = 0;
+	ca_error status = CA_ERROR_NOT_HANDLED;
 
 	sWaitCallbackActive = true;
 
@@ -57,17 +56,17 @@ static int WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRef)
 	return status;
 }
 
-int WAIT_Callback(union ca821x_api_callback *aTargetCallback,
-                  int                        timeout,
-                  void *                     aCallbackContext,
-                  struct ca821x_dev *        pDeviceRef)
+static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
+                                     int                        aTimeoutMs,
+                                     void *                     aCallbackContext,
+                                     struct ca821x_dev *        pDeviceRef)
 {
-	int status    = EVBME_SUCCESS;
-	int startTime = TIME_ReadAbsoluteTime();
+	ca_error status    = CA_ERROR_SUCCESS;
+	int      startTime = TIME_ReadAbsoluteTime();
 
 	//Strictly not re-entrant
 	if (sWaiting)
-		return EVBME_FAIL;
+		return CA_ERROR_INVALID_STATE;
 	sWaiting = true;
 
 	//Replace the current callback with a special callback that tracks whether it has
@@ -77,19 +76,60 @@ int WAIT_Callback(union ca821x_api_callback *aTargetCallback,
 	sWaitCalled                       = false;
 	sCallbackContext                  = aCallbackContext;
 
-	for (int timepassed = 0; timepassed < timeout; timepassed = TIME_ReadAbsoluteTime() - startTime)
+	for (int timepassed = 0; timepassed < aTimeoutMs; timepassed = TIME_ReadAbsoluteTime() - startTime)
 	{
-		EVBME_Dispatch(pDeviceRef);
-		if (sWaitCalled)
+		status = EVBME_Dispatch(pDeviceRef);
+		if (sWaitCalled || status == CA_ERROR_INVALID_STATE)
 			break;
+		BSP_Waiting();
 	}
-	if (!sWaitCalled)
-		status = EVBME_SPI_WAIT_TIMEOUT;
+	if (!sWaitCalled && status == CA_ERROR_SUCCESS)
+		status = CA_ERROR_SPI_WAIT_TIMEOUT;
 
 	*aTargetCallback = sTargetCallback;
 	sCallbackContext = NULL;
 	sWaiting         = false;
 
+	return status;
+}
+
+ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef)
+{
+	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
+	ca_error                   status      = CA_ERROR_FAIL;
+
+	if (callbackRef == NULL)
+	{
+		goto exit; //Invalid command ID
+	}
+
+	status = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, aCallbackContext, pDeviceRef);
+
+exit:
+	return status;
+}
+
+ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
+                           ca821x_generic_callback aCallback,
+                           int                     aTimeoutMs,
+                           void *                  aCallbackContext,
+                           struct ca821x_dev *     pDeviceRef)
+{
+	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
+	union ca821x_api_callback  oldCallback;
+	ca_error                   status = CA_ERROR_FAIL;
+
+	if (callbackRef == NULL)
+	{
+		goto exit; //Invalid command ID
+	}
+
+	oldCallback                   = *callbackRef;
+	callbackRef->generic_callback = aCallback;
+	status                        = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, aCallbackContext, pDeviceRef);
+	*callbackRef                  = oldCallback;
+
+exit:
 	return status;
 }
 
@@ -105,29 +145,30 @@ void *WAIT_GetContext(void)
  * \brief Internal callback function for legacy wait, just copies the received
  *        command into the context buffer.
  *
- * \return Status 1 handled, 0 unhandled
+ * \return Status CA_ERROR_SUCCESS handled, CA_ERROR_NOT_HANDLED unhandled
  */
-static int WAIT_CallbackLegacy(void *params, struct ca821x_dev *pDeviceRef)
+static ca_error WAIT_CallbackLegacy(void *params, struct ca821x_dev *pDeviceRef)
 {
-	int      status = 0;
+	ca_error status = CA_ERROR_NOT_HANDLED;
 	uint8_t *buf    = WAIT_GetContext();
+	(void)pDeviceRef;
 
 	if (buf && params)
 	{
 		uint8_t *source = params;
 		source -= 2;
 		memcpy(buf, source, source[1] + 2);
-		status = 1;
+		status = CA_ERROR_SUCCESS;
 	}
 
 	return status;
 }
 
-int WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef)
+ca_error WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef)
 {
 	union ca821x_api_callback *callbackRef = ca821x_get_callback(cmdid, pDeviceRef);
 	union ca821x_api_callback  oldCallback;
-	int                        status = EVBME_FAIL;
+	ca_error                   status = CA_ERROR_FAIL;
 
 	if (callbackRef == NULL)
 	{
@@ -136,7 +177,7 @@ int WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *
 
 	oldCallback                   = *callbackRef;
 	callbackRef->generic_callback = &WAIT_CallbackLegacy;
-	status                        = WAIT_Callback(callbackRef, timeout_ms, buf, pDeviceRef);
+	status                        = WAIT_CallbackWithRef(callbackRef, timeout_ms, buf, pDeviceRef);
 	*callbackRef                  = oldCallback;
 
 exit:

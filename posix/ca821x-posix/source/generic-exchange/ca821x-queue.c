@@ -86,8 +86,8 @@ void add_to_waiting_queue(struct buffer_queue **head_buffer_queue,
 
 void flush_queue(struct buffer_queue **head_buffer_queue, pthread_mutex_t *buf_queue_mutex)
 {
-	struct ca821x_dev *junkDev;
-	uint8_t *          junk;
+	struct ca821x_dev *junkDev = NULL;
+	uint8_t *          junk    = NULL;
 
 	pthread_mutex_lock(buf_queue_mutex);
 	while (*head_buffer_queue != NULL)

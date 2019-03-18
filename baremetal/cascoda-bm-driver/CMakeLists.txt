@@ -43,24 +43,19 @@ configure_file(
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-bm
-	${PROJECT_SOURCE_DIR}/source/cascoda_debug.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
-	${PROJECT_SOURCE_DIR}/source/cascoda_linked_list.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_spi.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_time.c
-	${PROJECT_SOURCE_DIR}/source/cascoda_timer.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_usbhid.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_wait.c
 	)
 
-#TODO: Fall back to a dummy cascoda-bm-plat if the superproject doesn't find one
 target_link_libraries(cascoda-bm
 	PUBLIC
 		ca821x-api
-	PRIVATE
-		m
 	INTERFACE
 		cascoda-bm-plat
 	)
@@ -71,9 +66,7 @@ target_include_directories( cascoda-bm
 		${PROJECT_BINARY_DIR}/include
 	)
 
-# Test app config -------------------------------------------------------------
-# TODO: Add test app
+cascoda_use_warnings(cascoda-bm)
 
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests
+# Add tests -------------------------------------------------------------------
+add_subdirectory(${PROJECT_SOURCE_DIR}/test)

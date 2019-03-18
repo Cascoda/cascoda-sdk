@@ -76,6 +76,7 @@ target_include_directories( ca821x-openthread-posix-plat
 add_library(ca821x-openthread-posix-ftd INTERFACE)
 target_link_libraries(ca821x-openthread-posix-ftd
 	INTERFACE
+		openthread-ftd
 		ca821x-openthread-posix-plat
 		openthread-ftd
 		ca821x-openthread-posix-plat
@@ -84,6 +85,7 @@ target_link_libraries(ca821x-openthread-posix-ftd
 add_library(ca821x-openthread-posix-mtd INTERFACE)
 target_link_libraries(ca821x-openthread-posix-mtd
 	INTERFACE
+		openthread-mtd
 		ca821x-openthread-posix-plat
 		openthread-mtd
 		ca821x-openthread-posix-plat
@@ -102,10 +104,11 @@ add_executable(mt-example
 	${PROJECT_SOURCE_DIR}/example/mainMultithread.c
 	)
 
+add_executable(ot-server-standalone
+	${PROJECT_SOURCE_DIR}/example/serverStandalone.c
+	)
+
 target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
 target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests
+target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd)

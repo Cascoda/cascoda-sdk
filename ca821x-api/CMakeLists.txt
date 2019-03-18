@@ -3,13 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 project (ca821x-api-lib)
 
 # Set configuration variables -------------------------------------------------
-set(CASCODA_CA_VERS 8210 8211)
-set(CASCODA_CA_VER 8211 CACHE STRING "The CAxxxx chip number of the target part")
-set_property(CACHE CASCODA_CA_VER PROPERTY STRINGS ${CASCODA_CA_VERS})
-
-if(NOT CASCODA_CA_VER IN_LIST CASCODA_CA_VERS)
-    message(FATAL_ERROR "CASCODA_CA_VER must be one of ${CASCODA_CA_VERS}")
-endif()
+cascoda_dropdown(CASCODA_CA_VER "CA-xxxx Version number of target part" 8211 8210)
 
 # Config file generation ------------------------------------------------------
 configure_file(
@@ -17,16 +11,29 @@ configure_file(
 	"${PROJECT_BINARY_DIR}/include/ca821x_config.h"
 	)
 
+# Add git-version target
+set(GIT_VERSION_FILE ${PROJECT_BINARY_DIR}/source/ca821x_ver.c)
+add_custom_target(git-version ALL
+	BYPRODUCTS ${GIT_VERSION_FILE}
+	COMMAND ${CMAKE_COMMAND}
+		-DGITVER_IN="${PROJECT_SOURCE_DIR}/source/ca821x_ver.c.in"
+		-DGITVER_OUT="${GIT_VERSION_FILE}"
+		-P ${PROJECT_SOURCE_DIR}/git-version.cmake
+	)
+
 # Main library config ---------------------------------------------------------
 add_library(ca821x-api
 	${PROJECT_SOURCE_DIR}/source/ca821x_api.c
+	${PROJECT_SOURCE_DIR}/source/ca821x_api_helper.c
+	${GIT_VERSION_FILE}
 	)
-
+add_dependencies(ca821x-api git-version)
 target_include_directories(ca821x-api
 	PUBLIC
 		${PROJECT_SOURCE_DIR}/include
 		${PROJECT_BINARY_DIR}/include
 	)
+cascoda_use_warnings(ca821x-api)
 
 # Test15-4 library ------------------------------------------------------------
 add_library(test15-4-api
@@ -43,14 +50,7 @@ target_link_libraries(test15-4-api
 	PUBLIC
 		ca821x-api
 	)
+cascoda_use_warnings(test15-4-api)
 
-# Test app config -------------------------------------------------------------
-add_executable(test_app
-	${PROJECT_SOURCE_DIR}/test/test.c
-	)
-
-target_link_libraries(test_app ca821x-api)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-add_test(TestAppPasses test_app)
+# Tests
+add_subdirectory(${PROJECT_SOURCE_DIR}/test)

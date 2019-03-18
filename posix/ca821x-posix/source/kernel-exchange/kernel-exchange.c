@@ -72,12 +72,19 @@ struct kernel_exchange_priv
 };
 
 /******************************************************************************/
+static void assert_kernel_exchange(struct ca821x_dev *pDeviceRef)
+{
+	struct kernel_exchange_priv *priv = pDeviceRef->exchange_context;
+	assert(priv->base.exchange_type == ca821x_exchange_kernel);
+}
 
 static int ca8210_test_int_write(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	int remaining = len;
 	int attempts  = 0;
 	int error     = 0;
+
+	assert_kernel_exchange(pDeviceRef);
 
 	do
 	{
@@ -116,6 +123,8 @@ ssize_t kernel_exchange_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	struct kernel_exchange_priv *priv = pDeviceRef->exchange_context;
 	struct timeval               timeout;
 
+	assert_kernel_exchange(pDeviceRef);
+
 	if (!peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
 	{
 		int     nfds;
@@ -140,6 +149,9 @@ void flush_unread_ke(struct ca821x_dev *pDeviceRef)
 {
 	uint8_t buffer[MAX_BUF_SIZE];
 	ssize_t rval;
+
+	assert_kernel_exchange(pDeviceRef);
+
 	do
 	{
 		rval = read(DriverFileDescriptor, buffer, 0);
@@ -148,6 +160,8 @@ void flush_unread_ke(struct ca821x_dev *pDeviceRef)
 
 void unblock_read(struct ca821x_dev *pDeviceRef)
 {
+	assert_kernel_exchange(pDeviceRef);
+
 	const uint8_t dummybyte = 0;
 	write(DriverFDPipe[1], &dummybyte, 1);
 }
@@ -228,6 +242,8 @@ void kernel_exchange_deinit(struct ca821x_dev *pDeviceRef)
 {
 	int ret;
 
+	assert_kernel_exchange(pDeviceRef);
+
 	deinit_generic(pDeviceRef);
 	deinit_statics();
 
@@ -248,5 +264,6 @@ void kernel_exchange_deinit(struct ca821x_dev *pDeviceRef)
 
 int kernel_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef)
 {
+	assert_kernel_exchange(pDeviceRef);
 	return ioctl(DriverFileDescriptor, CA8210_IOCTL_HARD_RESET, resettime);
 }

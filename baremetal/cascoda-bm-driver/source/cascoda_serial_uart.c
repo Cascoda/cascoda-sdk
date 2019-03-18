@@ -19,12 +19,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#if defined(USE_UART)
 
 #include <string.h>
+
+#include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+
+#if defined(USE_UART)
 
 /******************************************************************************/
 /****** Definitions for Serial State                                     ******/
@@ -43,10 +46,10 @@ u8_t SerialIfState = SERIAL_INBETWEEN; //!< State of serial reading state machin
 /******************************************************************************/
 /****** Global Variables for Serial Message Buffers                      ******/
 /******************************************************************************/
-volatile struct SerialBuffer SerialRxBuffer[SERIAL_RX_BUFFER_LEN]; //!< Global buffer for received serial messages
-struct SerialBuffer          SerialTxBuffer;                       //!< Global buffer for transmitted serial messages
-volatile int                 SerialRxWrIndex = 0, SerialRxRdIndex = 0, SerialRxCounter = 0;
-volatile bool                SerialRxPending = false;
+struct SerialBuffer SerialRxBuffer[SERIAL_RX_BUFFER_LEN]; //!< Global buffer for received serial messages
+struct SerialBuffer SerialTxBuffer;                       //!< Global buffer for transmitted serial messages
+volatile int        SerialRxWrIndex = 0, SerialRxRdIndex = 0, SerialRxCounter = 0;
+volatile bool       SerialRxPending = false;
 
 int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 

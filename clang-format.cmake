@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.11)
 file(GLOB_RECURSE cascoda_allsource *.c *.cpp *.h *.hpp)
 # Remove vendor code
 foreach(TMP_PATH ${cascoda_allsource})
-	if(${TMP_PATH} MATCHES /vendor/)
+	if(${TMP_PATH} MATCHES "(/vendor/|third-party/)")
 		list(REMOVE_ITEM cascoda_allsource ${TMP_PATH})
 	endif()
 endforeach()

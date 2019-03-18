@@ -84,6 +84,12 @@ static int reload_hid_device(struct ca821x_dev *pDeviceRef);
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 
+static void assert_usb_exchange(struct ca821x_dev *pDeviceRef)
+{
+	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
+	assert(priv->base.exchange_type == ca821x_exchange_usb);
+}
+
 //returns 1 for non-final fragment, 0 for final
 static int get_next_frag(const uint8_t *buf_in, uint8_t len_in, uint8_t *frag_out, uint8_t *offset)
 {
@@ -173,6 +179,8 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	uint8_t                   delay, len, offset;
 	int                       error;
 
+	assert_usb_exchange(pDeviceRef);
+
 	if (peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
 	{ //Use a nonblocking read if we are waiting to send messages
 		delay = 0;
@@ -226,6 +234,8 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 	int                       rval, error;
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
 
+	assert_usb_exchange(pDeviceRef);
+
 	do
 	{
 		uint8_t retries = 0;
@@ -250,6 +260,9 @@ void flush_unread_usb(struct ca821x_dev *pDeviceRef)
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
 	uint8_t                   frag_buf[MAX_FRAG_SIZE + 1]; //+1 for report ID
 	int                       rval;
+
+	assert_usb_exchange(pDeviceRef);
+
 	do
 	{
 		rval = dhid_read_timeout(priv->hid_dev, frag_buf, MAX_FRAG_SIZE, 10);
@@ -355,6 +368,7 @@ static int reload_hid_device(struct ca821x_dev *pDeviceRef)
 	size_t                    len;
 	int                       error = 0;
 
+	assert_usb_exchange(pDeviceRef);
 	pthread_mutex_lock(&devs_mutex);
 
 	dhid_close(priv->hid_dev);
@@ -484,6 +498,7 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
 
+	assert_usb_exchange(pDeviceRef);
 	deinit_generic(pDeviceRef);
 	dhid_close(priv->hid_dev);
 
@@ -510,12 +525,17 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef)
 int usb_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef)
 {
 	//For usb, the coprocessor will reset the ca821x if it isn't responsive.. so just rely on that
+	(void)resettime;
+	(void)pDeviceRef;
+
 	return 0;
 }
 
 int usb_exchange_user_send(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
+
+	assert_usb_exchange(pDeviceRef);
 	assert(!(buf[0] & SPI_SYN));
 	assert(len < MAX_BUF_SIZE);
 	if (!s_initialised)

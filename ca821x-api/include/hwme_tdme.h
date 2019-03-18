@@ -33,37 +33,22 @@
 /** HWME Status Codes */
 enum hwme_status
 {
-	/** The requested Primitive has been executed successfully */
-	HWME_SUCCESS = 0x00,
-	/** Unknown HWME Attribute or Parameter */
-	HWME_UNKNOWN = 0x01,
-	/** Invalid HWME Attribute Value or Parameter Value */
-	HWME_INVALID = 0x02,
-	/** The requested Attribute cannot currently be accessed */
-	HWME_NO_ACCESS  = 0x03,
-	HWME_MIN_STATUS = HWME_SUCCESS,
-	HWME_MAX_STATUS = HWME_NO_ACCESS
+	HWME_SUCCESS   = 0x00, //!< The requested Primitive has been executed successfully
+	HWME_UNKNOWN   = 0x01, //!< Unknown HWME Attribute or Parameter
+	HWME_INVALID   = 0x02, //!< Invalid HWME Attribute Value or Parameter Value
+	HWME_NO_ACCESS = 0x03, //!< The requested Attribute cannot currently be accessed
 };
 
 /** Potential values for HWME_WAKEUP_indication's WakeUpCondition parameter */
 enum hwme_wakeup_condition
 {
-	/** Transceiver woken up from Power Up / System Reset */
-	HWME_WAKEUP_POWERUP = 0x00,
-	/** Watchdog Timer Time-Out */
-	HWME_WAKEUP_WDT = 0x01,
-	/** Transceiver woken up from Power-Off by Sleep Timer Time-Out */
-	HWME_WAKEUP_POFF_SLT = 0x02,
-	/** Transceiver woken up from Power-Off by GPIO Activity */
-	HWME_WAKEUP_POFF_GPIO = 0x03,
-	/** Transceiver woken up from Standby by Sleep Timer Time-Out */
-	HWME_WAKEUP_STBY_SLT = 0x04,
-	/** Transceiver woken up from Standby by GPIO Activity */
-	HWME_WAKEUP_STBY_GPIO = 0x05,
-	/** Sleep-Timer Time-Out in Active Mode */
-	HWME_WAKEUP_ACTIVE_SLT = 0x06,
-	HWME_MIN_WAKEUP        = HWME_WAKEUP_POWERUP,
-	HWME_MAX_WAKEUP        = HWME_WAKEUP_ACTIVE_SLT
+	HWME_WAKEUP_POWERUP    = 0x00, //!< Transceiver woken up from Power Up / System Reset
+	HWME_WAKEUP_WDT        = 0x01, //!< Watchdog Timer Time-Out
+	HWME_WAKEUP_POFF_SLT   = 0x02, //!< Transceiver woken up from Power-Off by Sleep Timer Time-Out
+	HWME_WAKEUP_POFF_GPIO  = 0x03, //!< Transceiver woken up from Power-Off by GPIO Activity
+	HWME_WAKEUP_STBY_SLT   = 0x04, //!< Transceiver woken up from Standby by Sleep Timer Time-Out
+	HWME_WAKEUP_STBY_GPIO  = 0x05, //!< Transceiver woken up from Standby by GPIO Activity
+	HWME_WAKEUP_ACTIVE_SLT = 0x06, //!< Sleep-Timer Time-Out in Active Mode
 };
 
 /** Potential values of HWME_LQIMODE */
@@ -76,40 +61,31 @@ enum lqi_mode
 /** HWME Attribute IDs */
 enum hwme_attribute
 {
-	HWME_POWERCON = 0x00, //!< Power Saving Mode Control
-	HWME_CHIPID   = 0x01, //!< Product ID and Version Number
-	HWME_TXPOWER  = 0x02, //!< Transmit Power Setting
-	/** Clear Channel Assessment Mode, according to 802.15.4 Section 6.9.9 */
-	HWME_CCAMODE     = 0x03,
+	HWME_POWERCON    = 0x00, //!< Power Saving Mode Control
+	HWME_CHIPID      = 0x01, //!< Product ID and Version Number
+	HWME_TXPOWER     = 0x02, //!< Transmit Power Setting
+	HWME_CCAMODE     = 0x03, //!< Clear Channel Assessment Mode, according to 802.15.4 Section 6.9.9
 	HWME_EDTHRESHOLD = 0x04, //!< Energy Detect (ED) Threshold for CCA
 	HWME_CSTHRESHOLD = 0x05, //!< Carrier Sense (CS) Threshold for CCA
-	/** Energy Detect (ED) Value of current channel */
-	HWME_EDVALUE = 0x06,
-	/** Carrier Sense (CS) Value of current channel */
-	HWME_CSVALUE = 0x07,
-	/** Energy Detect (ED) Value of last received Packet */
-	HWME_EDVALLP = 0x08,
-	/** Carrier Sense (CS) Value of last received Packet */
-	HWME_CSVALLP = 0x09,
-	/** Frequency Offset of last received Packet */
-	HWME_FREQOFFS    = 0x0A,
+	HWME_EDVALUE     = 0x06, //!< Energy Detect (ED) Value of current channel
+	HWME_CSVALUE     = 0x07, //!< Carrier Sense (CS) Value of current channel
+	HWME_EDVALLP     = 0x08, //!< Energy Detect (ED) Value of last received Packet
+	HWME_CSVALLP     = 0x09, //!< Carrier Sense (CS) Value of last received Packet
+	HWME_FREQOFFS    = 0x0A, //!< Frequency Offset of last received Packet
 	HWME_MACTIMER    = 0x0B, //!< MAC Symbol Timer Value
 	HWME_RANDOMNUM   = 0x0C, //!< Random Number Value
 	HWME_TEMPERATURE = 0x0D, //!< Temperature Sensor Measurement Value
-	/** Host Security Key for AES-128 Encryption or Decryption */
-	HWME_HSKEY = 0x0E,
-	/** System Clock Output to a specific GPIO */
-	HWME_SYSCLKOUT = 0x0F,
-	/** LQI Reporting Mode for Data Indications and PanDescriptors */
-	HWME_LQIMODE  = 0x10,
-	HWME_LQILIMIT = 0x11,
+	HWME_HSKEY       = 0x0E, //!< Host Security Key for AES-128 Encryption or Decryption
+	HWME_SYSCLKOUT   = 0x0F, //!< System Clock Output to a specific GPIO
+	HWME_LQIMODE     = 0x10, //!< LQI Reporting Mode for Data Indications and PanDescriptors
+	HWME_LQILIMIT    = 0x11, //!< LQI minimal value to accept a received MAC frame
 #if CASCODA_CA_VER == 8211
-	HWME_RXMODE            = 0x12,
-	HWME_POLLINDMODE       = 0x13,
-	HWME_ENHANCEDFP        = 0x14,
-	HWME_MAXDIRECTS        = 0x15,
-	HWME_MAXINDIRECTS      = 0x16,
-	HWME_IMAGINARYINDIRECT = 0x17,
+	HWME_RXMODE       = 0x12, //!< RX_MODE: 0 = MCPS, 1=PCPS, 2=PCPS except data polls
+	HWME_POLLINDMODE  = 0x13, //!< Poll Ind Mode: 0=No indications, 1=Always indicate, 2=indicate if no data confirm
+	HWME_ENHANCEDFP   = 0x14, //!< Use the 'Frame Pending' flag in data frames as informative for the child
+	HWME_MAXDIRECTS   = 0x15, //!< Maximum number of direct frames queued
+	HWME_MAXINDIRECTS = 0x16, //!< Maximum number of indirect frames that can be queued
+	HWME_IMAGINARYINDIRECT = 0x17, //!< 0=Normal Indirect behaviour, 1=Imaginary mode, don't send indirect frames
 #endif
 };
 
@@ -152,74 +128,49 @@ enum tdme_hw_err
 /** TDME Status Codes */
 enum tdme_status
 {
-	/** The requested Primitive has been executed successfully */
-	TDME_SUCCESS = 0x00,
-	TDME_UNKNOWN = 0x01, //!< Unknown TDME Value or Parameter
-	TDME_INVALID = 0x02, //!< Invalid TDME Value or Parameter Value
-	/** The requested Value cannot currently be accessed */
-	TDME_NO_ACCESS = 0x03,
+	TDME_SUCCESS   = 0x00, //!< The requested Primitive has been executed successfully
+	TDME_UNKNOWN   = 0x01, //!< Unknown TDME Value or Parameter
+	TDME_INVALID   = 0x02, //!< Invalid TDME Value or Parameter Value
+	TDME_NO_ACCESS = 0x03, //!< The requested Value cannot currently be accessed
 	TDME_LO_ERROR  = 0x04, //!< LO Locking Error
-	/** Received Packet Frame Check Sequence (CRC) Error */
-	TDME_FCS_ERROR = 0x05,
-	/** Received Packet Synchronisation Header Error */
-	TDME_SHR_ERROR  = 0x06,
-	TDME_PHR_ERROR  = 0x07, //!< Received Packet Packet Header Error
-	TDME_MIN_STATUS = TDME_SUCCESS,
-	TDME_MAX_STATUS = TDME_PHR_ERROR
+	TDME_FCS_ERROR = 0x05, //!< Received Packet Frame Check Sequence (CRC) Error
+	TDME_SHR_ERROR = 0x06, //!< Received Packet Synchronisation Header Error
+	TDME_PHR_ERROR = 0x07, //!< Received Packet Packet Header Error
 };
 
 /** TDME Test Modes */
 enum tdme_test_mode
 {
-	TDME_TEST_OFF = 0x00, //!< All Test Modes are disabled (default)
-	/** Idle Test Mode. Test mode is enabled but transmitter and receiver
-	 *  are off */
-	TDME_TEST_IDLE = 0x01,
+	TDME_TEST_OFF  = 0x00, //!< All Test Modes are disabled (default)
+	TDME_TEST_IDLE = 0x01, //!< Idle Test Mode. Test mode is enabled but transmitter and receiver are off
 	TDME_TEST_TX   = 0x02, //!< Transmit Test Mode
 	TDME_TEST_RX   = 0x03, //!< Receive Test Mode
-	/** Energy Detect Test Mode (Energy Sniffer) */
-	TDME_TEST_ED = 0x04,
-	/** LO Test Mode 1 (Tx/Rx with no Modulation on 802.15.4 Channel, PA
-	 *  enabled) */
-	TDME_TEST_LO_1 = 0x05,
-	/** LO Test Mode 2 (VCO Open Loop / Initialisation, PA enabled) */
-	TDME_TEST_LO_2 = 0x06,
-	/** LO Test Mode 3 (Locking Test, PA disabled) */
-	TDME_TEST_LO_3    = 0x07,
-	TDME_MIN_TESTMODE = TDME_TEST_OFF,
-	TDME_MAX_TESTMODE = TDME_TEST_LO_3
+	TDME_TEST_ED   = 0x04, //!< Energy Detect Test Mode (Energy Sniffer)
+	TDME_TEST_LO_1 = 0x05, //!< LO Test Mode 1 (Tx/Rx with no Modulation on 802.15.4 Channel, PA enabled)
+	TDME_TEST_LO_2 = 0x06, //!< LO Test Mode 2 (VCO Open Loop / Initialisation, PA enabled)
+	TDME_TEST_LO_3 = 0x07, //!< LO Test Mode 3 (Locking Test, PA disabled)
 };
 
 /* Tx Packet PHY Payload Data Type */
 enum tdme_payload_type
 {
-	TDME_TXD_RANDOM = 0x00, //!< Random Data, internally generated
-	/** Sequence Number in 1st Byte and all other Data Random, internally
-	 *  generated */
-	TDME_TXD_SEQRANDOM = 0x01,
-	/** Count (Increment) Data, internally generated */
-	TDME_TXD_COUNT = 0x02,
-	/** Data external and appended to TDME-TXPKT Request */
-	TDME_TXD_APPENDED = 0x03,
-	TDME_MIN_TXD      = TDME_TXD_RANDOM,
-	TDME_MAX_TXD      = TDME_TXD_APPENDED
+	TDME_TXD_RANDOM    = 0x00, //!< Random Data, internally generated
+	TDME_TXD_SEQRANDOM = 0x01, //!< Sequence Number in 1st Byte and all other Data Random, internally generated
+	TDME_TXD_COUNT     = 0x02, //!< Count (Increment) Data, internally generated
+	TDME_TXD_APPENDED  = 0x03, //!< Data external and appended to TDME-TXPKT Request
 };
 
 /** TDME Attribute IDs */
 enum tdme_attribute
 {
-	TDME_CHANNEL   = 0x00, //!< IEEE802.15.4 Channel Selection
-	TDME_TX_CONFIG = 0x01, //!< Transmit (Tx) Test Configuration
-	TDME_ED_CONFIG = 0x02, //!< Energy Detect Configuration
-	TDME_RX_CONFIG = 0x03, //!< Receiver Test Configuration
-	/** LO Test 1 Configuration (Tx/Rx with no Modulation on 802.15.4 Channel) */
-	TDME_LO_1_CONFIG = 0x04,
-	/** LO Test 2 Configuration (VCO Open Loop / Initialisation) */
-	TDME_LO_2_CONFIG   = 0x05,
-	TDME_ATM_CONFIG    = 0x06, //!< Analog Test Bus Configuration
-	TDME_MPW2_OVWR     = 0x07,
-	TDME_MIN_ATTRIBUTE = TDME_CHANNEL,
-	TDME_MAX_ATTRIBUTE = TDME_MPW2_OVWR
+	TDME_CHANNEL     = 0x00, //!< IEEE802.15.4 Channel Selection
+	TDME_TX_CONFIG   = 0x01, //!< Transmit (Tx) Test Configuration
+	TDME_ED_CONFIG   = 0x02, //!< Energy Detect Configuration
+	TDME_RX_CONFIG   = 0x03, //!< Receiver Test Configuration
+	TDME_LO_1_CONFIG = 0x04, //!< LO Test 1 Configuration (Tx/Rx with no Modulation on 802.15.4 Channel)
+	TDME_LO_2_CONFIG = 0x05, //!< LO Test 2 Configuration (VCO Open Loop / Initialisation)
+	TDME_ATM_CONFIG  = 0x06, //!< Analog Test Bus Configuration
+	TDME_MPW2_OVWR   = 0x07,
 };
 /**@}*/
 

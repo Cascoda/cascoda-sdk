@@ -106,8 +106,9 @@ const HidConfigurationDescriptor_t HidConfDesc = {
 
 const u8_t HidReportDescriptor[HID_RPT_SIZE] = {
     // Usage Page item specifying vendor defined
-    0x06,       // item tag bSize 2 bType 1 (global) bTag 0
-    0x00, 0xff, // data 0xFF00 vendor defined
+    0x06, // item tag bSize 2 bType 1 (global) bTag 0
+    0x00,
+    0xff, // data 0xFF00 vendor defined
     // Usage item specifying vendor usage 1
     0x09, // item tag bSize 1 bType 2 (local) bTag 0
     0x01, // data 0x01
@@ -124,8 +125,9 @@ const u8_t HidReportDescriptor[HID_RPT_SIZE] = {
     0x15, // item tag bSize 1 bType 1 (Global) bTag 0x1
     0x00, // data 0x00
     // Logical Maximum (data bytes in the report may have maximum value = 0x00FF = unsigned 255)
-    0x26,       // item tag bSize 2 bType 1 (Global) bTag 0x2
-    0xFF, 0x00, // data 0x00FF
+    0x26, // item tag bSize 2 bType 1 (Global) bTag 0x2
+    0xFF,
+    0x00, // data 0x00FF
     // Report Size: 8-bit field size
     0x75, // item tag bSize 1 bType 1 (Global) btag 0x7
     0x08, // data 0x08

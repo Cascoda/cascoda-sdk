@@ -22,20 +22,15 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cascoda-bm/cascoda_bm.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_time.h"
-#include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
 #include "mac_messages.h"
-#if defined(USE_DEBUG)
-//TODO: Sort out this backwards dependency
-#error "USE_DEBUG not supported at the moment"
-#include "cascoda_debug_chili.h"
-#endif // USE_DEBUG
 
 /******************************************************************************/
 /****** Global Parameters that can by set via EVBME_SET_request          ******/
@@ -43,8 +38,8 @@
 uint8_t EVBME_HasReset = 0; //!< Used to notify apps that radio has been reset
 uint8_t EVBME_UseMAC   = 0; //!< Use MAC functionality during phy tests
 
-static uint8_t *app_version; //!< String describing initialised app
-static u8_t     CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz clock
+static const char *app_name;    //!< String describing initialised app
+static u8_t        CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz clock
 
 /** Function pointer for sending ASCII reporting messages upstream */
 void (*EVBME_Message)(char *message, size_t len, void *pDeviceRef);
@@ -65,16 +60,16 @@ int (*usb_present_changed)(void);
  *******************************************************************************
  * Initialises low level interfaces, resets and initialises CA-8210.
  *******************************************************************************
- * \param version - App version string
+ * \param aAppName - App name string
  *******************************************************************************
  * \return Status of initialisation
  *******************************************************************************
  ******************************************************************************/
-uint8_t EVBMEInitialise(uint8_t *version, struct ca821x_dev *pDeviceRef)
+ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t status;
+	ca_error status;
 
-	app_version = version;
+	app_name = aAppName;
 #ifdef stdout
 	setbuf(stdout, NULL);
 #endif
@@ -102,11 +97,9 @@ uint8_t EVBMEInitialise(uint8_t *version, struct ca821x_dev *pDeviceRef)
 #endif
 #endif //!defined(NO_SERIAL)
 
-	BSP_ShowTitle(version); // Show message on the LCD if available
+	status = EVBME_Connect(aAppName, pDeviceRef); // reset and connect RF
 
-	status = EVBME_Connect(version, pDeviceRef); // reset and connect RF
-
-	return (status);
+	return status;
 } // End of EVBMEInitialise()
 
 /******************************************************************************/
@@ -136,8 +129,8 @@ void EVBMEHandler(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t status;
-	int     ret = 0;
+	ca_error status;
+	int      ret = 0;
 
 	if ((SERIAL_RX_CMD_ID == EVBME_SET_REQUEST) || (SERIAL_RX_CMD_ID == EVBME_GUI_CONNECTED) ||
 	    (SERIAL_RX_CMD_ID == EVBME_GUI_DISCONNECTED))
@@ -147,13 +140,13 @@ int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev
 		{
 		case EVBME_SET_REQUEST:
 			status = EVBME_SET_request(SERIAL_RX_DATA[0], SERIAL_RX_DATA[1], SERIAL_RX_DATA + 2, pDeviceRef);
-			if (status == EVBME_INVALID)
+			if (status == CA_ERROR_INVALID)
 				printf("INVALID ATTRIBUTE\n");
-			else if (status == EVBME_UNKNOWN)
+			else if (status == CA_ERROR_UNKNOWN)
 				printf("UNKNOWN ATTRIBUTE\n");
 			break;
 		case EVBME_GUI_CONNECTED:
-			EVBME_Connect(app_version, pDeviceRef);
+			EVBME_Connect(app_name, pDeviceRef);
 			break;
 		case EVBME_GUI_DISCONNECTED:
 			EVBME_Disconnect();
@@ -183,13 +176,14 @@ int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev
  ******************************************************************************/
 void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t             status;
-	struct MAC_Message *cmd = (struct MAC_Message *)buf;
+	ca_error status;
 
 	status = SPI_Send(buf, len, response, pDeviceRef);
 
-	if (status == 0)
+	if (status == CA_ERROR_SUCCESS)
 	{
+#if CASCODA_CA_VER == 8210
+		struct MAC_Message *cmd = (struct MAC_Message *)buf;
 		switch (cmd->CommandId)
 		{
 		case SPI_MLME_SET_REQUEST:
@@ -207,6 +201,7 @@ void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, stru
 				pDeviceRef->lqi_mode = cmd->PData.HWMESetReq.HWAttributeValue[0];
 			break;
 		}
+#endif
 		// Synchronous Confirms have to be sent upstream for interrupt driven handlers
 		if ((buf[0] != SPI_IDLE) && (buf[0] != SPI_NACK) && (buf[0] & SPI_SYN))
 		{
@@ -293,34 +288,9 @@ int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_d
 		TDME_ChannelInit(SERIAL_RX_DATA[3], pDeviceRef);
 	else if ((SERIAL_RX_CMD_ID == SPI_TDME_SET_REQUEST) && (SERIAL_RX_DATA[0] == TDME_CHANNEL))
 		TDME_ChannelInit(SERIAL_RX_DATA[2], pDeviceRef);
-	// reset COORD Bit for Channel Filtering as Coordinator
-	else if ((pDeviceRef->MAC_Workarounds) && (SERIAL_RX_CMD_ID == SPI_MLME_RESET_REQUEST) && (SERIAL_RX_DATA[0] == 1))
-		TDME_SETSFR_request_sync(0, 0xD8, 0, pDeviceRef);
 
 	return ret;
 } // End of EVBMECheckSerialCommand()
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Checks if MAC/API Command from SPI requires Action
- *******************************************************************************
- * \param cmd - SPI command to check
- *******************************************************************************
- ******************************************************************************/
-void EVBMECheckSPICommand(struct MAC_Message *cmd, struct ca821x_dev *pDeviceRef)
-{
-	if (pDeviceRef->MAC_Workarounds)
-	{
-		if (cmd->CommandId == SPI_MCPS_DATA_CONFIRM) // direct transmission - change malloc fail message
-		{
-			if (cmd->PData.DataCnf.Status == MAC_SYSTEM_ERROR)
-			{
-				cmd->PData.DataCnf.Status = MAC_TRANSACTION_OVERFLOW;
-			}
-		}
-	}
-
-} // End of EVBMECheckSPICommand()
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -333,12 +303,12 @@ void EVBMECheckSPICommand(struct MAC_Message *cmd, struct ca821x_dev *pDeviceRef
  * \return EVBME Status
  *******************************************************************************
  ******************************************************************************/
-uint8_t EVBME_SET_request(uint8_t            Attribute,
-                          uint8_t            AttributeLength,
-                          uint8_t *          AttributeValue,
-                          struct ca821x_dev *pDeviceRef)
+ca_error EVBME_SET_request(uint8_t            Attribute,
+                           uint8_t            AttributeLength,
+                           uint8_t *          AttributeValue,
+                           struct ca821x_dev *pDeviceRef)
 {
-	uint8_t status;
+	ca_error status;
 
 	/* branch for EVBME-SET Attributes */
 	switch (Attribute)
@@ -346,7 +316,7 @@ uint8_t EVBME_SET_request(uint8_t            Attribute,
 	case EVBME_RESETRF:
 		if (AttributeLength != 1)
 		{
-			status = EVBME_INVALID;
+			status = CA_ERROR_INVALID;
 		}
 		else
 		{
@@ -358,45 +328,46 @@ uint8_t EVBME_SET_request(uint8_t            Attribute,
 	case EVBME_CFGPINS:
 		if ((AttributeLength != 1) || (AttributeValue[0] > 0x03))
 		{
-			status = EVBME_INVALID;
+			status = CA_ERROR_INVALID;
 		}
 		else
 		{
 			EVBME_UseMAC = AttributeValue[0];
-			status       = EVBME_SUCCESS;
+			status       = CA_ERROR_SUCCESS;
 		}
 		break;
 
 	case EVBME_WAKEUPRF:
+		status = CA_ERROR_SUCCESS;
 		EVBME_WakeUpRF();
 		break;
 
 	default:
-		status = EVBME_UNKNOWN; /* what's that ??? */
+		status = CA_ERROR_UNKNOWN; /* what's that ??? */
 		break;
 	}
 
-	return (status);
+	return status;
 } // End of EVBME_SET_request()
 
 int EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
-	int     status;
-	int *   context = (int *)WAIT_GetContext();
-	uint8_t chipid[2];
-	uint8_t attlen;
+	ca_error  status;
+	ca_error *context = (ca_error *)WAIT_GetContext();
+	uint8_t   chipid[2];
+	uint8_t   attlen;
 
 	if (params->WakeUpCondition != HWME_WAKEUP_POWERUP)
 	{
 		printf("CA-821X wakeup condition not power-up, check status\n");
-		status = EVBME_FAIL;
+		status = CA_ERROR_FAIL;
 		goto exit;
 	}
 
 	if (TDME_ChipInit(pDeviceRef))
 	{
 		printf("CA-821X initialisation failed\n");
-		status = EVBME_FAIL;
+		status = CA_ERROR_FAIL;
 		goto exit;
 	}
 
@@ -404,17 +375,12 @@ int EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca82
 	if (HWME_GET_request_sync(HWME_CHIPID, &attlen, chipid, pDeviceRef))
 	{
 		printf("ID Failed");
-		status = EVBME_FAIL;
+		status = CA_ERROR_FAIL;
 	}
 	else
 	{
-		status = EVBME_SUCCESS;
+		status = CA_ERROR_SUCCESS;
 		printf("V%d.%d", chipid[0], chipid[1]); // product id.version number
-		// MAC_Workarounds for V1.1
-		if ((chipid[0] == 1) && (chipid[1] == 1))
-			pDeviceRef->MAC_Workarounds = 1;
-		else
-			pDeviceRef->MAC_Workarounds = 0;
 		// MAC_MPW for V0.x
 		if (chipid[0] == 0)
 			pDeviceRef->MAC_MPW = 1;
@@ -438,56 +404,56 @@ exit:
  * \return EVBME Status
  *******************************************************************************
  ******************************************************************************/
-uint8_t EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef)
+ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef)
 {
-	int                        status;
-	union ca821x_api_callback *callbackRef = ca821x_get_callback(SPI_HWME_WAKEUP_INDICATION, pDeviceRef);
-	union ca821x_api_callback  swappedOut;
+	ca_error status   = CA_ERROR_SUCCESS;
+	ca_error cbStatus = CA_ERROR_FAIL;
 
 	if (ms > 1) // reset RF
 		BSP_ResetRF(ms);
 	else
 		BSP_ResetRF(2);
 
-	swappedOut                          = *callbackRef;
-	callbackRef->HWME_WAKEUP_indication = &EVBME_WakeupCallback;
-	status                              = WAIT_Callback(callbackRef, 100, &status, pDeviceRef);
-	*callbackRef                        = swappedOut;
+	status = WAIT_CallbackSwap(
+	    SPI_HWME_WAKEUP_INDICATION, (ca821x_generic_callback)&EVBME_WakeupCallback, 100, &cbStatus, pDeviceRef);
 
-	if (status == EVBME_SPI_WAIT_TIMEOUT)
+	if (status == CA_ERROR_SUCCESS)
+		status = cbStatus;
+
+	if (status == CA_ERROR_SPI_WAIT_TIMEOUT)
 	{
 		printf("CA-821X connection timed out waiting for wakeup indication, check hardware\n");
 		goto exit;
 	}
 
 exit:
-	return (status);
+	return status;
 } // End of EVBME_ResetRF()
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Reset RF device and check connection to RF when GUI is connected
  *******************************************************************************
- * \param version - App version string
+ * \param aAppName - App name string
  *******************************************************************************
  * \return EVBME Status
  *******************************************************************************
  ******************************************************************************/
-uint8_t EVBME_Connect(uint8_t *version, struct ca821x_dev *pDeviceRef)
+ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t status;
+	ca_error status;
 
 	EVBME_HasReset = 1; // initialise/reset PIBs on higher layers
 	printf("EVBME connected");
-	if (version != NULLP)
+	if (aAppName != NULLP)
 	{
-		printf(", %s", version);
+		printf(", %s", aAppName);
 	}
-	printf("\n");
+	printf(", %s\n", ca821x_get_version());
 
 	status = EVBME_ResetRF(50, pDeviceRef); // reset RF for 50 ms
 
-	return (status);
+	return status;
 } // End of EVBME_Connect()
 
 /******************************************************************************/
@@ -503,32 +469,46 @@ void EVBME_Disconnect(void)
 
 /**
  * \brief process and dispatch on any received SPI messages from the ca821x
+ *
+ * This function is not re-entrant - i.e. you cannot call EVBME_Dispatch while
+ * already in a callback that EVBME_Dispatch has called. If you try to do this,
+ * the function will fail the second call and return CA_ERROR_INVALID_STATE
+ *
+ * \retval CMB_SUCCESS, CA_ERROR_INVALID_STATE
  */
-void EVBME_Dispatch(struct ca821x_dev *pDeviceRef)
+ca_error EVBME_Dispatch(struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message *RxMessage;
 	bool                SPI_FifoWasFull;
+	static bool         isDispatching = false;
 
+	if (isDispatching)
+		return CA_ERROR_INVALID_STATE;
+
+	isDispatching   = true;
 	SPI_FifoWasFull = SPI_IsFifoFull();
 	while ((RxMessage = SPI_PeekFullBuf()) != NULL)
 	{
-		int ret;
+		ca_error ret;
 
 		ret = ca821x_downstream_dispatch(&RxMessage->CommandId, RxMessage->Length + 2, pDeviceRef);
-		if (ret < 0)
-		{
-			printf("Err %d dispatching on SPI %02x!\n", ret, RxMessage->CommandId);
-		}
-		else if (ret == 0)
+		if (ret == CA_ERROR_NOT_HANDLED)
 		{
 			EVBMESendUpStream(RxMessage);
 		}
+		else if (ret != CA_ERROR_SUCCESS)
+		{
+			printf("Err %d dispatching on SPI %02x!\n", ret, RxMessage->CommandId);
+		}
 		SPI_DequeueFullBuf();
 	}
+	isDispatching = false;
 
 	//If stalled, read pending message
 	if (SPI_FifoWasFull)
 		EVBMEHandler(pDeviceRef);
+
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -551,7 +531,8 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 		if (cascoda_serial_dispatch)
 		{
 			if (cascoda_serial_dispatch(SerialRxBuffer[SerialRxRdIndex].Header,
-			                            SerialRxBuffer[SerialRxRdIndex].Header[1] + 2, pDeviceRef) > 0)
+			                            SerialRxBuffer[SerialRxRdIndex].Header[1] + 2,
+			                            pDeviceRef) > 0)
 			{
 				handled = true;
 			}
@@ -560,8 +541,10 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 			handled = true;
 		if (!handled)
 		{
-			EVBMESendDownStream(SerialRxBuffer[SerialRxRdIndex].Header, SerialRxBuffer[SerialRxRdIndex].Header[1] + 2,
-			                    &sync_response.CommandId, pDeviceRef);
+			EVBMESendDownStream(SerialRxBuffer[SerialRxRdIndex].Header,
+			                    SerialRxBuffer[SerialRxRdIndex].Header[1] + 2,
+			                    &sync_response.CommandId,
+			                    pDeviceRef);
 		}
 		SerialRxBuffer[SerialRxRdIndex].SOM = 0xFF;
 		if (SerialRxCounter)
@@ -650,10 +633,10 @@ void EVBME_PowerDown(u8_t mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRe
  * \brief Switch External Clock from CAX on or off
  *******************************************************************************
  * \param on_offb - 0: Off 1: On
- * \retval 0 for success, -1 for failure
+ * \retval CA_ERROR_SUCCESS for success, CA_ERROR_FAIL for failure
  *******************************************************************************
  ******************************************************************************/
-u8_t EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef)
+ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef)
 {
 	u8_t clkparam[2];
 
@@ -673,9 +656,9 @@ u8_t EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef)
 #if defined(USE_DEBUG)
 		BSP_Debug_Error(DEBUG_ERR_CAX_EXTERNALCLOCK);
 #endif // USE_DEBUG
-		return -1;
+		return CA_ERROR_FAIL;
 	}
-	return 0;
+	return CA_ERROR_SUCCESS;
 } // End of EVBME_CAX_ExternalClock()
 
 /******************************************************************************/
@@ -788,9 +771,7 @@ int EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct
  ******************************************************************************/
 void EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
 {
-	int                        status;
-	union ca821x_api_callback *callbackRef = ca821x_get_callback(SPI_HWME_WAKEUP_INDICATION, pDeviceRef);
-	union ca821x_api_callback  swappedOut  = *callbackRef;
+	ca_error status;
 
 	// wake up device by gpio by toggling chip select
 	if ((mode == PDM_STANDBY) || (mode == PDM_POWERDOWN))
@@ -799,9 +780,8 @@ void EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
 	}
 	EVBMEHandler(pDeviceRef);
 
-	callbackRef->HWME_WAKEUP_indication = EVBME_CAX_Wakeup_callback;
-	status                              = WAIT_Callback(callbackRef, timeout_ms, &mode, pDeviceRef);
-	*callbackRef                        = swappedOut;
+	status = WAIT_CallbackSwap(
+	    SPI_HWME_WAKEUP_INDICATION, (ca821x_generic_callback)&EVBME_CAX_Wakeup_callback, timeout_ms, &mode, pDeviceRef);
 
 	if (status)
 	{
@@ -822,13 +802,13 @@ void EVBME_CAX_Wakeup(u8_t mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef)
 {
-	int status = EVBME_SUCCESS;
+	ca_error status = CA_ERROR_SUCCESS;
 
 	EVBME_SwitchClock(pDeviceRef, 0);
 
 	BSP_ResetRF(5);
 
-	status = WAIT_Callback(ca821x_get_callback(SPI_HWME_WAKEUP_INDICATION, pDeviceRef), 20, NULL, pDeviceRef);
+	status = WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 20, NULL, pDeviceRef);
 
 	if (status)
 	{
@@ -880,9 +860,10 @@ void EVBME_WakeUpRF(void)
  * \param pDeviceRef - Reference to device that has caused the error
  *******************************************************************************
  ******************************************************************************/
-void EVBME_ERROR_Indication(u8_t error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef)
+void EVBME_ERROR_Indication(ca_error error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef)
 {
-	u8_t payload[2] = {error_code, has_restarted};
+	uint8_t payload[2] = {(uint8_t)error_code, has_restarted};
+	(void)pDeviceRef;
 
 	MAC_Message(EVBME_ERROR_INDICATION, 2, payload);
 }

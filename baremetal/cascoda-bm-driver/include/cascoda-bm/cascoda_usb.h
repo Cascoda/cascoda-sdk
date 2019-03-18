@@ -88,7 +88,6 @@ typedef struct UsbDeviceCapabilityDescriptor
 	u8_t bLength;            //!< Length in bytes ( of this )
 	u8_t bDescriptorType;    //!< USB_DT_CAPABILITY
 	u8_t bDevCapabilityType; //!< See values above
-	//	u8_t        Capability[];           // Capability dependent area
 } UsbDeviceCapabilityDescriptor_t;
 
 /** Configuration descriptor */
@@ -144,11 +143,6 @@ typedef struct UsbStringDescriptor
 #define USB_IPRODUCT (2)
 #define USB_ISERIAL (3)
 #define USB_ILAST (3)
-
-extern u8_t USB_LANGUAGE[];
-extern u8_t USB_MANUFACTURER[];
-extern u8_t USB_PRODUCT[];
-extern u8_t USB_SERIAL[];
 #ifdef __cplusplus
 }
 #endif

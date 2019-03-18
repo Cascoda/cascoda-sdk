@@ -1,0 +1,39 @@
+# Global config ---------------------------------------------------------------
+# cmake 3.11 is required in order to use the neat external project syntax
+cmake_minimum_required (VERSION 3.11)
+project (cascoda-bm-tests)
+
+if(NOT BUILD_TESTING)
+	return()
+endif()
+# Currently these tests only run on unix with the dummy bm plat
+if(NOT (UNIX OR MINGW))
+	message(WARNING "Not building tests due to unsupported system")
+	return()
+endif()
+
+# Build non-cmocka test
+add_executable(ca821x-api-test
+	${PROJECT_SOURCE_DIR}/test.c
+	)
+
+target_link_libraries(ca821x-api-test ca821x-api)
+
+# Add tests -------------------------------------------------------------------
+add_test(NAME ca821x-api-test COMMAND ca821x-api-test)
+
+add_cmocka_test(helper_test
+	SOURCES
+		${PROJECT_SOURCE_DIR}/helper_test.c
+	LINK_LIBRARIES
+		${CMOCKA_SHARED_LIBRARY}
+		ca821x-api
+	)
+
+add_cmocka_test(endian_test
+	SOURCES
+		${PROJECT_SOURCE_DIR}/endian_test.c
+	LINK_LIBRARIES
+		${CMOCKA_SHARED_LIBRARY}
+		ca821x-api
+	)

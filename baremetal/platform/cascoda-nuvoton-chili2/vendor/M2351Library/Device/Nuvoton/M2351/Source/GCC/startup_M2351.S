@@ -346,6 +346,99 @@ Default_Handler:
     def_irq_handler PendSV_Handler
     def_irq_handler SysTick_Handler
 
+    def_irq_handler BOD_IRQHandler
+    def_irq_handler IRC_IRQHandler
+    def_irq_handler PWRWU_IRQHandler
+    def_irq_handler SRAM_IRQHandler
+    def_irq_handler CLKFAIL_IRQHandler
+
+    def_irq_handler RTC_IRQHandler
+    def_irq_handler TAMPER_IRQHandler
+    def_irq_handler WDT_IRQHandler
+    def_irq_handler WWDT_IRQHandler
+    def_irq_handler EINT0_IRQHandler
+    def_irq_handler EINT1_IRQHandler
+    def_irq_handler EINT2_IRQHandler
+    def_irq_handler EINT3_IRQHandler
+    def_irq_handler EINT4_IRQHandler
+    def_irq_handler EINT5_IRQHandler
+    def_irq_handler GPA_IRQHandler
+    def_irq_handler GPB_IRQHandler
+    def_irq_handler GPC_IRQHandler
+    def_irq_handler GPD_IRQHandler
+    def_irq_handler GPE_IRQHandler
+    def_irq_handler GPF_IRQHandler
+    def_irq_handler QSPI0_IRQHandler
+    def_irq_handler SPI0_IRQHandler
+    def_irq_handler BRAKE0_IRQHandler
+    def_irq_handler EPWM0_P0_IRQHandler
+    def_irq_handler EPWM0_P1_IRQHandler
+    def_irq_handler EPWM0_P2_IRQHandler
+    def_irq_handler BRAKE1_IRQHandler
+    def_irq_handler EPWM1_P0_IRQHandler
+    def_irq_handler EPWM1_P1_IRQHandler
+    def_irq_handler EPWM1_P2_IRQHandler
+    def_irq_handler TMR0_IRQHandler
+    def_irq_handler TMR1_IRQHandler
+    def_irq_handler TMR2_IRQHandler
+    def_irq_handler TMR3_IRQHandler
+    def_irq_handler UART0_IRQHandler
+    def_irq_handler UART1_IRQHandler
+    def_irq_handler I2C0_IRQHandler
+    def_irq_handler I2C1_IRQHandler
+    def_irq_handler PDMA0_IRQHandler
+    def_irq_handler DAC_IRQHandler
+    def_irq_handler EADC0_IRQHandler
+    def_irq_handler EADC1_IRQHandler
+    def_irq_handler ACMP01_IRQHandler
+
+    def_irq_handler EADC2_IRQHandler
+    def_irq_handler EADC3_IRQHandler
+    def_irq_handler UART2_IRQHandler
+    def_irq_handler UART3_IRQHandler
+
+    def_irq_handler SPI1_IRQHandler
+    def_irq_handler SPI2_IRQHandler
+    def_irq_handler USBD_IRQHandler
+    def_irq_handler USBH_IRQHandler
+    def_irq_handler USBOTG_IRQHandler
+    def_irq_handler CAN0_IRQHandler
+
+    def_irq_handler SC0_IRQHandler
+    def_irq_handler SC1_IRQHandler
+    def_irq_handler SC2_IRQHandler
+
+    def_irq_handler SPI3_IRQHandler
+
+    def_irq_handler SDH0_IRQHandler
+
+    def_irq_handler I2S0_IRQHandler
+
+    def_irq_handler OPA0_IRQHandler
+    def_irq_handler CRPT_IRQHandler
+    def_irq_handler GPG_IRQHandler
+    def_irq_handler EINT6_IRQHandler
+    def_irq_handler UART4_IRQHandler
+    def_irq_handler UART5_IRQHandler
+    def_irq_handler USCI0_IRQHandler
+    def_irq_handler USCI1_IRQHandler
+    def_irq_handler BPWM0_IRQHandler
+    def_irq_handler BPWM1_IRQHandler
+
+    def_irq_handler I2C2_IRQHandler
+
+    def_irq_handler QEI0_IRQHandler
+    def_irq_handler QEI1_IRQHandler
+    def_irq_handler ECAP0_IRQHandler
+    def_irq_handler ECAP1_IRQHandler
+    def_irq_handler GPH_IRQHandler
+    def_irq_handler EINT7_IRQHandler
+
+    def_irq_handler PDMA1_IRQHandler
+    def_irq_handler SCU_IRQHandler
+
+    def_irq_handler TRNG_IRQHandler
+
     /* ;int32_t SH_DoCommand(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0) */
     .align 2
     .thumb_func

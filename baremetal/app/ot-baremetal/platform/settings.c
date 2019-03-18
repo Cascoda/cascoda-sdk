@@ -185,7 +185,8 @@ static uint32_t swapSettingsBlock(otInstance *aInstance)
 			if (valid)
 			{
 				utilsFlashRead(swapAddress, addBlock.data, getAlignLength(addBlock.block.length));
-				utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock),
+				utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize,
+				                (uint8_t *)(&addBlock),
 				                getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock));
 				sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(addBlock.block.length));
 			}
@@ -239,18 +240,19 @@ static otError addSetting(otInstance *   aInstance,
 		                error = OT_ERROR_NO_BUFS);
 	}
 
-	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block),
-	                sizeof(struct settingsBlock));
+	utilsFlashWrite(
+	    sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block), sizeof(struct settingsBlock));
 
 	memset(addBlock.data, 0xff, kSettingsBlockDataSize);
 	memcpy(addBlock.data, aValue, addBlock.block.length);
 
-	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock), (uint8_t *)(addBlock.data),
+	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock),
+	                (uint8_t *)(addBlock.data),
 	                getAlignLength(addBlock.block.length));
 
 	addBlock.block.flag &= (~kBlockAddCompleteFlag);
-	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block),
-	                sizeof(struct settingsBlock));
+	utilsFlashWrite(
+	    sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block), sizeof(struct settingsBlock));
 	sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(addBlock.block.length));
 
 exit:

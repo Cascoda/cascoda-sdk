@@ -17,13 +17,19 @@ endif()
 add_library(cascoda-bm-plat INTERFACE)
 
 # Set configuration variables -------------------------------------------------
-set(CASCODA_CHILI2_REVS 0 -1)
-set(CASCODA_CHILI2_REV 0 CACHE STRING "The revision of the chili 2 hardware being used 2.x (2.0 is chili, use -1 for numaker devboard)")
-set_property(CACHE CASCODA_CHILI2_REV PROPERTY STRINGS ${CASCODA_CHILI2_REVS})
+cascoda_dropdown(CASCODA_CHILI2_REV
+	"The revision of the chili 2 hardware being used 2.x (2.0 is chili, use -1 for numaker devboard)"
+	0 -1
+	)
 
-if(NOT CASCODA_CHILI2_REV IN_LIST CASCODA_CHILI2_REVS)
-    message(FATAL_ERROR "CASCODA_CHILI2_REV must be one of ${CASCODA_CHILI2_REVS}")
-endif()
+cascoda_dropdown(CASCODA_CHILI2_CONFIG_STRING
+	"The hardware configuration of the Chili 2"
+	TWO_SIDED ONE_SIDED
+	)
+cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
+	ONE_SIDED 0
+	TWO_SIDED 1
+	)
 
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
 
@@ -40,11 +46,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/vendor ${PROJECT_BINARY_DIR}/vendor)
 # Main library config ---------------------------------------------------------
 add_library(cascoda-chili2
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_chili.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_dataflash_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_debug_chili.c
-	${PROJECT_SOURCE_DIR}/port/source/cascoda_hid_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_m2351.c
 	$<TARGET_OBJECTS:nuvoton-vendor-m2351>
 	)
 
@@ -61,6 +68,11 @@ if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
 		PUBLIC
 			"-T${PROJECT_SOURCE_DIR}/m2351BN.ld"
 		)
+elseif(CMAKE_C_COMPILER MATCHES armclang)
+	target_link_options(cascoda-chili2
+		PUBLIC
+			"-Wl,--ro-base=0x00000000,--entry=0x00000000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
+		)
 endif()
 
 target_include_directories( cascoda-chili2
@@ -69,9 +81,7 @@ target_include_directories( cascoda-chili2
 		${PROJECT_BINARY_DIR}/port/include
 	)
 
+cascoda_use_warnings(cascoda-chili2)
+
 # Export the chili2 platform as cascoda-bm-plat
 target_link_libraries(cascoda-bm-plat INTERFACE cascoda-chili2)
-
-# Run tests -------------------------------------------------------------------
-include(CTest)
-# TODO: Add tests

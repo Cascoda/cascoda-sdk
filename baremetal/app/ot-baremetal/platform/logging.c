@@ -117,7 +117,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 		pRegion = "XXXX ";
 		break;
 	}
-	printf("%02d:%02d:%02d.%03d %s %s ", Hours, Minutes, Seconds, Ticks, pLevel, pRegion);
+	printf("%04dms: %s %s ", TIME_ReadAbsoluteTime(), pLevel, pRegion);
 
 	va_start(ap, aFormat);
 	vprintf(aFormat, ap);

@@ -19,6 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "cascoda-bm/cascoda_bm.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "mac_messages.h"
@@ -51,12 +52,10 @@
  * \param pTxBuffer - Pointer to Transmit Buffer or NULLP
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
- * \return Status  0 - Success, no receive
- *                 2 - Success, received message
- *                -1 - Error
+ * \return Status
  *
  */
-int SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef);
+ca_error SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Send Request over SPI
@@ -69,11 +68,10 @@ int SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef);
  * \param response - Buffer to fill with response
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
- * \return 0: Success
- *         1: Error
+ * \return Status
  *
  */
-int SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef);
+ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Get a MAC_Message buffer containing a received SPI Message
