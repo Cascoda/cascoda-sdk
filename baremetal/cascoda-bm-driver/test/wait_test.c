@@ -10,6 +10,7 @@
 //cmocka must be after system headers
 #include <cmocka.h>
 
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_time.h"
@@ -156,7 +157,7 @@ static void waitincallback_fail_test(void **state)
 	sdev.callbacks.HWME_WAKEUP_indication = &wakeup_callback_nonwaited;
 
 	assert_int_equal(SPI_Exchange(NULL, &sdev), CA_ERROR_SUCCESS);
-	assert_int_equal(EVBME_Dispatch(&sdev), CA_ERROR_SUCCESS);
+	assert_int_equal(DISPATCH_FromCA821x(&sdev), CA_ERROR_SUCCESS);
 }
 
 int main(void)

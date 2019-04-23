@@ -45,7 +45,8 @@ const char *uriCascodaTemperature = "ca/te";
 /******************************************************************************/
 otInstance *OT_INSTANCE;
 
-static bool         isConnected = false;
+static bool         isConnected  = false;
+static int          timeoutCount = 0;
 static otIp6Address serverIp;
 static uint32_t     appNextSendTime = 5000;
 
@@ -138,8 +139,13 @@ static void handleServerDiscoverResponse(void *               aContext,
 		return;
 
 	uint16_t length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+
+	if (length < sizeof(otIp6Address))
+		return;
+
 	otMessageRead(aMessage, otMessageGetOffset(aMessage), &serverIp, sizeof(otIp6Address));
-	isConnected = true;
+	isConnected  = true;
+	timeoutCount = 0;
 }
 
 /******************************************************************************/
@@ -160,7 +166,7 @@ static otError sendServerDiscover(void)
 	//Build CoAP header
 	//Realm local all-nodes multicast - this of course generates some traffic, so shouldn't be overused
 	SuccessOrExit(error = otIp6AddressFromString("FF03::1", &coapDestinationIp));
-	otCoapHeaderInit(&header, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_GET);
+	otCoapHeaderInit(&header, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
 	otCoapHeaderGenerateToken(&header, 2);
 	SuccessOrExit(error = otCoapHeaderAppendUriPathOptions(&header, uriCascodaDiscover));
 
@@ -200,9 +206,13 @@ static void handleSensorConfirm(void *               aContext,
                                 const otMessageInfo *aMessageInfo,
                                 otError              aError)
 {
-	if (aError == OT_ERROR_RESPONSE_TIMEOUT)
+	if (aError == OT_ERROR_RESPONSE_TIMEOUT && timeoutCount++ > 3)
 	{
 		isConnected = false;
+	}
+	else if (aError = OT_ERROR_NONE)
+	{
+		timeoutCount = 0;
 	}
 }
 
@@ -260,13 +270,14 @@ void SensorHandler(void)
 	if (TIME_ReadAbsoluteTime() < appNextSendTime)
 		return;
 
-	appNextSendTime = TIME_ReadAbsoluteTime() + 10000;
 	if (isConnected)
 	{
+		appNextSendTime = TIME_ReadAbsoluteTime() + 10000;
 		sendSensorData();
 	}
 	else
 	{
+		appNextSendTime = TIME_ReadAbsoluteTime() + 30000;
 		sendServerDiscover();
 	}
 }

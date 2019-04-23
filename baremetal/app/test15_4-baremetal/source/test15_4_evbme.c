@@ -103,27 +103,30 @@ void TEST15_4_Handler(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 int TEST15_4_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	if ((SERIAL_RX_CMD_ID >= EVBME_PHY_TESTMODE_REQUEST) && (SERIAL_RX_CMD_ID <= EVBME_FFD_AWAIT_ORPHAN_REQUEST))
+	if ((SerialRxBuffer->CmdId >= EVBME_PHY_TESTMODE_REQUEST) &&
+	    (SerialRxBuffer->CmdId <= EVBME_FFD_AWAIT_ORPHAN_REQUEST))
 	{
-		switch (SERIAL_RX_CMD_ID)
+		switch (SerialRxBuffer->CmdId)
 		{
 		case EVBME_PHY_TESTMODE_REQUEST:
-			if (EVBME_PHY_TESTMODE_request(SERIAL_RX_DATA[0], pDeviceRef))
+			if (EVBME_PHY_TESTMODE_request(SerialRxBuffer->Data[0], pDeviceRef))
 				printf("Invalid Test Mode\n");
 			break;
 		case EVBME_PHY_SET_REQUEST:
-			if (EVBME_PHY_SET_request(SERIAL_RX_DATA[0], SERIAL_RX_DATA[1], SERIAL_RX_DATA + 2))
+			if (EVBME_PHY_SET_request(SerialRxBuffer->Data[0], SerialRxBuffer->Data[1], SerialRxBuffer->Data + 2))
 				printf("Invalid Parameter\n");
 			break;
 		case EVBME_PHY_REPORT_REQUEST:
 			EVBME_PHY_REPORT_request();
 			break;
 		case EVBME_FFD_AWAIT_ASSOC_REQUEST:
-			TEST15_4_SetupAwaitAssoc(SERIAL_RX_DATA, SERIAL_RX_DATA[8] + (SERIAL_RX_DATA[9] << 8), SERIAL_RX_DATA[10]);
+			TEST15_4_SetupAwaitAssoc(SerialRxBuffer->Data,
+			                         SerialRxBuffer->Data[8] + (SerialRxBuffer->Data[9] << 8),
+			                         SerialRxBuffer->Data[10]);
 			MAC_AWAITING_ASSOC_INDICATION = 1;
 			break;
 		case EVBME_FFD_AWAIT_ORPHAN_REQUEST:
-			TEST15_4_SetupAwaitOrphan(SERIAL_RX_DATA, SERIAL_RX_DATA[8] + (SERIAL_RX_DATA[9] << 8));
+			TEST15_4_SetupAwaitOrphan(SerialRxBuffer->Data, SerialRxBuffer->Data[8] + (SerialRxBuffer->Data[9] << 8));
 			MAC_AWAITING_ORPHAN_INDICATION = 1;
 			break;
 		}

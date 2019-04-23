@@ -427,7 +427,7 @@ void CHILI_GPIOPowerUp(void)
  ******************************************************************************/
 void CHILI_GPIOEnableInterrupts(void)
 {
-	/* USE SWITCH PA.9 FOR APP_COORDINATOR */
+	/* SWITCH PA.9 */
 	GPIO_EnableInt(PA, 9, GPIO_INT_FALLING);
 
 	/* RFIRQ */

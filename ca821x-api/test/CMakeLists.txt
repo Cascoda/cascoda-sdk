@@ -37,3 +37,7 @@ add_cmocka_test(endian_test
 		${CMOCKA_SHARED_LIBRARY}
 		ca821x-api
 	)
+
+cascoda_put_subdir(ca821x-api-test test)
+cascoda_put_subdir(helper_test test)
+cascoda_put_subdir(endian_test test)

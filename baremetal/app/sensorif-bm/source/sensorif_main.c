@@ -54,7 +54,7 @@
 int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	int ret = 0;
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf - 1), pDeviceRef)))
+	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
 		return ret;
 	/* Insert Application-Specific Dispatches here in the same style */
 	return 0;

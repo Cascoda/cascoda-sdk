@@ -173,12 +173,11 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
 	int                ret        = 0;
 
-	if (SERIAL_RX_CMD_ID == THREAD_DOWNLINK_ID)
+	if (SerialRxBuffer->CmdId == THREAD_DOWNLINK_ID)
 	{
-		ret           = 1;
-		Serial_Stdout = EVBME_MESSAGE_INDICATION;
-		TAM.Ptr       = &SERIAL_RX_CMD_ID;
-		switch (SERIAL_RX_DATA[0])
+		ret     = 1;
+		TAM.Ptr = &SerialRxBuffer->CmdId;
+		switch (SerialRxBuffer->Data[0])
 		{
 		case OT_CMD_IFCONFIG:
 			switch (TAM.IfConfig->Control)
@@ -423,7 +422,7 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 	{
 		// if openthread is handling mac drop mac requests from usb
 		// TODO send MCPS_DATA_CONFIRM back up
-		if ((SERIAL_RX_CMD_ID == SPI_MCPS_DATA_REQUEST) || (SERIAL_RX_CMD_ID == SPI_MCPS_PURGE_REQUEST))
+		if ((SerialRxBuffer->CmdId == SPI_MCPS_DATA_REQUEST) || (SerialRxBuffer->CmdId == SPI_MCPS_PURGE_REQUEST))
 		{
 			ret = 1;
 		}

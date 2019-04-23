@@ -48,19 +48,11 @@ u8_t Serial_Stdout = EVBME_MESSAGE_INDICATION;
 /****** Global Variables for buffering fragmented USB Packets            ******/
 /******************************************************************************/
 u8_t UsbTxFrag[USB_FRAG_SIZE];
-u8_t UsbRxFrag[USB_FRAG_SIZE];
-
-/******************************************************************************/
-/****** Global Variables for Serial State                                ******/
-/******************************************************************************/
-u8_t SerialCount = 0;
-u8_t SerialRemainder;
 
 /******************************************************************************/
 /****** Global Variables for Serial Message Buffers                      ******/
 /******************************************************************************/
-struct SerialBuffer SerialRxBuffer[SERIAL_RX_BUFFER_LEN]; //Must be protected by locks (enable/disable serial IRQ)
-volatile int        SerialRxWrIndex = 0, SerialRxRdIndex = 0, SerialRxCounter = 0;
+struct SerialBuffer SerialRxBuffer; //Must be protected by locks (enable/disable serial IRQ)
 volatile bool       SerialRxPending = false;
 
 // dispatch function
@@ -101,7 +93,7 @@ void SerialUSBSend(u8_t Command, u8_t *pBuffer, u8_t Length)
 			FragType |= USB_FRAG_LAST;
 		}
 		UsbTxFrag[0] = FragType;
-		BSP_SerialWrite(UsbTxFrag);
+		BSP_USBSerialWrite(UsbTxFrag);
 	}
 } // End of SerialUSBSend()
 
@@ -115,49 +107,44 @@ void SerialUSBSend(u8_t Command, u8_t *pBuffer, u8_t Length)
  ******************************************************************************/
 u8_t SerialGetCommand(void)
 {
-	u8_t Count;
+	//TODO: Rval not useful
+	u8_t        Count;
+	u8_t *      UsbRxFrag;
+	static u8_t SerialCount = 0;
+
+	if (SerialRxPending)
+		return 1;
 
 	while (1)
 	{
-		if (BSP_SerialRead(UsbRxFrag) == 0)
+		u8_t ControlByte;
+		if ((UsbRxFrag = BSP_USBSerialRxPeek()) == NULL)
 		{
 			return 0;
 		}
-		Count = UsbRxFrag[0] & 0x3F;
-		if (UsbRxFrag[0] & USB_FRAG_FIRST)
+		ControlByte = UsbRxFrag[0];
+		Count       = ControlByte & 0x3F;
+
+		if (ControlByte & USB_FRAG_FIRST)
 		{
-			if (SerialRxBuffer[SerialRxWrIndex].SOM == SERIAL_SOM)
-			{
-				SerialRxWrIndex++;
-				if (SerialRxWrIndex >= SERIAL_RX_BUFFER_LEN)
-				{
-					SerialRxWrIndex = 0;
-				}
-				SerialRxCounter++;
-				if (SerialRxCounter > SERIAL_RX_BUFFER_LEN)
-				{
-					SerialRxCounter = SERIAL_RX_BUFFER_LEN;
-				}
-			}
-			SerialRxBuffer[SerialRxWrIndex].SOM                    = SERIAL_SOM;
-			SerialRxBuffer[SerialRxWrIndex].Header[SERIAL_CMD_ID]  = UsbRxFrag[1]; // CommandId
-			SerialRxBuffer[SerialRxWrIndex].Header[SERIAL_CMD_LEN] = UsbRxFrag[2]; // Length
-			for (size_t i = 0; i < Count - 2u; i++)
-			{
-				SerialRxBuffer[SerialRxWrIndex].Data[i] = UsbRxFrag[3 + i];
-			}
-			SerialCount = Count - 2; // take off header size
+			SerialRxBuffer.CmdId  = UsbRxFrag[1];
+			SerialRxBuffer.CmdLen = UsbRxFrag[2];
+			SerialCount           = Count - 2; // take off header size
+			memcpy(SerialRxBuffer.Data, UsbRxFrag + 3, SerialCount);
 		}
 		else
 		{
-			for (size_t i = 0; i < Count; i++)
-			{
-				SerialRxBuffer[SerialRxWrIndex].Data[i + SerialCount] = UsbRxFrag[1 + i];
-			}
+			if (((u16_t)SerialCount + Count) > sizeof(SerialRxBuffer.Data))
+				return 0;
+			memcpy(SerialRxBuffer.Data + SerialCount, UsbRxFrag + 1, Count);
 			SerialCount += Count;
 		}
-		if (UsbRxFrag[0] & USB_FRAG_LAST)
+
+		BSP_USBSerialRxDequeue();
+		if (ControlByte & USB_FRAG_LAST)
 		{
+			SerialRxPending = true;
+			SerialCount     = 0;
 			return 1;
 		}
 	}
@@ -172,7 +159,7 @@ u8_t SerialGetCommand(void)
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void EVBME_Message_USB(char *pBuffer, size_t Count, void *pDeviceRef)
+void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
 {
 	(void)pDeviceRef;
 	SerialUSBSend(Serial_Stdout, (u8_t *)pBuffer, Count);

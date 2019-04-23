@@ -85,6 +85,7 @@ static u8_t *USB_STRINGS[] = {USB_LANGUAGE, USB_MANUFACTURER, USB_PRODUCT, USB_S
 
 static u8_t Connected = 0;                             /* True if the HID interface is active */
 static u8_t TxStalled = 1;                             /* True if there are no buffers left to transmit */
+static u8_t RxStalled = 0;                             /* True if there are no buffers left to receive */
 static u8_t TransmitBuffer[TBUFFS][HID_FRAGMENT_SIZE]; /* Buffers for storing fragments to send */
 static u8_t ReceiveBuffer[RBUFFS][HID_FRAGMENT_SIZE];  /* Buffers for storing received fragments */
 
@@ -326,17 +327,18 @@ static void USB_GetOutReport(uint8_t *pu8EpBuf, uint32_t u32Size)
 	if (FullReceiveBuffers >= RBUFFS)
 	{
 		/* No free buffers */
-		/* TODO: Do something here! Debug message that chunk was lost? */
+		RxStalled = 1;
 		return;
 	}
 	Connected = 1;
+	RxStalled = 0;
 	USBD_MemCopy(&ReceiveBuffer[NextReceiveBufferToFill][0], pu8EpBuf, HID_FRAGMENT_SIZE);
 	if (++NextReceiveBufferToFill >= RBUFFS)
 	{
 		NextReceiveBufferToFill = 0;
 	}
 	FullReceiveBuffers++;
-	/* TODO: If FullReceiveBuffers == RBUFFS then stall the HID device until freed */
+	USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 	return;
 }
 
@@ -363,13 +365,6 @@ static void USB_EP3_Handler()
 	ptr = (u8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP3));
 	/* HID packet has finished being received from the master */
 	USB_GetOutReport(ptr, USBD_GET_PAYLOAD_LEN(EP3));
-	USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
-	if (SerialGetCommand())
-	{
-		SerialRxPending = true;
-	}
-	if (TxStalled && FullTransmitBuffers)
-		USB_SetInReport();
 }
 
 /******************************************************************************/
@@ -381,7 +376,9 @@ static void USB_EP3_Handler()
  ******************************************************************************/
 void USB_UsbEvent(uint32_t u32INTSTS)
 {
+	//Clear all EP Flags
 	USBD_CLR_INT_FLAG(USBD_INTSTS_USB);
+
 	if (u32INTSTS & USBD_INTSTS_SETUP)
 	{
 		/* Setup packet */
@@ -427,30 +424,6 @@ void USB_UsbEvent(uint32_t u32INTSTS)
 		/* Interrupt OUT */
 		USB_EP3_Handler();
 	}
-
-	if (u32INTSTS & USBD_INTSTS_EP4)
-	{
-		/* Clear event flag */
-		USBD_CLR_INT_FLAG(USBD_INTSTS_EP4);
-	}
-
-	if (u32INTSTS & USBD_INTSTS_EP5)
-	{
-		/* Clear event flag */
-		USBD_CLR_INT_FLAG(USBD_INTSTS_EP5);
-	}
-
-	if (u32INTSTS & USBD_INTSTS_EP6)
-	{
-		/* Clear event flag */
-		USBD_CLR_INT_FLAG(USBD_INTSTS_EP6);
-	}
-
-	if (u32INTSTS & USBD_INTSTS_EP7)
-	{
-		/* Clear event flag */
-		USBD_CLR_INT_FLAG(USBD_INTSTS_EP7);
-	}
 }
 
 /******************************************************************************/
@@ -466,24 +439,18 @@ void USB_UsbEvent(uint32_t u32INTSTS)
 u8_t USB_Transmit(u8_t *pBuffer)
 {
 	__disable_interrupt();
-	if (Connected && FullTransmitBuffers >= TBUFFS)
+	if (FullTransmitBuffers >= TBUFFS)
 	{
 		__enable_interrupt();
-		return 0;
+		return !Connected; //If we are connected, retry. If not, we don't care and will drop packet.
 	}
 	memcpy(&TransmitBuffer[NextTransmitBufferToFill][0], pBuffer, HID_FRAGMENT_SIZE);
 	if (++NextTransmitBufferToFill >= TBUFFS)
 	{
 		NextTransmitBufferToFill = 0;
 	}
-	if (FullTransmitBuffers < TBUFFS)
-	{
-		FullTransmitBuffers++;
-	}
-	else if (++NextTransmitBufferToGo >= TBUFFS)
-	{
-		NextTransmitBufferToGo = 0;
-	}
+	FullTransmitBuffers++;
+
 	if (Connected && TxStalled)
 	{
 		USB_SetInReport();
@@ -492,31 +459,35 @@ u8_t USB_Transmit(u8_t *pBuffer)
 	return 1;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Extract next HID fragment from receive buffers
- *******************************************************************************
- * \param pBuffer - Pointer to populate with next fragment
- *******************************************************************************
- * \return 1 if successful, 0 if buffers are empty
- *******************************************************************************
- ******************************************************************************/
-u8_t USB_Receive(u8_t *pBuffer)
+u8_t *BSP_USBSerialRxPeek(void)
 {
 	__disable_interrupt();
 	if (FullReceiveBuffers == 0)
 	{
 		__enable_interrupt();
-		return 0;
+		return NULL;
 	}
-	memcpy(pBuffer, &ReceiveBuffer[NextReceiveBufferToGo][0], HID_FRAGMENT_SIZE);
+	__enable_interrupt();
+	return &ReceiveBuffer[NextReceiveBufferToGo][0];
+}
+
+void BSP_USBSerialRxDequeue(void)
+{
+	__disable_interrupt();
 	if (++NextReceiveBufferToGo >= RBUFFS)
 	{
 		NextReceiveBufferToGo = 0;
 	}
 	FullReceiveBuffers--;
+	if (RxStalled)
+	{
+		USB_EP3_Handler();
+	}
+	if (Connected && TxStalled)
+	{
+		USB_SetInReport();
+	}
 	__enable_interrupt();
-	return 1;
 }
 
 /******************************************************************************/

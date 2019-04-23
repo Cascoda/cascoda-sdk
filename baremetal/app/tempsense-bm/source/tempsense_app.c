@@ -151,14 +151,45 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 int TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
 	/* switch clock otherwise chip is locking up as it loses external clock */
-	if (((SERIAL_RX_CMD_ID == EVBME_SET_REQUEST) && (SERIAL_RX_DATA[0] == EVBME_RESETRF)) ||
-	    (SERIAL_RX_CMD_ID == EVBME_GUI_CONNECTED))
+	if (((SerialRxBuffer->CmdId == EVBME_SET_REQUEST) && (SerialRxBuffer->Data[0] == EVBME_RESETRF)) ||
+	    (SerialRxBuffer->CmdId == EVBME_GUI_CONNECTED))
 	{
 		printf("Clock has been switched due to device reset\n");
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
+	else if (SerialRxBuffer->CmdId == EVBME_TSENSE_SETMODE)
+	{
+		TEMPSENSE_APP_SwitchMode(SerialRxBuffer->Data[0]);
+		return 1;
+	}
+	else if (SerialRxBuffer->CmdId == EVBME_TSENSE_REPORT)
+	{
+		TEMPSENSE_APP_Coordinator_ReportStatus();
+		return 1;
+	}
 	return 0;
 } // End of TEMPSENSE_APP_UpStreamDispatch()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TEMPSENSE Switch Mode
+ *******************************************************************************
+ ******************************************************************************/
+void TEMPSENSE_APP_SwitchMode(u8_t mode)
+{
+	if (mode > APP_ST_DEVICE)
+	{
+		printf("Invalid Mode\n");
+		return;
+	}
+	else if (mode == APP_ST_NORMAL)
+	{
+		printf("Exiting TEMPSENSE\n");
+	}
+	APP_STATE_new = mode;
+	BSP_LEDSigMode(LED_M_CLRERROR);
+	APP_INITIALISE = 1;
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**

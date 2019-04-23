@@ -194,13 +194,14 @@ void BSP_DisableSerialIRQ(void)
  * \brief See cascoda-bm/cascoda_interface.h
  *******************************************************************************
  ******************************************************************************/
-void BSP_SerialWrite(u8_t *pBuffer)
+void BSP_USBSerialWrite(u8_t *pBuffer)
 {
 	int i = 0;
 	if (BSP_IsUSBPresent())
 	{
 		while (!USB_Transmit(pBuffer))
 		{
+			TIME_WaitTicks(2);
 			if (i++ > USB_TX_RETRIES)
 			{
 				USB_SetConnectedFlag(0);
@@ -208,16 +209,6 @@ void BSP_SerialWrite(u8_t *pBuffer)
 			}
 		}
 	}
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief See cascoda-bm/cascoda_interface.h
- *******************************************************************************
- ******************************************************************************/
-u8_t BSP_SerialRead(u8_t *pBuffer)
-{
-	return USB_Receive(pBuffer);
 }
 
 #endif /* USE_USB */
@@ -256,6 +247,28 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 }
 
 #endif /* USE_UART */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief See cascoda-bm/cascoda_interface.h
+ *******************************************************************************
+ ******************************************************************************/
+u64_t BSP_GetUniqueId(void)
+{
+	u64_t rval = 0;
+	u32_t extra_byte;
+
+	SYS_UnlockReg();
+	FMC_Open();
+	extra_byte = FMC_ReadUID(2);
+	rval       = FMC_ReadUID(0) ^ extra_byte;
+	rval       = rval << 32ULL;
+	rval |= FMC_ReadUID(1) ^ extra_byte;
+	FMC_Close();
+	SYS_LockReg();
+
+	return rval;
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**

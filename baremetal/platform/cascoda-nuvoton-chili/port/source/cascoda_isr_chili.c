@@ -339,10 +339,7 @@ void UART1_IRQHandler(void)
 
 	while (UART1->ISR & UART_ISR_RDA_IS_Msk)
 	{
-		if (SerialGetCommand())
-		{
-			SerialRxPending = true;
-		}
+		Serial_ReadInterface();
 	}
 
 #endif /* USE_UART */

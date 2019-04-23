@@ -43,6 +43,7 @@ configure_file(
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-bm
+	${PROJECT_SOURCE_DIR}/source/cascoda_dispatch.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c

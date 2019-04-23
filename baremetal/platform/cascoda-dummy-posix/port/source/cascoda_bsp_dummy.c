@@ -79,14 +79,19 @@ void BSP_DisableSerialIRQ(void)
 }
 
 #if defined(USE_USB)
-void BSP_SerialWrite(u8_t *pBuffer)
+void BSP_USBSerialWrite(u8_t *pBuffer)
 {
 }
 
-u8_t BSP_SerialRead(u8_t *pBuffer)
+u8_t *BSP_USBSerialRxPeek(void)
 {
-	return 0;
+	return NULL;
 }
+
+void BSP_USBSerialRxDequeue(void)
+{
+}
+
 #endif // USE_USB
 
 #if defined(USE_UART)
@@ -155,6 +160,11 @@ void BSP_UseExternalClock(u8_t useExternalClock)
 
 void BSP_Waiting(void)
 {
+}
+
+u64_t BSP_GetUniqueId(void)
+{
+	return 0;
 }
 
 u8_t BSP_GetChargeStat(void)

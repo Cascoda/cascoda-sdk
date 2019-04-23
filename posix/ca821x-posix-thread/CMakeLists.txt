@@ -15,7 +15,6 @@ find_package(Threads REQUIRED)
 
 # Set configuration variables -------------------------------------------------
 set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
-       --enable-cli
        --enable-application-coap
        --enable-joiner
        --enable-commissioner
@@ -29,6 +28,8 @@ set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
        --enable-ftd
        --enable-mtd
        --enable-cli
+       --enable-ncp
+       --with-ncp-bus=uart
        --disable-docs
      CACHE STRING
        "The arguments to be passed to configure when configuring openthread"
@@ -100,6 +101,10 @@ add_executable(cliapp-mtd
 	${PROJECT_SOURCE_DIR}/example/main.c
 	)
 
+add_executable(ncpapp
+	${PROJECT_SOURCE_DIR}/example/ncpapp.c
+	)
+
 add_executable(mt-example
 	${PROJECT_SOURCE_DIR}/example/mainMultithread.c
 	)
@@ -110,5 +115,6 @@ add_executable(ot-server-standalone
 
 target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
+target_link_libraries(ncpapp openthread-ncp-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
 target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd)

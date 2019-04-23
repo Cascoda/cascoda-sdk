@@ -32,23 +32,27 @@
 /******************************************************************************/
 /****** Definitions for Serial State                                     ******/
 /******************************************************************************/
-#define SERIAL_INBETWEEN (0)
-#define SERIAL_HEADER (1)
-#define SERIAL_DATA (2)
+enum serial_state
+{
+	SERIAL_INBETWEEN = 0,
+	SERIAL_HEADER    = 1,
+	SERIAL_DATA      = 2,
+};
+
+#define SERIAL_SOM (0xDE)
 
 /******************************************************************************/
 /****** Global Variables for Serial State                                ******/
 /******************************************************************************/
-u8_t SerialCount;                      //!< Number of bytes read so far
-u8_t SerialRemainder;                  //!< Number of bytes left to receive
-u8_t SerialIfState = SERIAL_INBETWEEN; //!< State of serial reading state machine
+u8_t              SerialCount;                      //!< Number of bytes read so far
+u8_t              SerialRemainder;                  //!< Number of bytes left to receive
+enum serial_state SerialIfState = SERIAL_INBETWEEN; //!< State of serial reading state machine
 
 /******************************************************************************/
 /****** Global Variables for Serial Message Buffers                      ******/
 /******************************************************************************/
-struct SerialBuffer SerialRxBuffer[SERIAL_RX_BUFFER_LEN]; //!< Global buffer for received serial messages
-struct SerialBuffer SerialTxBuffer;                       //!< Global buffer for transmitted serial messages
-volatile int        SerialRxWrIndex = 0, SerialRxRdIndex = 0, SerialRxCounter = 0;
+struct SerialBuffer SerialRxBuffer; //!< Global buffer for received serial messages
+struct SerialBuffer SerialTxBuffer; //!< Global buffer for transmitted serial messages
 volatile bool       SerialRxPending = false;
 
 int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
@@ -76,12 +80,12 @@ u8_t SerialFindStart(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Read in next Command from Serial
+ * \brief Read in next Command from Serial hardware
  *******************************************************************************
  * \return 1 if Command ready, 0 if not
  *******************************************************************************
  ******************************************************************************/
-u8_t SerialGetCommand(void)
+u8_t Serial_ReadInterface(void)
 {
 	u8_t Count;
 
@@ -92,34 +96,20 @@ u8_t SerialGetCommand(void)
 		case SERIAL_INBETWEEN:
 			if (SerialFindStart())
 			{
-				if (SerialRxBuffer[SerialRxWrIndex].SOM == SERIAL_SOM)
-				{
-					SerialRxWrIndex++;
-					if (SerialRxWrIndex >= SERIAL_RX_BUFFER_LEN)
-					{
-						SerialRxWrIndex = 0;
-					}
-					SerialRxCounter++;
-					if (SerialRxCounter > SERIAL_RX_BUFFER_LEN)
-					{
-						SerialRxCounter = SERIAL_RX_BUFFER_LEN;
-					}
-				}
-				SerialIfState                       = SERIAL_HEADER;
-				SerialRemainder                     = SERIAL_HDR_LEN;
-				SerialCount                         = 0;
-				SerialRxBuffer[SerialRxWrIndex].SOM = SERIAL_SOM;
+				SerialIfState   = SERIAL_HEADER;
+				SerialRemainder = 2; //CmdId and CmdLen
+				SerialCount     = 0;
 				continue;
 			}
 			return 0;
 		case SERIAL_HEADER:
-			if ((Count = BSP_SerialRead(SerialRxBuffer[SerialRxWrIndex].Header + SerialCount, SerialRemainder)) != 0)
+			if ((Count = BSP_SerialRead(&SerialRxBuffer.CmdId + SerialCount, SerialRemainder)) != 0)
 			{
 				SerialCount += Count;
 				SerialRemainder -= Count;
 				if (SerialRemainder == 0)
 				{
-					SerialRemainder = SerialRxBuffer[SerialRxWrIndex].Header[SERIAL_CMD_LEN];
+					SerialRemainder = SerialRxBuffer.CmdLen;
 					SerialCount     = 0;
 					if (SerialRemainder == 0)
 					{
@@ -135,7 +125,7 @@ u8_t SerialGetCommand(void)
 			}
 			return 0;
 		case SERIAL_DATA:
-			if ((Count = BSP_SerialRead(SerialRxBuffer[SerialRxWrIndex].Data + SerialCount, SerialRemainder)) != 0)
+			if ((Count = BSP_SerialRead(SerialRxBuffer.Data + SerialCount, SerialRemainder)) != 0)
 			{
 				SerialCount += Count;
 				SerialRemainder -= Count;
@@ -144,6 +134,7 @@ u8_t SerialGetCommand(void)
 					SerialIfState   = SERIAL_INBETWEEN;
 					SerialRemainder = 0;
 					SerialCount     = 0;
+					SerialRxPending = true;
 					return 1;
 				}
 			}
@@ -154,6 +145,19 @@ u8_t SerialGetCommand(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Load next command into SerialRxBuffer if possible
+ * Note: Not applicable to UART, as read into buffer via interrupt.
+ *******************************************************************************
+ * \return 1 if Command ready, 0 if not
+ *******************************************************************************
+ ******************************************************************************/
+u8_t SerialGetCommand(void)
+{
+	return SerialRxPending;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Send EVBME_MESSAGE_Indication Upstream
  *******************************************************************************
  * \param pBuffer - Pointer to Character Buffer
@@ -161,13 +165,16 @@ u8_t SerialGetCommand(void)
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void EVBME_Message_UART(char *pBuffer, size_t Count, void *pDeviceRef)
+void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
 {
-	SerialTxBuffer.Header[SERIAL_CMD_ID]  = 0xA0;
-	SerialTxBuffer.Header[SERIAL_CMD_LEN] = Count;
-	SerialTxBuffer.SOM                    = SERIAL_SOM;
+	uint8_t som = SERIAL_SOM;
+	(void)pDeviceRef;
+
+	SerialTxBuffer.CmdId  = 0xA0;
+	SerialTxBuffer.CmdLen = Count;
 	memcpy(SerialTxBuffer.Data, pBuffer, Count);
-	BSP_SerialWriteAll(&SerialTxBuffer.SOM, Count + 1 + SERIAL_HDR_LEN);
+	BSP_SerialWriteAll(&som, 1);
+	BSP_SerialWriteAll(&SerialTxBuffer.CmdId, Count + 2);
 
 } // End of EVBME_Message()
 
@@ -182,11 +189,12 @@ void EVBME_Message_UART(char *pBuffer, size_t Count, void *pDeviceRef)
  ******************************************************************************/
 void MAC_Message_UART(u8_t CommandId, u8_t Count, u8_t *pBuffer)
 {
-	SerialTxBuffer.Header[SERIAL_CMD_ID]  = CommandId;
-	SerialTxBuffer.Header[SERIAL_CMD_LEN] = Count;
-	SerialTxBuffer.SOM                    = SERIAL_SOM;
+	uint8_t som           = SERIAL_SOM;
+	SerialTxBuffer.CmdId  = CommandId;
+	SerialTxBuffer.CmdLen = Count;
 	memcpy(SerialTxBuffer.Data, pBuffer, Count);
-	BSP_SerialWriteAll(&SerialTxBuffer.SOM, Count + 1 + SERIAL_HDR_LEN);
+	BSP_SerialWriteAll(&som, 1);
+	BSP_SerialWriteAll(&SerialTxBuffer.CmdId, Count + 2);
 
 } // End of MAC_Message()
 

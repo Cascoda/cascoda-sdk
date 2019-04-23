@@ -246,7 +246,6 @@ void CHILI_GPIOInit(void)
 	/* input, pull-up */
 	GPIO_SetMode(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_MODE_INPUT);
 	GPIO_SetPullCtl(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_PUSEL_PULL_UP);
-	GPIO_EnableInt(RFIRQ_PORT, RFIRQ_PIN, GPIO_INT_FALLING);
 
 	/* PB.4: SWITCH */
 	/* input, no pull-up, debounced */
@@ -439,6 +438,9 @@ void CHILI_GPIOPowerUp(void)
 void CHILI_GPIOEnableInterrupts(void)
 {
 	/* SWITCH PB.4 */
+
+	/* RFIRQ */
+	GPIO_EnableInt(RFIRQ_PORT, RFIRQ_PIN, GPIO_INT_FALLING);
 
 #if (CASCODA_CHILI2_CONFIG == 1)
 	/* PB.12: USBPresent */

@@ -25,6 +25,12 @@
 #define TEMPSENSE_EVBME_H
 
 /******************************************************************************/
+/****** EVBME TEMPSENSE Command ID Codes                                 ******/
+/******************************************************************************/
+#define EVBME_TSENSE_SETMODE (0xC0) /* set mode (NORMAL/COORDINATOR/DEVICE) */
+#define EVBME_TSENSE_REPORT (0xC1)  /* Report Network Status (COORDINATOR) */
+
+/******************************************************************************/
 /****** EVBME API Functions                                              ******/
 /******************************************************************************/
 void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef);

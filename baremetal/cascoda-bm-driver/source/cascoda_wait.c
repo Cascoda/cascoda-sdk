@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_time.h"
@@ -78,7 +79,7 @@ static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
 
 	for (int timepassed = 0; timepassed < aTimeoutMs; timepassed = TIME_ReadAbsoluteTime() - startTime)
 	{
-		status = EVBME_Dispatch(pDeviceRef);
+		status = DISPATCH_FromCA821x(pDeviceRef);
 		if (sWaitCalled || status == CA_ERROR_INVALID_STATE)
 			break;
 		BSP_Waiting();

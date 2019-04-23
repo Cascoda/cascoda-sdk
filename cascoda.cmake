@@ -75,3 +75,11 @@ function(cascoda_map var_in var_out)
 	list(GET ARGN ${INDEX_RES} RESULT)
 	set(${var_out} ${RESULT} PARENT_SCOPE)
 endfunction()
+
+# Helper function to put a target runtime into a subdirectory of the 'bin' dir
+# useful for tidying up tests, eg cascoda_put_subdir(mytarget test)
+function(cascoda_put_subdir target_in subdir)
+	get_target_property(RUN_DIRECTORY ${target_in} RUNTIME_OUTPUT_DIRECTORY)
+	set(RUN_DIRECTORY "${RUN_DIRECTORY}/${subdir}")
+	set_target_properties(${target_in} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${RUN_DIRECTORY})
+endfunction()

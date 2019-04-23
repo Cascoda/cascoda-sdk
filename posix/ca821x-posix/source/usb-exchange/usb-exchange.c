@@ -249,6 +249,7 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 
 	if (error < 0)
 	{
+		fprintf(stderr, "\r\nUSB Send error!\r\n");
 		error = -usb_exchange_err_usb;
 		reload_hid_device(pDeviceRef); //usb disconnected - attempt to grab new device
 	}

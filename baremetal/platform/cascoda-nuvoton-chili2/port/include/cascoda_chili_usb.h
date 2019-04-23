@@ -28,7 +28,7 @@
 
 #if defined(USE_USB)
 
-#define USB_TX_RETRIES (1000)
+#define USB_TX_RETRIES (100)
 
 /* USB Functions */
 void USB_Initialise(void);
@@ -37,7 +37,6 @@ void USB_FloatDetect(void);
 void USB_BusEvent(void);
 void USB_UsbEvent(uint32_t u32INTSTS);
 u8_t USB_Transmit(u8_t *pBuffer);
-u8_t USB_Receive(u8_t *pBuffer);
 void USB_SetConnectedFlag(bool is_connected);
 
 #endif /* USE_USB */

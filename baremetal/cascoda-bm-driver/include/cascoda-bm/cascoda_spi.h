@@ -60,8 +60,8 @@ ca_error SPI_Exchange(struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceR
 /**
  * \brief Send Request over SPI
  *
- * This function is the system-specific definition of ca821x_api_downstream. It
- * transmits a SAP command and if applicable, waits for a synchronous confirm.
+ * This function is used by DISPATCH_ToCA821x as the downstream path to interface
+ * with the CA-821x.
  *
  * \param buf - Message to transmit
  * \param len - Length of message in buf

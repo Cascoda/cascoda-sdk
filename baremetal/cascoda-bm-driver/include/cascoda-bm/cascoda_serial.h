@@ -1,10 +1,5 @@
-/**
- * @file   cascoda_serial.h
- * @brief  Serial Upstream Communication Driver Definitions/Declarations
- * @author Wolfgang Bruchner
- * @date   19/07/14
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+/*
+ * Copyright (C) 2019  Cascoda, Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,39 +16,29 @@
  */
 #include <stdbool.h>
 #include "cascoda-bm/cascoda_types.h"
+#include "ca821x_api.h"
 
 #ifndef CASCODA_SERIAL_H
 #define CASCODA_SERIAL_H
 
-#define SERIAL_HDR_LEN (2) //!< Length of serial message header
-#define SERIAL_CMD_ID (0)  //!< Position of command ID in serial header
-#define SERIAL_CMD_LEN (1) //!< Position of length in serial header
 #if !defined(SERIAL_MAC_RX_LEN)
 #define SERIAL_MAC_RX_LEN (200) //!< Serial transfer payload length
 #endif
 
-#define SERIAL_RX_BUFFER_LEN (3)
-#define SERIAL_SOM (0xDE)
-
 /** Structure of serial transfers */
 struct SerialBuffer
 {
-	/** Start of Message, should be 0xDE */
-	u8_t SOM;
 	/** Header according to API specification */
-	u8_t Header[SERIAL_HDR_LEN];
+	u8_t CmdId;
+	u8_t CmdLen;
 	/** Data payload */
 	u8_t Data[SERIAL_MAC_RX_LEN];
 };
 
-struct ca821x_dev;
-
 /******************************************************************************/
 /****** Global Variables for Serial Message Buffers                      ******/
 /******************************************************************************/
-extern u8_t                Serial_Stdout;
-extern struct SerialBuffer SerialRxBuffer[SERIAL_RX_BUFFER_LEN];
-extern volatile int        SerialRxWrIndex, SerialRxRdIndex, SerialRxCounter;
+extern struct SerialBuffer SerialRxBuffer;
 extern volatile bool       SerialRxPending;
 
 /** Function pointer called when a serial message is received. Should be
@@ -64,9 +49,10 @@ extern int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *
 /****** Functions in cascoda_serial_uart.c / cascoda_serial_usb.c        ******/
 /******************************************************************************/
 u8_t SerialGetCommand(void);
+u8_t Serial_ReadInterface(void);
 void MAC_Message_USB(u8_t CommandId, u8_t Count, u8_t *pBuffer);
 void MAC_Message_UART(u8_t CommandId, u8_t Count, u8_t *pBuffer);
-void EVBME_Message_USB(char *pBuffer, size_t Count, void *pDeviceRef);
-void EVBME_Message_UART(char *pBuffer, size_t Count, void *pDeviceRef);
+void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
+void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
 
 #endif // CASCODA_SERIAL_H

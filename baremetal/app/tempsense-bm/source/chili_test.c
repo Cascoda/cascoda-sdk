@@ -49,18 +49,7 @@ void CHILI_TEST_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	/* store no-comms status */
 	if (status == CA_ERROR_FAIL)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
 		CHILI_TEST_RESULT = CHILI_TEST_ST_NOCOMMS;
-		return;
-	}
-	/* reference device */
-	if (BSP_IsUSBPresent())
-	{
-		if (BSP_GPIOSenseSwitch() == 0)
-		{
-			CHILI_TEST_MODE = CHILI_TEST_REF;
-			CHILI_TEST_TestInit(pDeviceRef);
-		}
 	}
 } // End of CHILI_TEST_Initialise()
 
@@ -94,11 +83,12 @@ void CHILI_TEST_Handler(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 int CHILI_TEST_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	if (CHILI_TEST_MODE == CHILI_TEST_OFF)
+	/* check test command sequence validity */
+	if ((SerialRxBuffer->Data[0] == EVBME_TEST_DATA0) && (SerialRxBuffer->Data[1] == EVBME_TEST_DATA1) &&
+	    (SerialRxBuffer->Data[2] == EVBME_TEST_DATA2) && (SerialRxBuffer->CmdLen == EVBME_TEST_LEN))
 	{
-		if ((SERIAL_RX_CMD_ID == EVBME_START_TEST) && (SERIAL_RX_CMD_LEN == EVBME_START_TEST_LEN) &&
-		    (SERIAL_RX_DATA[0] == EVBME_START_TEST_DATA0) && (SERIAL_RX_DATA[1] == EVBME_START_TEST_DATA1) &&
-		    (SERIAL_RX_DATA[2] == EVBME_START_TEST_DATA2))
+		/* start test (DUT) */
+		if ((SerialRxBuffer->CmdId == EVBME_TEST_START_TEST) || (SerialRxBuffer->CmdId == EVBME_TEST_START_TEST_2))
 		{
 			CHILI_TEST_MODE = CHILI_TEST_DUT;
 			if (CHILI_TEST_RESULT == CHILI_TEST_ST_NOCOMMS)
@@ -106,9 +96,16 @@ int CHILI_TEST_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca82
 				CHILI_TEST_CState = CHILI_TEST_CST_DUT_DISPLAY;
 				return 1;
 			}
-			BSP_LEDSigMode(LED_M_CLRALL);
 			CHILI_TEST_TestInit(pDeviceRef);
 			CHILI_TEST_DUT_ExchangeData(pDeviceRef);
+			return 1;
+		}
+		/* setup REF device (REF) */
+		if (SerialRxBuffer->CmdId == EVBME_TEST_SETUP_REF)
+		{
+			CHILI_TEST_MODE = CHILI_TEST_REF;
+			CHILI_TEST_TestInit(pDeviceRef);
+			printf("Reference Device initialised\n");
 			return 1;
 		}
 	}
@@ -125,12 +122,6 @@ void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef)
 	CHILI_TEST_CState  = CHILI_TEST_CST_DONE;
 	CHILI_TEST_Timeout = 0;
 	/* Reference Device */
-	if (CHILI_TEST_MODE == CHILI_TEST_REF)
-	{
-		usb_present_changed = NULL;
-		button1_pressed     = NULL;
-		BSP_LEDSigMode(LED_M_TEST_REF);
-	}
 	CHILI_TEST_InitPIB(pDeviceRef);
 	CHILI_TEST_RESULT = 0xFF;
 	/* dynamically register callbacks */
@@ -217,12 +208,14 @@ void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 		msdu[1] = cs_ref;           /* received cs at reference device */
 		msdu[2] = ed_ref;           /* received ed at reference device */
 
+		TIME_WaitTicks(20);
+
 		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
 		                  DUTAdd,              /* DstAddr */
 		                  3,                   /* MsduLength */
 		                  msdu,                /* *pMsdu */
 		                  0,                   /* MsduHandle */
-		                  0,                   /* TxOptions */
+		                  TXOPT_ACKREQ,        /* TxOptions */
 		                  NULLP,               /* *pSecurity */
 		                  pDeviceRef);
 	}
@@ -281,7 +274,7 @@ void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 	if (CHILI_TEST_CState != CHILI_TEST_CST_DUT_D_CONFIRMED)
 	{
 		/* out of order, no indication expected */
-		CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_IND_TIMEOUT;
+		CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_IND_UNEXP;
 		goto exit;
 	}
 
@@ -332,7 +325,7 @@ void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct
 	if (CHILI_TEST_CState != CHILI_TEST_CST_DUT_D_REQUESTED)
 	{
 		/* out of order, no confirm expected */
-		CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_CNF_TIMEOUT;
+		CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_CNF_UNEXP;
 		CHILI_TEST_CState = CHILI_TEST_CST_DUT_DISPLAY;
 		return;
 	}
@@ -374,9 +367,13 @@ void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef)
 
 	if (tdiff > CHILI_TEST_DUT_TIMEOUT)
 	{
-		CHILI_TEST_Timeout = 0;
-		CHILI_TEST_RESULT  = CHILI_TEST_ST_DATA_IND_TIMEOUT;
-		CHILI_TEST_CState  = CHILI_TEST_CST_DUT_DISPLAY;
+		if (CHILI_TEST_CState == CHILI_TEST_CST_DUT_D_REQUESTED)
+			CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_CNF_TIMEOUT;
+		else if (CHILI_TEST_CState == CHILI_TEST_CST_DUT_D_CONFIRMED)
+			CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_IND_TIMEOUT;
+		else
+			CHILI_TEST_RESULT = CHILI_TEST_ST_TIMEOUT;
+		CHILI_TEST_CState = CHILI_TEST_CST_DUT_DISPLAY;
 	}
 
 } // End of CHILI_TEST_DUT_CheckTimeout()
@@ -390,36 +387,15 @@ void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef)
 {
 	if (CHILI_TEST_RESULT == CHILI_TEST_ST_SUCCESS)
 	{
-		// printf("Test PASS\n");
-		printf(" \n");
-		printf(" TTTTT  EEEEE  SSSSS  TTTTT      PPPPP  AAAAA  SSSSS  SSSSS\n");
-		printf("   T    E      S        T        P   P  A   A  S      S    \n");
-		printf("   T    EEEEE  SSSSS    T        PPPPP  AAAAA  SSSSS  SSSSS\n");
-		printf("   T    E          S    T        P      A   A      S      S\n");
-		printf("   T    EEEEE  SSSSS    T        P      A   A  SSSSS  SSSSS\n");
-		printf(" \n");
-
-		printf("Check that both LEDs are blinking\n");
-		printf(" \n");
+		printf("Test Result: PASS\n");
+		//	printf("Test Result: PASS; Time=%ums\n", (TIME_ReadAbsoluteTime() - CHILI_TEST_Timeout));
 	}
 	else
 	{
-		// printf("Test FAIL\n");
-		printf(" \n");
-		printf(" TTTTT  EEEEE  SSSSS  TTTTT      FFFFF  AAAAA    I    L    \n");
-		printf("   T    E      S        T        F      A   A    I    L    \n");
-		printf("   T    EEEEE  SSSSS    T        FFFFF  AAAAA    I    L    \n");
-		printf("   T    E          S    T        F      A   A    I    L    \n");
-		printf("   T    EEEEE  SSSSS    T        F      A   A    I    LLLLL\n");
-		printf(" \n");
-
-		printf("Fail Status = 0x%02X\n \n", CHILI_TEST_RESULT);
+		printf("Test Result: FAIL\n");
+		//	printf("Test Result: FAIL; Time=%ums\n", (TIME_ReadAbsoluteTime() - CHILI_TEST_Timeout));
+		printf("Fail Status = 0x%02X\n", CHILI_TEST_RESULT);
 	}
-
-	if (CHILI_TEST_RESULT == CHILI_TEST_ST_SUCCESS)
-		BSP_LEDSigMode(LED_M_TEST_PASS);
-	else
-		BSP_LEDSigMode(LED_M_SETERROR);
 
 	CHILI_TEST_CState = CHILI_TEST_CST_DUT_FINISHED;
 
@@ -486,6 +462,18 @@ static ca_error CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Callback for MLME_COMM_STATUS_indication
+ *******************************************************************************
+ ******************************************************************************/
+static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
+                                                       struct ca821x_dev *                      pDeviceRef)
+{
+	/* only supress message */
+	return CA_ERROR_SUCCESS;
+} // End of CHILI_TEST_MLME_COMM_STATUS_indication()
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Dynamically Register Callbacks for CHILI_TEST_MODE
  *******************************************************************************
  ******************************************************************************/
@@ -493,17 +481,20 @@ void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 {
 	if (CHILI_TEST_MODE == CHILI_TEST_REF)
 	{
-		pDeviceRef->callbacks.MCPS_DATA_indication = &CHILI_TEST_REF_MCPS_DATA_indication;
-		pDeviceRef->callbacks.MCPS_DATA_confirm    = &CHILI_TEST_REF_MCPS_DATA_confirm;
+		pDeviceRef->callbacks.MCPS_DATA_indication        = &CHILI_TEST_REF_MCPS_DATA_indication;
+		pDeviceRef->callbacks.MCPS_DATA_confirm           = &CHILI_TEST_REF_MCPS_DATA_confirm;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &CHILI_TEST_MLME_COMM_STATUS_indication;
 	}
 	else if (CHILI_TEST_MODE == CHILI_TEST_DUT)
 	{
-		pDeviceRef->callbacks.MCPS_DATA_indication = &CHILI_TEST_DUT_MCPS_DATA_indication;
-		pDeviceRef->callbacks.MCPS_DATA_confirm    = &CHILI_TEST_DUT_MCPS_DATA_confirm;
+		pDeviceRef->callbacks.MCPS_DATA_indication        = &CHILI_TEST_DUT_MCPS_DATA_indication;
+		pDeviceRef->callbacks.MCPS_DATA_confirm           = &CHILI_TEST_DUT_MCPS_DATA_confirm;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &CHILI_TEST_MLME_COMM_STATUS_indication;
 	}
 	else
 	{
-		pDeviceRef->callbacks.MCPS_DATA_indication = NULL;
-		pDeviceRef->callbacks.MCPS_DATA_confirm    = NULL;
+		pDeviceRef->callbacks.MCPS_DATA_indication        = NULL;
+		pDeviceRef->callbacks.MCPS_DATA_confirm           = NULL;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = NULL;
 	}
 } // End of CHILI_TEST_RegisterCallbacks()

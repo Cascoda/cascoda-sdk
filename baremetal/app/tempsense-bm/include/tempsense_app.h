@@ -124,6 +124,7 @@ extern u8_t  APP_Channel;
 void  TEMPSENSE_APP_Handler(struct ca821x_dev *pDeviceRef);
 void  TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef);
 int   TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+void  TEMPSENSE_APP_SwitchMode(u8_t mode);
 void  TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef);
 void  TEMPSENSE_APP_SaveOrRestoreAddress(struct ca821x_dev *pDeviceRef);
 u8_t  TEMPSENSE_APP_GetTempVal(void);
@@ -149,6 +150,7 @@ void TEMPSENSE_APP_Coordinator_CheckVbatt(u16_t vbat);
 void TEMPSENSE_APP_Coordinator_CheckLQI(u8_t lqi_ts, u8_t lqi_coord);
 void TEMPSENSE_APP_Coordinator_CheckED(u8_t ed_ts, u8_t ed_coord);
 void TEMPSENSE_APP_Coordinator_SoftReinit(struct ca821x_dev *pDeviceRef);
+void TEMPSENSE_APP_Coordinator_ReportStatus(void);
 /* tempsense_app_device */
 void TEMPSENSE_APP_Device_Handler(struct ca821x_dev *pDeviceRef);
 void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef);

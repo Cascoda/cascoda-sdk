@@ -756,3 +756,33 @@ void TEMPSENSE_APP_Coordinator_SoftReinit(struct ca821x_dev *pDeviceRef)
 	MLME_SET_request_sync(macAssociationPermit, 0, 1, &assocpermit, pDeviceRef);
 
 } // End of TEMPSENSE_APP_Coordinator_SoftReinit()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TEMPSENSE App. Coordinator Report Network Status
+ *******************************************************************************
+ ******************************************************************************/
+void TEMPSENSE_APP_Coordinator_ReportStatus(void)
+{
+	u8_t i;
+
+	if (APP_STATE != APP_ST_COORDINATOR)
+	{
+		printf("Not Coordinator\n");
+		return;
+	}
+
+	printf("Devices connected: %u\n", APP_NDEVICES);
+
+	for (i = 0; i < APP_MAX_DEVICES; ++i)
+	{
+		if (APP_DevAssociated[i] == 1)
+		{
+			printf("%u: %08X; Packets received: %u; Last heard: %ums ago.\n",
+			       i + 1,
+			       APP_DevLongAddrLSBs[i],
+			       APP_DevHandle[i],
+			       (TIME_ReadAbsoluteTime() - APP_DevTimeout[i]));
+		}
+	}
+}

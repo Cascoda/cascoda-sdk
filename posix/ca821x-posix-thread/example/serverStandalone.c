@@ -88,7 +88,7 @@ static void handleDiscover(void *               aContext,
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
-	otCoapHeaderInit(&responseHeader, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_CONTENT);
+	otCoapHeaderInit(&responseHeader, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
 	otCoapHeaderSetMessageId(&responseHeader, otCoapHeaderGetMessageId(aHeader));
 	otCoapHeaderSetToken(&responseHeader, otCoapHeaderGetToken(aHeader), otCoapHeaderGetTokenLength(aHeader));
 

@@ -13,6 +13,7 @@ endforeach()
 find_program(
 	CLANG_FORMAT_EXE
 	NAMES "clang-format"
+	      "clang-format-6.0"
 	DOC "Path to clang-format executable"
 	)
 if(NOT CLANG_FORMAT_EXE)
@@ -27,8 +28,8 @@ execute_process(
 	)
 
 # version check
-if(NOT ${CLANG_VERSION} MATCHES "version 6\.0\.1")
-	message(FATAL_ERROR "clang-format must be version 6.0.1.")
+if(NOT ${CLANG_VERSION} MATCHES "version 6\.0")
+	message(FATAL_ERROR "clang-format must be version 6.0")
 endif()
 
 # Run clang format

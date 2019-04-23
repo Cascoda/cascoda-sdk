@@ -51,12 +51,12 @@
 int tempsense_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	int ret = 0;
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf - 1), pDeviceRef)))
+	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
 		return ret;
 	/* Insert Application-Specific Dispatches here in the same style */
-	if ((ret = CHILI_TEST_UpStreamDispatch((struct SerialBuffer *)(buf - 1), pDeviceRef)))
+	if ((ret = CHILI_TEST_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
 		return ret;
-	if ((ret = TEMPSENSE_UpStreamDispatch((struct SerialBuffer *)(buf - 1), pDeviceRef)))
+	if ((ret = TEMPSENSE_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
 		return ret;
 	return 0;
 }

@@ -98,6 +98,49 @@ struct M_KeyDescriptor_thread
 	                                       //struct M_KeyUsageDesc          KeyUsageList[2];
 };
 
+static otError ConvertErrorMacToOt(ca_mac_status aMacError)
+{
+	otError error;
+
+	switch (aMacError)
+	{
+	case MAC_SUCCESS:
+	case MAC_NO_DATA:
+		error = OT_ERROR_NONE;
+		break;
+	case MAC_NO_ACK:
+		error = OT_ERROR_NO_ACK;
+		break;
+	case MAC_CHANNEL_ACCESS_FAILURE:
+		error = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+		break;
+	case MAC_TRANSACTION_OVERFLOW:
+		error = OT_ERROR_NO_BUFS;
+		break;
+	case MAC_INVALID_PARAMETER:
+	case MAC_UNSUPPORTED_ATTRIBUTE:
+	case MAC_INVALID_INDEX:
+	case MAC_FRAME_TOO_LONG:
+		error = OT_ERROR_INVALID_ARGS;
+		break;
+	case MAC_NO_SHORT_ADDRESS:
+	case MAC_UNAVAILABLE_KEY:
+		error = OT_ERROR_INVALID_STATE;
+		break;
+	case MAC_READ_ONLY:
+		error = OT_ERROR_NOT_CAPABLE;
+		break;
+	case MAC_INVALID_HANDLE:
+		error = OT_ERROR_ALREADY;
+		break;
+	default:
+		error = OT_ERROR_ABORT;
+		break;
+	}
+
+	return error;
+}
+
 otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t *aLen, uint8_t *aBuf)
 {
 	uint8_t error;
@@ -153,20 +196,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		error = MLME_GET_request_sync(aAttr, aIndex, aLen, aBuf, pDeviceRef);
 	}
 
-	switch (error)
-	{
-	case MAC_SUCCESS:
-		otErr = OT_ERROR_NONE;
-		break;
-
-	case MAC_UNSUPPORTED_ATTRIBUTE:
-	case MAC_INVALID_INDEX:
-		otErr = OT_ERROR_INVALID_ARGS;
-		break;
-
-	default:
-		otErr = OT_ERROR_GENERIC;
-	}
+	otErr = ConvertErrorMacToOt(error);
 
 exit:
 	return otErr;
@@ -221,32 +251,14 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 		error = MLME_SET_request_sync(aAttr, aIndex, aLen, aBuf, pDeviceRef);
 	}
 
-	switch (error)
-	{
-	case MAC_SUCCESS:
-		otErr = OT_ERROR_NONE;
-		break;
-
-	case MAC_READ_ONLY:
-		otErr = OT_ERROR_NOT_CAPABLE;
-		break;
-
-	case MAC_INVALID_PARAMETER:
-	case MAC_UNSUPPORTED_ATTRIBUTE:
-	case MAC_INVALID_INDEX:
-		otErr = OT_ERROR_INVALID_ARGS;
-		break;
-
-	default:
-		otErr = OT_ERROR_GENERIC;
-	}
+	otErr = ConvertErrorMacToOt(error);
 
 	return otErr;
 }
 
 otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
 
@@ -264,13 +276,13 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
 	}
 
-	return error == MAC_SUCCESS ? OT_ERROR_NONE : OT_ERROR_FAILED;
+	return ConvertErrorMacToOt(error);
 }
 
 otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 {
-	uint8_t error;
-	otError otErr;
+	ca_mac_status error;
+	otError       otErr;
 
 	error = MLME_START_request_sync(aStartReq->mPanId,
 	                                aStartReq->mLogicalChannel,
@@ -283,32 +295,14 @@ otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 	                                (struct SecSpec *)&(aStartReq->mBeaconSecurity),
 	                                pDeviceRef);
 
-	switch (error)
-	{
-	case MAC_SUCCESS:
-		otErr = OT_ERROR_NONE;
-		break;
-
-	case MAC_NO_SHORT_ADDRESS:
-	case MAC_UNAVAILABLE_KEY:
-		otErr = OT_ERROR_INVALID_STATE;
-		break;
-
-	case MAC_INVALID_PARAMETER:
-	case MAC_FRAME_TOO_LONG:
-		otErr = OT_ERROR_INVALID_ARGS;
-		break;
-
-	default:
-		otErr = OT_ERROR_GENERIC;
-	}
+	otErr = ConvertErrorMacToOt(error);
 
 	return otErr;
 }
 
 otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MLME_SCAN_request(aScanRequest->mScanType,
 	                          aScanRequest->mScanChannelMask,
@@ -316,12 +310,12 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 	                          (struct SecSpec *)&(aScanRequest->mSecSpec),
 	                          pDeviceRef);
 
-	return error == MAC_SUCCESS ? OT_ERROR_NONE : OT_ERROR_FAILED;
+	return ConvertErrorMacToOt(error);
 }
 
 otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 #if CASCODA_CA_VER == 8210
 	uint8_t interval[2] = {0, 0};
@@ -334,12 +328,12 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 	    *((struct FullAddr *)&(aPollRequest->mCoordAddress)), (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
 #endif
 
-	return (error == MAC_SUCCESS || error == MAC_NO_DATA) ? OT_ERROR_NONE : OT_ERROR_NO_ACK;
+	return ConvertErrorMacToOt(error);
 }
 
 otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
 	                          *(struct FullAddr *)&aDataRequest->mDst,
@@ -350,16 +344,16 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 	                          (struct SecSpec *)&(aDataRequest->mSecurity),
 	                          pDeviceRef);
 
-	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_INVALID_STATE;
+	return ConvertErrorMacToOt(error);
 }
 
 otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MCPS_PURGE_request_sync(&aMsduHandle, pDeviceRef);
 
-	return (error == MAC_SUCCESS) ? OT_ERROR_NONE : OT_ERROR_ALREADY;
+	return ConvertErrorMacToOt(error);
 }
 
 static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
@@ -418,8 +412,10 @@ static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_ps
 
 static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
+	otError error = ConvertErrorMacToOt((ca_mac_status)params->Status);
+
 	barrier_worker_waitForMain();
-	otPlatMcpsDataConfirm(OT_INSTANCE, params->MsduHandle, params->Status);
+	otPlatMcpsDataConfirm(OT_INSTANCE, params->MsduHandle, error);
 	barrier_worker_endWork();
 
 	return CA_ERROR_SUCCESS;

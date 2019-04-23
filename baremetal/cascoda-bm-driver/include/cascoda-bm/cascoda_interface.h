@@ -25,16 +25,6 @@ enum LEDMode
 	LED_M_ALLON                = 9  //!< both LEDs on
 };
 
-/** Definitions for Powerdown Modes */
-enum PDMode
-{
-	PDM_ALLON     = 0, //!< Mainly for Testing
-	PDM_ACTIVE    = 1, //!< CAX Full Data Retention, MAC Running
-	PDM_STANDBY   = 2, //!< CAX Full Data Retention
-	PDM_POWERDOWN = 3, //!< No CAX Retention, PIB has to be re-initialised
-	PDM_POWEROFF  = 4  //!< No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
-};
-
 /** Description of the internal flash */
 struct FlashInfo
 {
@@ -121,18 +111,20 @@ void BSP_DisableSerialIRQ(void);
  * \param pBuffer - Pointer to Data Buffer
  *
  */
-void BSP_SerialWrite(u8_t *pBuffer);
+void BSP_USBSerialWrite(u8_t *pBuffer);
 
 /**
- * \brief Read Fragment of Data from USB
+ * \brief Peek a received USB buffer
  *
- * \param pBuffer - Pointer to Data Buffer
- *
- * \return 0: No Data available
- *         1: Data available
- *
+ * \return Pointer to Data Buffer or NULL if none available
  */
-u8_t BSP_SerialRead(u8_t *pBuffer);
+u8_t *BSP_USBSerialRxPeek(void);
+
+/**
+ * \brief Release a received USB buffer following processing
+ */
+void BSP_USBSerialRxDequeue(void);
+
 #endif // USE_USB
 #if defined(USE_UART)
 
@@ -244,6 +236,11 @@ void BSP_UseExternalClock(u8_t useExternalClock);
  *
  */
 void BSP_Waiting(void);
+
+/**
+ * \brief Get a 64-bit ID that is unique to this device
+ */
+u64_t BSP_GetUniqueId(void);
 
 /**
  * \brief Get Microchip MCP73831 Charge Status

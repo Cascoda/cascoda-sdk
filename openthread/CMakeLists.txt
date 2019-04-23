@@ -39,7 +39,7 @@ include(ExternalProject)
 FetchContent_Declare(
   openthread
   GIT_REPOSITORY https://github.com/Cascoda/openthread.git
-  GIT_TAG        origin/ext-mac
+  GIT_TAG        979f0230c2db30f70404fafa552938cd8cb9b4a1
   GIT_SHALLOW    1
 )
 

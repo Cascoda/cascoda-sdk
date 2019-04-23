@@ -37,16 +37,16 @@
 
 #define CHANNEL 22
 #define M_PANID 0x1AAA
-#define MAX_MSDU_LEN 4
-#define MIN_MSDU_LEN 20
+#define MAX_MSDU_LEN 100
+#define MIN_MSDU_LEN 100
 #define MAX_INSTANCES 5
-#define TX_PERIOD_US (getRand(2000, 3000))
+#define TX_PERIOD_US (getRand(6000, 7000))
 #define TO_BACKOFF_US 10000
 #define WAIT_CONFIRM 0
 #define ONE_DIRECTION 0
 #define INSERT_SYNC (getRand(0, 0))
 #define INDIRECT 1
-#define INDIRECTJUNK 5
+#define INDIRECTJUNK 0
 #define USELONGADDR (getRand(0, 0))
 #define ACKREQ (getRand(1, 1))
 #define NUMRETRIES 4
@@ -133,12 +133,12 @@ static size_t addExpected(struct inst_priv *target, struct inst_priv *source, ui
 		if (target->mExpectedStatus[*index] & STATUS_ACKNOWLEDGED)
 			target->mMissedAcked++;
 	}
-	else if (!(target->mExpectedStatus[*index] & STATUS_ACKNOWLEDGED))
+	if (!(target->mExpectedStatus[*index] & STATUS_ACKNOWLEDGED))
 	{
 		if (target->mExpectedSource[*index] != NULL)
 			target->mExpectedSource[*index]->mAckLost++;
 	}
-	else if (!(target->mExpectedStatus[*index] & STATUS_CONFIRMED))
+	if (!(target->mExpectedStatus[*index] & STATUS_CONFIRMED))
 	{
 		if (target->mExpectedSource[*index] != NULL)
 			target->mExpectedSource[*index]->mConfirmLost++;
@@ -391,7 +391,8 @@ static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct 
 		priv->mErr++;
 		pthread_mutex_unlock(&out_mutex);
 		break;
-
+	case MAC_SYSTEM_ERROR:
+		printf("SystemError");
 	default:
 		pthread_mutex_lock(&out_mutex);
 		priv->mErr++;
@@ -454,7 +455,7 @@ static void *inst_worker(void *arg)
 		if (ACKREQ)
 			txOpts |= 0x01;
 
-		if (INDIRECT)
+		if (INDIRECT && !i && getRand(0, 5))
 			txOpts |= 0x04;
 
 		if (USELONGADDR)
@@ -668,8 +669,8 @@ void initInst(struct inst_priv *cur)
 	MLME_SET_request_sync(macShortAddress, 0, sizeof(cur->mAddress), LEarray, pDeviceRef);
 
 	uint8_t rxOnWhenIdle = 1;
-	if (INDIRECT && (cur == insts))
-		rxOnWhenIdle = 0;
+	//if (INDIRECT && (cur == insts))
+	//	rxOnWhenIdle = 0;
 	MLME_SET_request_sync( //enable Rx when Idle
 	    macRxOnWhenIdle,
 	    0,

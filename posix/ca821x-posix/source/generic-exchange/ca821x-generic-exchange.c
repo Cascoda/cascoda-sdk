@@ -285,13 +285,65 @@ int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef)
 	return 0;
 }
 
+static inline ca_error ca8210_try_read(struct ca821x_dev *pDeviceRef)
+{
+	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
+	uint8_t                      buffer[MAX_BUF_SIZE];
+	ssize_t                      len;
+
+	len = priv->read_func(pDeviceRef, buffer);
+	assert(len < MAX_BUF_SIZE);
+	if (len > 0)
+	{
+		if (buffer[0] & SPI_SYN)
+		{
+			//Add to queue for synchronous processing
+			add_to_waiting_queue(
+			    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, len, pDeviceRef);
+		}
+		else
+		{
+			//Add to queue for dispatching downstream
+			add_to_waiting_queue(
+			    &downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, buffer, len, pDeviceRef);
+		}
+		return CA_ERROR_SUCCESS;
+	}
+	else if (len < 0)
+	{
+		exchange_handle_error(len, pDeviceRef);
+	}
+	return CA_ERROR_NOT_FOUND;
+}
+
+static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
+{
+	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
+	uint8_t                      buffer[MAX_BUF_SIZE];
+	ssize_t                      len;
+
+	len = pop_from_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buffer, MAX_BUF_SIZE, &pDeviceRef);
+
+	if (len > 0)
+	{
+		int error = 0;
+
+		error = priv->write_func(buffer, len, pDeviceRef);
+		if (error < 0)
+		{
+			exchange_handle_error(error, pDeviceRef);
+			return CA_ERROR_FAIL;
+		}
+		return CA_ERROR_SUCCESS;
+	}
+
+	return CA_ERROR_NOT_FOUND;
+}
+
 void *ca8210_io_worker(void *arg)
 {
 	struct ca821x_dev *          pDeviceRef = arg;
 	struct ca821x_exchange_base *priv       = pDeviceRef->exchange_context;
-	uint8_t                      buffer[MAX_BUF_SIZE];
-	ssize_t                      len;
-	int                          error = 0;
 
 	priv->flush_func(pDeviceRef);
 
@@ -300,38 +352,10 @@ void *ca8210_io_worker(void *arg)
 	{
 		pthread_mutex_unlock(&priv->flag_mutex);
 
-		len = priv->read_func(pDeviceRef, buffer);
-		assert(len < MAX_BUF_SIZE);
-		if (len > 0)
+		if (ca8210_try_read(pDeviceRef) == CA_ERROR_NOT_FOUND)
 		{
-			if (buffer[0] & SPI_SYN)
-			{
-				//Add to queue for synchronous processing
-				add_to_waiting_queue(
-				    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, len, pDeviceRef);
-			}
-			else
-			{
-				//Add to queue for dispatching downstream
-				add_to_waiting_queue(
-				    &downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, buffer, len, pDeviceRef);
-			}
-		}
-		else if (len < 0)
-		{
-			exchange_handle_error(len, pDeviceRef);
-		}
-
-		//Send any queued messages
-		len = pop_from_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buffer, MAX_BUF_SIZE, &pDeviceRef);
-
-		if (len > 0)
-		{
-			error = priv->write_func(buffer, len, pDeviceRef);
-			if (error < 0)
-			{
-				exchange_handle_error(error, pDeviceRef);
-			}
+			//If no reads left, we can start writing.
+			ca8210_try_write(pDeviceRef);
 		}
 
 		pthread_mutex_lock(&priv->flag_mutex);

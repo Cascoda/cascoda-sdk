@@ -65,7 +65,7 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	EVBME_SwitchClock(pDeviceRef, APP_USE_EXTERNAL_CLOCK);
 
 	if (BSP_IsUSBPresent())
-		APP_STATE = APP_STATE_new = APP_ST_COORDINATOR; // APP_ST_NORMAL;
+		APP_STATE = APP_STATE_new = APP_ST_NORMAL;
 	else
 		APP_STATE = APP_STATE_new = APP_ST_DEVICE;
 

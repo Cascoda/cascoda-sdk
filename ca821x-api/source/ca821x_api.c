@@ -676,7 +676,7 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
 	{
 		if (PIBAttribute == macShortAddress)
 		{
-			pDeviceRef->shortaddr = *(uint16_t *)pPIBAttributeValue;
+			pDeviceRef->shortaddr = GETLE16(pPIBAttributeValue);
 		}
 		else if (PIBAttribute == nsIEEEAddress)
 		{

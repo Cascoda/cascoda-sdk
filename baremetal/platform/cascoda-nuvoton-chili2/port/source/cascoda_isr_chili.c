@@ -343,10 +343,7 @@ void UART0_IRQHandler(void)
 
 	while (UART0->INTSTS & UART_INTSTS_RDAINT_Msk)
 	{
-		if (SerialGetCommand())
-		{
-			SerialRxPending = true;
-		}
+		Serial_ReadInterface();
 	}
 
 #else
