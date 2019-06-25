@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.12)
 project (cascoda-dummy-posix)
 
@@ -15,6 +14,7 @@ endif()
 
 # define the 'interface' library that makes up the bm platform.
 add_library(cascoda-bm-plat INTERFACE)
+
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy

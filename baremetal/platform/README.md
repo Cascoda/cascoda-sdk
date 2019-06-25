@@ -8,7 +8,6 @@ The following platforms are currently implemented:<br>
 | :--- | :--- | :--- |
 | cascoda-nuvoton-chili | Chili 1 | Nuvoton Nano120 |
 | cascoda-nuvoton-chili2 | Chili 2 | Nuvoton M2351 |
-| cascoda-st-h152 | Olimex STM32-H152 | ST STM32L152 |
 | cascoda-dummy-posix |dummy posix platform for test purposes | -|
 
 Support for additional MCUs and modules will be added here.

@@ -3,7 +3,7 @@ The EVBME (Evaluation board management entity) is primarily responsible for link
 
 | Low level function | Description |
 | :----------------- | :---------- |
-| EVBMEHandler | Must be called to read SPI messages from the ca821x device. |
+| DISPATCH_ReadCA821x | Must be called to read SPI messages from the ca821x device. |
 
 | High level function | Description |
 | :------------------ | :---------- |

@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (ca821x-posix)
 
@@ -12,6 +11,9 @@ option( CA821X_ASYNC_CALLBACK
 	"Enable asynchronous calling of user callbacks from another thread (vs polling using ca821x_util_dispatch_poll)"
 	ON
 )
+
+# Mark the device as being FTD-capable
+set(CASCODA_OPENTHREAD_FTD ON PARENT_SCOPE)
 
 # Config file generation ------------------------------------------------------
 configure_file(
@@ -44,6 +46,7 @@ add_library(ca821x-posix
 	${PROJECT_SOURCE_DIR}/source/generic-exchange/ca821x-generic-exchange.c
 	${PROJECT_SOURCE_DIR}/source/generic-exchange/ca821x-queue.c
 	${PROJECT_SOURCE_DIR}/source/kernel-exchange/kernel-exchange.c
+	${PROJECT_SOURCE_DIR}/source/uart-exchange/uart-exchange.c
 	${PROJECT_SOURCE_DIR}/source/usb-exchange/usb-exchange.c
 	${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-util.c
 	)
@@ -54,6 +57,7 @@ target_include_directories( ca821x-posix
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/source/generic-exchange
 		${PROJECT_SOURCE_DIR}/source/kernel-exchange
+		${PROJECT_SOURCE_DIR}/source/uart-exchange
 		${PROJECT_SOURCE_DIR}/source/usb-exchange
 		${hidapi_SOURCE_DIR}
 	PUBLIC
@@ -71,5 +75,15 @@ add_executable(security_test
 	${PROJECT_SOURCE_DIR}/example/security-test.c
 	)
 
+add_executable(usb_test
+	${PROJECT_SOURCE_DIR}/example/usb-test.c
+	)
+
+add_executable(serial-adapter
+	${PROJECT_SOURCE_DIR}/example/serial-adapter.c
+	)
+
 target_link_libraries(example_app ca821x-api ca821x-posix)
 target_link_libraries(security_test ca821x-api ca821x-posix)
+target_link_libraries(usb_test ca821x-api ca821x-posix)
+target_link_libraries(serial-adapter ca821x-posix)

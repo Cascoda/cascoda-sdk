@@ -812,7 +812,7 @@ void CLK_DisablePLL(void);
 uint32_t CLK_WaitClockReady(uint32_t u32ClkMask);
 void CLK_EnableSysTick(uint32_t u32ClkSrc, uint32_t u32Count);
 void CLK_DisableSysTick(void);
-void CLK_SetPowerDownMode(uint32_t u32PDMode);
+void CLK_SetPowerDownMode(uint32_t u32powerdown_mode);
 void CLK_EnableDPDWKPin(uint32_t u32TriggerType);
 uint32_t CLK_GetPMUWKSrc(void);
 void CLK_EnableSPDWKPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn);

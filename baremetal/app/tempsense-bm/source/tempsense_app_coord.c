@@ -58,12 +58,6 @@ static u32_t APP_DevHandle[APP_MAX_DEVICES]       = {0xFFFFFFFF};   /* device ha
  ******************************************************************************/
 void TEMPSENSE_APP_Coordinator_Handler(struct ca821x_dev *pDeviceRef)
 {
-	/* LEDs */
-	if (BSP_GetChargeStat())
-		BSP_LEDSigMode(LED_M_CONNECTED_BAT_CHRG); // charging
-	else
-		BSP_LEDSigMode(LED_M_CONNECTED_BAT_FULL); // not charging
-
 	/* check time-outs */
 	TEMPSENSE_APP_Coordinator_CheckTimeouts(pDeviceRef);
 
@@ -138,7 +132,6 @@ void TEMPSENSE_APP_Coordinator_Start(struct ca821x_dev *pDeviceRef)
 		APP_Debug_SetAppState(0xA1);
 		APP_Debug_Error(0x04);
 #endif /* APP_USE_DEBUG */
-		BSP_LEDSigMode(LED_M_SETERROR);
 	}
 
 } // End of TEMPSENSE_APP_Coordinator_Start()
@@ -163,7 +156,6 @@ void TEMPSENSE_APP_Coordinator_ProcessScanCnf(struct MLME_SCAN_confirm_pset *par
 		APP_Debug_SetAppState(0xA3);
 		APP_Debug_Error(0x06);
 #endif /* APP_USE_DEBUG */
-		BSP_LEDSigMode(LED_M_SETERROR);
 		return;
 	}
 
@@ -212,7 +204,6 @@ void TEMPSENSE_APP_Coordinator_ProcessScanCnf(struct MLME_SCAN_confirm_pset *par
 		APP_Debug_SetAppState(0xA5);
 		APP_Debug_Error(0x07);
 #endif /* APP_USE_DEBUG */
-		BSP_LEDSigMode(LED_M_SETERROR);
 	}
 	else
 	{
@@ -321,7 +312,6 @@ void TEMPSENSE_APP_Coordinator_AssociateResponse(struct MLME_ASSOCIATE_indicatio
 		APP_Debug_SetAppState(0xAB);
 		APP_Debug_Error(0x08);
 #endif /* APP_USE_DEBUG */
-		BSP_LEDSigMode(LED_M_SETERROR);
 		return;
 	}
 
@@ -734,7 +724,7 @@ void TEMPSENSE_APP_Coordinator_SoftReinit(struct ca821x_dev *pDeviceRef)
 
 	if (status)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
+		printf("SoftReinit Fail (Reset)\n");
 		return;
 	}
 
@@ -750,7 +740,7 @@ void TEMPSENSE_APP_Coordinator_SoftReinit(struct ca821x_dev *pDeviceRef)
 	                                 pDeviceRef);
 
 	if (status)
-		BSP_LEDSigMode(LED_M_SETERROR);
+		printf("SoftReinit Fail (Start)\n");
 
 	assocpermit = 1;
 	MLME_SET_request_sync(macAssociationPermit, 0, 1, &assocpermit, pDeviceRef);
@@ -772,7 +762,7 @@ void TEMPSENSE_APP_Coordinator_ReportStatus(void)
 		return;
 	}
 
-	printf("Devices connected: %u\n", APP_NDEVICES);
+	printf("Devices connected on Channel %u: %u\n", APP_Channel, APP_NDEVICES);
 
 	for (i = 0; i < APP_MAX_DEVICES; ++i)
 	{
@@ -781,7 +771,7 @@ void TEMPSENSE_APP_Coordinator_ReportStatus(void)
 			printf("%u: %08X; Packets received: %u; Last heard: %ums ago.\n",
 			       i + 1,
 			       APP_DevLongAddrLSBs[i],
-			       APP_DevHandle[i],
+			       (APP_DevHandle[i] == 0xFFFFFFFF ? 0 : APP_DevHandle[i]),
 			       (TIME_ReadAbsoluteTime() - APP_DevTimeout[i]));
 		}
 	}

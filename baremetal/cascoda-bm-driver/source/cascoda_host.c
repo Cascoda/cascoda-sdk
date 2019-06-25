@@ -36,8 +36,6 @@ uint8_t PutcBuffer[MAX_PUTC_CHARS]; //!< Debug message buffer
 // - cascoda_serial_uart.c
 // - cascoda_serial_usb.c
 
-#if defined(USE_USB) || defined(USE_UART)
-
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Send buffered message upstream
@@ -103,6 +101,4 @@ int _write(int file, char *ptr, int len)
 	}
 	return i;
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (ca821x-openthread)
 
@@ -12,20 +11,45 @@ endif()
 # Set configuration variables -------------------------------------------------
 set(CASCODA_OPENTHREAD_MAKE make CACHE STRING "The 'make' program to be used to build openthread")
 set(CASCODA_OPENTHREAD_MAKE_ARGS -j10 CACHE STRING "The arguments to be passed to the 'make' program when building openthread")
-set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
-       --enable-cli
-       --enable-application-coap
-       --enable-mac-filter
-       --enable-dhcp6-client
-       --enable-dhcp6-server
-       --with-mac=external
-       --enable-ftd
-       --enable-mtd
-       --enable-cli
-       --disable-docs
-     CACHE STRING
-       "The arguments to be passed to configure when configuring openthread"
-)
+set(CASCODA_OPENTHREAD_DEV OFF CACHE BOOL "Whether to use the latest development build of openthread, or the known stable version.")
+
+#Set default configure options based on platform capabilities
+if(CASCODA_OPENTHREAD_FTD)
+	set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
+	       --enable-application-coap
+	       --enable-joiner
+	       --enable-commissioner
+	       --enable-tmf-proxy
+	       --enable-mac-filter
+	       --enable-cert-log
+	       --enable-dhcp6-client
+	       --enable-dhcp6-server
+	       --enable-border-router
+	       --with-mac=external
+	       --enable-ftd
+	       --enable-mtd
+	       --enable-cli
+	       --enable-ncp
+	       --with-ncp-bus=uart
+	       --disable-docs
+	     CACHE STRING
+	       "The arguments to be passed to configure when configuring openthread"
+	)
+else()
+	set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
+	       --enable-cli
+	       --enable-application-coap
+	       --enable-mac-filter
+	       --enable-dhcp6-client
+	       --enable-dhcp6-server
+	       --with-mac=external
+	       --enable-ftd
+	       --enable-mtd
+	       --disable-docs
+	     CACHE STRING
+	       "The arguments to be passed to configure when configuring openthread"
+	)
+endif()
 
 cascoda_dropdown(CASCODA_LOG_LEVEL
 	"The minimum log level to print messages for"
@@ -36,10 +60,17 @@ cascoda_dropdown(CASCODA_LOG_LEVEL
 include(FetchContent)
 include(ExternalProject)
 
+# Use specific OpenThread commit, unless developing OpenThread
+if(CASCODA_OPENTHREAD_DEV)
+	set(OT_TAG ext-mac-dev)
+else()
+	set(OT_TAG d45241516e52db3f49ad3cbb05c709f81ee54b7c)
+endif()
+
 FetchContent_Declare(
   openthread
   GIT_REPOSITORY https://github.com/Cascoda/openthread.git
-  GIT_TAG        979f0230c2db30f70404fafa552938cd8cb9b4a1
+  GIT_TAG        ${OT_TAG}
   GIT_SHALLOW    1
 )
 
@@ -50,6 +81,11 @@ endif()
 
 # get the prefix from gcc (openthread seems to be pretty much gcc/clang only)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# get an uppercase version of the build type, for extracting build_type specific flags
+if(CMAKE_BUILD_TYPE)
+	string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UC)
+endif()
 
 set(OPENTHREAD_CONFIG_DEFINE OPENTHREAD_PROJECT_CORE_CONFIG_FILE="ca821x-openthread-config.h")
 set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\\\"ca821x-openthread-config.h\\\" -I${PROJECT_BINARY_DIR}/include")
@@ -66,10 +102,10 @@ ExternalProject_Add(
 	    "RANLIB=${CMAKE_C_COMPILER_RANLIB}"
 	    "NM=${CMAKE_NM}"
 	    "STRIP=${CMAKE_STRIP}"
-	    "CFLAGS=${CMAKE_C_FLAGS} -Os ${OPENTHREAD_INCLUDE_ARG}"
-	    "CPPFLAGS=${CMAKE_C_FLAGS} -Os ${OPENTHREAD_INCLUDE_ARG}"
-	    "CXXFLAGS=${CMAKE_CXX_FLAGS} ${OPENTHREAD_INCLUDE_ARG}"
-	    "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+	    "CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
+	    "CPPFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
+	    "CXXFLAGS=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
+	    "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS_${BUILD_TYPE_UC}}"
 	    "--host=${MACHINE_NAME}"
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
   BUILD_ALWAYS ON

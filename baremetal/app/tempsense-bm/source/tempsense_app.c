@@ -44,6 +44,7 @@
 u8_t APP_STATE      = APP_ST_NORMAL; //!< module state
 u8_t APP_STATE_new  = APP_ST_NORMAL; //!< module state set in interrupts
 u8_t APP_INITIALISE = 0;             //!< flag for re-initialising application
+u8_t APP_CONNECTED  = 0;             //!< sensor module is connected to coordinator
 
 /* MAC PIB Values */
 u16_t APP_PANId;
@@ -75,19 +76,9 @@ void TEMPSENSE_APP_Handler(struct ca821x_dev *pDeviceRef)
 			/* densor device */
 			TEMPSENSE_APP_Device_Handler(pDeviceRef);
 		}
-		else
-		{
-			/* normal mode */
-			if (BSP_IsUSBPresent())
-			{
-				if (BSP_GetChargeStat())
-					BSP_LEDSigMode(LED_M_CONNECTED_BAT_CHRG); /* charging */
-				else
-					BSP_LEDSigMode(LED_M_CONNECTED_BAT_FULL); /* not charging */
-			}
-		}
 	}
 
+	TEMPSENSE_APP_LED_Handler();
 } // End of TEMPSENSE_APP_Handler()
 
 /******************************************************************************/
@@ -127,14 +118,12 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 		/* reset MAC PIB */
 		if (MLME_SET_request_sync(nsIEEEAddress, 0, 8, APP_LongAddress, pDeviceRef))
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
 #if APP_USE_DEBUG
 			APP_Debug_Error(0x01);
 #endif /* APP_USE_DEBUG */
 		}
 		if (MLME_RESET_request_sync(1, pDeviceRef)) // SetDefaultPIB = TRUE
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
 #if APP_USE_DEBUG
 			APP_Debug_Error(0x02);
 #endif /* APP_USE_DEBUG */
@@ -186,8 +175,7 @@ void TEMPSENSE_APP_SwitchMode(u8_t mode)
 	{
 		printf("Exiting TEMPSENSE\n");
 	}
-	APP_STATE_new = mode;
-	BSP_LEDSigMode(LED_M_CLRERROR);
+	APP_STATE_new  = mode;
 	APP_INITIALISE = 1;
 }
 
@@ -204,7 +192,6 @@ void TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef)
 	/* reset PIB */
 	if (MLME_RESET_request_sync(1, pDeviceRef)) // SetDefaultPIB = TRUE
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
 #if APP_USE_DEBUG
 		APP_Debug_Error(0x03);
 #endif /* APP_USE_DEBUG */
@@ -238,38 +225,6 @@ void TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef)
 	}
 
 } // End of TEMPSENSE_APP_InitPIB()
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Save or Restore Address from Dataflash
- *******************************************************************************
- ******************************************************************************/
-void TEMPSENSE_APP_SaveOrRestoreAddress(struct ca821x_dev *pDeviceRef)
-{
-	u8_t  rand[2];
-	u8_t  len = 0;
-	u32_t dsaved;
-
-	dsaved = 0;
-
-	/* read stored address */
-	BSP_ReadDataFlash(0, &dsaved, 1);
-
-	if (dsaved == 0xFFFFFFFF)
-	{
-		/* save address if not yet programmed */
-		HWME_GET_request_sync(HWME_RANDOMNUM, &len, rand, pDeviceRef);
-		dsaved = dsaved + (rand[1] << 24) + (rand[0] << 16);
-		HWME_GET_request_sync(HWME_RANDOMNUM, &len, rand, pDeviceRef);
-		dsaved = dsaved + (rand[1] << 8) + (rand[0]);
-		BSP_WriteDataFlashInitial(0, &dsaved, 1);
-		/* re-read stored address */
-		BSP_ReadDataFlash(0, &dsaved, 1);
-	}
-
-	printf("Device Address 0x%08X\n", dsaved);
-
-} // End of TEMPSENSE_APP_SaveOrRestoreAddress()
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -371,3 +326,69 @@ void TEMPSENSE_APP_PrintSeconds(void)
 {
 	printf("%us; ", TIME_ReadAbsoluteTime() / 1000);
 } // End of TEMPSENSE_APP_PrintSeconds()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief module LEDs signalling
+ *******************************************************************************
+ ******************************************************************************/
+void TEMPSENSE_APP_LED_Handler(void)
+{
+	u32_t ledtime_g, ledtime_r;
+	u32_t TON_G, TOFF_G;
+	u32_t TON_R, TOFF_R;
+
+	if (APP_STATE == APP_ST_DEVICE)
+	{
+		if (APP_CONNECTED)
+		{
+			/* device connected to coordinator */
+			TON_G  = 1000;
+			TOFF_G = 0;
+			TON_R  = 0;
+			TOFF_R = 1000;
+		}
+		else
+		{
+			/* device looking for coordinator */
+			TON_G  = 1000;
+			TOFF_G = 0;
+			TON_R  = 1000;
+			TOFF_R = 0;
+		}
+	}
+	else
+	{
+		if (BSP_GetChargeStat())
+		{
+			/* charging */
+			TON_G  = 500;
+			TOFF_G = 500;
+			TON_R  = 0;
+			TOFF_R = 1000;
+		}
+		else
+		{
+			/* battery full */
+			TON_G  = 1000;
+			TOFF_G = 0;
+			TON_R  = 0;
+			TOFF_R = 1000;
+		}
+	}
+
+	ledtime_g = TIME_ReadAbsoluteTime() % (TON_G + TOFF_G);
+	ledtime_r = TIME_ReadAbsoluteTime() % (TON_R + TOFF_R);
+
+	/* green */
+	if (ledtime_g < TON_G)
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+	else
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
+
+	/* red */
+	if (ledtime_r < TON_R)
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
+	else
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+}

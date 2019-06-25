@@ -11,9 +11,11 @@ Platform-specific code linking cascoda-bm-driver to vendor libraries.
 | :--- | :--- |
 |cascoda_bsp_chili.c | contains interface functions declared in cascoda-bm/cascoda_interface.h |
 |cascoda_isr_chili.c | contains Interrupt Service Routines (ISRs) |
+|cascoda_gpio_chili.c | contains functions for controlling module I/Os |
 |cascoda_chili.c | functions internal to port |
 |cascoda_dataflash_nano120.c | non-volatile memory access functions for data storage |
 |cascoda_usb_nano120.c | Device USB HID driver functions for communications with host (if USE_USB is defined) |
+|cascoda_sensorif_m2351.c | Device I2C driver functions for interfacing with external sensors |
 
 #### vendor
 Libraries provided by the MCU manufacturer (Nuvoton).<br>

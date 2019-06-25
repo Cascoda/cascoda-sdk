@@ -27,6 +27,7 @@
 #include "gpio.h"
 #include "timer.h"
 /* Cascoda */
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
@@ -34,10 +35,8 @@
 #include "cascoda-bm/cascoda_usb.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_gpio.h"
 #include "cascoda_chili_usb.h"
-#if defined(USE_DEBUG)
-#include "cascoda_debug_chili.h"
-#endif /* USE_DEBUG */
 
 extern volatile u8_t asleep;
 
@@ -48,26 +47,28 @@ extern volatile u8_t asleep;
  ******************************************************************************/
 void IRC_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_HIRC;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_HIRC;
-#endif /* USE_DEBUG */
-
+	/* 12 MHz HIRC */
 	if (SYS->TISTS12M & SYS_TISTS12M_TFAILIF_Msk) /* Get Trim Failure Interrupt */
 	{
-		/* Display HIRC trim status */
 		printf("HIRC Trim Failure Interrupt\n");
-		/* Clear Trim Failure Interrupt */
 		SYS->TISTS12M = SYS_TISTS12M_TFAILIF_Msk;
 	}
-	if (SYS->TISTS12M & SYS_TISTS12M_CLKERRIF_Msk) /* Get LXT Clock Error Interrupt */
+	if (SYS->TISTS12M & SYS_TISTS12M_CLKERRIF_Msk) /* Get Clock Error Interrupt */
 	{
-		/* Display HIRC trim status */
-		printf("LXT Clock Error Interrupt\n");
-		/* Clear LXT Clock Error Interrupt */
+		printf("HIRC Clock Error Interrupt\n");
 		SYS->TISTS12M = SYS_TISTS12M_CLKERRIF_Msk;
+	}
+
+	/* 48 MHz HIRC48 */
+	if (SYS->TISTS48M & SYS_TISTS48M_TFAILIF_Msk) /* Get Trim Failure Interrupt */
+	{
+		printf("HIRC48 Trim Failure Interrupt\n");
+		SYS->TISTS48M = SYS_TISTS48M_TFAILIF_Msk;
+	}
+	if (SYS->TISTS48M & SYS_TISTS48M_CLKERRIF_Msk) /* Get Clock Error Interrupt */
+	{
+		printf("HIRC48 Clock Error Interrupt\n");
+		SYS->TISTS48M = SYS_TISTS48M_CLKERRIF_Msk;
 	}
 }
 
@@ -78,12 +79,6 @@ void IRC_IRQHandler(void)
  ******************************************************************************/
 void PWRWU_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_PDWU;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_PDWU;
-#endif /* USE_DEBUG */
 }
 
 /******************************************************************************/
@@ -94,10 +89,6 @@ void PWRWU_IRQHandler(void)
 void CLKFAIL_IRQHandler(void)
 {
 	uint32_t u32Reg;
-
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_OTHERS;
-#endif /* USE_DEBUG */
 
 	/* Unlock protected registers */
 	SYS_UnlockReg();
@@ -141,55 +132,33 @@ void CLKFAIL_IRQHandler(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief ISR 16: External interrupt from PA ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPA_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_A);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief ISR 17: External interrupt from PB ports
  *******************************************************************************
  ******************************************************************************/
 void GPB_IRQHandler(void)
 {
-	uint32_t u32Status;
-	/* Get Port PB status */
-	u32Status = PB->INTSRC;
-	/* Clear all PB interrupts */
-	GPIO_CLR_INT_FLAG(PB, u32Status);
-
-#if defined(USE_DEBUG)
-	if (u32Status)
-	{
-		if (asleep)
-		{
-			if (u32Status == BIT4)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_SW2;
-			else if (u32Status == BIT12)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_USBPRESENT;
-			else
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_P_UNKNOWN;
-		}
-		else
-		{
-			if (u32Status == BIT4)
-				Debug_IRQ_State = DEBUG_IRQ_SW2;
-			if (u32Status == BIT12)
-				Debug_IRQ_State = DEBUG_IRQ_USBPRESENT;
-		}
-	}
-#endif /* USE_DEBUG */
-
-	/* PB.4: SW2 */
-	if (u32Status & BIT4)
-	{
-		/* only switch if usb connected */
-		if (PB12 == 1 && button1_pressed)
-		{
-			button1_pressed();
-		}
-	}
-
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.12: USBPresent */
-	if (u32Status & BIT12)
+	uint32_t USB_PRESENT_status;
+
+	/* Get Port status */
+	USB_PRESENT_status = USB_PRESENT_PORT->INTSRC;
+	GPIO_CLR_INT_FLAG(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
+
+	/* USB_PRESENT */
+	if (USB_PRESENT_status & BITMASK(USB_PRESENT_PIN))
 	{
 		/* get USBPresent State and re-initialise System */
-		USBPresent = PB12;
+		USBPresent = USB_PRESENT_PVAL;
 		if (!USBPresent)
 		{
 			CHILI_SystemReInit();
@@ -198,8 +167,11 @@ void GPB_IRQHandler(void)
 		{
 			usb_present_changed();
 		}
+		return; /* should make handling quicker if no other interrupts are triggered */
 	}
 #endif
+
+	CHILI_ModulePinIRQHandler(PN_B);
 }
 
 /******************************************************************************/
@@ -209,31 +181,18 @@ void GPB_IRQHandler(void)
  ******************************************************************************/
 void GPC_IRQHandler(void)
 {
-	uint32_t            u32Status;
+	uint32_t            ZIG_IRQB_status;
 	struct device_link *devlink;
 	int                 i;
 
-	/* Get Port PC status */
-	u32Status = PC->INTSRC;
-	/* Clear all PC interrupts */
-	GPIO_CLR_INT_FLAG(PC, u32Status);
+	/* Get Port status */
+	ZIG_IRQB_status = ZIG_IRQB_PORT->INTSRC;
 
-#if defined(USE_DEBUG)
-	if (u32Status)
+	/* ZIG_IRQB */
+	if (ZIG_IRQB_status & BITMASK(ZIG_IRQB_PIN))
 	{
-		if (asleep)
-		{
-			if (u32Status == BIT0)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_RFIRQ;
-			else
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_P_UNKNOWN;
-		}
-	}
-#endif /* USE_DEBUG */
+		GPIO_CLR_INT_FLAG(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
 
-	/* RFIRQ */
-	if (u32Status & BITMASK(RFIRQ_PIN))
-	{
 		if (asleep)
 			return;
 
@@ -241,16 +200,69 @@ void GPC_IRQHandler(void)
 		while (i < NUM_DEVICES)
 		{
 			devlink = &device_list[i];
-			if (devlink->irq_gpio == &RFIRQ)
+			if (devlink->irq_gpio == &ZIG_IRQB_PVAL)
 				break;
 			i++;
 		}
 
 		if (i < NUM_DEVICES)
 		{
-			EVBMEHandler(devlink->dev); /* Read downstream message */
+			DISPATCH_ReadCA821x(devlink->dev); /* Read downstream message */
 		}
+		return; /* should make handling quicker if no other interrupts are triggered */
 	}
+
+	CHILI_ModulePinIRQHandler(PN_C);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 19: External interrupt from PD ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPD_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_D);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 20: External interrupt from PE ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPE_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_E);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 21: External interrupt from PF ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPF_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_F);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 72: External interrupt from PG ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPG_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_G);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 88: External interrupt from PH ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPH_IRQHandler(void)
+{
+	CHILI_ModulePinIRQHandler(PN_H);
 }
 
 /******************************************************************************/
@@ -260,11 +272,6 @@ void GPC_IRQHandler(void)
  ******************************************************************************/
 void TMR0_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER0;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
 
@@ -281,10 +288,6 @@ void TMR0_IRQHandler(void)
  ******************************************************************************/
 void TMR1_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER1;
-#endif /* USE_DEBUG */
 	/* clear all timer interrupt status bits */
 	TIMER1->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
 }
@@ -296,15 +299,8 @@ void TMR1_IRQHandler(void)
  ******************************************************************************/
 void TMR2_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER2;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER2->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
-	/* insert blink service routine CHILI_LEDBlink() here if LEDs are populated */
-	CHILI_LEDBlink();
 }
 
 /******************************************************************************/
@@ -314,13 +310,6 @@ void TMR2_IRQHandler(void)
  ******************************************************************************/
 void TMR3_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER3;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_TIMER3;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER3->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
 	/* timer3 acts as watchdog */
@@ -334,22 +323,73 @@ void TMR3_IRQHandler(void)
  ******************************************************************************/
 void UART0_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_UART;
-#endif /* USE_DEBUG */
-
 #if defined(USE_UART)
+#if (UART_CHANNEL == 0)
+	CHILI_UARTFIFOIRQHandler();
+#endif
+#endif /* USE_UART */
+}
 
-	while (UART0->INTSTS & UART_INTSTS_RDAINT_Msk)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 37: UART1 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void UART1_IRQHandler(void)
+{
+#if defined(USE_UART)
+#if (UART_CHANNEL == 1)
+	CHILI_UARTFIFOIRQHandler();
+#endif
+#endif /* USE_UART */
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 40: PDMA0 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void PDMA0_IRQHandler(void)
+{
+	/* Get PDMA interrupt status */
+	uint32_t u32Status = PDMA_GET_INT_STATUS(PDMA0);
+	if (u32Status & PDMA_INTSTS_ABTIF_Msk) /* Target Abort */
 	{
-		Serial_ReadInterface();
+		printf("DMA ABORT\n");
+		PDMA0->ABTSTS = PDMA0->ABTSTS;
+		return;
 	}
+#if defined(USE_UART)
+	if (u32Status & PDMA_INTSTS_TDIF_Msk) /* Transfer Done */
+		CHILI_UARTDMAIRQHandler();
+#endif /* USE_UART */
+}
 
-#else
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_UART;
-#endif /* USE_DEBUG */
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 48: UART2 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void UART2_IRQHandler(void)
+{
+#if defined(USE_UART)
+#if (UART_CHANNEL == 2)
+	CHILI_UARTFIFOIRQHandler();
+#endif
+#endif /* USE_UART */
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 49: UART3 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void UART3_IRQHandler(void)
+{
+#if defined(USE_UART)
+#if (UART_CHANNEL == 3)
+	CHILI_UARTFIFOIRQHandler();
+#endif
 #endif /* USE_UART */
 }
 
@@ -362,11 +402,6 @@ void USBD_IRQHandler(void)
 {
 #if defined(USE_USB)
 	uint32_t u32INTSTS = USBD_GET_INT_FLAG();
-
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_USBD;
-#endif /* USE_DEBUG */
 
 	if (u32INTSTS & USBD_INTSTS_FLDET)
 	{
@@ -390,4 +425,32 @@ void USBD_IRQHandler(void)
 	}
 
 #endif /* USE_USB */
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 74: UART4 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void UART4_IRQHandler(void)
+{
+#if defined(USE_UART)
+#if (UART_CHANNEL == 4)
+	CHILI_UARTFIFOIRQHandler();
+#endif
+#endif /* USE_UART */
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 75: UART5 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void UART5_IRQHandler(void)
+{
+#if defined(USE_UART)
+#if (UART_CHANNEL == 5)
+	CHILI_UARTFIFOIRQHandler();
+#endif
+#endif /* USE_UART */
 }

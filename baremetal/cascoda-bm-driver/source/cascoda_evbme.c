@@ -45,15 +45,29 @@ static u8_t        CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz c
 /** Function pointer for sending ASCII reporting messages upstream */
 void (*EVBME_Message)(char *message, size_t len, struct ca821x_dev *pDeviceRef);
 /** Function pointer for sending API commands upstream. */
-void (*MAC_Message)(u8_t CommandId, u8_t Count, u8_t *pBuffer);
+void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
 /** Function pointer for reinitialising the app upon a restart **/
 int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 
-/** Function pointer that the BSP should call when button1 is pressed **/
-int (*button1_pressed)(void);
-
 /** Function pointer that the BSP should call when USB present status changes **/
 int (*usb_present_changed)(void);
+
+// serial dispatch function
+int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+
+/* dummy stub functions if no serial interface is defined */
+void EVBME_Message_DUMMY(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
+{
+	(void)pBuffer;
+	(void)Count;
+	(void)pDeviceRef;
+}
+void MAC_Message_DUMMY(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
+{
+	(void)CommandId;
+	(void)Count;
+	(void)pBuffer;
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -85,7 +99,6 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	pDeviceRef->ca821x_api_downstream = &DISPATCH_ToCA821x;
 	ca821x_wait_for_message           = &WAIT_Legacy;
 
-#if !defined(NO_SERIAL)
 #if defined(USE_USB)
 	EVBME_Message = EVBME_Message_USB;
 	MAC_Message   = MAC_Message_USB;
@@ -93,30 +106,14 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	EVBME_Message = EVBME_Message_UART;
 	MAC_Message   = MAC_Message_UART;
 #else
-	EVBME_Message = NULL;
-	MAC_Message   = NULL;
+	EVBME_Message = EVBME_Message_DUMMY;
+	MAC_Message   = MAC_Message_DUMMY;
 #endif
-#endif //!defined(NO_SERIAL)
 
 	status = EVBME_Connect(aAppName, pDeviceRef); // reset and connect RF
 
 	return status;
 } // End of EVBMEInitialise()
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Reads pending SPI messages
- *******************************************************************************
- ******************************************************************************/
-void EVBMEHandler(struct ca821x_dev *pDeviceRef)
-{
-	if (BSP_SenseRFIRQ() == 0 && !SPI_IsFifoAlmostFull())
-	{
-		BSP_DisableRFIRQ();
-		SPI_Exchange(NULLP, pDeviceRef);
-		BSP_EnableRFIRQ();
-	}
-} // End of EVBMEHandler()
 
 struct EVBME_COMM_CHECK_request
 {
@@ -198,11 +195,12 @@ int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+void EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	ca_error status;
+	struct MAC_Message response;
+	ca_error           status;
 
-	status = DISPATCH_ToCA821x(buf, len, response, pDeviceRef);
+	status = DISPATCH_ToCA821x(buf, len, &response.CommandId, pDeviceRef);
 
 	if (status == CA_ERROR_SUCCESS)
 	{
@@ -229,7 +227,7 @@ void EVBMESendDownStream(const uint8_t *buf, size_t len, uint8_t *response, stru
 		// Synchronous Confirms have to be sent upstream for interrupt driven handlers
 		if ((buf[0] != SPI_IDLE) && (buf[0] != SPI_NACK) && (buf[0] & SPI_SYN))
 		{
-			EVBMESendUpStream((struct MAC_Message *)response);
+			EVBMESendUpStream(&response);
 		}
 	}
 } // End of EVBMESendDownStream()
@@ -505,15 +503,13 @@ void EVBME_Disconnect(void)
  ******************************************************************************/
 void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 {
-	bool               handled;
-	struct MAC_Message sync_response;
-
 	DISPATCH_FromCA821x(pDeviceRef);
 
+#if defined(USE_USB) || defined(USE_UART)
 	SerialGetCommand();
 	if (SerialRxPending && !SPI_IsFifoFull())
 	{
-		handled = false;
+		bool handled = false;
 		if (cascoda_serial_dispatch)
 		{
 			if (cascoda_serial_dispatch(&SerialRxBuffer.CmdId, SerialRxBuffer.CmdLen + 2, pDeviceRef) > 0)
@@ -525,10 +521,15 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 			handled = true;
 		if (!handled)
 		{
-			EVBMESendDownStream(&SerialRxBuffer.CmdId, SerialRxBuffer.CmdLen + 2, &sync_response.CommandId, pDeviceRef);
+			EVBMESendDownStream(&SerialRxBuffer.CmdId, SerialRxBuffer.CmdLen + 2, pDeviceRef);
 		}
+#if defined(USE_UART)
+		/* send RX_RDY */
+		SerialSendRxRdy();
+#endif /* USE_UART */
 		SerialRxPending = false;
 	}
+#endif /* USE_UART || USE_USB */
 }
 
 /******************************************************************************/
@@ -540,16 +541,17 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 *******************************************************************************
 * Power-Down Modes
 *
-* Enum              | MCU       | CAX              | Notes
-* ----------------- | --------- | ---------------- | -------------------------
-* PDM_ALLON         | Active    | Active           | Mainly for Testing
-* PDM_ACTIVE        | PD_EN     | Active           | CAX Full Data Retention, MAC Running
-* PDM_STANDBY       | PD_EN     | Standby          | CAX Full Data Retention
-* PDM_POWERDOWN     | PD_EN     | Power-Down 0     | No CAX Retention, PIB has to be re-initialised
-* PDM_POWEROFF      | PD_EN     | Power-Down 1     | No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
+* Enum              | MCU             | CAX              | Notes
+* ----------------- | --------------- | ---------------- | -------------------------
+* PDM_ALLON         | Active          | Active           | Mainly for Testing
+* PDM_ACTIVE        | Power-Down      | Active           | CAX Full Data Retention, MAC Running
+* PDM_STANDBY       | Power-Down      | Standby          | CAX Full Data Retention
+* PDM_POWERDOWN     | Power-Down      | Power-Down 0     | No CAX Retention, PIB has to be re-initialised
+* PDM_POWEROFF      | Power-Down      | Power-Down 1     | No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
+* PDM_DPD           | Deep-Power-Down | Power-Down 1     | No CAX Retention or MCU Retention (Data saved in NVM)
 *******************************************************************************
 ******************************************************************************/
-void EVBME_PowerDown(enum PDMode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef)
+void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef)
 {
 	u8_t CLKExternal_saved;
 
@@ -560,18 +562,20 @@ void EVBME_PowerDown(enum PDMode mode, u32_t sleeptime_ms, struct ca821x_dev *pD
 	EVBME_SwitchClock(pDeviceRef, 0);
 
 	// power down CAX
-	if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
+	if ((mode == PDM_POWEROFF) || (mode == PDM_DPD)) // mode has to use CAX sleep timer
 		EVBME_CAX_PowerDown(mode, sleeptime_ms, pDeviceRef);
 	else
 		EVBME_CAX_PowerDown(mode, 0, pDeviceRef);
 
 	// power down
-	if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
-		BSP_PowerDown(sleeptime_ms, 0);
+	if (mode == PDM_DPD) // mode has to use CAX sleep timer
+		BSP_PowerDown(sleeptime_ms, 0, 1);
+	else if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
+		BSP_PowerDown(sleeptime_ms, 0, 0);
 	else if (mode == PDM_ALLON)
 		TIME_WaitTicks(sleeptime_ms);
 	else
-		BSP_PowerDown(sleeptime_ms, 1);
+		BSP_PowerDown(sleeptime_ms, 1, 0);
 
 	// Fastforward time for missed ticks
 	if (mode != PDM_ALLON)
@@ -619,10 +623,6 @@ ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef)
 	}
 	if (HWME_SET_request_sync(HWME_SYSCLKOUT, 2, clkparam, pDeviceRef))
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CAX_EXTERNALCLOCK);
-#endif // USE_DEBUG
 		return CA_ERROR_FAIL;
 	}
 	return CA_ERROR_SUCCESS;
@@ -673,11 +673,12 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
  * \param pDeviceRef - a pointer to the ca821x_dev struct
  *******************************************************************************
  ******************************************************************************/
-void EVBME_CAX_PowerDown(enum PDMode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef)
+void EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef)
 {
-	u8_t pdparam[5];
+	u8_t          pdparam[5];
+	ca_mac_status status;
 
-	if (mode == PDM_POWEROFF)
+	if ((mode == PDM_POWEROFF) || (mode == PDM_DPD))
 		pdparam[0] = 0x1C; // power-off mode 1, wake-up by sleep timer
 	else if (mode == PDM_POWERDOWN)
 		pdparam[0] = 0x2A; // power-off mode 0, wake-up by gpio (ssb)
@@ -691,12 +692,9 @@ void EVBME_CAX_PowerDown(enum PDMode mode, u32_t sleeptime_ms, struct ca821x_dev
 	pdparam[3] = LS2_BYTE(sleeptime_ms);
 	pdparam[4] = LS3_BYTE(sleeptime_ms);
 
-	if (HWME_SET_request_sync(HWME_POWERCON, 5, pdparam, pDeviceRef))
+	if ((status = HWME_SET_request_sync(HWME_POWERCON, 5, pdparam, pDeviceRef)))
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CAX_POWERDOWN);
-#endif // USE_DEBUG
+		printf("CA-821X PowerDown: %02X\n", status);
 	}
 } // End of EVBME_CAX_PowerDown()
 
@@ -714,12 +712,10 @@ int EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct
 	     ((mode == PDM_POWEROFF) && (condition != HWME_WAKEUP_POFF_SLT))) &&
 	    (condition != HWME_WAKEUP_POWERUP))
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CAX_WAKEUP_2);
-#endif // USE_DEBUG
+		printf("CA-821X wakeup: mode: %02X; condition: %02X\n", mode, condition);
 	}
-	else if ((mode == PDM_POWEROFF) || (mode == PDM_POWERDOWN))
+
+	if ((mode == PDM_POWEROFF) || (mode == PDM_POWERDOWN))
 	{
 		TDME_ChipInit(pDeviceRef);
 	}
@@ -737,7 +733,7 @@ int EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct
  * \param timeout_ms - Timeout for the wakeup indication (ms)
  *******************************************************************************
  ******************************************************************************/
-void EVBME_CAX_Wakeup(enum PDMode mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
+void EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
 {
 	ca_error status;
 
@@ -746,17 +742,14 @@ void EVBME_CAX_Wakeup(enum PDMode mode, int timeout_ms, struct ca821x_dev *pDevi
 	{
 		EVBME_WakeUpRF();
 	}
-	EVBMEHandler(pDeviceRef);
+	DISPATCH_ReadCA821x(pDeviceRef);
 
 	status = WAIT_CallbackSwap(
 	    SPI_HWME_WAKEUP_INDICATION, (ca821x_generic_callback)&EVBME_CAX_Wakeup_callback, timeout_ms, &mode, pDeviceRef);
 
 	if (status)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CAX_WAKEUP_1);
-#endif // USE_DEBUG
+		printf("CA-821X wakeup: status: %02X\n", status);
 	}
 
 } // End of EVBME_CAX_Wakeup()
@@ -780,29 +773,19 @@ void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef)
 
 	if (status)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_RESTART_1);
-#endif // USE_DEBUG
+		printf("CA-821X restart: status: %02X\n", status);
 		return;
 	}
 
 	if (TDME_ChipInit(pDeviceRef))
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_RESTART_2);
-#endif // USE_DEBUG
+		printf("CA-821X restart: ChipInit fail\n");
 		return;
 	}
 
 	// call application specific re-initialisation
 	if (app_reinitialise)
 		app_reinitialise(pDeviceRef);
-
-#if defined(USE_DEBUG)
-	BSP_Debug_Error(DEBUG_ERR_RESTART);
-#endif // USE_DEBUG
 }
 
 /******************************************************************************/

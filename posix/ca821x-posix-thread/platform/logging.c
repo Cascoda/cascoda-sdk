@@ -36,6 +36,8 @@
 #include <time.h>
 
 #include "openthread/platform/logging.h"
+#include "openthread/platform/toolchain.h"
+
 #include "code_utils.h"
 #include "openthread-core-config.h"
 
@@ -47,7 +49,7 @@
 	offset += (unsigned int)charsWritten;                                                 \
 	otEXPECT_ACTION(offset < sizeof(logString), logString[sizeof(logString) - 1] = 0)
 
-void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
+OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
 	struct timeval tv;
 	char           timeString[40];
@@ -142,6 +144,14 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 
 	case OT_LOG_REGION_PLATFORM:
 		LOG_PRINTF("PLAT ");
+		break;
+
+	case OT_LOG_REGION_CORE:
+		LOG_PRINTF("CORE ");
+		break;
+
+	case OT_LOG_REGION_UTIL:
+		LOG_PRINTF("UTIL ");
 		break;
 	}
 

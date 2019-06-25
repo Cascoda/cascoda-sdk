@@ -42,7 +42,7 @@
 #include <unistd.h>
 
 #include "ca821x-posix-thread/posix-platform.h"
-#include "openthread/platform/random.h"
+#include "openthread/platform/entropy.h"
 #include "ca821x_api.h"
 #include "code_utils.h"
 #include "hwme_tdme.h"
@@ -52,57 +52,13 @@ void posixPlatformRandomInit(void)
 	//nothing
 }
 
-uint32_t otPlatRandomGet(void)
-{
-	uint8_t length1 = 0;
-	uint8_t length2 = 0;
-
-	union randBytes
-	{
-		uint8_t  randb[4];
-		uint32_t rand32i;
-	} randomBytes;
-
-	/*
-    HWME_GET_request_sync(
-    		HWME_RANDOMNUM,
-			&length1,
-			randomBytes.randb,
-			NULL);
-    HWME_GET_request_sync(
-			HWME_RANDOMNUM,
-			&length2,
-			randomBytes.randb + 2,
-			NULL);
-	*/
-
-	if (length1 != 2 || length2 != 2)
-	{
-		uint32_t rnum = 0;
-		int      fd   = open("/dev/urandom", O_RDONLY);
-		if (fd != -1)
-		{
-			(void)read(fd, (void *)&rnum, sizeof(rnum));
-			(void)close(fd);
-		}
-		else
-		{
-			assert(0); //All attempts at randomness have failed
-		}
-
-		return rnum;
-	}
-
-	return randomBytes.rand32i;
-}
-
-otError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength)
+otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
 {
 	otError error = OT_ERROR_NONE;
 
 	otEXPECT_ACTION(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
 
-	int fd = open("/dev/random", O_RDONLY);
+	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd != -1)
 	{
 		(void)read(fd, (void *)aOutput, aOutputLength);

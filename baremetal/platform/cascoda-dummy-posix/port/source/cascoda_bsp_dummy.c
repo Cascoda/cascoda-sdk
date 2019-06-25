@@ -34,7 +34,9 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 
-const struct FlashInfo   BSP_FlashInfo = {0};
+const struct FlashInfo         BSP_FlashInfo         = {0};
+const struct ModuleSpecialPins BSP_ModuleSpecialPins = {MSP_DEFAULT};
+
 static struct ca821x_dev internal_device;
 
 void BSP_WaitUs(u32_t us)
@@ -145,9 +147,14 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
 	return 1;
 }
 
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 {
 	TIME_WaitTicks(sleeptime_ms);
+}
+
+wakeup_reason BSP_GetWakeupReason(void)
+{
+	return WAKEUP_POWERON;
 }
 
 void BSP_Initialise(struct ca821x_dev *pDeviceRef)
@@ -155,6 +162,49 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 }
 
 void BSP_UseExternalClock(u8_t useExternalClock)
+{
+}
+
+ca_error BSP_ModuleRegisterGPIOInput(u8_t                mpin,
+                                     module_pin_pullup   pullup,
+                                     module_pin_debounce debounce,
+                                     module_pin_irq      irq,
+                                     int (*callback)(void))
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+u8_t BSP_ModuleIsGPIOPinRegistered(u8_t mpin)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+void BSP_SystemReset()
 {
 }
 
@@ -180,10 +230,6 @@ i32_t BSP_GetTemperature(void)
 u32_t BSP_ADCGetVolts(void)
 {
 	return 0;
-}
-
-void BSP_LEDSigMode(u8_t mode)
-{
 }
 
 void BSP_WatchdogEnable(u32_t timeout_ms)

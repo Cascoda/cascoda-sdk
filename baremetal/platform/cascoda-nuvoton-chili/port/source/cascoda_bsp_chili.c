@@ -39,13 +39,11 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_gpio.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
-#ifdef USE_DEBUG
-#include "cascoda_debug_chili.h"
-#endif /* USE_DEBUG */
 
 /******************************************************************************/
 /****** Global Variables                                                 ******/
@@ -93,12 +91,12 @@ void BSP_ResetRF(u8_t ms)
 	ticks = (u32_t)ms;
 
 	/* reset board with RSTB */
-	PA11 = 0; /* RSTB is LOW */
+	ZIG_RESET_PVAL = 0; /* RSTB is LOW */
 	if (ticks == 0)
 		TIME_WaitTicks(10);
 	else
 		TIME_WaitTicks(ticks);
-	PA11 = 1;
+	ZIG_RESET_PVAL = 1;
 	TIME_WaitTicks(50);
 }
 
@@ -109,7 +107,7 @@ void BSP_ResetRF(u8_t ms)
  ******************************************************************************/
 u8_t BSP_SenseRFIRQ(void)
 {
-	return PA10;
+	return ZIG_IRQB_PVAL;
 }
 
 /******************************************************************************/
@@ -120,7 +118,7 @@ u8_t BSP_SenseRFIRQ(void)
 void BSP_DisableRFIRQ()
 {
 	/* note that this is temporarily disabling all GPIO A/B/C ports */
-	NVIC_DisableIRQ(GPABC_IRQn);
+	NVIC_DisableIRQ(ZIG_IRQB_IRQn);
 	__ASM volatile("" : : : "memory");
 }
 
@@ -132,7 +130,7 @@ void BSP_DisableRFIRQ()
 void BSP_EnableRFIRQ()
 {
 	/* note that this is re-enabling all GPIO A/B/C ports */
-	NVIC_EnableIRQ(GPABC_IRQn);
+	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
 	__ASM volatile("" : : : "memory");
 }
 
@@ -143,7 +141,7 @@ void BSP_EnableRFIRQ()
  ******************************************************************************/
 void BSP_SetRFSSBHigh(void)
 {
-	PB3 = 1;
+	SPI_CS_PVAL = 1;
 }
 
 /******************************************************************************/
@@ -153,7 +151,7 @@ void BSP_SetRFSSBHigh(void)
  ******************************************************************************/
 void BSP_SetRFSSBLow(void)
 {
-	PB3 = 0;
+	SPI_CS_PVAL = 0;
 }
 
 /******************************************************************************/
@@ -282,7 +280,7 @@ u8_t BSP_GetChargeStat(void)
 	/* High (Hi-Z):  Charging Complete, Shutdown or no Battery present */
 	/* Low:          Charging / Preconditioning */
 
-	if (PA12 == 0)
+	if (CHARGE_STAT_PVAL == 0)
 		charging = 1;
 	else
 		charging = 0;
@@ -332,85 +330,22 @@ u32_t BSP_ADCGetVolts(void)
 {
 	u32_t voltsval;
 
-	PB12 = 1; /* VOLTS_TEST high */
+	CHILI_ModuleSetMFP(VOLTS_PNUM, VOLTS_PIN, PMFP_ADC);
+	GPIO_DISABLE_DIGITAL_PATH(VOLTS_PORT, BITMASK(VOLTS_PIN));
+	GPIO_DISABLE_PULL_UP(VOLTS_PORT, BITMASK(VOLTS_PIN));
+
+	VOLTS_TEST_PVAL = 1; /* VOLTS_TEST high */
 
 	/* ADC value for channel = 0, reference = AVDD 3.3V */
 	voltsval = CHILI_ADCConversion(0, ADC_REFSEL_POWER);
 
-	PB12 = 0; /* VOLTS_TEST low */
+	VOLTS_TEST_PVAL = 0; /* VOLTS_TEST low */
+
+	CHILI_ModuleSetMFP(VOLTS_PNUM, VOLTS_PIN, PMFP_GPIO);
+	GPIO_ENABLE_DIGITAL_PATH(VOLTS_PORT, BITMASK(VOLTS_PIN));
+	GPIO_SetMode(VOLTS_PORT, BITMASK(VOLTS_PIN), GPIO_PMD_INPUT);
 
 	return (voltsval);
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief See cascoda-bm/cascoda_interface.h
- *******************************************************************************
- ******************************************************************************/
-void BSP_LEDSigMode(u8_t mode)
-{
-	/* Mode   LEDs     BlinkIntervall  Comments */
-	/* 0        (G)    On              Clear R; G as is */
-	/* 1       R       On              Set R, Clear G */
-	/* 2      (R)G     On              R as is, Set G */
-	/* 3      (R)G     50/50           R as is, Set G Blinking 50/50 */
-	/* 4       R G     1/1000          Set R, Set G, Blinking 1/1000 */
-	/* 5         G     1/1000          Clear R, Set G, Blinking 1/1000 */
-	/* 6               On              Clear all (R, G) */
-	/* 7        RG     100             R and G blinking alternatively 100/100 */
-	/* 8        RG     35              R and G blinking alternatively 35/35 */
-	/* 9        RG     On              All on */
-	/* Note that On/Off times are in [10ms] */
-
-	if (mode == 0)
-	{
-		CHILI_LED_ClrRED();
-	}
-	else if (mode == 1)
-	{
-		CHILI_LED_SetRED(1, 0);
-		CHILI_LED_ClrGREEN();
-	}
-	else if (mode == 2)
-	{
-		CHILI_LED_SetGREEN(1, 0);
-	}
-	else if (mode == 3)
-	{
-		CHILI_LED_SetGREEN(50, 50);
-	}
-	else if (mode == 4)
-	{
-		CHILI_LED_SetRED(1, 1000);
-		CHILI_LED_SetGREEN(1, 1000);
-	}
-	else if (mode == 5)
-	{
-		CHILI_LED_ClrRED();
-		CHILI_LED_SetGREEN(1, 1000);
-	}
-	else if (mode == 6)
-	{
-		CHILI_LED_ClrRED();
-		CHILI_LED_ClrGREEN();
-	}
-	else if (mode == 7)
-	{
-		CHILI_LED_SetRED(100, 100);
-		TIME_WaitTicks(1000);
-		CHILI_LED_SetGREEN(100, 100);
-	}
-	else if (mode == 8)
-	{
-		CHILI_LED_SetRED(35, 35);
-		TIME_WaitTicks(350);
-		CHILI_LED_SetGREEN(35, 35);
-	}
-	else
-	{
-		CHILI_LED_SetRED(1, 0);
-		CHILI_LED_SetGREEN(1, 0);
-	}
 }
 
 /******************************************************************************/
@@ -486,19 +421,14 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
  * \brief See cascoda-bm/cascoda_interface.h
  *******************************************************************************
  ******************************************************************************/
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 {
 	u8_t lxt_connected = 0;
 	u8_t use_watchdog  = 0;
 
-	/* Note: GPIO wake-up only on falling edge, rising edge (IIE) does not perform wake-up contrary to datasheet */
-	/*       This means that USBPresent cannot currently wake-up Nano120 as it is active high */
 	/* Wake-Up Conditions: */
 	/* - Timeout Timer (Timer0 or CAX Sleep Timer) (if set) */
-	/* - Falling Edge USBPresent            (PB.15) (Rev. 1.2 or lower) */
-	/*                                      (PC.7)  (Rev. 1.3 or higher) */
-	/* - Falling Edge SW2                   (PA.9) */
-	/* - CAX Wakeup / Falling Edge SPI IRQ  (PA.10) */
+	/* - GPIO Interrupts (not disabled here) */
 
 	BSP_DisableUSB();
 
@@ -527,21 +457,6 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0)
 
 	/* reconfig GPIO debounce clock to LIRC */
 	GPIO_SET_DEBOUNCE_TIME(GPIO_DBCLKSRC_IRC10K, GPIO_DBCLKSEL_1);
-
-	/* enable wake-up for USBPresent PB.15/PC.7 */
-	GPIO_DisableInt(USBP_PORT, USBP_PIN);
-	GPIO_EnableInt(USBP_PORT, USBP_PIN, GPIO_INT_RISING);
-	/* enable wake-up for SW2 PA.9 */
-	GPIO_DisableInt(PA, 9);
-	GPIO_EnableInt(PA, 9, GPIO_INT_FALLING);
-	/* enable wake-up for SPI IRQ PA.10 */
-	GPIO_DisableInt(PA, 10);
-	GPIO_EnableInt(PA, 10, GPIO_INT_FALLING);
-
-	TIMER_Stop(TIMER2);
-	TIMER2->CTL |= TIMER_CTL_SW_RST_Msk;
-	TIMER_DisableInt(TIMER2);
-	NVIC_DisableIRQ(TMR2_IRQn);
 
 	TIMER_Stop(TIMER0);
 	TIMER0->CTL |= TIMER_CTL_SW_RST_Msk;
@@ -614,13 +529,6 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0)
 
 	asleep = 0;
 
-	/* SWITCH PA.9 */
-	GPIO_DisableInt(PA, 9);
-	GPIO_EnableInt(PA, 9, GPIO_INT_FALLING);
-	/* USB PRESENT */
-	GPIO_DisableInt(USBP_PORT, USBP_PIN);
-	GPIO_EnableInt(USBP_PORT, USBP_PIN, GPIO_INT_BOTH_EDGE);
-
 	CHILI_TimersInit();
 	CHILI_GPIOPowerUp();
 	CHILI_SystemReInit();
@@ -631,9 +539,14 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0)
  * \brief See cascoda-bm/cascoda_interface.h
  *******************************************************************************
  ******************************************************************************/
-u8_t BSP_GPIOSenseSwitch(void)
+wakeup_reason BSP_GetWakeupReason(void)
 {
-	return PA9;
+	if (SYS_GetResetSrc() & SYS_RST_SRC_RSTS_SYS_Msk)
+	{
+		SYS_ClearResetSrc(SYS_RST_SRC_RSTS_SYS_Msk);
+		return WAKEUP_SYSRESET;
+	}
+	return WAKEUP_POWERON;
 }
 
 /******************************************************************************/
@@ -659,6 +572,16 @@ void BSP_UseExternalClock(u8_t useExternalClock)
 		CHILI_DisableIntOscCal();
 		CHILI_SystemReInit();
 	}
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief See cascoda-bm/cascoda_interface.h
+ *******************************************************************************
+ ******************************************************************************/
+void BSP_SystemReset()
+{
+	NVIC_SystemReset();
 }
 
 /******************************************************************************/
@@ -701,8 +624,8 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 	CHILI_FlashInit();
 
 	device                       = &device_list[0];
-	device->chip_select_gpio     = &PB3;
-	device->irq_gpio             = &PA10;
+	device->chip_select_gpio     = &SPI_CS_PVAL;
+	device->irq_gpio             = &ZIG_IRQB_PVAL;
 	device->dev                  = pDeviceRef;
 	pDeviceRef->exchange_context = device;
 }
@@ -793,7 +716,7 @@ void BSP_WatchdogDisable(void)
 void BSP_EnableUSB(void)
 {
 #if defined(USE_USB)
-	if (USBPresent || !USBP_GPIO)
+	if (USBPresent || !USB_PRESENT_PVAL)
 		return;
 	USBPresent = 1;
 	CHILI_SystemReInit();

@@ -47,14 +47,14 @@ static void timeout_mcps_test(void **state)
 	fa.AddressMode = MAC_MODE_SHORT_ADDR;
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle1, 0, NULL, &sdev);
 
-	TIME_FastForward(50);
+	TIME_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle2, 0, NULL, &sdev);
 
-	TIME_FastForward(50);
+	TIME_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
-	TIME_FastForward(50);
+	TIME_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 }
 

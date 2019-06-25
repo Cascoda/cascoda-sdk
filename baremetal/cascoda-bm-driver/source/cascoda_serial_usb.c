@@ -55,9 +55,6 @@ u8_t UsbTxFrag[USB_FRAG_SIZE];
 struct SerialBuffer SerialRxBuffer; //Must be protected by locks (enable/disable serial IRQ)
 volatile bool       SerialRxPending = false;
 
-// dispatch function
-int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
-
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Send confirm or ind via USB
@@ -67,7 +64,7 @@ int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDevice
  * \param Count - Length of pBuffer
  *******************************************************************************
  ******************************************************************************/
-void SerialUSBSend(u8_t Command, u8_t *pBuffer, u8_t Length)
+void SerialUSBSend(u8_t Command, const u8_t *pBuffer, u8_t Length)
 {
 	u8_t FragSize;
 	u8_t FragType;
@@ -174,7 +171,7 @@ void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRe
  * \param pBuffer - Pointer to Character Buffer
  *******************************************************************************
  ******************************************************************************/
-void MAC_Message_USB(u8_t CommandId, u8_t Count, u8_t *pBuffer)
+void MAC_Message_USB(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
 {
 	SerialUSBSend(CommandId, pBuffer, Count);
 

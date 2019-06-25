@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (ca821x-posix-thread)
 
@@ -13,39 +12,16 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# Set configuration variables -------------------------------------------------
-set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
-       --enable-application-coap
-       --enable-joiner
-       --enable-commissioner
-       --enable-tmf-proxy
-       --enable-mac-filter
-       --enable-cert-log
-       --enable-dhcp6-client
-       --enable-dhcp6-server
-       --enable-border-router
-       --with-mac=external
-       --enable-ftd
-       --enable-mtd
-       --enable-cli
-       --enable-ncp
-       --with-ncp-bus=uart
-       --disable-docs
-     CACHE STRING
-       "The arguments to be passed to configure when configuring openthread"
-)
-
-
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-posix-plat
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
+	${PROJECT_SOURCE_DIR}/platform/entropy.c
 	${PROJECT_SOURCE_DIR}/platform/flash.c
 	${PROJECT_SOURCE_DIR}/platform/logging.c
 	${PROJECT_SOURCE_DIR}/platform/misc.c
 	${PROJECT_SOURCE_DIR}/platform/platform.c
 	${PROJECT_SOURCE_DIR}/platform/radio.c
 	${PROJECT_SOURCE_DIR}/platform/radio-stubs.c
-	${PROJECT_SOURCE_DIR}/platform/random.c
 	${PROJECT_SOURCE_DIR}/platform/selfpipe.c
 	${PROJECT_SOURCE_DIR}/platform/serial.c
 	${PROJECT_SOURCE_DIR}/platform/settings.c

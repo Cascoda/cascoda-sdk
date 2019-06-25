@@ -39,7 +39,8 @@ bool SleepEnabled = 1;
 
 void otPlatReset(otInstance *aInstance)
 {
-	// This function does nothing on the Posix platform.
+	PlatformRadioStop();
+	BSP_SystemReset();
 }
 
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
@@ -63,9 +64,7 @@ otError PlatformSleep(uint32_t aSleepTime)
 	MLME_GET_request_sync(macFrameCounter, 0, &fclen, framecounter, pDeviceRef);
 	MLME_GET_request_sync(macDSN, 0, &fclen, dsn, pDeviceRef);
 
-	BSP_LEDSigMode(LED_M_CLRALL);
 	EVBME_PowerDown(PDM_POWEROFF, aSleepTime, pDeviceRef);
-	BSP_LEDSigMode(LED_M_ALLON);
 
 	otLinkSyncExternalMac(OT_INSTANCE);
 	MLME_SET_request_sync(macFrameCounter, 0, 4, framecounter, pDeviceRef);

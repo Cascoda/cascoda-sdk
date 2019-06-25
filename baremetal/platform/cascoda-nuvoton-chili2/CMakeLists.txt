@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.12)
 project (cascoda-nuvoton-chili2)
 
@@ -22,6 +21,7 @@ cascoda_dropdown(CASCODA_CHILI2_REV
 	0 -1
 	)
 
+# Single or double sided config
 cascoda_dropdown(CASCODA_CHILI2_CONFIG_STRING
 	"The hardware configuration of the Chili 2"
 	TWO_SIDED ONE_SIDED
@@ -31,7 +31,35 @@ cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
 	TWO_SIDED 1
 	)
 
+# Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
+
+# UART Baud config
+if(CASCODA_BM_USE_UART)
+	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL
+		"The hardware UART channel to use for UART comms"
+		0 1 2 4 5
+		)
+
+	set(CASCODA_CHILI2_UART_BAUDRATE 4000000 CACHE STRING "The baud rate to use for UART. Max 6MHz")
+	if(CASCODA_CHILI2_UART_BAUDRATE GREATER 6000000)
+		message( FATAL_ERROR "Baud rate must be under 6MHz")
+	endif()
+endif()
+
+# Default system clock
+cascoda_dropdown(CASCODA_CHILI2_DEFAULT_FSYS
+	"The default system frequency. Minimum is FSYS_12MHZ for USB comms or UART comms > 115200."
+	FSYS_16MHZ FSYS_4MHZ FSYS_12MHZ FSYS_24MHZ FSYS_32MHZ FSYS_48MHZ FSYS_64MHZ
+	)
+if(CASCODA_CHILI2_DEFAULT_FSYS STREQUAL "FSYS_4MHZ")
+	if((CASCODA_BM_USE_UART AND CASCODA_CHILI2_UART_BAUDRATE GREATER 115200) OR (CASCODA_BM_USE_USB))
+		message( FATAL_ERROR "Minimum system clock is FSYS_12MHZ for USB comms or UART comms > 115200 baud.")
+	endif()
+endif()
+
+# Mark the device as being FTD-capable
+set(CASCODA_OPENTHREAD_FTD ON PARENT_SCOPE)
 
 # Config file generation ------------------------------------------------------
 configure_file(
@@ -48,8 +76,9 @@ add_library(cascoda-chili2
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_dataflash_m2351.c
-	${PROJECT_SOURCE_DIR}/port/source/cascoda_debug_chili.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_gpio_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_uart_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_m2351.c
 	$<TARGET_OBJECTS:nuvoton-vendor-m2351>

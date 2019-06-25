@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "openthread/instance.h"
+#include "openthread/ip6.h"
 #include "openthread/ncp.h"
 #include "openthread/tasklet.h"
 
@@ -58,6 +59,9 @@ int main(int argc, char *argv[])
 
 	isRunning = 1;
 	signal(SIGINT, quit);
+
+	//Set Multicast promiscuous mode, and leave filtering up to linux netstack
+	otIp6SetMulticastPromiscuousEnabled(OT_INSTANCE, true);
 
 	while (isRunning)
 	{

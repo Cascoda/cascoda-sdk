@@ -12,9 +12,12 @@ Platform-specific code linking cascoda-bm-driver to vendor libraries.
 | :--- | :--- |
 |cascoda_bsp_chili.c | contains interface functions declared in cascoda-bm/cascoda_interface.h |
 |cascoda_isr_chili.c | contains Interrupt Service Routines (ISRs) |
+|cascoda_gpio_chili.c | contains functions for controlling module I/Os |
 |cascoda_chili.c | functions internal to port |
 |cascoda_dataflash_m2351.c | non-volatile memory access functions for data storage |
 |cascoda_usb_m2351.c | Device USB HID driver functions for communications with host (if USE_USB is defined) |
+|cascoda_uart_m2351.c | Device UART driver functions for communications with host (if USE_UART is defined) |
+|cascoda_sensorif_m2351.c | Device I2C driver functions for interfacing with external sensors |
 
 #### vendor
 Libraries provided by the MCU manufacturer (Nuvoton).<br>
@@ -23,8 +26,8 @@ Nuvoton M2351_BSP_v3.00.001
 
 
 ## System configuration
-### Pin Configuration for Chili 2 USB Module (double-sided population)
- Pin    | Default Function  | Chili 2 Function | Usage
+### Pin Configuration for Chili 2 USB Module (CHILI2D, double-sided population)
+CPU Pin | Default Function  | Chili 2 Function | Usage
  -----: | :------------- | :----------------- | :-----------------------------
    1    | PB.5     IN    | PB.5        IN     | Connector
    2    | PB.4     IN    | PB.4        IN     | Connector
@@ -58,8 +61,8 @@ Nuvoton M2351_BSP_v3.00.001
   30    | PB.13    IN    | PB.13       OUT    | VOLTS_TEST; Battery Voltage Measurement Control
   31    | PB.12    IN    | PB.12       IN     | USB_PRESENT; USB Supply Status
   32    | AVDD     SUP   | AVDD        SUP    | -
-### Pin Configuration for Chili 2 solder-on module (one-sided population)
- Pin    | Default Function  | Chili 2 Function | Usage
+### Pin Configuration for Chili 2 solder-on module (CHILI2S, one-sided population)
+CPU Pin | Default Function  | Chili 2 Function | Usage
  -----: | :------------- | :----------------- | :-----------------------------
    1    | PB.5     IN    | PB.5        IN     | Connector
    2    | PB.4     IN    | PB.4        IN     | Connector
@@ -90,8 +93,8 @@ Nuvoton M2351_BSP_v3.00.001
   27    | VDD      SUP   | VDD         SUP    | -
   28    | LDO_CAP  SUP   | LDO_CAP     SUP    | -
   29    | PB.14    IN    | PB.14       IN     | ZIG_APP     (CA821x DIG3,   P26, GPIO9)
-  30    | PB.13    IN    | UART0_TXD   OUT    | UART TxD; Only when USE_UART defined
-  31    | PB.12    IN    | UART0_RXD   IN     | UART RxD; Only when USE_UART defined
+  30    | PB.13    IN    | PB.13       IN     | Connector
+  31    | PB.12    IN    | PB.12       IN     | Connector
   32    | AVDD     SUP   | AVDD        SUP    | -
 ### Pin Configuration for NuMaker-PFM-M2351 development board (port usage only)
  Default Function  | Interface Function | Usage
@@ -115,4 +118,4 @@ Several interrupts are used in this project with different priorities. Interrupt
 | USBD_IRQn  | 2        |
 | GPB_IRQn   | 1        |
 | GPC_IRQn   | 1        |
-| UART0_IRQn | 2        |
+| UART_IRQn  | 2        |

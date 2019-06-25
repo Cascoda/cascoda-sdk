@@ -52,4 +52,12 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
  */
 ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef);
 
+/**
+ * \brief Read SPI messages from the ca821x
+ *
+ * This function should be called by the BSP on the falling edge of the RFIRQ signal from the CA821x.
+ *
+ */
+void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef);
+
 #endif // CASCODA_SPI_H

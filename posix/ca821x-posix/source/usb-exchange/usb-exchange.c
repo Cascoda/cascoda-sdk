@@ -244,7 +244,7 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 		do
 		{
 			error = dhid_write(priv->hid_dev, frag_buf, MAX_FRAG_SIZE + 1);
-		} while ((error < 0) && (retries++ < 5));
+		} while ((error < 0) && (retries++ < 50));
 	} while (rval && (error >= 0));
 
 	if (error < 0)
@@ -529,18 +529,5 @@ int usb_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef)
 	(void)resettime;
 	(void)pDeviceRef;
 
-	return 0;
-}
-
-int usb_exchange_user_send(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
-{
-	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
-
-	assert_usb_exchange(pDeviceRef);
-	assert(!(buf[0] & SPI_SYN));
-	assert(len < MAX_BUF_SIZE);
-	if (!s_initialised)
-		return -1;
-	add_to_queue(&(priv->base.out_buffer_queue), &(priv->base.out_queue_mutex), buf, len, pDeviceRef);
 	return 0;
 }

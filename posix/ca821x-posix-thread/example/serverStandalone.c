@@ -65,17 +65,13 @@ void otPlatUartSendDone(void)
 {
 }
 
-static void handleDiscover(void *               aContext,
-                           otCoapHeader *       aHeader,
-                           otMessage *          aMessage,
-                           const otMessageInfo *aMessageInfo)
+static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError      error = OT_ERROR_NONE;
-	otCoapHeader responseHeader;
-	otMessage *  responseMessage = NULL;
-	otInstance * OT_INSTANCE     = aContext;
+	otError     error           = OT_ERROR_NONE;
+	otMessage * responseMessage = NULL;
+	otInstance *OT_INSTANCE     = aContext;
 
-	if (otCoapHeaderGetCode(aHeader) != OT_COAP_CODE_GET)
+	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
 	printf("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
@@ -88,18 +84,18 @@ static void handleDiscover(void *               aContext,
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
-	otCoapHeaderInit(&responseHeader, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
-	otCoapHeaderSetMessageId(&responseHeader, otCoapHeaderGetMessageId(aHeader));
-	otCoapHeaderSetToken(&responseHeader, otCoapHeaderGetToken(aHeader), otCoapHeaderGetTokenLength(aHeader));
-
-	otCoapHeaderSetPayloadMarker(&responseHeader);
-
-	responseMessage = otCoapNewMessage(OT_INSTANCE, &responseHeader);
+	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
 	{
 		error = OT_ERROR_NO_BUFS;
 		goto exit;
 	}
+
+	otCoapMessageInit(responseMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
+	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
+
+	otCoapMessageSetPayloadMarker(responseMessage);
 
 	SuccessOrExit(error = otMessageAppend(responseMessage, otThreadGetMeshLocalEid(OT_INSTANCE), sizeof(otIp6Address)));
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
@@ -112,19 +108,15 @@ exit:
 	}
 }
 
-static void handleTemperature(void *               aContext,
-                              otCoapHeader *       aHeader,
-                              otMessage *          aMessage,
-                              const otMessageInfo *aMessageInfo)
+static void handleTemperature(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError      error = OT_ERROR_NONE;
-	otCoapHeader responseHeader;
-	otMessage *  responseMessage = NULL;
-	otInstance * OT_INSTANCE     = aContext;
-	uint16_t     length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-	int32_t      temperature;
+	otError     error           = OT_ERROR_NONE;
+	otMessage * responseMessage = NULL;
+	otInstance *OT_INSTANCE     = aContext;
+	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+	int32_t     temperature;
 
-	if (otCoapHeaderGetCode(aHeader) != OT_COAP_CODE_POST)
+	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
 		return;
 
 	if (length != sizeof(temperature))
@@ -144,16 +136,16 @@ static void handleTemperature(void *               aContext,
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
-	otCoapHeaderInit(&responseHeader, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
-	otCoapHeaderSetMessageId(&responseHeader, otCoapHeaderGetMessageId(aHeader));
-	otCoapHeaderSetToken(&responseHeader, otCoapHeaderGetToken(aHeader), otCoapHeaderGetTokenLength(aHeader));
-
-	responseMessage = otCoapNewMessage(OT_INSTANCE, &responseHeader);
+	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
 	{
 		error = OT_ERROR_NO_BUFS;
 		goto exit;
 	}
+
+	otCoapMessageInit(responseMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
+	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 

@@ -26,27 +26,14 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "openthread/platform/random.h"
+#include "openthread/platform/entropy.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "code_utils.h"
 #include "hwme_tdme.h"
 #include "platform.h"
 
-uint32_t otPlatRandomGet(void)
-{
-	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
-	uint8_t            result[4];
-	uint8_t            length;
-	uint32_t           reply;
-
-	HWME_GET_request_sync(HWME_RANDOMNUM, &length, result, pDeviceRef);
-	HWME_GET_request_sync(HWME_RANDOMNUM, &length, result + 2, pDeviceRef);
-	reply = GETLE32(result);
-	return reply;
-}
-
-otError otPlatRandomGetTrue(uint8_t *aOutput, uint16_t aOutputLength)
+otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
 {
 	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
 	otError            error      = OT_ERROR_NONE;

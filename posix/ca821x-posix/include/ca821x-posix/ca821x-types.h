@@ -47,6 +47,16 @@ typedef int (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca8
  */
 typedef int (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
+/* \brief Exchange write isready function
+ *
+ * Function for the exchange to implement. The implementation should
+ * return true (nonzero) if it is ready to send, or 0 if not.
+ *
+ * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
+ *
+ */
+typedef int (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
+
 /* \brief Exchange read function
  *
  * Function for the exchange to implement. The implementation should
@@ -92,7 +102,8 @@ typedef void (*exchange_flush_unread)(struct ca821x_dev *pDeviceRef);
 enum ca821x_exchange_type
 {
 	ca821x_exchange_kernel = 1, //!< kernel driver's debugfs node
-	ca821x_exchange_usb         //!< USB HID device
+	ca821x_exchange_usb,        //!< USB HID device
+	ca821x_exchange_uart,       //!< UART device
 };
 
 /** Base structure for exchange private data collections */
@@ -103,6 +114,7 @@ struct ca821x_exchange_base
 	ca821x_errorhandler    error_callback;
 	exchange_user_callback user_callback;
 	exchange_write         write_func;
+	exchange_write_isready write_isready_func;
 	exchange_signal_read   signal_func;
 	exchange_read          read_func;
 	exchange_flush_unread  flush_func;

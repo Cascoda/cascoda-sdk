@@ -1,0 +1,37 @@
+pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      parallel {
+        stage('Chili2') {
+          steps {
+            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
+            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
+            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=ON', steps: [[args: '-j10']])
+            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=OFF', steps: [[args: '-j10']])
+          }
+        }
+        stage('Chili') {
+          steps {
+            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-chili', cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
+            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
+          }
+        }
+        stage('Posix') {
+          steps {
+            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-posix', cmakeArgs: '-DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
+            ctest(installation: 'InSearchPath', arguments: '--output-on-failure', workingDir: 'build-posix')
+            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-posix', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
+            ctest(installation: 'InSearchPath', arguments: '--output-on-failure', workingDir: 'build-posix')
+          }
+        }
+      }
+    }
+    stage('PostBuild') {
+      steps {
+        publishIssues issues: [scanForIssues(tool: [$class: 'Gcc4'])]
+        echo 'Done'
+      }
+    }
+  }
+}

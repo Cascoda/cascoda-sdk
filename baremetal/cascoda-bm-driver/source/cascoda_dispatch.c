@@ -39,15 +39,16 @@ enum MDR_CacheType
 
 static struct MDR_CacheItem
 {
-	uint8_t mTimeout;           /**< Timeout for direct transmissions */
-	uint8_t mMsduHandle;        /**< MSDU Handle for the cached transmission */
-	uint8_t mIsIndirect : 1;    /**< Flag tracking indirect-ness */
-	uint8_t mIsCacheActive : 1; /**< Is the cache member currently valid and in use */
-	uint8_t mCacheType : 1; /**< Cache type \ref enum MDR_Cache (Only reason this is a uint8 is for struct packing) */
+	uint16_t mTimeout;           /**< Timeout for direct transmissions */
+	uint8_t  mMsduHandle;        /**< MSDU Handle for the cached transmission */
+	uint8_t  mIsIndirect : 1;    /**< Flag tracking indirect-ness */
+	uint8_t  mIsCacheActive : 1; /**< Is the cache member currently valid and in use */
+	uint8_t  mCacheType : 1; /**< Cache type \ref enum MDR_Cache (Only reason this is a uint8 is for struct packing) */
 } MDR_Cache[MDR_CacheSize];
 
-static bool    isPCPSFixActive = false;
-static uint8_t isPCPSRxOn;
+static bool             isPCPSFixActive = false;
+static uint8_t          isPCPSRxOn      = 0;
+static volatile uint8_t isReadPending   = 0;
 
 static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef);
 
@@ -138,7 +139,7 @@ static ca_error CacheAddItem(uint8_t aMsduHandle, bool aIsIndirect, enum MDR_Cac
 			MDR_Cache[i].mIsIndirect    = aIsIndirect;
 			MDR_Cache[i].mMsduHandle    = aMsduHandle;
 			MDR_Cache[i].mCacheType     = aCacheType;
-			MDR_Cache[i].mTimeout       = 100; //TODO: Figure out this value properly
+			MDR_Cache[i].mTimeout       = 500; //TODO: Figure out this value properly
 			error                       = CA_ERROR_SUCCESS;
 			break;
 		}
@@ -152,7 +153,10 @@ static ca_error CacheDecay(void)
 {
 	static uint32_t prevTime = 0;
 	uint32_t        curTime  = TIME_ReadAbsoluteTime();
-	uint8_t         delta    = curTime - prevTime;
+	uint32_t        delta    = curTime - prevTime;
+
+	if (delta == 0)
+		return CA_ERROR_SUCCESS;
 
 	for (size_t i = 0; i < MDR_CacheSize; i++)
 	{
@@ -343,6 +347,30 @@ static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *
 	}
 }
 
+void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef)
+{
+	uint8_t rfirq;
+
+	BSP_DisableRFIRQ();
+	rfirq = BSP_SenseRFIRQ();
+
+	if (!rfirq && !SPI_IsFifoAlmostFull())
+	{
+		SPI_Exchange(NULLP, pDeviceRef);
+		isReadPending = 0;
+	}
+	else if (!rfirq)
+	{
+		isReadPending = 1;
+	}
+	else
+	{
+		isReadPending = 0;
+	}
+
+	BSP_EnableRFIRQ();
+}
+
 ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	ca_error Status = CA_ERROR_SUCCESS;
@@ -360,14 +388,12 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message *RxMessage;
-	bool                SPI_FifoWasFull;
 	static bool         isDispatching = false;
 
 	if (isDispatching)
 		return CA_ERROR_INVALID_STATE;
 
-	isDispatching   = true;
-	SPI_FifoWasFull = SPI_IsFifoFull();
+	isDispatching = true;
 	while ((RxMessage = SPI_PeekFullBuf()) != NULL)
 	{
 		PreCheckFromCA821x(RxMessage, pDeviceRef);
@@ -382,8 +408,8 @@ ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)
 	}
 
 	//If stalled, read pending message
-	if (SPI_FifoWasFull)
-		EVBMEHandler(pDeviceRef);
+	if (isReadPending)
+		DISPATCH_ReadCA821x(pDeviceRef);
 
 	return CA_ERROR_SUCCESS;
 }

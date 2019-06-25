@@ -39,7 +39,7 @@
 #include "openthread/instance.h"
 #include "openthread/platform/logging.h"
 
-void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
+OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
 	va_list ap;
 	u8_t *  pLevel = "??? ", *pRegion = "??? ";

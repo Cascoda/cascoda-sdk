@@ -30,7 +30,6 @@
 #include "spi.h"
 #include "sys.h"
 #include "timer.h"
-#include "uart.h"
 #include "usbd.h"
 /* Cascoda */
 #include "cascoda-bm/cascoda_evbme.h"
@@ -40,89 +39,17 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_gpio.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
-#ifdef USE_DEBUG
-#include "cascoda_debug_chili.h"
-#endif /* USE_DEBUG */
 
-/* LED RGB Values */
-u8_t  LED_R_VAL            = 0;   /* Red */
-u8_t  LED_G_VAL            = 0;   /* Green */
-u16_t LED_R_BlinkTimeCount = 0;   /* Red   Blink Time Interval Counter */
-u16_t LED_G_BlinkTimeCount = 0;   /* Green Blink Time Interval Counter */
-u16_t LED_R_OnTime         = 100; /* Red   On  Time [10 ms] */
-u16_t LED_G_OnTime         = 100; /* Green On  Time [10 ms] */
-u16_t LED_R_OffTime        = 0;   /* Red   Off Time [10 ms] */
-u16_t LED_G_OffTime        = 0;   /* Green Off Time [10 ms] */
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief LEDSetClrs LED Set/Clear Functions
- *******************************************************************************
- ******************************************************************************/
-void CHILI_LED_SetRED(u16_t ton, u16_t toff)
-{
-	LED_R_VAL     = 1;
-	LED_R_OnTime  = ton;
-	LED_R_OffTime = toff;
-}
-void CHILI_LED_SetGREEN(u16_t ton, u16_t toff)
-{
-	LED_G_VAL     = 1;
-	LED_G_OnTime  = ton;
-	LED_G_OffTime = toff;
-}
-void CHILI_LED_ClrRED(void)
-{
-	LED_R_VAL = 0;
-}
-void CHILI_LED_ClrGREEN(void)
-{
-	LED_G_VAL = 0;
-}
-
-#if defined(USE_UART)
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialise UART for Comms
- *******************************************************************************
- ******************************************************************************/
-void CHILI_UARTInit(void)
-{
-	/* Set multi-function pins for UART0 RXD and TXD */
-	SYS->GPB_MFPH = (SYS->GPB_MFPH & (~(UART0_RXD_PB12_Msk | UART0_TXD_PB13_Msk))) | UART0_RXD_PB12 | UART0_TXD_PB13;
-
-	if (UseExternalClock)
-		CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HXT, CLK_CLKDIV0_UART0(1));
-	else
-		CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HIRC, CLK_CLKDIV0_UART0(3));
-	CLK_EnableModuleClock(UART0_MODULE);
-
-	/* Initialise UART */
-	SYS_ResetModule(UART0_RST);
-	UART_SetLineConfig(UART0, 115200, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
-	UART_Open(UART0, 115200);
-	UART_EnableInt(UART0, UART_INTEN_RDAIEN_Msk);
-	NVIC_EnableIRQ(UART0_IRQn);
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief De-Initialise UART
- *******************************************************************************
- ******************************************************************************/
-void CHILI_UARTDeinit(void)
-{
-	NVIC_DisableIRQ(UART0_IRQn);
-	UART_DisableInt(UART0, UART_INTEN_RDAIEN_Msk);
-	UART_Close(UART0);
-}
-
-#endif /* USE_UART */
+/* define system configuaration mask */
+#define CLKCFG_ENPLL 0x01
+#define CLKCFG_ENHXT 0x02
+#define CLKCFG_ENHIRC 0x04
+#define CLKCFG_ENHIRC48 0x08
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -141,8 +68,21 @@ u32_t CHILI_ADCConversion(u32_t channel, u32_t reference)
 	/* enable EADC module clock */
 	CLK_EnableModuleClock(EADC_MODULE);
 
-	/* EADC clock source is 16MHz, set divider to 16 -> 1 MHz */
-	CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(16));
+	/* EADC clock source is PCLK->HCLK, divide down to 1 MHz */
+	if (SystemFrequency == FSYS_64MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(64));
+	else if (SystemFrequency == FSYS_48MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(48));
+	else if (SystemFrequency == FSYS_32MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(32));
+	else if (SystemFrequency == FSYS_24MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(24));
+	else if (SystemFrequency == FSYS_16MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(16));
+	else if (SystemFrequency == FSYS_12MHZ)
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(12));
+	else /* FSYS_4MHZ */
+		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(4));
 
 	/* reset EADC module */
 	SYS_ResetModule(EADC_RST);
@@ -186,34 +126,6 @@ u32_t CHILI_ADCConversion(u32_t channel, u32_t reference)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief LED Blinking for TMR2_IRQHandler ISR
- *******************************************************************************
- ******************************************************************************/
-void CHILI_LEDBlink(void)
-{
-	if ((LED_R_BlinkTimeCount == 0) && (LED_R_VAL == 1))
-		PB2 = 0;
-	else if ((LED_R_BlinkTimeCount > LED_R_OnTime) || (LED_R_VAL == 0))
-		PB2 = 1;
-
-	if ((LED_G_BlinkTimeCount == 0) && (LED_G_VAL == 1))
-		PB3 = 0;
-	else if ((LED_G_BlinkTimeCount > LED_G_OnTime) || (LED_G_VAL == 0))
-		PB3 = 1;
-
-	if ((LED_R_BlinkTimeCount >= LED_R_OnTime + LED_R_OffTime) || (LED_R_VAL == 0))
-		LED_R_BlinkTimeCount = 0;
-	else
-		LED_R_BlinkTimeCount += 1;
-
-	if ((LED_G_BlinkTimeCount >= LED_G_OnTime + LED_G_OffTime) || (LED_G_VAL == 0))
-		LED_G_BlinkTimeCount = 0;
-	else
-		LED_G_BlinkTimeCount += 1;
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
  * \brief Initialise Essential GPIOs for various Functions
  *******************************************************************************
  ******************************************************************************/
@@ -224,113 +136,69 @@ void CHILI_GPIOInit(void)
 	/* Initialise and set Debounce to 8 HCLK cycles */
 	GPIO_SET_DEBOUNCE_TIME(PA, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 	GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
-	GPIO_SET_DEBOUNCE_TIME(RFIRQ_PORT, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
-	GPIO_SET_DEBOUNCE_TIME(RFSS_PORT, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
-	GPIO_SET_DEBOUNCE_TIME(SPI_MISO_PORT, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PC, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PD, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PE, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PF, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PG, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	GPIO_SET_DEBOUNCE_TIME(PH, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.13: VOLTS_TEST */
+	/* VOLTS_TEST */
 	/* output, no pull-up, set to 0 */
-	GPIO_SetMode(PB, BIT13, GPIO_MODE_OUTPUT);
-	GPIO_SetPullCtl(PB, BIT13, GPIO_PUSEL_DISABLE);
-	PB13 = 0; /* VOLTS_TEST is active high, so switch off to avoid unecessary power consumption */
+	GPIO_SetMode(VOLTS_TEST_PORT, BITMASK(VOLTS_TEST_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(VOLTS_TEST_PORT, BITMASK(VOLTS_TEST_PIN), GPIO_PUSEL_DISABLE);
+	VOLTS_TEST_PVAL = 0; /* VOLTS_TEST is active high, so switch off to avoid unecessary power consumption */
 #endif
 
-	/* PC.1: ZIG_RESET */
+	/* ZIG_RESET */
 	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(RSTB_PORT, BITMASK(RSTB_PIN), GPIO_MODE_OUTPUT);
-	GPIO_SetPullCtl(RSTB_PORT, BITMASK(RSTB_PIN), GPIO_PUSEL_DISABLE);
-	RSTB = 1; /* RSTB is HIGH */
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_PUSEL_DISABLE);
+	ZIG_RESET_PVAL = 1; /* RSTB is HIGH */
 
-	/* PC.0: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* input, pull-up */
-	GPIO_SetMode(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_MODE_INPUT);
-	GPIO_SetPullCtl(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_PUSEL_PULL_UP);
-
-	/* PB.4: SWITCH */
-	/* input, no pull-up, debounced */
-	/* currently no switch so pull up */
-	GPIO_SetPullCtl(PB, BIT4, GPIO_PUSEL_PULL_UP);
+	GPIO_SetMode(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN), GPIO_MODE_INPUT);
+	GPIO_SetPullCtl(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN), GPIO_PUSEL_PULL_UP);
 
 	/* SPI: MFP but SS0 controlled separately as GPIO */
-	/* SPI_MOSI MFP output */
-	/* SPI_MISO MFP input */
-	/* SPI_SCLK MFP output */
-	SET_MFP_SPI();
+	CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_SPI);
 	GPIO_SetPullCtl(SPI_MOSI_PORT, BITMASK(SPI_MOSI_PIN), GPIO_PUSEL_DISABLE);
 	GPIO_SetPullCtl(SPI_MISO_PORT, BITMASK(SPI_MISO_PIN), GPIO_PUSEL_DISABLE);
-	GPIO_SetPullCtl(SPI_CLK_PORT, BITMASK(SPI_CLK_PIN), GPIO_PUSEL_DISABLE);
+	GPIO_SetPullCtl(SPI_SCLK_PORT, BITMASK(SPI_SCLK_PIN), GPIO_PUSEL_DISABLE);
 
-	/* PA.3: SPI_CS */
+	/* SPI_CS */
 	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(RFSS_PORT, BITMASK(RFSS_PIN), GPIO_MODE_OUTPUT);
-	GPIO_SetPullCtl(RFSS_PORT, BITMASK(RFSS_PIN), GPIO_PUSEL_DISABLE);
-	RFSS = 1;
-
-	/* PB.2: LED_R */
-	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PB, BIT2, GPIO_MODE_OUTPUT);
-	GPIO_SetPullCtl(PB, BIT2, GPIO_PUSEL_DISABLE);
-	PB2 = 1;
-
-	/* PB.3: LED_G */
-	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PB, BIT3, GPIO_MODE_OUTPUT);
-	GPIO_SetPullCtl(PB, BIT3, GPIO_PUSEL_DISABLE);
-	PB3 = 1;
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PUSEL_DISABLE);
+	SPI_CS_PVAL = 1;
 
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.0: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* input, pull-up, debounced */
-	GPIO_SetMode(PB, BIT0, GPIO_MODE_INPUT);
-	GPIO_SetPullCtl(PB, BIT0, GPIO_PUSEL_PULL_UP); /* CHARGE_STAT is low or tri-state */
-	GPIO_ENABLE_DEBOUNCE(PB, BIT0);
-#endif
-
-	/* PF.0: ICE_DAT MFP */
-
-	/* PF.1: ICE_CLK MFP */
-
-#if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.1: EADC0 MFP (VOLTS) */
-	SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB1MFP_Msk)) | SYS_GPB_MFPL_PB1MFP_EADC0_CH1;
-	GPIO_DISABLE_DIGITAL_PATH(PB, BIT1);
-	GPIO_SetPullCtl(PB, BIT1, GPIO_PUSEL_DISABLE);
+	GPIO_SetMode(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN), GPIO_MODE_INPUT);
+	GPIO_SetPullCtl(
+	    CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN), GPIO_PUSEL_PULL_UP); /* CHARGE_STAT is low or tri-state */
+	GPIO_ENABLE_DEBOUNCE(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
 #endif
 
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.12: USB_PRESENT */
+	/* USB_PRESENT */
 	/* input, no pull-up, debounced */
-	GPIO_SetMode(PB, BIT12, GPIO_MODE_INPUT);
-	GPIO_SetPullCtl(PB, BIT12, GPIO_PUSEL_DISABLE);
-	GPIO_ENABLE_DEBOUNCE(PB, BIT12);
+	GPIO_SetMode(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN), GPIO_MODE_INPUT);
+	GPIO_SetPullCtl(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN), GPIO_PUSEL_DISABLE);
+	GPIO_ENABLE_DEBOUNCE(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
 	/* Immediately get USBPresent State */
-	USBPresent = PB12;
+	USBPresent = USB_PRESENT_PVAL;
 #else
 	USBPresent = 1;
 #endif
 
-	/* PB.12: PROGRAM Pin */
+	/* PROGRAM Pin */
 	/* currently nor implemented */
-
-	/* PF.3: XT1_IN MFP */
-	GPIO_SetPullCtl(PF, BIT3, GPIO_PUSEL_DISABLE);
-
-	/* PF.2: XT1_OUT MFP */
-	GPIO_SetPullCtl(PF, BIT2, GPIO_PUSEL_DISABLE);
-
-	/* PF.5: XT32_IN MFP */
-	GPIO_SetPullCtl(PF, BIT5, GPIO_PUSEL_DISABLE);
-
-	/* PF.4: XT32_OUT MFP */
-	GPIO_SetPullCtl(PF, BIT4, GPIO_PUSEL_DISABLE);
-
-#if defined(USE_UART)
-	/* UART0 if used */
-	/* PB.12: UART0_RX MFP input */
-	/* PB.13: UART0_TX MFP output */
-	SYS->GPB_MFPH = (SYS->GPB_MFPH & (~(UART0_RXD_PB12_Msk | UART0_TXD_PB13_Msk))) | UART0_RXD_PB12 | UART0_TXD_PB13;
-#endif /* USE_UART */
 }
 
 /******************************************************************************/
@@ -341,51 +209,37 @@ void CHILI_GPIOInit(void)
  ******************************************************************************/
 void CHILI_GPIOPowerDown(u8_t tristateCax)
 {
-	/* PC.1: ZIG_RESET */
+	/* ZIG_RESET */
 	/* tri-state - output to input */
-	GPIO_SetMode(RSTB_PORT, BITMASK(RSTB_PIN), GPIO_MODE_INPUT);
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_MODE_INPUT);
 
-	/* PC.0: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* disable pull-up */
-	GPIO_SetPullCtl(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_PUSEL_DISABLE);
+	GPIO_SetPullCtl(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN), GPIO_PUSEL_DISABLE);
 
 	if (tristateCax)
 	{
 		/* SPI: */
-		/* SPI_MOSI: tri-state - output to input */
-		/* SPI_MISO: tri-state - input  to input */
-		/* SPI_CLK:  tri-state - output to input */
-		SET_MFP_GPIO();
+		CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_GPIO);
+		CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_GPIO);
+		CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_GPIO);
 		GPIO_SetMode(SPI_MOSI_PORT, BITMASK(SPI_MOSI_PIN), GPIO_MODE_INPUT);
 		GPIO_SetMode(SPI_MISO_PORT, BITMASK(SPI_MISO_PIN), GPIO_MODE_INPUT);
-		GPIO_SetMode(SPI_CLK_PORT, BITMASK(SPI_CLK_PIN), GPIO_MODE_INPUT);
+		GPIO_SetMode(SPI_SCLK_PORT, BITMASK(SPI_SCLK_PIN), GPIO_MODE_INPUT);
 	}
 
-	/* PA.3: SPI_CS */
+	/* SPI_CS */
 	/* tri-state - output to input */
-	GPIO_SetMode(RFSS_PORT, BITMASK(RFSS_PIN), GPIO_MODE_INPUT);
-
-	/* PB.2: LED_R */
-	/* tri-state - output to input - use pull-up otherwise light-dependent photodiode effect! */
-	PB2 = 1;
-	GPIO_SetMode(PB, BIT2, GPIO_MODE_INPUT);
-	GPIO_SetPullCtl(PB, BIT2, GPIO_PUSEL_PULL_UP);
-
-	/* PB.3: LED_G */
-	/* tri-state - output to input - use pull-up otherwise light-dependent photodiode effect! */
-	PB3 = 1;
-	GPIO_SetMode(PB, BIT3, GPIO_MODE_INPUT);
-	GPIO_SetPullCtl(PB, BIT3, GPIO_PUSEL_PULL_UP);
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_MODE_INPUT);
 
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.0: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* disable pull-up */
-	GPIO_SetPullCtl(PB, BIT0, GPIO_PUSEL_DISABLE);
+	GPIO_SetPullCtl(CHARGE_STAT_PORT, CHARGE_STAT_PIN, GPIO_PUSEL_DISABLE);
 #endif
 
-	/* reset LED counters */
-	LED_R_BlinkTimeCount = 0;
-	LED_G_BlinkTimeCount = 0;
+	/* dynamic GPIO handling */
+	CHILI_ModulePowerDownGPIOs();
 }
 
 /******************************************************************************/
@@ -395,39 +249,31 @@ void CHILI_GPIOPowerDown(u8_t tristateCax)
  ******************************************************************************/
 void CHILI_GPIOPowerUp(void)
 {
-	/* PC.1: ZIG_RESET */
+	/* ZIG_RESET */
 	/* input to output */
-	GPIO_SetMode(RSTB_PORT, BITMASK(RSTB_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_MODE_OUTPUT);
 
-	/* PC.0: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* enable pull-up */
-	GPIO_SetPullCtl(RFIRQ_PORT, BITMASK(RFIRQ_PIN), GPIO_PUSEL_PULL_UP);
+	GPIO_SetPullCtl(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN), GPIO_PUSEL_PULL_UP);
 
-	/* SPI1: */
-	/* PA.0: tri-state - input to SPI1_MOSI0 */
-	/* PA.1: tri-state - input to SPI1_MISO0 */
-	/* PA.2: tri-state - input to SPI1_SCLK */
-	SET_MFP_SPI();
+	/* SPI: */
+	CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_SPI);
 
-	/* PA.3: SPI_CS */
+	/* SPI_CS */
 	/* input to output */
-	GPIO_SetMode(RFSS_PORT, BITMASK(RFSS_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_MODE_OUTPUT);
 
-	/* PB.2: LED_R */
-	/* input to output */
-	GPIO_SetPullCtl(PB, BIT2, GPIO_PUSEL_DISABLE);
-	GPIO_SetMode(PB, BIT2, GPIO_MODE_OUTPUT);
-
-	/* PB.3: LED_G */
-	/* input to output */
-	GPIO_SetPullCtl(PB, BIT3, GPIO_PUSEL_DISABLE);
-	GPIO_SetMode(PB, BIT3, GPIO_MODE_OUTPUT);
-
-	/* PB.0: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* enable pull-up */
 #if (CASCODA_CHILI2_CONFIG == 1)
-	GPIO_SetPullCtl(PB, BIT0, GPIO_PUSEL_PULL_UP);
+	GPIO_SetPullCtl(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN), GPIO_PUSEL_PULL_UP);
 #endif
+
+	/* dynamic GPIO handling */
+	CHILI_ModulePowerUpGPIOs();
 }
 
 /******************************************************************************/
@@ -437,17 +283,16 @@ void CHILI_GPIOPowerUp(void)
  ******************************************************************************/
 void CHILI_GPIOEnableInterrupts(void)
 {
-	/* SWITCH PB.4 */
-
 	/* RFIRQ */
-	GPIO_EnableInt(RFIRQ_PORT, RFIRQ_PIN, GPIO_INT_FALLING);
+	GPIO_EnableInt(ZIG_IRQB_PORT, ZIG_IRQB_PIN, GPIO_INT_FALLING);
 
 #if (CASCODA_CHILI2_CONFIG == 1)
-	/* PB.12: USBPresent */
-	GPIO_EnableInt(PB, 12, GPIO_INT_BOTH_EDGE);
-	/* NVIC Enable GPB IRQ */
-	NVIC_EnableIRQ(GPB_IRQn);
+	/* USB_PRESENT */
+	GPIO_EnableInt(USB_PRESENT_PORT, USB_PRESENT_PIN, GPIO_INT_BOTH_EDGE);
+	/* NVIC Enable */
+	NVIC_EnableIRQ(USB_PRESENT_IRQn);
 #endif
+	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
 }
 
 /******************************************************************************/
@@ -496,18 +341,27 @@ void CHILI_SetClockExternalCFGXT1(u8_t clk_external)
  * \brief Select System Clocks depending on Power Source
  *******************************************************************************
  ******************************************************************************/
-void CHILI_ClockInit(void)
+ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 {
 	uint32_t delayCnt;
+	ca_error status = CA_ERROR_SUCCESS;
+	u8_t     clkcfg;
 
 	/* NOTE: __HXT in system_M2351.h has to be changed to correct input clock frequency !! */
 #if __HXT != 4000000UL
 #error "__HXT Not set correctly in system_M2351.h"
 #endif
 
-	if (UseExternalClock) /* 4 MHz clock supplied externally via HXT */
+	/* Oscillator sources:
+	 *	- HXT 		 4 MHz
+	 *	- HIRC		12 MHz
+	 *	- HIRC48	48 MHz */
+
+	clkcfg = CHILI_GetClockConfigMask(fsys, enable_comms);
+
+	/* enable HXT */
+	if (clkcfg & CLKCFG_ENHXT)
 	{
-		/* HXT enabled */
 		SYS_UnlockReg();
 		CLK->PWRCTL |= (CLK_PWRCTL_HXTEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
 		SYS_LockReg();
@@ -518,17 +372,15 @@ void CHILI_ClockInit(void)
 		}
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
-			UseExternalClock = 0;
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_1);
-#endif /* USE_DEBUG */
+			status = CA_ERROR_FAIL;
+			printf("HXT Enable Fail\n");
+			return (status);
 		}
 	}
 
-	if (!UseExternalClock) /* 12 MHz clock from HIRC */
+	/* enable HIRC */
+	if (clkcfg & CLKCFG_ENHIRC)
 	{
-		/* HIRC enabled */
 		SYS_UnlockReg();
 		CLK->PWRCTL |= (CLK_PWRCTL_HIRCEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
 		SYS_LockReg();
@@ -539,16 +391,34 @@ void CHILI_ClockInit(void)
 		}
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_2);
-#endif /* USE_DEBUG */
+			status = CA_ERROR_FAIL;
+			printf("HIRC Enable Fail\n");
+			return (status);
 		}
 	}
 
-	if (USBPresent) /* USB connected and supplies power - switch on PLL */
+	/* enable HIRC48 */
+	if (clkcfg & CLKCFG_ENHIRC48)
 	{
 		SYS_UnlockReg();
+		CLK->PWRCTL |= (CLK_PWRCTL_HIRC48EN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
+		SYS_LockReg();
+		for (delayCnt = 0; delayCnt <= MAX_CLOCK_SWITCH_DELAY; ++delayCnt)
+		{
+			if (CLK->STATUS & CLK_STATUS_HIRC48STB_Msk)
+				break;
+		}
+		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
+		{
+			status = CA_ERROR_FAIL;
+			printf("HIRC48 Enable Fail\n");
+			return (status);
+		}
+	}
+
+	/* enable PLL */
+	if (clkcfg & CLKCFG_ENPLL)
+	{
 		/*
 		*****************************************************************************************
 		PLL Setup
@@ -557,17 +427,39 @@ void CHILI_ClockInit(void)
 		FVCO = 96 - 200 MHz
 		FOUT = 24 - 144 MHz
 		*****************************************************************************************
-		                    FIN FREF FVCO FOUT  NR NF NO INDIV FBDIV OUTDIV   PLLCTL
+		         FIN FREF FVCO FOUT  NR NF NO INDIV FBDIV OUTDIV   PLLCTL
 		*****************************************************************************************
-		CLKExternal = 0      12    4   96   48   3 12  2     2    10      1   0x0008440A
-		CLKExternal = 1       4    4   96   48   1 12  2     0    10      1   0x0000400A
+		FOUT = 48 MHz:
+		HIRC      12    4   96   48   3 12  2     2    10      1   0x0008440A
+		HXT        4    4   96   48   1 12  2     0    10      1   0x0000400A
+		FOUT = 96 MHz (for 32MHz HCLK)
+		HIRC      12    4   96   48   3 12  1     2    10      0   0x0008040A
+		HXT        4    4   96   48   1 12  1     0    10      0   0x0000000A
+		FOUT = 64 MHz:(for 64MHz HCLK)
+		HIRC      12    4  128   64   3 16  2     2    14      1   0x0008440E
+		HXT        4    4  128   64   1 16  2     0    14      1   0x0000400E
 		*****************************************************************************************
 		Note: Using CLK_EnablePLL() does not always give correct results, so avoid!
 		*/
-		if (UseExternalClock)
-			CLK->PLLCTL = 0x0000400A;
+		SYS_UnlockReg();
+		if (clkcfg & CLKCFG_ENHXT)
+		{
+			if (fsys == FSYS_64MHZ)
+				CLK->PLLCTL = 0x0000400E;
+			else if (fsys == FSYS_32MHZ)
+				CLK->PLLCTL = 0x0000000A;
+			else
+				CLK->PLLCTL = 0x0000400A;
+		}
 		else
-			CLK->PLLCTL = 0x0008440A;
+		{
+			if (fsys == FSYS_64MHZ)
+				CLK->PLLCTL = 0x0008440E;
+			else if (fsys == FSYS_32MHZ)
+				CLK->PLLCTL = 0x0008040A;
+			else
+				CLK->PLLCTL = 0x0008440A;
+		}
 		SYS_LockReg();
 		for (delayCnt = 0; delayCnt < MAX_CLOCK_SWITCH_DELAY; delayCnt++)
 		{
@@ -576,77 +468,106 @@ void CHILI_ClockInit(void)
 		}
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			if ((!USBPresent) && (!UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_3);
-			else if ((!USBPresent) && (UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_4);
-			else if ((USBPresent) && (!UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_5);
-			else if ((USBPresent) && (UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_6);
-			else
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_7);
-#endif /* USE_DEBUG */
+			status = CA_ERROR_FAIL;
+			printf("PLL Enable Fail\n");
+			return (status);
 		}
 	}
 
-	if (USBPresent) /* USB connected and supplies power - HCLK and USB from PLL */
+	/* set system clock */
+	SYS_UnlockReg();
+	if (clkcfg & CLKCFG_ENHXT)
 	{
-		SYS_UnlockReg();
-		/* divider is 3  -> HCLK = 16 MHz */
-		CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
-		/* Select IP clock source */
-		CLK_SetModuleClock(USBD_MODULE, CLK_CLKSEL0_USBSEL_PLL, CLK_CLKDIV0_USB(1));
-		/* Enable IP clock */
-		CLK_EnableModuleClock(USBD_MODULE);
-		SYS_LockReg();
-	}
-	else /* USB unplugged, power from battery */
-	{
-		if (UseExternalClock)
-		{
-			SYS_UnlockReg();
-			/* 4 MHz clock supplied externally via HXT */
+		if (fsys == FSYS_4MHZ)
 			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HXT, CLK_CLKDIV0_HCLK(1));
-			SYS_LockReg();
+		else if (fsys == FSYS_12MHZ)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(4));
+		else if (fsys == FSYS_16MHZ)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
+		else if (fsys == FSYS_24MHZ)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(2));
+		else if (fsys == FSYS_32MHZ)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
+		else if (fsys == FSYS_48MHZ)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+		else /* FSYS_64MHZ */
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+	}
+	else
+	{
+		if ((clkcfg & CLKCFG_ENHIRC) && (fsys == FSYS_4MHZ))
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(3));
+		else if ((clkcfg & CLKCFG_ENHIRC) && (fsys == FSYS_12MHZ))
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1));
+		else if (clkcfg & CLKCFG_ENPLL)
+		{
+			if (fsys == FSYS_4MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(12));
+			else if (fsys == FSYS_12MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(4));
+			else if (fsys == FSYS_16MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
+			else if (fsys == FSYS_24MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(2));
+			else if (fsys == FSYS_32MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
+			else if (fsys == FSYS_48MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+			else if (fsys == FSYS_64MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+		}
+		else if (clkcfg & CLKCFG_ENHIRC48)
+		{
+			if (fsys == FSYS_4MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(12));
+			else if (fsys == FSYS_12MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(4));
+			else if (fsys == FSYS_16MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(3));
+			else if (fsys == FSYS_24MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(2));
+			else if (fsys == FSYS_48MHZ)
+				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(1));
+		}
+	}
+
+#ifdef USE_USB
+	/* set USB clock */
+	SYS_UnlockReg();
+	if (enable_comms)
+	{
+		if (clkcfg & CLKCFG_ENHIRC48)
+		{
+			CLK_SetModuleClock(USBD_MODULE, CLK_CLKSEL0_USBSEL_HIRC48, CLK_CLKDIV0_USB(1));
 		}
 		else
 		{
-			SYS_UnlockReg();
-			/* 12 MHz clock from HIRC */
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(3));
-			SYS_LockReg();
+			if (fsys == FSYS_32MHZ)
+				CLK_SetModuleClock(USBD_MODULE, CLK_CLKSEL0_USBSEL_PLL, CLK_CLKDIV0_USB(2));
+			else
+				CLK_SetModuleClock(USBD_MODULE, CLK_CLKSEL0_USBSEL_PLL, CLK_CLKDIV0_USB(1));
 		}
-		CLK_DisablePLL(); /* PLL Off */
+		CLK_EnableModuleClock(USBD_MODULE);
 	}
+	else
+	{
+		CLK_DisableModuleClock(USBD_MODULE);
+	}
+	SYS_LockReg();
+#endif
 
 	/* Set HCLK back to HIRC if clock switching error happens */
 	if (CLK->STATUS & CLK_STATUS_CLKSFAIL_Msk)
 	{
 		SYS_UnlockReg();
-		/* HCLK = 12MHz */
+		CLK->PWRCTL |= CLK_PWRCTL_HIRCEN_Msk;
 		CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1));
 		SYS_LockReg();
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_8);
-#endif /* USE_DEBUG */
+		printf("Clock Switch Fail, Restarting with 12MHz\n");
+		status = CA_ERROR_FAIL;
 	}
 
-	/* check clock frequency and signal problems */
-	SystemCoreClockUpdate();
-	if (((USBPresent) && (UseExternalClock) && (SystemCoreClock != 16000000)) ||
-	    ((USBPresent) && (!UseExternalClock) && (SystemCoreClock != 16000000)) ||
-	    ((!USBPresent) && (UseExternalClock) && (SystemCoreClock != 4000000)) ||
-	    ((!USBPresent) && (!UseExternalClock) && (SystemCoreClock != 4000000)))
-	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_9);
-#endif /* USE_DEBUG */
-	}
+	return (status);
 }
 
 /******************************************************************************/
@@ -654,25 +575,30 @@ void CHILI_ClockInit(void)
  * \brief Completes Clock (Re-)Initialisation.
  *******************************************************************************
  ******************************************************************************/
-void CHILI_CompleteClockInit(void)
+void CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms)
 {
+	u8_t clkcfg;
+
+	clkcfg = CHILI_GetClockConfigMask(fsys, enable_comms);
+
 	if (!(CLK->STATUS & CLK_STATUS_CLKSFAIL_Msk))
 	{
-		if (UseExternalClock)
-		{
-			/* disable HIRC */
-			SYS_UnlockReg();
+		SYS_UnlockReg();
+		if (!(clkcfg & CLKCFG_ENPLL)) /* disable PLL */
+			CLK_DisablePLL();
+		if (!(clkcfg & CLKCFG_ENHIRC48)) /* disable HIRC48 */
+			CLK->PWRCTL &= ~(CLK_PWRCTL_HIRC48EN_Msk);
+		if (!(clkcfg & CLKCFG_ENHIRC)) /* disable HIRC */
 			CLK->PWRCTL &= ~(CLK_PWRCTL_HIRCEN_Msk);
-			SYS_LockReg();
-		}
-		else
-		{
-			/* disable HXT */
-			SYS_UnlockReg();
+		if (!(clkcfg & CLKCFG_ENHXT)) /* disable HXT */
 			CLK->PWRCTL &= ~(CLK_PWRCTL_HXTEN_Msk);
-			SYS_LockReg();
-		}
+		SYS_LockReg();
 	}
+	else
+	{
+		printf("Clock Switch Fail\n");
+	}
+	CHILI_EnableIntOscCal();
 }
 
 /******************************************************************************/
@@ -682,15 +608,26 @@ void CHILI_CompleteClockInit(void)
  ******************************************************************************/
 void CHILI_EnableIntOscCal(void)
 {
-	/* enable HIRC trimming to 12 MHz if HIRC is used and LXT is present */
+	/* enable HIRC trimming */
 	SYS->TISTS12M = 0xFFFF;
-	if ((!UseExternalClock) && (CLK->STATUS & CLK_STATUS_LXTSTB_Msk))
+	if ((CLK->PWRCTL & CLK_PWRCTL_HIRCEN_Msk) && (CLK->STATUS & CLK_STATUS_LXTSTB_Msk))
 	{
-		/* trim HIRC to 12MHz */
-		SYS->TCTL12M = 0xF1;
+		/* trim HIRC using LXT */
+		SYS->TCTL12M = 0x00F1;
 		/* enable HIRC-trim interrupt */
 		NVIC_EnableIRQ(CKFAIL_IRQn);
 		SYS->TIEN12M = (SYS_TIEN12M_TFAILIEN_Msk | SYS_TIEN12M_CLKEIEN_Msk);
+	}
+
+	/* enable HIRC48 trimming */
+	SYS->TISTS48M = 0xFFFF;
+	if ((CLK->PWRCTL & CLK_PWRCTL_HIRC48EN_Msk) && (CLK->STATUS & CLK_STATUS_LXTSTB_Msk))
+	{
+		/* trim HIRC48 using LXT */
+		SYS->TCTL48M = 0x00F1;
+		/* enable HIRC48-trim interrupt */
+		NVIC_EnableIRQ(CKFAIL_IRQn);
+		SYS->TIEN48M = (SYS_TIEN48M_TFAILIEN_Msk | SYS_TIEN48M_CLKEIEN_Msk);
 	}
 }
 
@@ -704,6 +641,10 @@ void CHILI_DisableIntOscCal(void)
 	SYS->TISTS12M = 0xFFFF;
 	SYS->TIEN12M  = 0;
 	SYS->TCTL12M  = 0;
+
+	SYS->TISTS48M = 0xFFFF;
+	SYS->TIEN48M  = 0;
+	SYS->TCTL48M  = 0;
 }
 
 /******************************************************************************/
@@ -715,28 +656,24 @@ void CHILI_TimersInit(void)
 {
 	/* TIMER0: millisecond periodic tick (AbsoluteTicks) and power-down wake-up */
 	/* TIMER1: microsecond timer / counter */
-	/* TIMER2: 10 millisecond periodic tick for LED Blink */
 	CLK_EnableModuleClock(TMR0_MODULE);
 	CLK_EnableModuleClock(TMR1_MODULE);
-	CLK_EnableModuleClock(TMR2_MODULE);
 
 	/* configure clock selects and dividers for timers 0 and 1 */
+	/* clocks are fixed to HXT (4 MHz) or HIRC (12 MHz) */
 	if (UseExternalClock)
 	{
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HXT, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HXT, 0);
-		CLK_SetModuleClock(TMR2_MODULE, CLK_CLKSEL1_TMR2SEL_HXT, 0);
 	}
 	else
 	{
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HIRC, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HIRC, 0);
-		CLK_SetModuleClock(TMR2_MODULE, CLK_CLKSEL1_TMR2SEL_HIRC, 0);
 	}
 
 	TIMER_Open(TIMER0, TIMER_PERIODIC_MODE, 1000000);
 	TIMER_Open(TIMER1, TIMER_CONTINUOUS_MODE, 1000000);
-	TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, 50000);
 
 	/* prescale value has to be set after TIMER_Open() is called! */
 	if (UseExternalClock)
@@ -745,8 +682,6 @@ void CHILI_TimersInit(void)
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 3);
 		/*  4 MHZ Clock: prescalar 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER1, 3);
-		/*  4 MHZ Clock: prescaler 79 gives 20 uSec units */
-		TIMER_SET_PRESCALE_VALUE(TIMER2, 79);
 	}
 	else
 	{
@@ -754,8 +689,6 @@ void CHILI_TimersInit(void)
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 11);
 		/* 12 MHZ Clock: prescalar 11 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER1, 11);
-		/* 12 MHZ Clock: prescaler 239 gives 20 uSec units */
-		TIMER_SET_PRESCALE_VALUE(TIMER2, 239);
 	}
 
 	/* note timers are 24-bit (+ 8-bit prescale) */
@@ -763,15 +696,10 @@ void CHILI_TimersInit(void)
 	TIMER_SET_CMP_VALUE(TIMER0, 1000);
 	/* 1uSec units, counts microseconds */
 	TIMER_SET_CMP_VALUE(TIMER1, 0xFFFFFF);
-	/* 20uSec units, so 500 is 10ms */
-	TIMER_SET_CMP_VALUE(TIMER2, 500);
 
 	NVIC_EnableIRQ(TMR0_IRQn);
 	TIMER_EnableInt(TIMER0);
 	TIMER_Start(TIMER0);
-	NVIC_EnableIRQ(TMR2_IRQn);
-	TIMER_EnableInt(TIMER2);
-	TIMER_Start(TIMER2);
 
 	/* For some reason, this is what is needed to kick the linker into actually linking the ISR file */
 	TMR0_IRQHandler();
@@ -785,28 +713,32 @@ void CHILI_TimersInit(void)
 void CHILI_SystemReInit()
 {
 #if defined(USE_USB)
-	static u8_t USBPresent_d = 0;
+	static u8_t comms_have_been_enabled = 0;
 #endif /* USE_USB */
 
-/* switch off USB comms if USBPResent has changed and disconnected */
+	/* switch off comms */
 #if defined(USE_USB)
-	if (!USBPresent && USBPresent_d)
+	if (!EnableCommsInterface)
 		USB_Deinitialise();
 #endif /* USE_USB */
 #if defined(USE_UART)
-	CHILI_UARTDeinit();
+	if (!EnableCommsInterface)
+		CHILI_UARTDeinit();
 #endif /* USE_UART */
 
 	/* configure clocks */
-	CHILI_ClockInit();
+	CHILI_ClockInit(SystemFrequency, EnableCommsInterface);
 
-	/* switch on USB comms if USBPResent has changed and connected */
+	/* switch on comms */
 #if defined(USE_USB)
-	if (USBPresent && !USBPresent_d)
+	/* do not initialise if already active as connection will be closed */
+	if ((EnableCommsInterface) && (!comms_have_been_enabled))
 		USB_Initialise();
 #endif /* USE_USB */
 #if defined(USE_UART)
-	CHILI_UARTInit();
+	/* requires re-initialisation to set correct baudrate */
+	if (EnableCommsInterface)
+		CHILI_UARTInit();
 #endif /* USE_UART */
 
 	/* initialise timers */
@@ -814,16 +746,10 @@ void CHILI_SystemReInit()
 
 	/* finish clock initialisation */
 	/* this has to be done AFTER all other system config changes ! */
-	CHILI_CompleteClockInit();
+	CHILI_CompleteClockInit(SystemFrequency, EnableCommsInterface);
 
 	/* re-initialise SPI clock rate */
-	if (SPI_SetBusClock(SPI1, FCLK_SPI) != FCLK_SPI)
-	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_SYSTEMINIT);
-#endif /* USE_DEBUG */
-	}
+	SPI_SetBusClock(SPI, FCLK_SPI);
 
 	/* set interrupt priorities */
 	/* 0: highest  timers */
@@ -834,18 +760,24 @@ void CHILI_SystemReInit()
 	NVIC_SetPriority(TMR1_IRQn, 0);
 	NVIC_SetPriority(TMR2_IRQn, 0);
 	NVIC_SetPriority(TMR3_IRQn, 0);
-	NVIC_SetPriority(USBD_IRQn, 2);
 	NVIC_SetPriority(GPA_IRQn, 1);
 	NVIC_SetPriority(GPB_IRQn, 1);
 	NVIC_SetPriority(GPC_IRQn, 1);
 	NVIC_SetPriority(GPD_IRQn, 1);
 	NVIC_SetPriority(GPE_IRQn, 1);
 	NVIC_SetPriority(GPF_IRQn, 1);
-	NVIC_SetPriority(UART0_IRQn, 2);
+	NVIC_SetPriority(GPG_IRQn, 1);
+	NVIC_SetPriority(GPH_IRQn, 1);
+#if defined(USE_USB)
+	NVIC_SetPriority(USBD_IRQn, 2);
+#endif
+#if defined(USE_UART)
+	NVIC_SetPriority(UART_IRQn, 2);
+#endif
 
 #if defined(USE_USB)
-	USBPresent_d = USBPresent;
-#endif /* USE_USB */
+	comms_have_been_enabled = EnableCommsInterface;
+#endif
 }
 
 /******************************************************************************/
@@ -876,4 +808,68 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 	while (1)
 		;
 	return 0;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief System Clock
+ *******************************************************************************
+ ******************************************************************************/
+u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
+{
+	u8_t mask = 0;
+
+	/* check if PLL required */
+	if (UseExternalClock)
+	{
+		if (fsys > FSYS_4MHZ) /* PLL needed to generate fsys from HXT */
+			mask |= CLKCFG_ENPLL;
+#ifdef USE_USB
+		if (enable_comms) /* PLL needed to USB Clock */
+			mask |= CLKCFG_ENPLL;
+#endif
+	}
+	else
+	{
+		if ((fsys == FSYS_32MHZ) || (fsys == FSYS_64MHZ)) /* PLL needed to generate fsys from HIRC */
+			mask |= CLKCFG_ENPLL;
+	}
+	if (enable_comms)
+	{
+#ifdef USE_UART
+		if (UART_BAUDRATE > 115200) /* PLL needed to generate UART clock */
+			mask |= CLKCFG_ENPLL;
+#endif
+	}
+
+	/* check if HXT required */
+	if (UseExternalClock)
+		mask |= CLKCFG_ENHXT; /* external clock always requires HXT */
+
+	/* check if HIRC required */
+	if (!UseExternalClock)
+		mask |= CLKCFG_ENHIRC; /* internal clock always requires HIRC for timers etc. */
+
+	/* check if HIRC48 required */
+	if (fsys == FSYS_64MHZ) /* if 64MHz HIRC48 is needed for USB clock */
+	{
+#ifdef USE_USB
+		if (enable_comms)
+			mask |= CLKCFG_ENHIRC48;
+#endif
+	}
+	if (!UseExternalClock) /* internal clock */
+	{
+#ifdef USE_USB
+		if (enable_comms) /* HIRC48 always used for USB clock */
+			mask |= CLKCFG_ENHIRC48;
+#endif
+		if (!(mask & CLKCFG_ENPLL))
+		{
+			if (fsys > FSYS_12MHZ) /* HIRC48 needed to generate fsys from HIRC48 */
+				mask |= CLKCFG_ENHIRC48;
+		}
+	}
+
+	return (mask);
 }

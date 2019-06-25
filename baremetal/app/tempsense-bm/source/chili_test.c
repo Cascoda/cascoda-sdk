@@ -46,10 +46,35 @@ static u32_t CHILI_TEST_Timeout = 0;                   /* device timeout */
  ******************************************************************************/
 void CHILI_TEST_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
+	u8_t swval = 1;
+
+	if (!BSP_ModuleIsGPIOPinRegistered(BSP_ModuleSpecialPins.SWITCH))
+	{
+		/* register SWITCH */
+		BSP_ModuleRegisterGPIOInput(
+		    BSP_ModuleSpecialPins.SWITCH, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL);
+		/* register LED_G */
+		BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
+		/* register LED_R */
+		BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+	}
+
 	/* store no-comms status */
 	if (status == CA_ERROR_FAIL)
 	{
 		CHILI_TEST_RESULT = CHILI_TEST_ST_NOCOMMS;
+		return;
+	}
+	/* reference device */
+	if (BSP_IsUSBPresent())
+	{
+		if (BSP_ModuleSenseGPIOPin(BSP_ModuleSpecialPins.SWITCH, &swval) != CA_ERROR_SUCCESS)
+			return;
+		if (swval == 0)
+		{
+			CHILI_TEST_MODE = CHILI_TEST_REF;
+			CHILI_TEST_TestInit(pDeviceRef);
+		}
 	}
 } // End of CHILI_TEST_Initialise()
 
@@ -73,6 +98,7 @@ void CHILI_TEST_Handler(struct ca821x_dev *pDeviceRef)
 			if (CHILI_TEST_CState != CHILI_TEST_CST_DUT_FINISHED)
 				CHILI_TEST_DUT_CheckTimeout(pDeviceRef);
 		}
+		CHILI_TEST_LED_Handler();
 	}
 } // End of CHILI_TEST_Handler()
 
@@ -498,3 +524,59 @@ void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = NULL;
 	}
 } // End of CHILI_TEST_RegisterCallbacks()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief module LEDs signalling
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_TEST_LED_Handler(void)
+{
+	u32_t ledtime_g, ledtime_r;
+	u32_t TON_G, TOFF_G;
+	u32_t TON_R, TOFF_R;
+	u32_t TD_R;
+
+	if (CHILI_TEST_MODE == CHILI_TEST_REF)
+	{
+		TON_G  = 1000;
+		TOFF_G = 1000;
+		TON_R  = 1000;
+		TOFF_R = 1000;
+		TD_R   = 1000;
+	}
+	else
+	{
+		if (CHILI_TEST_RESULT == CHILI_TEST_ST_SUCCESS)
+		{
+			TON_G  = 350;
+			TOFF_G = 350;
+			TON_R  = 350;
+			TOFF_R = 350;
+			TD_R   = 350;
+		}
+		else
+		{
+			TON_G  = 0;
+			TOFF_G = 1000;
+			TON_R  = 1000;
+			TOFF_R = 0;
+			TD_R   = 0;
+		}
+	}
+
+	ledtime_g = TIME_ReadAbsoluteTime() % (TON_G + TOFF_G);
+	ledtime_r = TIME_ReadAbsoluteTime() % (TON_R + TOFF_R);
+
+	/* green */
+	if (ledtime_g < TON_G)
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+	else
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
+
+	/* red */
+	if ((ledtime_r - TD_R) < TON_R)
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
+	else
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+}

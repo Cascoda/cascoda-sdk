@@ -21,3 +21,18 @@ mount -t debugfs none /sys/kernel/debug
 
 ## USB
 In order to be able to connect to a dongle, hid-api must be installed. Follow the documentation in usb-exchange/hidapi to install as a shared library. On debian/ubuntu, it can be installed using ```sudo apt install libhidapi-dev``` instead.
+
+## UART
+UART can be used for any posix serial ports. In order to use UART, the environment variable ``CASCODA_UART`` must be set up with a list of available UART ports that are connected to a supported cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
+eg: ``CASCODA_UART=/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,4000000``
+
+For example, on the raspberry pi 3 running raspbian, you can setup the uart as follows (this overrides the uart terminal):
+```bash
+# First prevent the uart for being used for a linux terminal, and enable it
+sudo sed -i 's/console=serial0,115200 //g' /boot/cmdline.txt
+echo "enable_uart=1" | sudo tee -a /boot/config.txt
+# reboot so changes take effect
+sudo reboot
+# Then add environment variable 
+# (warning, will not persist reboots unless you add to a startup script)
+export CASCODA_UART=/dev/serial0,4000000

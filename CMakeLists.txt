@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (cascoda-sdk)
 
@@ -16,8 +15,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
 
-#include testing library
-if(BUILD_TESTING)
+# Include testing library
+if(BUILD_TESTING AND (UNIX OR MINGW))
 	enable_testing()
 	add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/cmocka-1.1.3 ${PROJECT_BINARY_DIR}/third-party/cmocka-1.1.3)
 endif()
@@ -34,8 +33,6 @@ cascoda_subdir(ca821x-api)
 if(UNIX)
 	cascoda_subdir(posix/ca821x-posix)
 	cascoda_subdir(posix/ca821x-posix-thread)
-else()
-	message("Not building for unix system, skipping posix")
 endif()
 
 # Baremetal platform
@@ -45,18 +42,16 @@ cascoda_subdir(baremetal/platform/cascoda-nuvoton-chili)
 cascoda_subdir(baremetal/platform/cascoda-nuvoton-chili2)
 cascoda_subdir(baremetal/platform/cascoda-dummy-posix)
 
+# Openthread
+cascoda_subdir(openthread)
+
 # Baremetal Applications (If a suitable platform layer was configured)
 if(TARGET cascoda-bm-plat)
 	cascoda_subdir(baremetal/app/ot-baremetal)
 	cascoda_subdir(baremetal/app/tempsense-bm)
 	cascoda_subdir(baremetal/app/test15_4-baremetal)
 	cascoda_subdir(baremetal/app/sensorif-bm)
-else()
-	message("No suitable baremetal platform layer, skipping baremetal")
 endif()
-
-# Openthread
-cascoda_subdir(openthread)
 
 # Add clang-format target
 add_custom_target(format

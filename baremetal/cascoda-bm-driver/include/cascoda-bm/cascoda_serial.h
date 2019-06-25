@@ -50,9 +50,13 @@ extern int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *
 /******************************************************************************/
 u8_t SerialGetCommand(void);
 u8_t Serial_ReadInterface(void);
-void MAC_Message_USB(u8_t CommandId, u8_t Count, u8_t *pBuffer);
-void MAC_Message_UART(u8_t CommandId, u8_t Count, u8_t *pBuffer);
+void MAC_Message_USB(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
+void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
 void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
 void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
+#if defined(USE_UART)
+void SerialSendRxRdy(void);
+void SerialReadComplete(void);
+#endif
 
 #endif // CASCODA_SERIAL_H

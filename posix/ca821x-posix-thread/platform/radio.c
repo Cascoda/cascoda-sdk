@@ -45,7 +45,7 @@
 
 #include "openthread/platform/logging.h"
 #include "openthread/platform/radio-mac.h"
-#include "openthread/platform/random.h"
+#include "openthread/random_noncrypto.h"
 #include "openthread/thread.h"
 
 #include "ca821x-posix-thread/posix-platform.h"
@@ -274,6 +274,12 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 		//LQI values should be derived from receive energy
 		uint8_t LQImode = HWME_LQIMODE_ED;
 		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
+
+#if CASCODA_CA_VER == 8211
+		//Increase the max indirect queue length to 8
+		uint8_t maxInd = 8;
+		HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &maxInd, pDeviceRef);
+#endif
 	}
 
 	return ConvertErrorMacToOt(error);
@@ -530,9 +536,12 @@ void initIeeeEui64()
 		file = open(fileName, O_RDWR | O_CREAT, 0666);
 		for (int i = 0; i < 4; i += 1)
 		{
-			uint16_t random       = otPlatRandomGet();
-			sIeeeEui64[2 * i]     = random & 0xFF;
-			sIeeeEui64[2 * i + 1] = (random >> 4) & 0xFF;
+			uint8_t ranLen = 0;
+			uint8_t random[2];
+			HWME_GET_request_sync(HWME_RANDOMNUM, &ranLen, random, pDeviceRef);
+			assert(ranLen == 2);
+			sIeeeEui64[2 * i]     = random[0];
+			sIeeeEui64[2 * i + 1] = random[1];
 		}
 		sIeeeEui64[0] &= ~1; //Unset Group bit
 		sIeeeEui64[0] |= 2;  //Set local bit

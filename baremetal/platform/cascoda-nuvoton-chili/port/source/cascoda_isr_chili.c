@@ -28,6 +28,7 @@
 #include "pwm.h"
 #include "timer.h"
 /* Cascoda */
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
@@ -35,10 +36,8 @@
 #include "cascoda-bm/cascoda_usb.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_gpio.h"
 #include "cascoda_chili_usb.h"
-#if defined(USE_DEBUG)
-#include "cascoda_debug_chili.h"
-#endif /* USE_DEBUG */
 
 extern volatile u8_t asleep;
 
@@ -49,10 +48,6 @@ extern volatile u8_t asleep;
  ******************************************************************************/
 void HAL_IrqHandlerHardFault(void)
 {
-#if defined(USE_DEBUG)
-	Debug_IRQ_State = DEBUG_IRQ_HARDFAULT; /* just in case this returns without reset */
-#endif                                     /* USE_DEBUG */
-
 	while (1)
 	{
 	}
@@ -65,11 +60,6 @@ void HAL_IrqHandlerHardFault(void)
  ******************************************************************************/
 void TMR0_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER0;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER0->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
 
@@ -86,10 +76,6 @@ void TMR0_IRQHandler(void)
  ******************************************************************************/
 void TMR1_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER1;
-#endif /* USE_DEBUG */
 	/* clear all timer interrupt status bits */
 	TIMER1->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
 }
@@ -101,14 +87,8 @@ void TMR1_IRQHandler(void)
  ******************************************************************************/
 void TMR2_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER2;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER2->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
-	CHILI_LEDBlink(); /* timer2 for LED control */
 }
 
 /******************************************************************************/
@@ -118,13 +98,6 @@ void TMR2_IRQHandler(void)
  ******************************************************************************/
 void TMR3_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_TIMER3;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_TIMER3;
-#endif /* USE_DEBUG */
-
 	/* clear all timer interrupt status bits */
 	TIMER3->ISR = TIMER_ISR_TMR_IS_Msk | TIMER_ISR_TCAP_IS_Msk | TIMER_ISR_TMR_WAKE_STS_Msk;
 	printf("WD ISR\n");
@@ -139,12 +112,6 @@ void TMR3_IRQHandler(void)
 void HIRC_IRQHandler(void)
 {
 	__IO uint32_t reg = SYS_GET_IRCTRIM_INT_FLAG();
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_HIRC;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_HIRC;
-#endif /* USE_DEBUG */
 
 	if (reg & BIT1)
 	{
@@ -171,11 +138,6 @@ void USBD_IRQHandler(void)
 {
 #if defined(USE_USB)
 	uint32_t u32INTSTS = USBD_GET_INT_FLAG();
-
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_USBD;
-#endif /* USE_DEBUG */
 
 	if (u32INTSTS & USBD_INTSTS_FLDET)
 	{
@@ -208,46 +170,21 @@ void USBD_IRQHandler(void)
  ******************************************************************************/
 void GPABC_IRQHandler(void)
 {
-	uint32_t            u32Status;
+	uint32_t            ZIG_IRQB_status, USB_PRESENT_status;
 	struct device_link *devlink;
 	int                 i;
+	enPortnum           portnum;
 
-	/* Get Port PA status */
-	u32Status = PA->ISRC;
-	/* Clear all PA interrupts */
-	GPIO_CLR_INT_FLAG(PA, u32Status);
+	/* Get Port status */
+	ZIG_IRQB_status    = ZIG_IRQB_PORT->ISRC;
+	USB_PRESENT_status = USB_PRESENT_PORT->ISRC;
 
-#if defined(USE_DEBUG)
-	if (u32Status)
-	{
-		if (asleep)
-		{
-			if (u32Status == BIT9)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_PA_SW2;
-			else if (u32Status == BIT10)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_PA_RFIRQ;
-			else
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_PA_UNKNOWN;
-		}
-		else
-		{
-			if (u32Status == BIT9)
-				Debug_IRQ_State = DEBUG_IRQ_PA_SW2;
-		}
-	}
-#endif /* USE_DEBUG */
+	/* clear all interrupts */
+	GPIO_CLR_INT_FLAG(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
+	GPIO_CLR_INT_FLAG(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
 
-	/* PA.9: SW2 */
-	if (u32Status & BIT9)
-	{
-		if (button1_pressed)
-		{
-			button1_pressed();
-		}
-	}
-
-	/* PA.10: RFIRQ */
-	if (u32Status & BIT10)
+	/* ZIG_IRQB */
+	if (ZIG_IRQB_status & BITMASK(ZIG_IRQB_PIN))
 	{
 		if (asleep)
 			return;
@@ -256,45 +193,23 @@ void GPABC_IRQHandler(void)
 		while (i < NUM_DEVICES)
 		{
 			devlink = &device_list[i];
-			if (devlink->irq_gpio == &PA10)
+			if (devlink->irq_gpio == &ZIG_IRQB_PVAL)
 				break;
 			i++;
 		}
 
 		if (i < NUM_DEVICES)
 		{
-			EVBMEHandler(devlink->dev); /* Read downstream message */
+			DISPATCH_ReadCA821x(devlink->dev); /* Read downstream message */
 		}
+		return; /* should make handling quicker if no other interrupts are triggered */
 	}
 
-	/* Get Port PB status */
-	u32Status = USBP_PORT->ISRC;
-	/* Clear all USBP_PORT interrupts */
-	GPIO_CLR_INT_FLAG(USBP_PORT, u32Status);
-
-#if defined(USE_DEBUG)
-	if (u32Status)
+	/* USB_PRESENT */
+	if (USB_PRESENT_status & BITMASK(USB_PRESENT_PIN))
 	{
-		if (asleep)
-		{
-			if (u32Status == USBP_PINMASK)
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_PBC_USBPRESENT;
-			else
-				Debug_IRQ_State = DEBUG_IRQ_WKUP_PBC_UNKNOWN;
-		}
-		else
-		{
-			if (u32Status == USBP_PINMASK)
-				Debug_IRQ_State = DEBUG_IRQ_PBC_USBPRESENT;
-		}
-	}
-#endif /* USE_DEBUG */
-
-	/* USBPresent GPIO */
-	if (u32Status & USBP_PINMASK)
-	{
-		/* get USBPresent State and re-initialise System */
-		USBPresent = USBP_GPIO;
+		/* get state and re-initialise System */
+		USBPresent = USB_PRESENT_PVAL;
 		if (!USBPresent)
 		{
 			CHILI_SystemReInit();
@@ -303,6 +218,27 @@ void GPABC_IRQHandler(void)
 		{
 			usb_present_changed();
 		}
+		return; /* should make handling quicker if no other interrupts are triggered */
+	}
+
+	for (portnum = PN_A; portnum <= PN_C; ++portnum)
+	{
+		CHILI_ModulePinIRQHandler(portnum);
+	}
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: External interrupt from PD, PE and PF ports
+ *******************************************************************************
+ ******************************************************************************/
+void GPDEF_IRQHandler(void)
+{
+	enPortnum portnum;
+
+	for (portnum = PN_D; portnum <= PN_F; ++portnum)
+	{
+		CHILI_ModulePinIRQHandler(portnum);
 	}
 }
 
@@ -313,13 +249,6 @@ void GPABC_IRQHandler(void)
  ******************************************************************************/
 void PDWU_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_PDWU;
-	else
-		Debug_IRQ_State = DEBUG_IRQ_PDWU;
-#endif /* USE_DEBUG */
-
 	CLK->WK_INTSTS = CLK_WK_INTSTS_IS; /* clear interrupt */
 }
 
@@ -330,11 +259,6 @@ void PDWU_IRQHandler(void)
  ******************************************************************************/
 void UART1_IRQHandler(void)
 {
-#if defined(USE_DEBUG)
-	if (asleep)
-		Debug_IRQ_State = DEBUG_IRQ_WKUP_UART;
-#endif /* USE_DEBUG */
-
 #if defined(USE_UART)
 
 	while (UART1->ISR & UART_ISR_RDA_IS_Msk)

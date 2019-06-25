@@ -38,7 +38,7 @@
 //! maximum devices/sensors that can connect to coordinator
 #define APP_MAX_DEVICES 32
 //! default powerdown mode for device/sensor
-#define APP_DEFAULT_PDN_MODE PDM_POWEROFF
+#define APP_DEFAULT_PDN_MODE PDM_DPD
 //! use clock from cax8210 xtal oscillator (when 1) or nano120 internal RC oscillator as system clock (when 0)
 #define APP_USE_EXTERNAL_CLOCK 1
 //! use watchdog timeout
@@ -111,6 +111,7 @@
 extern u8_t APP_STATE;
 extern u8_t APP_STATE_new;
 extern u8_t APP_INITIALISE;
+extern u8_t APP_CONNECTED;
 
 extern u16_t APP_PANId;
 extern u16_t APP_ShortAddress;
@@ -126,12 +127,13 @@ void  TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef);
 int   TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 void  TEMPSENSE_APP_SwitchMode(u8_t mode);
 void  TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef);
-void  TEMPSENSE_APP_SaveOrRestoreAddress(struct ca821x_dev *pDeviceRef);
 u8_t  TEMPSENSE_APP_GetTempVal(void);
 u16_t TEMPSENSE_APP_GetVoltsVal(void);
 u32_t TEMPSENSE_APP_GetScanChannels(void);
 void  TEMPSENSE_APP_PrintScanChannels(void);
 void  TEMPSENSE_APP_PrintSeconds(void);
+void  TEMPSENSE_APP_LED_Handler(void);
+
 /* tempsense_app_coord */
 void TEMPSENSE_APP_Coordinator_Handler(struct ca821x_dev *pDeviceRef);
 void TEMPSENSE_APP_Coordinator_Initialise(struct ca821x_dev *pDeviceRef);
@@ -164,5 +166,7 @@ void TEMPSENSE_APP_Device_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, 
 void TEMPSENSE_APP_Device_ExchangeData(struct ca821x_dev *pDeviceRef);
 void TEMPSENSE_APP_Device_CheckTimeout(struct ca821x_dev *pDeviceRef);
 void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef);
+void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef);
+void TEMPSENSE_APP_Device_SaveStateToFlash(void);
 
 #endif // TEMPSENSE_APP_H

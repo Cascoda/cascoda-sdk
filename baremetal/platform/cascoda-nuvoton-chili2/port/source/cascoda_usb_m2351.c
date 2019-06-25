@@ -376,9 +376,6 @@ static void USB_EP3_Handler()
  ******************************************************************************/
 void USB_UsbEvent(uint32_t u32INTSTS)
 {
-	//Clear all EP Flags
-	USBD_CLR_INT_FLAG(USBD_INTSTS_USB);
-
 	if (u32INTSTS & USBD_INTSTS_SETUP)
 	{
 		/* Setup packet */

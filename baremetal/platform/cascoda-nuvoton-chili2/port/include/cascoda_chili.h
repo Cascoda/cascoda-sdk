@@ -33,16 +33,18 @@
 /******************************************************************************/
 /****** Global Variables defined in cascoda_bsp_*.c                      ******/
 /******************************************************************************/
-extern volatile u8_t WDTimeout;        /* Nonzero watchdog timeout if used */
-extern volatile u8_t USBPresent;       /* 0: USB not active, 1: USB is active */
-extern volatile u8_t UseExternalClock; /* 0: Use internal clock, 1: Use clock from CA-821x */
+extern volatile u8_t     WDTimeout;            /* Nonzero watchdog timeout if used */
+extern volatile u8_t     USBPresent;           /* 0: USB not active, 1: USB is active */
+extern volatile u8_t     UseExternalClock;     /* 0: Use internal clock, 1: Use clock from CA-821x */
+extern volatile fsys_mhz SystemFrequency;      /* system clock frequency [MHz] */
+extern volatile u8_t     EnableCommsInterface; /* enable communications interface */
 
 /* maximum count delay when switching clocks */
 #define MAX_CLOCK_SWITCH_DELAY 100000
 /* SPI Master Clock Rate [Hz] */
 #define FCLK_SPI 2000000
 /* Use Timer0 as watchdog for POWEROFF mode */
-#define USE_WATCHDOG_POWEROFF 0
+#define USE_WATCHDOG_POWEROFF 1
 
 struct device_link
 {
@@ -56,110 +58,107 @@ struct device_link
 extern struct device_link device_list[NUM_DEVICES];
 
 /* Non-Interface Functions */
-void CHILI_LED_SetRED(u16_t ton, u16_t toff);
-void CHILI_LED_SetGREEN(u16_t ton, u16_t toff);
-void CHILI_LED_ClrRED(void);
-void CHILI_LED_ClrGREEN(void);
+u32_t    CHILI_ADCConversion(u32_t channel, u32_t reference);
+void     CHILI_LEDBlink(void);
+void     CHILI_GPIOInit(void);
+void     CHILI_GPIOEnableInterrupts(void);
+void     CHILI_SetClockExternalCFGXT1(u8_t clk_external);
+ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms);
+void     CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms);
+void     CHILI_EnableIntOscCal(void);
+void     CHILI_DisableIntOscCal(void);
+void     CHILI_GPIOPowerDown(u8_t tristateCax);
+void     CHILI_GPIOPowerUp(void);
+void     CHILI_TimersInit(void);
+void     CHILI_SystemReInit(void);
+void     TMR0_IRQHandler();
+u8_t     CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms);
 #if defined(USE_UART)
-void CHILI_UARTInit(void);
-void CHILI_UARTDeinit(void);
+void  CHILI_UARTInit(void);
+void  CHILI_UARTDeinit(void);
+void  CHILI_UARTDeinit(void);
+void  CHILI_UARTDMAWrite(u8_t *pBuffer, u32_t BufferSize);
+void  CHILI_UARTFIFOWrite(u8_t *pBuffer, u32_t BufferSize);
+u32_t CHILI_UARTFIFORead(u8_t *pBuffer, u32_t BufferSize);
+void  CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize);
+void  CHILI_UARTFIFOIRQHandler(void);
+void  CHILI_UARTDMAIRQHandler(void);
+void  CHILI_UARTWaitWhileBusy(void);
 #endif /* USE_UART */
-u32_t CHILI_ADCConversion(u32_t channel, u32_t reference);
-void  CHILI_LEDBlink(void);
-void  CHILI_GPIOInit(void);
-void  CHILI_GPIOEnableInterrupts(void);
-void  CHILI_SetClockExternalCFGXT1(u8_t clk_external);
-void  CHILI_ClockInit(void);
-void  CHILI_CompleteClockInit(void);
-void  CHILI_EnableIntOscCal(void);
-void  CHILI_DisableIntOscCal(void);
-void  CHILI_GPIOPowerDown(u8_t tristateCax);
-void  CHILI_GPIOPowerUp(void);
-void  CHILI_TimersInit(void);
-void  CHILI_SystemReInit(void);
-void  TMR0_IRQHandler();
 
-/* PIN CONFIGURATION LIST FOR DIFFERENT BOARDS */
-/* For port, 0=A, 1=B, 2=C etc. */
-#if (CASCODA_CHILI2_REV == 0)
-/* Chili 2.0 */
-#define RSTB_PIN 1
-#define RSTB_PORT_NUM 2
-#define RFIRQ_PIN 0
-#define RFIRQ_PORT_NUM 2
-#define RFSS_PIN 3
-#define RFSS_PORT_NUM 0
-#define SPI_MODULE_NUM 0
-#define SPI_MISO_PIN 1
-#define SPI_MISO_PORT_NUM 0
-#define SPI_MOSI_PIN 0
-#define SPI_MOSI_PORT_NUM 0
-#define SPI_CLK_PIN 2
-#define SPI_CLK_PORT_NUM 0
-/* These need manual config at the moment */
-static inline void SET_MFP_GPIO()
-{
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA0MFP_Msk)) | SYS_GPA_MFPL_PA0MFP_GPIO;
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA1MFP_Msk)) | SYS_GPA_MFPL_PA1MFP_GPIO;
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA2MFP_Msk)) | SYS_GPA_MFPL_PA2MFP_GPIO;
-}
-static inline void SET_MFP_SPI()
-{
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA0MFP_Msk)) | SYS_GPA_MFPL_PA0MFP_SPI0_MOSI;
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA1MFP_Msk)) | SYS_GPA_MFPL_PA1MFP_SPI0_MISO;
-	SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SYS_GPA_MFPL_PA2MFP_Msk)) | SYS_GPA_MFPL_PA2MFP_SPI0_CLK;
-}
-#elif (CASCODA_CHILI2_REV == -1)
-/* M2351 Development board (NuMaker-PFM-M2351) with arduino-style breakout */
-#define RSTB_PIN 10
-#define RSTB_PORT_NUM 2
-#define RFIRQ_PIN 9
-#define RFIRQ_PORT_NUM 2
-#define RFSS_PIN 9
-#define RFSS_PORT_NUM 7
-#define SPI_MODULE_NUM 1
-#define SPI_MISO_PIN 1
-#define SPI_MISO_PORT_NUM 4
-#define SPI_MOSI_PIN 0
-#define SPI_MOSI_PORT_NUM 4
-#define SPI_CLK_PIN 8
-#define SPI_CLK_PORT_NUM 7
-/* These need manual config at the moment */
-static inline void SET_MFP_GPIO()
-{
-	SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SYS_GPE_MFPL_PE0MFP_Msk)) | SYS_GPE_MFPL_PE0MFP_GPIO;
-	SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SYS_GPE_MFPL_PE1MFP_Msk)) | SYS_GPE_MFPL_PE1MFP_GPIO;
-	SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SYS_GPH_MFPH_PH8MFP_Msk)) | SYS_GPH_MFPH_PH8MFP_GPIO;
-}
-static inline void SET_MFP_SPI()
-{
-	SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SYS_GPE_MFPL_PE0MFP_Msk)) | SYS_GPE_MFPL_PE0MFP_SPI1_MOSI;
-	SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SYS_GPE_MFPL_PE1MFP_Msk)) | SYS_GPE_MFPL_PE1MFP_SPI1_MISO;
-	SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SYS_GPH_MFPH_PH8MFP_Msk)) | SYS_GPH_MFPH_PH8MFP_SPI1_CLK;
-}
-#endif
+#if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
+#define SPI SPI0
+#define SPI_MODULE SPI0_MODULE
+#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
+#define SPI SPI1
+#define SPI_MODULE SPI1_MODULE
+#else
+#error "Unsupported Chili 2 Revision"
+#endif /* CASCODA_CHILI2_REV */
 
-/* helper macros */
-#define CONCAT_X(a, b) CONCAT(a, b)
-#define CONCAT(a, b) a##b
-#define BITMASK(x) (1UL << x)
-#define GPIO_PORT(x) ((GPIO_T *)(GPIO_BASE + (x * 0x40UL)))
-
-/* AUTOMATIC - edit the fields above for pin config */
-#define RSTB GPIO_PIN_DATA(RSTB_PORT_NUM, RSTB_PIN)
-#define RFIRQ GPIO_PIN_DATA(RFIRQ_PORT_NUM, RFIRQ_PIN)
-#define RFSS GPIO_PIN_DATA(RFSS_PORT_NUM, RFSS_PIN)
-static GPIO_T *const       RSTB_PORT     = (GPIO_PORT(RSTB_PORT_NUM));
-static GPIO_T *const       RFIRQ_PORT    = (GPIO_PORT(RFIRQ_PORT_NUM));
-static GPIO_T *const       RFSS_PORT     = (GPIO_PORT(RFSS_PORT_NUM));
-static const unsigned long SPI_MODULE    = CONCAT_X(SPI, CONCAT_X(SPI_MODULE_NUM, _MODULE));
-static SPI_T *const        SPI           = CONCAT_X(SPI, SPI_MODULE_NUM);
-static GPIO_T *const       SPI_MISO_PORT = (GPIO_PORT(SPI_MISO_PORT_NUM));
-static GPIO_T *const       SPI_MOSI_PORT = (GPIO_PORT(SPI_MOSI_PORT_NUM));
-static GPIO_T *const       SPI_CLK_PORT  = (GPIO_PORT(SPI_CLK_PORT_NUM));
-
-#if RFIRQ_PORT_NUM != 2
-#error "Warning, GPIO interrupt is not currently automatically set - needs to be manually changed from C"
-#endif
+#if defined(USE_UART)
+#define UART_FIFOSIZE 16
+#define UART_RX_DMA_CH 0
+#define UART_TX_DMA_CH 1
+#if (UART_CHANNEL == 0)
+#define UART UART0
+#define UART_IRQn UART0_IRQn
+#define UART_MODULE UART0_MODULE
+#define UART_RST UART0_RST
+#define UART_CLK_HXT CLK_CLKSEL1_UART0SEL_HXT
+#define UART_CLK_HIRC CLK_CLKSEL1_UART0SEL_HIRC
+#define UART_CLK_PLL CLK_CLKSEL1_UART0SEL_PLL
+#define UART_CLKDIV CLK_CLKDIV0_UART0
+#define PDMA_UART_TX PDMA_UART0_TX
+#define PDMA_UART_RX PDMA_UART0_RX
+#elif (UART_CHANNEL == 1)
+#define UART UART1
+#define UART_IRQn UART1_IRQn
+#define UART_MODULE UART1_MODULE
+#define UART_RST UART1_RST
+#define UART_CLK_HXT CLK_CLKSEL1_UART1SEL_HXT
+#define UART_CLK_HIRC CLK_CLKSEL1_UART1SEL_HIRC
+#define UART_CLK_PLL CLK_CLKSEL1_UART1SEL_PLL
+#define UART_CLKDIV CLK_CLKDIV0_UART1
+#define PDMA_UART_TX PDMA_UART1_TX
+#define PDMA_UART_RX PDMA_UART1_RX
+#elif (UART_CHANNEL == 2)
+#define UART UART2
+#define UART_IRQn UART2_IRQn
+#define UART_MODULE UART2_MODULE
+#define UART_RST UART2_RST
+#define UART_CLK_HXT CLK_CLKSEL3_UART2SEL_HXT
+#define UART_CLK_HIRC CLK_CLKSEL3_UART2SEL_HIRC
+#define UART_CLK_PLL CLK_CLKSEL3_UART2SEL_PLL
+#define UART_CLKDIV CLK_CLKDIV4_UART2
+#define PDMA_UART_TX PDMA_UART2_TX
+#define PDMA_UART_RX PDMA_UART2_RX
+/* UART3 not accessible on module */
+#elif (UART_CHANNEL == 4)
+#define UART UART4
+#define UART_IRQn UART4_IRQn
+#define UART_MODULE UART4_MODULE
+#define UART_RST UART4_RST
+#define UART_CLK_HXT CLK_CLKSEL3_UART4SEL_HXT
+#define UART_CLK_HIRC CLK_CLKSEL3_UART4SEL_HIRC
+#define UART_CLK_PLL CLK_CLKSEL3_UART4SEL_PLL
+#define UART_CLKDIV CLK_CLKDIV4_UART4
+#define PDMA_UART_TX PDMA_UART4_TX
+#define PDMA_UART_RX PDMA_UART4_RX
+#elif (UART_CHANNEL == 5)
+#define UART UART5
+#define UART_IRQn UART5_IRQn
+#define UART_MODULE UART5_MODULE
+#define UART_RST UART5_RST
+#define UART_CLK_HXT CLK_CLKSEL3_UART5SEL_HXT
+#define UART_CLK_HIRC CLK_CLKSEL3_UART5SEL_HIRC
+#define UART_CLK_PLL CLK_CLKSEL3_UART5SEL_PLL
+#define UART_CLKDIV CLK_CLKDIV4_UART5
+#define PDMA_UART_TX PDMA_UART5_TX
+#define PDMA_UART_RX PDMA_UART5_RX
+#else
+#error "UART Channel not available"
+#endif /* UART_CHANNEL */
+#endif /* USE_UART */
 
 #endif /* CASCODA_CHILI_H */

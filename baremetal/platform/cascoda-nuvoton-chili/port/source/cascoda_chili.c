@@ -39,49 +39,11 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_gpio.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
-#ifdef USE_DEBUG
-#include "cascoda_debug_chili.h"
-#endif /* USE_DEBUG */
-
-/* LED RGB Values */
-u8_t  LED_R_VAL            = 0;   /* Red */
-u8_t  LED_G_VAL            = 0;   /* Green */
-u16_t LED_R_BlinkTimeCount = 0;   /* Red   Blink Time Interval Counter */
-u16_t LED_G_BlinkTimeCount = 0;   /* Green Blink Time Interval Counter */
-u16_t LED_R_OnTime         = 100; /* Red   On  Time [10 ms] */
-u16_t LED_G_OnTime         = 100; /* Green On  Time [10 ms] */
-u16_t LED_R_OffTime        = 0;   /* Red   Off Time [10 ms] */
-u16_t LED_G_OffTime        = 0;   /* Green Off Time [10 ms] */
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief LEDSetClrs LED Set/Clear Functions
- *******************************************************************************
- ******************************************************************************/
-void CHILI_LED_SetRED(u16_t ton, u16_t toff)
-{
-	LED_R_VAL     = 1;
-	LED_R_OnTime  = ton;
-	LED_R_OffTime = toff;
-}
-void CHILI_LED_SetGREEN(u16_t ton, u16_t toff)
-{
-	LED_G_VAL     = 1;
-	LED_G_OnTime  = ton;
-	LED_G_OffTime = toff;
-}
-void CHILI_LED_ClrRED(void)
-{
-	LED_R_VAL = 0;
-}
-void CHILI_LED_ClrGREEN(void)
-{
-	LED_G_VAL = 0;
-}
 
 #if defined(USE_UART)
 
@@ -174,34 +136,6 @@ u32_t CHILI_ADCConversion(u32_t channel, u32_t reference)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief LED Blinking for TMR2_IRQHandler ISR
- *******************************************************************************
- ******************************************************************************/
-void CHILI_LEDBlink(void)
-{
-	if ((LED_R_BlinkTimeCount == 0) && (LED_R_VAL == 1))
-		PA14 = 0;
-	else if ((LED_R_BlinkTimeCount > LED_R_OnTime) || (LED_R_VAL == 0))
-		PA14 = 1;
-
-	if ((LED_G_BlinkTimeCount == 0) && (LED_G_VAL == 1))
-		PA13 = 0;
-	else if ((LED_G_BlinkTimeCount > LED_G_OnTime) || (LED_G_VAL == 0))
-		PA13 = 1;
-
-	if ((LED_R_BlinkTimeCount >= LED_R_OnTime + LED_R_OffTime) || (LED_R_VAL == 0))
-		LED_R_BlinkTimeCount = 0;
-	else
-		LED_R_BlinkTimeCount += 1;
-
-	if ((LED_G_BlinkTimeCount >= LED_G_OnTime + LED_G_OffTime) || (LED_G_VAL == 0))
-		LED_G_BlinkTimeCount = 0;
-	else
-		LED_G_BlinkTimeCount += 1;
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
  * \brief Initialise Essential GPIOs for various Functions
  *******************************************************************************
  ******************************************************************************/
@@ -212,114 +146,70 @@ void CHILI_GPIOInit(void)
 	/* Initialise and set Debounce to 8 HCLK cycles */
 	GPIO_SET_DEBOUNCE_TIME(GPIO_DBCLKSRC_HCLK, GPIO_DBCLKSEL_8);
 
-	/* PB.12: VOLTS_TEST */
+	/* VOLTS_TEST */
 	/* output, no pull-up, set to 0 */
-	GPIO_SetMode(PB, BIT12, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PB, BIT12);
-	PB12 = 0; /* VOLTS_TEST is active high, so switch off to avoid unecessary power consumption */
+	GPIO_SetMode(VOLTS_TEST_PORT, BITMASK(VOLTS_TEST_PIN), GPIO_PMD_OUTPUT);
+	GPIO_DISABLE_PULL_UP(VOLTS_TEST_PORT, BITMASK(VOLTS_TEST_PIN));
+	VOLTS_TEST_PVAL = 0; /* VOLTS_TEST is active high, so switch off to avoid unecessary power consumption */
 
-	/* PA.11: ZIG_RESET */
+	/* ZIG_RESET */
 	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PA, BIT11, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PA, BIT11);
-	PA11 = 1; /* RSTB is HIGH */
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_PMD_OUTPUT);
+	GPIO_DISABLE_PULL_UP(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN));
+	ZIG_RESET_PVAL = 1; /* RSTB is HIGH */
 
-	/* PA.10: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* input, pull-up */
-	GPIO_SetMode(PA, BIT10, GPIO_PMD_INPUT);
-	GPIO_ENABLE_PULL_UP(PA, BIT10);
-
-	/* PA.9: SWITCH */
-	/* input, no pull-up, debounced */
-	GPIO_SetMode(PA, BIT9, GPIO_PMD_INPUT);
-	GPIO_DISABLE_PULL_UP(PA, BIT9);
-	GPIO_ENABLE_DEBOUNCE(PA, BIT9);
+	GPIO_SetMode(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN), GPIO_PMD_INPUT);
+	GPIO_ENABLE_PULL_UP(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
 
 #if (CASCODA_CHILI_REV == 2)
-	/* PA.8: BATT_ON */
+	/* BATT_ON */
 	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PA, BIT8, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PA, BIT8);
-	PA8 = 1; /* BATT_ON is active high, so switch on for charging */
+	GPIO_SetMode(BATT_ON_PORT, BITMASK(BATT_ON_PIN), GPIO_PMD_OUTPUT);
+	GPIO_DISABLE_PULL_UP(BATT_ON_PORT, BITMASK(BATT_ON_PIN));
+	BATT_ON_PVAL = 1; /* BATT_ON is active high, so switch on for charging */
 #endif
 
 	/* SPI1: MFP but SS0 controlled separately as GPIO  */
-	/* PB.0: SPI1_MOSI0 MFP output */
-	/* PB.1: SPI1_MISO0 MFP input */
-	/* PB.2: SPI1_SCLK  MFP output */
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB0_MFP_Msk)) | SYS_PB_L_MFP_PB0_MFP_SPI1_MOSI0;
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB1_MFP_Msk)) | SYS_PB_L_MFP_PB1_MFP_SPI1_MISO0;
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB2_MFP_Msk)) | SYS_PB_L_MFP_PB2_MFP_SPI1_SCLK;
-	GPIO_DISABLE_PULL_UP(PB, BIT0);
-	GPIO_DISABLE_PULL_UP(PB, BIT1);
-	GPIO_DISABLE_PULL_UP(PB, BIT2);
+	CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_SPI);
+	GPIO_DISABLE_PULL_UP(SPI_MOSI_PORT, BITMASK(SPI_MOSI_PIN));
+	GPIO_DISABLE_PULL_UP(SPI_MISO_PORT, BITMASK(SPI_MISO_PIN));
+	GPIO_DISABLE_PULL_UP(SPI_SCLK_PORT, BITMASK(SPI_SCLK_PIN));
 
-	/* PB.3: SPI_CS */
+	/* SPI_CS */
 	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PB, BIT3, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PB, BIT3);
-	PB3 = 1;
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PMD_OUTPUT);
+	GPIO_DISABLE_PULL_UP(SPI_CS_PORT, BITMASK(SPI_CS_PIN));
+	SPI_CS_PVAL = 1;
 
-	/* PA.14: LED_R */
-	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PA, BIT14, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PA, BIT14);
-	PA14 = 1;
-
-	/* PA.13: LED_G */
-	/* output, no pull-up, set to 1 */
-	GPIO_SetMode(PA, BIT13, GPIO_PMD_OUTPUT);
-	GPIO_DISABLE_PULL_UP(PA, BIT13);
-	PA13 = 1;
-
-	/* PA.12: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* input, pull-up, debounced */
-	GPIO_SetMode(PA, BIT12, GPIO_PMD_INPUT);
-	GPIO_ENABLE_PULL_UP(PA, BIT12); /* CHARGE_STAT is low or tri-state */
-	GPIO_ENABLE_DEBOUNCE(PA, BIT12);
+	GPIO_SetMode(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN), GPIO_PMD_INPUT);
+	GPIO_ENABLE_PULL_UP(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN)); /* CHARGE_STAT is low or tri-state */
+	GPIO_ENABLE_DEBOUNCE(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
 
-	/* PF.0: ICE_DAT MFP */
-	GPIO_DISABLE_PULL_UP(PF, BIT0);
-
-	/* PF.1: ICE_CLK MFP */
-	GPIO_DISABLE_PULL_UP(PF, BIT1);
-
-	/* TODO: This is causing some current leakage when sleeping: */
-	/* PA.0: AD0 MFP (VOLTS) */
-	/* Comment out for better power saving: */
-	SYS->PA_L_MFP = (SYS->PA_L_MFP & (~SYS_PA_L_MFP_PA0_MFP_Msk)) | SYS_PA_L_MFP_PA0_MFP_ADC_CH0;
-	GPIO_DISABLE_DIGITAL_PATH(PA, BIT0);
-	/* Uncomment for better power saving: */
-	// GPIO_SetMode(PA, BIT0, GPIO_PMD_INPUT)
-	GPIO_DISABLE_PULL_UP(PA, BIT0);
-
-	/* PB.15/PC.7: USB_PRESENT */
+	/* USB_PRESENT */
 	/* input, no pull-up, debounced */
-	GPIO_SetMode(USBP_PORT, USBP_PINMASK, GPIO_PMD_INPUT);
-	GPIO_DISABLE_PULL_UP(USBP_PORT, USBP_PINMASK);
-	GPIO_ENABLE_DEBOUNCE(USBP_PORT, USBP_PINMASK);
+	GPIO_SetMode(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN), GPIO_PMD_INPUT);
+	GPIO_DISABLE_PULL_UP(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
+	GPIO_ENABLE_DEBOUNCE(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
 	/* Immediately get USBPresent State */
-	USBPresent = USBP_GPIO;
+	USBPresent = USB_PRESENT_PVAL;
 
 #if (CASCODA_CHILI_REV == 3)
-	/* PB.15: PROGRAM Pin */
+	/* PROGRAM Pin */
 	/* enable pull-up just in case */
-	GPIO_SetMode(PB, BIT15, GPIO_PMD_INPUT);
-	GPIO_ENABLE_PULL_UP(PB, BIT15);
+	GPIO_SetMode(PROGRAM_PORT, BITMASK(PROGRAM_PIN), GPIO_PMD_INPUT);
+	GPIO_ENABLE_PULL_UP(PROGRAM_PORT, BITMASK(PROGRAM_PIN));
 #endif
-
-	/* PF.3: XT1_IN MFP */
-	GPIO_DISABLE_PULL_UP(PF, BIT3);
-
-	/* PF.2: XT1_OUT MFP */
-	GPIO_DISABLE_PULL_UP(PF, BIT2);
 
 #if defined(USE_UART)
 	/* UART1 if used */
-	/* PB.4: UART1_RX MFP input */
-	/* PB.5: UART1_TX MFP output */
-	SYS->PB_L_MFP &= ~(SYS_PB_L_MFP_PB4_MFP_Msk | SYS_PB_L_MFP_PB5_MFP_Msk);
-	SYS->PB_L_MFP |= (SYS_PB_L_MFP_PB4_MFP_UART1_RX | SYS_PB_L_MFP_PB5_MFP_UART1_TX);
+	CHILI_ModuleSetMFP(UART_TXD_PNUM, UART_TXD_PIN, PMFP_UART);
+	CHILI_ModuleSetMFP(UART_RXD_PNUM, UART_RXD_PIN, PMFP_UART);
 #endif /* USE_UART */
 }
 
@@ -331,51 +221,35 @@ void CHILI_GPIOInit(void)
  ******************************************************************************/
 void CHILI_GPIOPowerDown(u8_t tristateCax)
 {
-	/* PA.11: ZIG_RESET */
+	/* ZIG_RESET */
 	/* tri-state - output to input */
-	GPIO_SetMode(PA, BIT11, GPIO_PMD_INPUT);
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_PMD_INPUT);
 
-	/* PA.10: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* disable pull-up */
-	GPIO_DISABLE_PULL_UP(PA, BIT10);
+	GPIO_DISABLE_PULL_UP(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
 
 	if (tristateCax)
 	{
-		/* SPI1: */
-		/* PB.0: tri-state - output to input */
-		/* PB.1: tri-state - input  to input */
-		/* PB.2: tri-state - output to input */
-		SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB0_MFP_Msk)) | SYS_PB_L_MFP_PB0_MFP_GPB0;
-		SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB1_MFP_Msk)) | SYS_PB_L_MFP_PB1_MFP_GPB1;
-		SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB2_MFP_Msk)) | SYS_PB_L_MFP_PB2_MFP_GPB2;
-		GPIO_SetMode(PB, BIT2, GPIO_PMD_INPUT);
-		GPIO_SetMode(PB, BIT1, GPIO_PMD_INPUT);
-		GPIO_SetMode(PB, BIT0, GPIO_PMD_INPUT);
+		/* SPI: */
+		CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_GPIO);
+		CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_GPIO);
+		CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_GPIO);
+		GPIO_SetMode(SPI_MOSI_PORT, BITMASK(SPI_MOSI_PIN), GPIO_PMD_INPUT);
+		GPIO_SetMode(SPI_MISO_PORT, BITMASK(SPI_MISO_PIN), GPIO_PMD_INPUT);
+		GPIO_SetMode(SPI_SCLK_PORT, BITMASK(SPI_SCLK_PIN), GPIO_PMD_INPUT);
 	}
 
-	/* PB.3: SPI_CS */
+	/* SPI_CS */
 	/* tri-state - output to input */
-	GPIO_SetMode(PB, BIT3, GPIO_PMD_INPUT);
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PMD_INPUT);
 
-	/* PA.14: LED_R */
-	/* tri-state - output to input - use pull-up otherwise light-dependent photodiode effect! */
-	PA14 = 1;
-	GPIO_SetMode(PA, BIT14, GPIO_PMD_INPUT);
-	GPIO_ENABLE_PULL_UP(PA, BIT14);
-
-	/* PA.13: LED_G */
-	/* tri-state - output to input - use pull-up otherwise light-dependent photodiode effect! */
-	PA13 = 1;
-	GPIO_SetMode(PA, BIT13, GPIO_PMD_INPUT);
-	GPIO_ENABLE_PULL_UP(PA, BIT13);
-
-	/* PA.12: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* disable pull-up */
-	GPIO_DISABLE_PULL_UP(PA, BIT12);
+	GPIO_DISABLE_PULL_UP(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
 
-	/* reset LED counters */
-	LED_R_BlinkTimeCount = 0;
-	LED_G_BlinkTimeCount = 0;
+	/* dynamic GPIO handling */
+	CHILI_ModulePowerDownGPIOs();
 }
 
 /******************************************************************************/
@@ -385,39 +259,29 @@ void CHILI_GPIOPowerDown(u8_t tristateCax)
  ******************************************************************************/
 void CHILI_GPIOPowerUp(void)
 {
-	/* PA.11: ZIG_RESET */
+	/* ZIG_RESET */
 	/* input to output */
-	GPIO_SetMode(PA, BIT11, GPIO_PMD_OUTPUT);
+	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_PMD_OUTPUT);
 
-	/* PA.10: ZIG_IRQB */
+	/* ZIG_IRQB */
 	/* enable pull-up */
-	GPIO_ENABLE_PULL_UP(PA, BIT10);
+	GPIO_ENABLE_PULL_UP(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
 
 	/* SPI1: */
-	/* PB.0: tri-state - input to SPI1_MOSI0 */
-	/* PB.1: tri-state - input to SPI1_MISO0 */
-	/* PB.2: tri-state - input to SPI1_SCLK */
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB0_MFP_Msk)) | SYS_PB_L_MFP_PB0_MFP_SPI1_MOSI0;
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB1_MFP_Msk)) | SYS_PB_L_MFP_PB1_MFP_SPI1_MISO0;
-	SYS->PB_L_MFP = (SYS->PB_L_MFP & (~SYS_PB_L_MFP_PB2_MFP_Msk)) | SYS_PB_L_MFP_PB2_MFP_SPI1_SCLK;
+	CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_SPI);
+	CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_SPI);
 
-	/* PB.3: SPI_CS */
+	/* SPI_CS */
 	/* input to output */
-	GPIO_SetMode(PB, BIT3, GPIO_PMD_OUTPUT);
+	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PMD_OUTPUT);
 
-	/* PA.14: LED_R */
-	/* input to output */
-	GPIO_DISABLE_PULL_UP(PA, BIT14);
-	GPIO_SetMode(PA, BIT14, GPIO_PMD_OUTPUT);
-
-	/* PA.13: LED_G */
-	/* input to output */
-	GPIO_DISABLE_PULL_UP(PA, BIT13);
-	GPIO_SetMode(PA, BIT13, GPIO_PMD_OUTPUT);
-
-	/* PA.12: CHARGE_STAT */
+	/* CHARGE_STAT */
 	/* enable pull-up */
-	GPIO_ENABLE_PULL_UP(PA, BIT12);
+	GPIO_ENABLE_PULL_UP(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
+
+	/* dynamic GPIO handling */
+	CHILI_ModulePowerUpGPIOs();
 }
 
 /******************************************************************************/
@@ -427,17 +291,15 @@ void CHILI_GPIOPowerUp(void)
  ******************************************************************************/
 void CHILI_GPIOEnableInterrupts(void)
 {
-	/* SWITCH PA.9 */
-	GPIO_EnableInt(PA, 9, GPIO_INT_FALLING);
-
 	/* RFIRQ */
-	GPIO_EnableInt(PA, 10, GPIO_INT_FALLING);
+	GPIO_EnableInt(ZIG_IRQB_PORT, ZIG_IRQB_PIN, GPIO_INT_FALLING);
 
-	/* PB.15/PC.7: USBPresent */
-	GPIO_EnableInt(USBP_PORT, USBP_PIN, GPIO_INT_BOTH_EDGE);
+	/* USB_PRESENT */
+	GPIO_EnableInt(USB_PRESENT_PORT, USB_PRESENT_PIN, GPIO_INT_BOTH_EDGE);
 
-	/* NVIC Enable GP A/B/C IRQ */
-	NVIC_EnableIRQ(GPABC_IRQn);
+	/* NVIC Enable */
+	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
+	NVIC_EnableIRQ(USB_PRESENT_IRQn);
 }
 
 /******************************************************************************/
@@ -445,9 +307,10 @@ void CHILI_GPIOEnableInterrupts(void)
  * \brief Select System Clocks depending on Power Source
  *******************************************************************************
  ******************************************************************************/
-void CHILI_ClockInit(void)
+ca_error CHILI_ClockInit(void)
 {
 	uint32_t delayCnt;
+	ca_error status = CA_ERROR_SUCCESS;
 
 	/* NOTE: __HXT in system_Nano100Series.h has to be changed to correct input clock frequency !! */
 #if __HXT != 4000000UL
@@ -469,10 +332,7 @@ void CHILI_ClockInit(void)
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
 			UseExternalClock = 0;
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_1);
-#endif /* USE_DEBUG */
+			status           = CA_ERROR_FAIL;
 		}
 	}
 
@@ -489,10 +349,7 @@ void CHILI_ClockInit(void)
 		}
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_2);
-#endif /* USE_DEBUG */
+			status = CA_ERROR_FAIL;
 		}
 	}
 
@@ -502,14 +359,14 @@ void CHILI_ClockInit(void)
 		{
 			if (CLK_EnablePLL(CLK_PLLCTL_PLL_SRC_HXT, FREQ_48MHZ) != FREQ_48MHZ)
 			{
-				BSP_LEDSigMode(LED_M_SETERROR);
+				status = CA_ERROR_FAIL;
 			}
 		}
 		else
 		{
 			if (CLK_EnablePLL(CLK_PLLCTL_PLL_SRC_HIRC, FREQ_48MHZ) != FREQ_48MHZ)
 			{
-				BSP_LEDSigMode(LED_M_SETERROR);
+				status = CA_ERROR_FAIL;
 			}
 		}
 		for (delayCnt = 0; delayCnt < MAX_CLOCK_SWITCH_DELAY; delayCnt++)
@@ -519,19 +376,7 @@ void CHILI_ClockInit(void)
 		}
 		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-			if ((!USBPresent) && (!UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_3);
-			else if ((!USBPresent) && (UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_4);
-			else if ((USBPresent) && (!UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_5);
-			else if ((USBPresent) && (UseExternalClock))
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_6);
-			else
-				BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_7);
-#endif /* USE_DEBUG */
+			status = CA_ERROR_FAIL;
 		}
 	}
 
@@ -572,10 +417,7 @@ void CHILI_ClockInit(void)
 		/* HCLK = 12MHz */
 		CLK_SetHCLK(CLK_CLKSEL0_HCLK_S_HIRC, CLK_HCLK_CLK_DIVIDER(1));
 		SYS_LockReg();
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_8);
-#endif /* USE_DEBUG */
+		status = CA_ERROR_FAIL;
 	}
 
 	/* check clock frequency and signal problems */
@@ -585,11 +427,10 @@ void CHILI_ClockInit(void)
 	    ((!USBPresent) && (UseExternalClock) && (SystemCoreClock != 4000000)) ||
 	    ((!USBPresent) && (!UseExternalClock) && (SystemCoreClock != 4000000)))
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_CLOCKINIT_9);
-#endif /* USE_DEBUG */
+		status = CA_ERROR_FAIL;
 	}
+
+	return (status);
 }
 
 /******************************************************************************/
@@ -658,55 +499,40 @@ void CHILI_TimersInit(void)
 {
 	/* TIMER0: millisecond periodic tick (AbsoluteTicks) and power-down wake-up */
 	/* TIMER1: microsecond timer / counter */
-	/* TIMER2: 10 millisecond periodic tick for LED Blink */
 	CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0_S_HXT, 0);
 	CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1_S_HXT, 0);
-	CLK_SetModuleClock(TMR2_MODULE, CLK_CLKSEL2_TMR2_S_HXT, 0);
 	CLK_EnableModuleClock(TMR0_MODULE);
 	CLK_EnableModuleClock(TMR1_MODULE);
-	CLK_EnableModuleClock(TMR2_MODULE);
 
 	/* configure clock selects and dividers for timers 0 and 1 */
 	if (UseExternalClock)
 	{
 		CLK->CLKSEL1 = (CLK->CLKSEL1 & ~CLK_CLKSEL1_TMR0_S_Msk) | CLK_CLKSEL1_TMR0_S_HXT;
 		CLK->CLKSEL1 = (CLK->CLKSEL1 & ~CLK_CLKSEL1_TMR1_S_Msk) | CLK_CLKSEL1_TMR1_S_HXT;
-		CLK->CLKSEL2 = (CLK->CLKSEL2 & ~CLK_CLKSEL2_TMR2_S_Msk) | CLK_CLKSEL2_TMR2_S_HXT;
 		/*  4 MHZ Clock: prescaler 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 3);
 		/*  4 MHZ Clock: prescalar 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER1, 3);
-		/*  4 MHZ Clock: prescaler 79 gives 20 uSec units */
-		TIMER_SET_PRESCALE_VALUE(TIMER2, 79);
 	}
 	else
 	{
 		CLK->CLKSEL1 = (CLK->CLKSEL1 & ~CLK_CLKSEL1_TMR0_S_Msk) | CLK_CLKSEL1_TMR0_S_HIRC;
 		CLK->CLKSEL1 = (CLK->CLKSEL1 & ~CLK_CLKSEL1_TMR1_S_Msk) | CLK_CLKSEL1_TMR1_S_HIRC;
-		CLK->CLKSEL2 = (CLK->CLKSEL2 & ~CLK_CLKSEL2_TMR2_S_Msk) | CLK_CLKSEL2_TMR2_S_HIRC;
 		/* 12 MHZ Clock: prescaler 11 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 11);
 		/* 12 MHZ Clock: prescalar 11 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER1, 11);
-		/* 12 MHZ Clock: prescaler 239 gives 20 uSec units */
-		TIMER_SET_PRESCALE_VALUE(TIMER2, 239);
 	}
 	TIMER0->CTL = TIMER_PERIODIC_MODE;
 	TIMER1->CTL = TIMER_CONTINUOUS_MODE;
-	TIMER2->CTL = TIMER_PERIODIC_MODE;
 	/* 1uSec units, so 1000 is 1ms */
 	TIMER_SET_CMP_VALUE(TIMER0, 1000);
 	/* 1uSec units, counts microseconds */
 	TIMER_SET_CMP_VALUE(TIMER1, 0xFFFFFF);
-	/* 20uSec units, so 500 is 10ms */
-	TIMER_SET_CMP_VALUE(TIMER2, 500);
 
 	NVIC_EnableIRQ(TMR0_IRQn);
 	TIMER_EnableInt(TIMER0);
 	TIMER_Start(TIMER0);
-	NVIC_EnableIRQ(TMR2_IRQn);
-	TIMER_EnableInt(TIMER2);
-	TIMER_Start(TIMER2);
 }
 
 /******************************************************************************/
@@ -754,13 +580,7 @@ void CHILI_SystemReInit()
 	CHILI_CompleteClockInit();
 
 	/* re-initialise SPI clock rate */
-	if (SPI_SetBusClock(SPI1, FCLK_SPI) != FCLK_SPI)
-	{
-		BSP_LEDSigMode(LED_M_SETERROR);
-#if defined(USE_DEBUG)
-		BSP_Debug_Error(DEBUG_ERR_SYSTEMINIT);
-#endif /* USE_DEBUG */
-	}
+	SPI_SetBusClock(SPI1, FCLK_SPI);
 
 	/* set interrupt priorities */
 	/* 0: highest  timers */

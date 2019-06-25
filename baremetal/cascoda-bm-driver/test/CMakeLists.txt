@@ -1,14 +1,13 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (cascoda-bm-tests)
 
 if(NOT BUILD_TESTING)
 	return()
 endif()
+
 # Currently these tests only run on unix with the dummy bm plat
 if(NOT (UNIX OR MINGW))
-	message(WARNING "Not building tests due to unsupported system")
 	return()
 endif()
 

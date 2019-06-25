@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (cascoda-nuvoton-chili)
 
@@ -38,7 +37,7 @@ add_library(cascoda-chili
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_dataflash_nano120.c
-	${PROJECT_SOURCE_DIR}/port/source/cascoda_debug_chili.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_gpio_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_nano120.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_nano120.c

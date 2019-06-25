@@ -32,11 +32,6 @@ extern u8_t HandleMac;
 otInstance *OT_INSTANCE;
 
 /******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-#define APP_NAME "OT MTD"
-
-/******************************************************************************/
 /****** Single instance                                                  ******/
 /******************************************************************************/
 
@@ -67,7 +62,10 @@ void sleep_if_possible()
 
 			if (idleTimeLeft > 5)
 			{
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
 				PlatformSleep(idleTimeLeft);
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
 			}
 		}
 	}
@@ -87,14 +85,19 @@ void sleep_if_possible()
 /******************************************************************************/
 void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
+	/* register LED_G */
+	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
+	/* register LED_R */
+	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+
 	if (status == CA_ERROR_FAIL)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
 		return;
 	}
 
-	BSP_LEDSigMode(LED_M_CLRALL);
-	BSP_LEDSigMode(LED_M_CONNECTED_BAT_FULL);
+	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
 
 	EVBME_SwitchClock(pDeviceRef, 1);
 
@@ -115,26 +118,6 @@ void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 void NANO120_Handler(struct ca821x_dev *pDeviceRef)
 {
 	i32_t t32val;
-
-#if (0)
-	if (USBPresent)
-	{
-		if (BSP_GetChargeStat())
-			BSP_LEDSigMode(LED_M_CONNECTED_BAT_CHRG); // charging
-		else
-			BSP_LEDSigMode(LED_M_CONNECTED_BAT_FULL); // not charging
-	}
-#endif
-
-#if (0)
-	if (++HandlerCount > 20)
-	{ // Read temperature every 20 calls
-		HandlerCount = 0;
-		t32val       = BSP_GetTemperature() / 10;
-
-		Temperature = LS0_BYTE(t32val);
-	}
-#endif
 
 	if (HandleMac)
 	{

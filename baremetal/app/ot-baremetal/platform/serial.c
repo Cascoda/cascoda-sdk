@@ -36,6 +36,8 @@
 
 #include "openthread/platform/uart.h"
 
+#include "platform.h"
+
 otError otPlatUartEnable(void)
 {
 	return OT_ERROR_NONE;
@@ -48,6 +50,21 @@ otError otPlatUartDisable(void)
 
 otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 {
-	MAC_Message(0xFF, (u8_t)aBufLength, (u8_t *)aBuf);
+	while (aBufLength > 0)
+	{
+		uint8_t frameLen = (aBufLength > 254) ? 254 : (uint8_t)aBufLength;
+
+		MAC_Message((uint8_t)OT_SERIAL_UPLINK, frameLen, aBuf);
+
+		aBufLength -= frameLen;
+		aBuf += frameLen;
+	}
+	otPlatUartSendDone();
+	return OT_ERROR_NONE;
+}
+
+otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength)
+{
+	otPlatUartReceived(aBuf, aBufLength);
 	return OT_ERROR_NONE;
 }

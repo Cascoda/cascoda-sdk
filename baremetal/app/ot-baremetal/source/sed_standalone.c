@@ -74,9 +74,10 @@ static void sleep_if_possible(void)
 
 			if (idleTimeLeft > 5)
 			{
-				BSP_LEDSigMode(LED_M_CLRALL);
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
 				PlatformSleep(idleTimeLeft);
-				BSP_LEDSigMode(1);
+				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
 			}
 		}
 	}
@@ -89,14 +90,19 @@ static void sleep_if_possible(void)
  ******************************************************************************/
 static void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
+	/* register LED_G */
+	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
+	/* register LED_R */
+	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+
 	if (status == CA_ERROR_FAIL)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
+		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
 		return;
 	}
 
-	BSP_LEDSigMode(LED_M_CLRALL);
-	BSP_LEDSigMode(LED_M_CONNECTED_BAT_FULL);
+	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
 
 	EVBME_SwitchClock(pDeviceRef, 1);
 
@@ -128,7 +134,6 @@ void otTaskletsSignalPending(otInstance *aInstance)
  *******************************************************************************
  ******************************************************************************/
 static void handleServerDiscoverResponse(void *               aContext,
-                                         otCoapHeader *       aHeader,
                                          otMessage *          aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
@@ -160,23 +165,22 @@ static otError sendServerDiscover(void)
 	otError       error   = OT_ERROR_NONE;
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
-	otCoapHeader  header;
 	otIp6Address  coapDestinationIp;
 
-	//Build CoAP header
-	//Realm local all-nodes multicast - this of course generates some traffic, so shouldn't be overused
-	SuccessOrExit(error = otIp6AddressFromString("FF03::1", &coapDestinationIp));
-	otCoapHeaderInit(&header, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
-	otCoapHeaderGenerateToken(&header, 2);
-	SuccessOrExit(error = otCoapHeaderAppendUriPathOptions(&header, uriCascodaDiscover));
-
 	//allocate message buffer
-	message = otCoapNewMessage(OT_INSTANCE, &header);
+	message = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (message == NULL)
 	{
 		error = OT_ERROR_NO_BUFS;
 		goto exit;
 	}
+
+	//Build CoAP header
+	//Realm local all-nodes multicast - this of course generates some traffic, so shouldn't be overused
+	SuccessOrExit(error = otIp6AddressFromString("FF03::1", &coapDestinationIp));
+	otCoapMessageInit(message, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
+	otCoapMessageGenerateToken(message, 2);
+	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr    = coapDestinationIp;
@@ -200,11 +204,7 @@ exit:
  * \brief Handle the response to the sensor data post
  *******************************************************************************
  ******************************************************************************/
-static void handleSensorConfirm(void *               aContext,
-                                otCoapHeader *       aHeader,
-                                otMessage *          aMessage,
-                                const otMessageInfo *aMessageInfo,
-                                otError              aError)
+static void handleSensorConfirm(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo, otError aError)
 {
 	if (aError == OT_ERROR_RESPONSE_TIMEOUT && timeoutCount++ > 3)
 	{
@@ -228,22 +228,21 @@ static otError sendSensorData(void)
 	otError       error   = OT_ERROR_NONE;
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
-	otCoapHeader  header;
 	int32_t       temperature = BSP_GetTemperature();
 
-	//Build CoAP header
-	otCoapHeaderInit(&header, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_POST);
-	otCoapHeaderGenerateToken(&header, 2);
-	SuccessOrExit(error = otCoapHeaderAppendUriPathOptions(&header, uriCascodaTemperature));
-	otCoapHeaderSetPayloadMarker(&header);
-
 	//allocate message buffer
-	message = otCoapNewMessage(OT_INSTANCE, &header);
+	message = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (message == NULL)
 	{
 		error = OT_ERROR_NO_BUFS;
 		goto exit;
 	}
+
+	//Build CoAP header
+	otCoapMessageInit(message, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_POST);
+	otCoapMessageGenerateToken(message, 2);
+	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaTemperature));
+	otCoapMessageSetPayloadMarker(message);
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr    = serverIp;

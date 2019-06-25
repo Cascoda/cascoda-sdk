@@ -96,4 +96,21 @@ int ca821x_util_dispatch_poll(struct ca821x_dev *pDeviceRef);
  */
 int exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef);
 
+/**
+ * Sends a user-defined command over the connected interface. This is not useful for direct CA-821x
+ * communication, as the api commands handle this. This can be used to implement custom commands
+ * on the chili modules, when communicating over USB or UART, for example.
+ *
+ * Synchronous commands are not supported using this mechanism.
+ *
+ * @param[in]  cmdid   Command ID to be used by command
+ * @param[in]  cmdlen  Length of the payload
+ * @param[in]  payload  Pointer to a buffer containing the payload data with length cmdlen
+ * @param[in]  pDeviceRef  The device reference to communicate with
+ *
+ * @returns ca_error
+ *
+ */
+ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, struct ca821x_dev *pDeviceRef);
+
 #endif //CA821X_POSIX_H

@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
 cmake_minimum_required (VERSION 3.11)
 project (ca821x-openthread)
 
@@ -9,29 +8,14 @@ if (NOT CMAKE_HOST_UNIX)
 	return()
 endif()
 
-# Set configuration variables -------------------------------------------------
-set(CASCODA_OPENTHREAD_CONFIGURE_OPTS
-       --enable-cli
-       --enable-application-coap
-       --enable-mac-filter
-       --enable-dhcp6-client
-       --enable-dhcp6-server
-       --with-mac=external
-       --enable-ftd
-       --enable-mtd
-       --disable-docs
-     CACHE STRING
-       "The arguments to be passed to configure when configuring openthread"
-)
-
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-bm-plat
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
+	${PROJECT_SOURCE_DIR}/platform/entropy.c
 	${PROJECT_SOURCE_DIR}/platform/flash.c
 	${PROJECT_SOURCE_DIR}/platform/logging.c
 	${PROJECT_SOURCE_DIR}/platform/misc.c
 	${PROJECT_SOURCE_DIR}/platform/radio.c
-	${PROJECT_SOURCE_DIR}/platform/random.c
 	${PROJECT_SOURCE_DIR}/platform/serial.c
 	${PROJECT_SOURCE_DIR}/platform/settings.c
 	)
@@ -82,13 +66,48 @@ target_link_libraries(ca821x-openthread-bm-mtd
 
 # Test app config -------------------------------------------------------------
 add_executable(mtdapp
-	${PROJECT_SOURCE_DIR}/source/mtd_main.c
-	${PROJECT_SOURCE_DIR}/source/mtd_api.c
+	${PROJECT_SOURCE_DIR}/source/thread_dev_main.c
+	${PROJECT_SOURCE_DIR}/source/thread_dev_api.c
 	)
 target_include_directories(mtdapp
 	PRIVATE ${PROJECT_SOURCE_DIR}/platform
 	)
 target_link_libraries(mtdapp ca821x-openthread-bm-mtd)
+target_compile_definitions(mtdapp PRIVATE APP_NAME="OT MTD")
+cascoda_make_binary(mtdapp)
+
+if(CASCODA_OPENTHREAD_FTD)
+	add_executable(ftdapp
+		${PROJECT_SOURCE_DIR}/source/thread_dev_main.c
+		${PROJECT_SOURCE_DIR}/source/thread_dev_api.c
+		)
+	target_include_directories(ftdapp
+		PRIVATE ${PROJECT_SOURCE_DIR}/platform
+		)
+	target_link_libraries(ftdapp ca821x-openthread-bm-ftd)
+	target_compile_definitions(ftdapp PRIVATE APP_NAME="OT FTD")
+	cascoda_make_binary(ftdapp)
+
+	add_executable(cliapp-bm
+		${PROJECT_SOURCE_DIR}/source/thread_bm.c
+		)
+	target_include_directories(cliapp-bm
+		PRIVATE ${PROJECT_SOURCE_DIR}/platform
+		)
+	target_link_libraries(cliapp-bm openthread-cli-ftd ca821x-openthread-bm-ftd)
+	target_compile_definitions(cliapp-bm PRIVATE APP_NAME="OT CLIAPP" OT_CLI=1)
+	cascoda_make_binary(cliapp-bm)
+
+	add_executable(ncpapp-bm
+		${PROJECT_SOURCE_DIR}/source/thread_bm.c
+		)
+	target_include_directories(ncpapp-bm
+		PRIVATE ${PROJECT_SOURCE_DIR}/platform
+		)
+	target_link_libraries(ncpapp-bm openthread-ncp-ftd ca821x-openthread-bm-ftd)
+	target_compile_definitions(ncpapp-bm PRIVATE APP_NAME="OT NCPAPP" OT_NCP=1)
+	cascoda_make_binary(ncpapp-bm)
+endif()
 
 add_executable(sed-standalone
 	${PROJECT_SOURCE_DIR}/source/sed_standalone.c
@@ -97,7 +116,4 @@ target_include_directories(sed-standalone
 	PRIVATE ${PROJECT_SOURCE_DIR}/platform
 	)
 target_link_libraries(sed-standalone ca821x-openthread-bm-mtd)
-
-# convert to bin file format
-cascoda_make_binary(mtdapp)
 cascoda_make_binary(sed-standalone)

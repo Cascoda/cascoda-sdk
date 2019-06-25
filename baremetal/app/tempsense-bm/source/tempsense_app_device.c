@@ -40,7 +40,6 @@
 /******************************************************************************/
 /****** Global Variables                                                 ******/
 /******************************************************************************/
-static u8_t APP_CONNECTED      = 0; //!< sensor module is connected to coordinator
 static u8_t APP_DEVICE_RETRIES = 0; //!< count number of retries to avoid immediate disconnection
 
 static u32_t APP_Handle = 0;            /* device handle / sequence number */
@@ -49,6 +48,9 @@ static u8_t  APP_CState = APP_CST_DONE; /* device communications state */
 static u8_t  APP_DevTemp    = 0; /* sensor temperature value */
 static u16_t APP_DevVolts   = 0; /* sensor volts value */
 static u32_t APP_DevTimeout = 0; /* device timeout */
+
+static u32_t APP_FlashSaveAddr = 0x00000000; /* flash save address */
+static void  TEMPSENSE_APP_Device_GetFlashSaveAddress(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -84,8 +86,6 @@ void TEMPSENSE_APP_Device_Handler(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 {
-	BSP_LEDSigMode(LED_M_CLRALL);
-
 	APP_Handle         = 0;
 	APP_CState         = APP_CST_DONE;
 	APP_CONNECTED      = 0;
@@ -105,6 +105,12 @@ void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 	if (APP_USE_WATCHDOG)
 		BSP_WatchdogEnable(1000 * APP_TIMEOUTINTERVALL);
 
+	/* get address of first free flash entry */
+	if (APP_DEFAULT_PDN_MODE == PDM_DPD)
+	{
+		TEMPSENSE_APP_Device_GetFlashSaveAddress();
+	}
+
 	/* try to connect */
 	TEMPSENSE_APP_Device_Start(pDeviceRef);
 
@@ -120,7 +126,7 @@ void TEMPSENSE_APP_Device_GetLongAddress(void)
 	u32_t dsaved;
 	memcpy(APP_LongAddress, (u8_t[])MAC_LONGADD, 8);
 	/* read stored address */
-	BSP_ReadDataFlash(0, &dsaved, 1);
+	dsaved             = BSP_GetUniqueId() & 0xFFFFFFFF;
 	APP_LongAddress[3] = LS3_BYTE(dsaved);
 	APP_LongAddress[2] = LS2_BYTE(dsaved);
 	APP_LongAddress[1] = LS1_BYTE(dsaved);
@@ -549,16 +555,16 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 		/* seconds to ms */
 		twakeup = (u32_t)(APP_WAKEUPINTERVALL * 1000);
 	}
+
+	if (APP_DEFAULT_PDN_MODE == PDM_DPD)
+	{
+		TEMPSENSE_APP_Device_SaveStateToFlash();
+	}
+
 	EVBME_PowerDown(APP_DEFAULT_PDN_MODE, twakeup, pDeviceRef);
 
 	/* after wakeup */
 	APP_DevTimeout = TIME_ReadAbsoluteTime();
-
-	/* LEDs */
-	if (APP_CONNECTED)
-		BSP_LEDSigMode(LED_M_DEVICE_ASSOCIATED);
-	else
-		BSP_LEDSigMode(LED_M_DEVICE_NOTASSOCIATED);
 
 	/* watchdog used ? */
 	if (APP_USE_WATCHDOG)
@@ -581,3 +587,126 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 	}
 
 } // End of TEMPSENSE_APP_Device_GoPowerDown()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TEMPSENSE App. Device get address of first free flash entry
+ *******************************************************************************
+ ******************************************************************************/
+static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
+{
+	u32_t add;
+	u32_t buffer;
+
+	/* look for first free entry */
+	for (add = 0; add < (BSP_FlashInfo.numPages * BSP_FlashInfo.pageSize); add += 8)
+	{
+		BSP_ReadDataFlash(add, &buffer, 1);
+		if (buffer & 0x80000000)
+		{
+			APP_FlashSaveAddr = add;
+			break;
+		}
+	}
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TEMPSENSE App. Device save state to flash
+ *******************************************************************************
+ ******************************************************************************/
+void TEMPSENSE_APP_Device_SaveStateToFlash(void)
+{
+	u32_t buffer[2];
+	u32_t i;
+
+	BSP_ReadDataFlash(0, &buffer[0], 1);
+
+	/* erase next page if last address has been reached */
+	for (i = 1; i <= BSP_FlashInfo.numPages; ++i)
+	{
+		if (APP_FlashSaveAddr == (i * BSP_FlashInfo.pageSize - 8))
+		{
+			if (i == BSP_FlashInfo.numPages)
+			{
+				/* erase page 0 */
+				BSP_EraseDataFlashPage(0);
+			}
+			else
+			{
+				/* erase next page */
+				BSP_EraseDataFlashPage(i * BSP_FlashInfo.pageSize);
+			}
+		}
+	}
+
+	/* Dataset
+	word	bit								nr_bits
+	0		31		used indicator			 1
+			28-24	APP_Channel				 5
+			23		APP_CONNECTED			 1
+			22-20	APP_STATE				 3
+			29-16	APP_DEVICE_RETRIES		 4
+			15-0	APP_ShortAddress		16
+	1		31-0	APP_Handle				32
+	*/
+	buffer[0] = ((APP_Channel & 0x1F) << 24);
+	buffer[0] += ((APP_CONNECTED & 0x01) << 23);
+	buffer[0] += ((APP_STATE & 0x07) << 20);
+	buffer[0] += ((APP_DEVICE_RETRIES & 0x0F) << 16);
+	buffer[0] += (APP_ShortAddress & 0xFFFF);
+	buffer[1] = APP_Handle;
+
+	BSP_WriteDataFlashInitial(APP_FlashSaveAddr, buffer, 2);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TEMPSENSE App. Device restore state from flash
+ *******************************************************************************
+ ******************************************************************************/
+void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
+{
+	u32_t add;
+	u32_t buffer[2];
+	u32_t i;
+
+	BSP_DisableUSB();
+
+	/* get address of first free flash entry */
+	TEMPSENSE_APP_Device_GetFlashSaveAddress();
+
+	if (APP_FlashSaveAddr == 0)
+		add = ((BSP_FlashInfo.numPages * BSP_FlashInfo.pageSize) - 8);
+	else
+		add = APP_FlashSaveAddr - 8;
+
+	BSP_ReadDataFlash(add, buffer, 2);
+
+	APP_Channel        = (buffer[0] >> 24) & 0x1F;
+	APP_CONNECTED      = (buffer[0] >> 23) & 0x01;
+	APP_STATE          = (buffer[0] >> 20) & 0x07;
+	APP_DEVICE_RETRIES = (buffer[0] >> 16) & 0x0F;
+	APP_ShortAddress   = buffer[0] & 0xFFFF;
+	APP_Handle         = buffer[1];
+
+	/* data integrity check */
+	if ((APP_Channel < 11) || (APP_Channel > 26))
+	{
+		for (i = 0; i < BSP_FlashInfo.numPages; ++i)
+		{
+			/* erase all pages */
+			BSP_EraseDataFlashPage(i * BSP_FlashInfo.pageSize);
+		}
+		TEMPSENSE_APP_Initialise(pDeviceRef);
+		return;
+	}
+
+	TEMPSENSE_APP_Device_GetLongAddress();
+
+	APP_DevTimeout = TIME_ReadAbsoluteTime();
+	APP_PANId      = MAC_PANID;
+	APP_STATE_new  = APP_STATE;
+	APP_CState     = APP_CST_DONE;
+	APP_INITIALISE = 0;
+}

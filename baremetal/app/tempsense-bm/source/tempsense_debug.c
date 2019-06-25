@@ -65,11 +65,7 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 	u32_t app_debug_reg    = 0;
 	u32_t app_debug_sysclk = 0;
 
-#if defined(USE_DEBUG)
-	report_error = Debug_App_Error || Debug_BSP_Error;
-#else
 	report_error = Debug_App_Error;
-#endif
 
 	/* don't send debug packet when scanning */
 	if (SPI_MLME_SCANNING)
@@ -119,22 +115,14 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 
 	/* populate MSDU */
 	/* insert FF for separators */
-	msdu[0] = 0xFF;
-	msdu[1] = Debug_App_State; /* B1: Application State */
-	msdu[2] = 0xFF;
-	msdu[3] = Debug_App_Error; /* B2: Application Error */
-	msdu[4] = 0xFF;
-#if defined(USE_DEBUG)
-	msdu[5] = Debug_BSP_Error; /* B3: BSP Error */
-#else
-	msdu[5]      = 0x00;
-#endif
-	msdu[6] = 0xFF;
-#if defined(USE_DEBUG)
-	msdu[7] = Debug_IRQ_State; /* B5: BSP IRQ State */
-#else
-	msdu[7]      = 0x00;
-#endif
+	msdu[0]  = 0xFF;
+	msdu[1]  = Debug_App_State; /* B1: Application State */
+	msdu[2]  = 0xFF;
+	msdu[3]  = Debug_App_Error; /* B2: Application Error */
+	msdu[4]  = 0xFF;
+	msdu[5]  = 0x00;
+	msdu[6]  = 0xFF;
+	msdu[7]  = 0x00;
 	msdu[8]  = 0xFF;
 	msdu[9]  = (u8_t)((app_debug_reg >> 24) & 0xFF); /* B6-9: System Variables (see above) */
 	msdu[10] = (u8_t)((app_debug_reg >> 16) & 0xFF);
@@ -178,15 +166,14 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 
 	if (status)
 	{
-		BSP_LEDSigMode(LED_M_SETERROR);
 		printf("DEBUG Data Request Failure: %02x\n", status);
 	}
 	else
 	{
-		status = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, (ca821x_generic_callback)&APP_Debug_Sent, 100, NULL, pDeviceRef);
+		status =
+		    WAIT_CallbackSwap(SPI_MCPS_DATA_CONFIRM, (ca821x_generic_callback)&APP_Debug_Sent, 100, NULL, pDeviceRef);
 		if (status)
 		{
-			BSP_LEDSigMode(LED_M_SETERROR);
 			printf("DEBUG Confirm Fail\n");
 		}
 	}
@@ -216,9 +203,6 @@ int APP_Debug_Sent(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDe
 	{
 		++Debug_Handle;
 		APP_Debug_Reset();
-#if defined(USE_DEBUG)
-		BSP_Debug_Reset();
-#endif
 	}
 	return 1;
 } // End of APP_Debug_Sent()

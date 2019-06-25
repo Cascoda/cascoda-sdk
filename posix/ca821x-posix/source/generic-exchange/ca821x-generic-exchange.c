@@ -33,8 +33,10 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
+#include "ca821x-posix/ca821x-posix.h"
 #include "ca821x-generic-exchange.h"
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
@@ -212,6 +214,28 @@ int exchange_register_user_callback(exchange_user_callback callback, struct ca82
 	return 0;
 }
 
+ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, struct ca821x_dev *pDeviceRef)
+{
+	struct ca821x_exchange_base *priv  = pDeviceRef->exchange_context;
+	ca_error                     error = CA_ERROR_SUCCESS;
+	uint8_t                      buf[(size_t)cmdlen + 2];
+
+	if (cmdlen & SPI_SYN)
+	{
+		error = CA_ERROR_INVALID_ARGS;
+		goto exit;
+	}
+
+	buf[0] = cmdid;
+	buf[1] = cmdlen;
+	memcpy(buf + 2, payload, cmdlen);
+
+	add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, cmdlen + 2, pDeviceRef);
+
+exit:
+	return error;
+}
+
 static void *ca821x_recovery_worker(void *arg)
 {
 	struct ca821x_dev *          pDeviceRef = arg;
@@ -321,6 +345,11 @@ static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 	uint8_t                      buffer[MAX_BUF_SIZE];
 	ssize_t                      len;
+
+	if (priv->write_isready_func && !priv->write_isready_func(pDeviceRef))
+	{
+		return CA_ERROR_BUSY;
+	}
 
 	len = pop_from_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buffer, MAX_BUF_SIZE, &pDeviceRef);
 

@@ -29,44 +29,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef USB_EXCHANGE_H
-#define USB_EXCHANGE_H
+#ifndef UART_EXCHANGE_H
+#define UART_EXCHANGE_H
 
 #include "ca821x-posix/ca821x-types.h"
 #include "ca821x_api.h"
 #define TEST_ENABLE 1
 
-enum usb_exchange_errors
+enum uart_exchange_errors
 {
-	usb_exchange_err_usb = 1, //Usb error - probably device removed and going to have to crash safely
-	usb_exchange_err_ca821x,  //ca821x error - ca821x has been reset
-	usb_exchange_err_generic
+	uart_exchange_err_uart = 1, //uart error - probably device removed and going to have to crash safely
+	uart_exchange_err_ca821x,   //ca821x error - ca821x has been reset
+	uart_exchange_err_generic
 };
 
 /*
  * Must call ONE of the following functions in order to initialize driver communications
  *
- * Using usb_exchange_init will cause the program to crash if there is an error
+ * Using uart_exchange_init will cause the program to crash if there is an error
  *
- * Using usb_exchange_init_withhandler and passing a callback function will cause
+ * Using uart_exchange_init_withhandler and passing a callback function will cause
  * that callback function to execute in the case of an error. Passing a callback of NULL causes
- * the same behaviour as usb_exchange_init.
+ * the same behaviour as uart_exchange_init.
  */
 
 /**
- * Initialise the usb exchange, with no callback for errors (program will
+ * Initialise the uart exchange, with no callback for errors (program will
  * crash in the case of an error.
  *
- * @warning It is recommended to use the usb_exchange_init_withandler function
+ * @warning It is recommended to use the uart_exchange_init_withandler function
  * instead, so that any errors can be handled by your application.
  *
  * @returns 0 for success, -1 for error, 1 if already initialised
  *
  */
-int usb_exchange_init(struct ca821x_dev *pDeviceRef);
+int uart_exchange_init(struct ca821x_dev *pDeviceRef);
 
 /**
- * Initialise the usb exchange, using the supplied errorhandling callback to
+ * Initialise the uart exchange, using the supplied errorhandling callback to
  * report any errors back to the application, which can react as required
  * (i.e. crash gracefully or attempt to reset the ca8210)
  *
@@ -75,14 +75,14 @@ int usb_exchange_init(struct ca821x_dev *pDeviceRef);
  * @returns 0 for success, -1 for error
  *
  */
-int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
 
 /**
- * Deinitialise the usb exchange, so that it can be reinitialised by another
+ * Deinitialise the uart exchange, so that it can be reinitialised by another
  * process, or reopened later.
  *
  */
-void usb_exchange_deinit(struct ca821x_dev *pDeviceRef);
+void uart_exchange_deinit(struct ca821x_dev *pDeviceRef);
 
 /**
  * Send a hard reset to the ca8210. This should not be necessary, but is provided
@@ -91,13 +91,7 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef);
  * @param[in]  resettime   The length of time (in ms) to hold the reset pin
  *                         active for. 1ms is usually a suitable value for this.
  *
- *
  */
-int usb_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef);
-
-#ifdef TEST_ENABLE
-//Run to test fragmentation. Crashes upon fail.
-void test_frag_loopback();
-#endif
+int uart_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef);
 
 #endif

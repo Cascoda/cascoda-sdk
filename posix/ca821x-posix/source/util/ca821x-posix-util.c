@@ -32,6 +32,7 @@
 #include "ca821x-posix/ca821x-posix.h"
 #include "ca821x-generic-exchange.h"
 #include "kernel-exchange.h"
+#include "uart-exchange.h"
 #include "usb-exchange.h"
 
 int ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler)
@@ -42,6 +43,10 @@ int ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHan
 		goto exit;
 
 	error = kernel_exchange_init_withhandler(errorHandler, pDeviceRef);
+	if (error)
+	{
+		error = uart_exchange_init_withhandler(errorHandler, pDeviceRef);
+	}
 	if (error)
 	{
 		error = usb_exchange_init_withhandler(errorHandler, pDeviceRef);
@@ -63,6 +68,9 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef)
 	case ca821x_exchange_kernel:
 		kernel_exchange_deinit(pDeviceRef);
 		break;
+	case ca821x_exchange_uart:
+		uart_exchange_deinit(pDeviceRef);
+		break;
 	case ca821x_exchange_usb:
 		usb_exchange_deinit(pDeviceRef);
 		break;
@@ -81,6 +89,9 @@ int ca821x_util_reset(struct ca821x_dev *pDeviceRef)
 	{
 	case ca821x_exchange_kernel:
 		error = kernel_exchange_reset(1, pDeviceRef);
+		break;
+	case ca821x_exchange_uart:
+		error = uart_exchange_reset(1, pDeviceRef);
 		break;
 	case ca821x_exchange_usb:
 		error = usb_exchange_reset(1, pDeviceRef);

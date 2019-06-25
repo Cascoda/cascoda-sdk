@@ -72,7 +72,7 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 	u8_t                     transferring = 1;
 	enum sensorif_i2c_status status;
 	u32_t                    inlen;
-	u8_t                     control0;
+	u8_t                     control0  = I2C_CTL_STO_SI;
 	u32_t                    starttime = 0;
 
 	inlen = *plen;

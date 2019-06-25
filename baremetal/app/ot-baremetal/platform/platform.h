@@ -1,10 +1,3 @@
-/*
- * platform.h
- *
- *  Created on: 12 Dec 2018
- *      Author: ciaran
- */
-
 #ifndef CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_
 #define CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_
 
@@ -13,6 +6,12 @@
 #include "ca821x_api.h"
 
 extern otInstance *OT_INSTANCE;
+
+enum openthread_message_codes
+{
+	OT_SERIAL_DOWNLINK = 0xB2,
+	OT_SERIAL_UPLINK   = 0xB3,
+};
 
 /**
  * Following Initialisation, this can be used to obtain the pDeviceRef that
@@ -54,6 +53,12 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef);
 int PlatformIsExpectingIndication(void);
 
 /**
+ * Stop and reset the CA-821x. This will prevent the MAC from responding to ACKs
+ * and command frames as well as wiping the PIB.
+ */
+void PlatformRadioStop(void);
+
+/**
  * Process updates for the alarm subsystem.
  *
  * @param aInstance A pointer to the ot instance.
@@ -76,5 +81,15 @@ uint32_t PlatformGetAlarmMilliTimeout(void);
  * @retval OT_ERROR_NONE upon success
  */
 otError PlatformSleep(uint32_t aSleepTime);
+
+/**
+ * Handle received serial data
+ *
+ * @param aBuf Pointer to the received data payload
+ * @param aBufLength The length of the received data payload
+ *
+ * @retval OT_ERROR_NONE upon success
+ */
+otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength);
 
 #endif /* CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_ */

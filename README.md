@@ -21,7 +21,8 @@ The Cascoda SDK can be built natively for Linux using any preferred native compi
 For Cross-Compiling to baremetal, we have fully implemented the ARM GCC compilers for use. They can be downloaded [here.](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) The code can be built in other embedded compilers, and full integration in the CMake suite is coming soon. Currently the OpenThread library can only be built from a Linux system (Windows Subsystem for Linux also works).
 
 ### Instructions
-To build the Cascoda SDK, follow the following instructions (written for Linux):
+To build the Cascoda SDK, follow the instructions below (written for Linux):
+
 ```Bash
 # Make a working directory
 mkdir cascoda
@@ -42,7 +43,7 @@ cd ..
 #Now cross compile for the Chili2
 mkdir sdk-chili2
 cd sdk-chili2
-cmake ../cascoda-sdk -DCMAKE_TOOLCHAIN_FILE="../cascoda-sdk/toolchain/arm_gcc_m2351.cmake"
+cmake ../cascoda-sdk -DCMAKE_TOOLCHAIN_FILE="toolchain/arm_gcc_m2351.cmake"
 make -j12
 # Built for Chili 2! To change configuration, the 'ccmake .' command can be used
 ```
@@ -52,7 +53,7 @@ Libraries will be built into the ``lib/`` directory, while application binaries 
 In order to compile for the chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
 
 ### Debugging
-The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
+The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in arm-none-eabi-gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
 
 ## Directory layout
 
@@ -73,3 +74,22 @@ openthread contains the glue configuration to download the openthread repository
 
 ### etc
 etc contains miscellaneous resources.
+
+## CMake Targets
+
+Useful CMake target libraries to include:
+
+| Target | Description |
+| :---   | :--- |
+| ca821x-api | The core Cascoda API, including C function representations of all CA-821x functionality. |
+| cascoda-bm | The baremetal Cascoda Drivers, abstracting away the platform to a common interface, and providing a suite of helper functions |
+| ca821x-posix | The posix Cascoda driver interface, supporting USB, UART or SPI communications to a connected Cascoda device |
+| sensorif | A library containing drivers for interfacing with I2C sensors |
+| ca821x-openthread-bm-ftd | OpenThread baremetal library for FTDs |
+| ca821x-openthread-bm-mtd | OpenThread baremetal library for MTDs |
+| ca821x-openthread-posix-ftd | OpenThread posix library for FTDs |
+| ca821x-openthread-posix-mtd | OpenThread posix library for MTDs |
+| openthread-cli-ftd | OpenThread CLI library for FTDs |
+| openthread-cli-mtd | OpenThread CLI library for MTDs |
+| openthread-ncp-ftd | OpenThread NCP library for FTDs |
+| openthread-ncp-mtd | OpenThread NCP library for MTDs |

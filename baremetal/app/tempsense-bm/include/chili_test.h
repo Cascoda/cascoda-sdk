@@ -113,6 +113,7 @@ void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct
 void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef);
 void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef);
 u8_t CHILI_TEST_IsInTestMode(void);
+void CHILI_TEST_LED_Handler(void);
 /* Callbacks */
 void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
 
