@@ -147,7 +147,7 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
 	return 1;
 }
 
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef)
 {
 	TIME_WaitTicks(sleeptime_ms);
 }
@@ -265,6 +265,10 @@ void BSP_DisableUSB(void)
 u8_t BSP_IsUSBPresent(void)
 {
 	return 0;
+}
+
+void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
+{
 }
 
 void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize)

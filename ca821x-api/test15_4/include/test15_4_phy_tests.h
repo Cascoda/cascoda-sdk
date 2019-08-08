@@ -204,5 +204,6 @@ uint8_t PHYTestMACDeinitialise(struct ca821x_dev *pDeviceRef);
 /* PHY_MAC Test Wrappers for MCPS Commands and Responses */
 uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
 uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 
 #endif /* TEST15_4_PHY_TESTS_H */

@@ -49,9 +49,6 @@ void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
 /** Function pointer for reinitialising the app upon a restart **/
 int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 
-/** Function pointer that the BSP should call when USB present status changes **/
-int (*usb_present_changed)(void);
-
 // serial dispatch function
 int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
@@ -97,7 +94,6 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 
 	// function pointer assignments
 	pDeviceRef->ca821x_api_downstream = &DISPATCH_ToCA821x;
-	ca821x_wait_for_message           = &WAIT_Legacy;
 
 #if defined(USE_USB)
 	EVBME_Message = EVBME_Message_USB;
@@ -569,13 +565,13 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 
 	// power down
 	if (mode == PDM_DPD) // mode has to use CAX sleep timer
-		BSP_PowerDown(sleeptime_ms, 0, 1);
+		BSP_PowerDown(sleeptime_ms, 0, 1, pDeviceRef);
 	else if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
-		BSP_PowerDown(sleeptime_ms, 0, 0);
+		BSP_PowerDown(sleeptime_ms, 0, 0, pDeviceRef);
 	else if (mode == PDM_ALLON)
 		TIME_WaitTicks(sleeptime_ms);
 	else
-		BSP_PowerDown(sleeptime_ms, 1, 0);
+		BSP_PowerDown(sleeptime_ms, 1, 0, pDeviceRef);
 
 	// Fastforward time for missed ticks
 	if (mode != PDM_ALLON)

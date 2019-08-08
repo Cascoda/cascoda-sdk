@@ -39,7 +39,7 @@ extern volatile u8_t UseExternalClock; /* 0: Use internal clock, 1: Use clock fr
 /* SPI Master Clock Rate [Hz] */
 #define FCLK_SPI 2000000
 /* Use Timer0 as watchdog for POWEROFF mode */
-#define USE_WATCHDOG_POWEROFF 1
+#define USE_WATCHDOG_POWEROFF 0
 
 struct device_link
 {

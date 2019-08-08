@@ -44,7 +44,7 @@ extern volatile u8_t     EnableCommsInterface; /* enable communications interfac
 /* SPI Master Clock Rate [Hz] */
 #define FCLK_SPI 2000000
 /* Use Timer0 as watchdog for POWEROFF mode */
-#define USE_WATCHDOG_POWEROFF 1
+#define USE_WATCHDOG_POWEROFF 0
 
 struct device_link
 {

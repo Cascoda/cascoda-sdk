@@ -34,6 +34,7 @@ typedef enum ca_error
 	CA_ERROR_NOT_FOUND     = 0x09,
 	CA_ERROR_NO_BUFFER     = 0x0A,
 	CA_ERROR_TIMEOUT       = 0x0B,
+	CA_ERROR_ALREADY  = 0x0C,
 	/* SPI Errors*/
 	CA_ERROR_SPI_WAIT_TIMEOUT       = 0xA0,
 	CA_ERROR_SPI_NACK_TIMEOUT       = 0xA1,

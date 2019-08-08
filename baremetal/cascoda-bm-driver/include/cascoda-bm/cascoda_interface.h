@@ -82,9 +82,10 @@ struct ModuleSpecialPins
 	u8_t SWITCH;
 	u8_t LED_GREEN;
 	u8_t LED_RED;
+	u8_t USB_PRESENT;
 };
 //For forward compatibility, add a P_NA for every additional field in the above struct
-#define MSP_DEFAULT P_NA, P_NA, P_NA
+#define MSP_DEFAULT P_NA, P_NA, P_NA, P_NA
 
 /** Description of the internal flash */
 struct FlashInfo
@@ -96,9 +97,6 @@ struct FlashInfo
 //BSP should fill these in with correct values
 extern const struct FlashInfo         BSP_FlashInfo;
 extern const struct ModuleSpecialPins BSP_ModuleSpecialPins;
-
-//BSP should call these upon certain events if they are populated
-extern int (*usb_present_changed)(void); //!< Called when the USB power is connected/disconnected
 
 /*******************************************************************************/
 /****** REQUIRED Function Declarations for cascoda_bsp_*.c               ******/
@@ -271,7 +269,7 @@ u8_t BSP_SPIPopByte(u8_t *InByte);
  * \param dpd - flag if to enter deep-power-down without data retention
  *
  */
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Initialise the system for a given ca821x_dev

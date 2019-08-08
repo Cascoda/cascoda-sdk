@@ -35,10 +35,10 @@ target_compile_definitions(ca821x-openthread-bm-plat PRIVATE ${OPENTHREAD_CONFIG
 
 target_include_directories( ca821x-openthread-bm-plat
 	PRIVATE
-		${PROJECT_SOURCE_DIR}/platform
 		${openthread_SOURCE_DIR}/src/core
 		${openthread_BINARY_DIR}/include
 	PUBLIC
+		${PROJECT_SOURCE_DIR}/platform
 		${openthread_SOURCE_DIR}/include
 		${PROJECT_BINARY_DIR}/include
 		${PROJECT_SOURCE_DIR}/include
@@ -69,9 +69,6 @@ add_executable(mtdapp
 	${PROJECT_SOURCE_DIR}/source/thread_dev_main.c
 	${PROJECT_SOURCE_DIR}/source/thread_dev_api.c
 	)
-target_include_directories(mtdapp
-	PRIVATE ${PROJECT_SOURCE_DIR}/platform
-	)
 target_link_libraries(mtdapp ca821x-openthread-bm-mtd)
 target_compile_definitions(mtdapp PRIVATE APP_NAME="OT MTD")
 cascoda_make_binary(mtdapp)
@@ -90,6 +87,7 @@ if(CASCODA_OPENTHREAD_FTD)
 
 	add_executable(cliapp-bm
 		${PROJECT_SOURCE_DIR}/source/thread_bm.c
+		${PROJECT_SOURCE_DIR}/source/sensordemo.c
 		)
 	target_include_directories(cliapp-bm
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
@@ -111,9 +109,6 @@ endif()
 
 add_executable(sed-standalone
 	${PROJECT_SOURCE_DIR}/source/sed_standalone.c
-	)
-target_include_directories(sed-standalone
-	PRIVATE ${PROJECT_SOURCE_DIR}/platform
 	)
 target_link_libraries(sed-standalone ca821x-openthread-bm-mtd)
 cascoda_make_binary(sed-standalone)

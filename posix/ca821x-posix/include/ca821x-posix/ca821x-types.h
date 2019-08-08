@@ -14,8 +14,7 @@
 
 #include "ca821x-posix/ca821x-posix-config.h"
 #include "ca821x_error.h"
-
-struct ca821x_dev;
+#include "ca821x_api.h"
 
 /**
  * \brief Error callback
@@ -23,17 +22,24 @@ struct ca821x_dev;
  * Optional callback for the application layer
  * to handle any chip errors which would otherwise
  * cause a crash.
+ * 
+ * \returns Cascoda error code
  */
-typedef int (*ca821x_errorhandler)(int error_number, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*ca821x_errorhandler)(int error_number, struct ca821x_dev *pDeviceRef);
 
-/* Optional callback for the application layer
+/**
+ * @brief Optional Exchange User Callback
+ * 
+ * Optional callback for the application layer
  * to handle any non-ca821x communication with
  * a device over the same protocol. Any
  * command IDs which are not recognised as
  * a valid ca821x SPI command will be passed
  * to this callback.
+ * 
+ * \returns Cascoda error code
  */
-typedef int (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
 /* \brief Exchange write function
  *
@@ -41,11 +47,12 @@ typedef int (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca8
  * send the data in 'buf' to the ca821x.
  *
  * \param buf buffer containing the message to send to the ca821x
- * \paran len length of the buffer data
+ * \param len length of the buffer data
  * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
- *
+ * 
+ * \returns Cascoda error code
  */
-typedef int (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
 /* \brief Exchange write isready function
  *
@@ -53,9 +60,10 @@ typedef int (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev 
  * return true (nonzero) if it is ready to send, or 0 if not.
  *
  * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
- *
+ * 
+ * \returns Cascoda error code
  */
-typedef int (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
+typedef ca_error (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
 
 /* \brief Exchange read function
  *

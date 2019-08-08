@@ -51,6 +51,7 @@ if(TARGET cascoda-bm-plat)
 	cascoda_subdir(baremetal/app/tempsense-bm)
 	cascoda_subdir(baremetal/app/test15_4-baremetal)
 	cascoda_subdir(baremetal/app/sensorif-bm)
+	cascoda_subdir(baremetal/app/ot-sed-sensorif)
 endif()
 
 # Add clang-format target

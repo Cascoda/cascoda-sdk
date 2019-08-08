@@ -193,12 +193,11 @@ uint8_t PHYTestMACDeinitialise(struct ca821x_dev *pDeviceRef)
 /******************************************************************************/
 uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            i;
-	uint8_t            status;
-	uint8_t            randnum[2];
-	uint8_t            attlen;
-	struct FullAddr    DstFAdd;
-	struct MAC_Message rx_msg;
+	uint8_t         i;
+	uint8_t         status;
+	uint8_t         randnum[2];
+	uint8_t         attlen;
+	struct FullAddr DstFAdd;
 
 	msg->PData.TDMETxPktReq.TestPacketSequenceNumber = LS_BYTE(PHY_TESTRES.SEQUENCENUMBER);
 	msg->PData.TDMETxPktReq.TestPacketDataType       = PHY_TESTPAR.PACKETDATATYPE;
@@ -249,10 +248,24 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	                  NULL,                                             /* *pSecurity */
 	                  pDeviceRef);
 
-	if ((status = ca821x_wait_for_message(SPI_MCPS_DATA_CONFIRM, 5000, &rx_msg.CommandId, pDeviceRef)))
-		return (status);
+	return (status);
+} // End of PHY_TXPKT_MAC_request()
 
-	status = rx_msg.PData.DataCnf.Status;
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for MCPS_DATA_confirm()
+ *******************************************************************************
+ * \param data_cnf - MCPS data confirm buffer
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	uint8_t status;
+
+	status = params->Status;
 
 	if (status == MAC_NO_ACK)
 	{
@@ -268,7 +281,7 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	++PHY_TESTRES.SEQUENCENUMBER;
 
 	return (status);
-} // End of PHY_TXPKT_MAC_request()
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**

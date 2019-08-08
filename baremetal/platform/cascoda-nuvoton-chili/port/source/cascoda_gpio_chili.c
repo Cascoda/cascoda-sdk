@@ -51,15 +51,16 @@
 
 enum
 {
-	PIN_SWITCH    = 9,
-	PIN_LED_GREEN = 101,
-	PIN_LED_RED   = 102,
+	PIN_SWITCH      = 9,
+	PIN_LED_GREEN   = 101,
+	PIN_LED_RED     = 102,
+	PIN_USB_PRESENT = 103,
 
 /** number of dynamically available module i/o pins */
 #if defined(USE_UART)
-	NUM_MODULEPINS = 10,
+	NUM_MODULEPINS = 11,
 #else
-	NUM_MODULEPINS = 12,
+	NUM_MODULEPINS = 13,
 #endif /* USE_UART */
 };
 
@@ -86,9 +87,10 @@ struct pinstatus
 /******************************************************************************/
 const struct ModuleSpecialPins BSP_ModuleSpecialPins = {
     MSP_DEFAULT,
-    .SWITCH    = PIN_SWITCH,
-    .LED_GREEN = PIN_LED_GREEN,
-    .LED_RED   = PIN_LED_RED,
+    .SWITCH      = PIN_SWITCH,
+    .LED_GREEN   = PIN_LED_GREEN,
+    .LED_RED     = PIN_LED_RED,
+    .USB_PRESENT = PIN_USB_PRESENT,
 };
 
 /******************************************************************************/
@@ -117,6 +119,11 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
     {25, PN_A, 5, 5},                /* PA.5 (I2C0_SCL) */
     {PIN_LED_GREEN, PN_A, 13, P_NA}, /* PA.13 (LED_G), virtual */
     {PIN_LED_RED, PN_A, 14, P_NA},   /* PA.14:(LED_R), virtual */
+#if (CASCODA_CHILI_REV == 3)
+    {PIN_USB_PRESENT, PN_C, 7, P_NA}, /* PC.7:(USB_PRESENT), virtual */
+#else
+    {PIN_USB_PRESENT, PN_B, 15, P_NA}, /* PB.15:(USB_PRESENT), virtual */
+#endif
 };
 
 /******************************************************************************/

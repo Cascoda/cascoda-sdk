@@ -42,13 +42,8 @@
 #include "flash.h"
 
 /******************************************************************************/
-/****** Configuration Defines                                            ******/
-/****** DATA_FLASH_BASE must be the same as the end of the ROM region    ******/
-/****** defined in the linker .icf file                                  ******/
+/****** Configuration Define                                             ******/
 /******************************************************************************/
-#define DATA_FLASH_CONFIG0 0xFFFFFFFE //!< mask for CONFIG0 register dataflash enable
-#define DATA_FLASH_BASE 0x0001E400    //!< Dataflash: 121k - 123k (2k or 4 pages)
-#define PAGE_NUM ((0x0001EC00 - DATA_FLASH_BASE) / FMC_FLASH_PAGE_SIZE)
 #define FLASH_BUFSIZE 4
 
 /**
@@ -175,11 +170,11 @@ uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
 	{
 		//Calculate byte count to copy
 		uint32_t byteLen = sizeLeft;
-		if (byteLen > FLASH_BUFSIZE * 4)
-			byteLen = FLASH_BUFSIZE * 4;
+		if (byteLen > sizeof(buffer))
+			byteLen = sizeof(buffer);
 
 		//Move from flash
-		memset(buffer, 0, FLASH_BUFSIZE * 4);
+		memset(buffer, 0, sizeof(buffer));
 		BSP_ReadDataFlash(aAddress, buffer, (byteLen + 3) / 4);
 
 		//Copy from buffer

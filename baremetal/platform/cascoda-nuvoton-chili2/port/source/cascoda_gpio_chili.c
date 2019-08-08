@@ -52,12 +52,11 @@
 /* number of dynamically available module i/o pins */
 enum
 {
-#if defined(USE_UART) && (CASCODA_CHILI2_CONFIG == 0)
+	PIN_USB_PRESENT = 103,
+#if (CASCODA_CHILI2_CONFIG == 0)
 	NUM_MODULEPINS = 12,
-#elif (CASCODA_CHILI2_CONFIG == 0)
-	NUM_MODULEPINS = 10,
 #else
-	NUM_MODULEPINS = 5,
+	NUM_MODULEPINS = 6,
 #endif
 };
 
@@ -82,7 +81,14 @@ struct pinstatus
 /******************************************************************************/
 /****** Global Variables                                                 ******/
 /******************************************************************************/
+#if (CASCODA_CHILI2_CONFIG == 0)
 const struct ModuleSpecialPins BSP_ModuleSpecialPins = {MSP_DEFAULT};
+#else
+const struct ModuleSpecialPins BSP_ModuleSpecialPins = {
+    MSP_DEFAULT,
+    .USB_PRESENT = PIN_USB_PRESENT,
+};
+#endif
 
 /******************************************************************************/
 /****** Static Variables                                                 ******/
@@ -95,12 +101,12 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
 /* port PX.Y */
 /* adc channel */
 #if (CASCODA_CHILI2_CONFIG == 0)
-#ifndef USE_UART
     {5, PN_B, 12, 12},    /* PB.12 */
     {6, PN_B, 13, 13},    /* PB.13 */
-#endif                    /* USE_UART */
     {11, PN_A, 13, P_NA}, /* PA.13 */
     {12, PN_A, 14, P_NA}, /* PA.14 */
+#else
+    {PIN_USB_PRESENT, PN_B, 12, P_NA}, /* PB.12:(USB_PRESENT), virtual */
 #endif                    /* CASCODA_CHILI2_CONFIG */
     {15, PN_A, 15, P_NA}, /* PA.15 */
 #if (CASCODA_CHILI2_CONFIG == 0)

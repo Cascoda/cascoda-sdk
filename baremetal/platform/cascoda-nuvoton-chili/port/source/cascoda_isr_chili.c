@@ -170,22 +170,20 @@ void USBD_IRQHandler(void)
  ******************************************************************************/
 void GPABC_IRQHandler(void)
 {
-	uint32_t            ZIG_IRQB_status, USB_PRESENT_status;
+	uint32_t            ZIG_IRQB_status;
 	struct device_link *devlink;
 	int                 i;
 	enPortnum           portnum;
 
 	/* Get Port status */
-	ZIG_IRQB_status    = ZIG_IRQB_PORT->ISRC;
-	USB_PRESENT_status = USB_PRESENT_PORT->ISRC;
-
-	/* clear all interrupts */
-	GPIO_CLR_INT_FLAG(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
-	GPIO_CLR_INT_FLAG(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
+	ZIG_IRQB_status = ZIG_IRQB_PORT->ISRC;
 
 	/* ZIG_IRQB */
 	if (ZIG_IRQB_status & BITMASK(ZIG_IRQB_PIN))
 	{
+
+		GPIO_CLR_INT_FLAG(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
+
 		if (asleep)
 			return;
 
@@ -201,22 +199,6 @@ void GPABC_IRQHandler(void)
 		if (i < NUM_DEVICES)
 		{
 			DISPATCH_ReadCA821x(devlink->dev); /* Read downstream message */
-		}
-		return; /* should make handling quicker if no other interrupts are triggered */
-	}
-
-	/* USB_PRESENT */
-	if (USB_PRESENT_status & BITMASK(USB_PRESENT_PIN))
-	{
-		/* get state and re-initialise System */
-		USBPresent = USB_PRESENT_PVAL;
-		if (!USBPresent)
-		{
-			CHILI_SystemReInit();
-		}
-		if (usb_present_changed)
-		{
-			usb_present_changed();
 		}
 		return; /* should make handling quicker if no other interrupts are triggered */
 	}

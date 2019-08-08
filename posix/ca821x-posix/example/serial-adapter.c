@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -28,6 +29,8 @@ static const uint8_t *s_write_buffer;
 static size_t         s_write_length;
 static int            s_in_fd;
 static int            s_out_fd;
+
+static int selfpipe[2];
 
 static uint8_t s_enabled = false;
 
@@ -163,6 +166,8 @@ ca_error configure_io(void)
 
 	if (error == CA_ERROR_SUCCESS)
 		s_enabled = true;
+
+	pipe2(selfpipe, O_NONBLOCK);
 	return error;
 
 exit:
@@ -182,6 +187,7 @@ int handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 
 	pthread_mutex_lock(&s_write_mutex);
 
+	write(selfpipe[1], "a", 1);
 	while (s_write_length) pthread_cond_wait(&s_write_cond, &s_write_mutex);
 
 	s_write_buffer = buf + 2;
@@ -194,16 +200,22 @@ int handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 
 void process_io(void)
 {
-	ssize_t       rval;
-	const int     error_flags = POLLERR | POLLNVAL | POLLHUP;
-	struct pollfd pollfd[]    = {
-        {s_in_fd, POLLIN | error_flags, 0},
-        {s_out_fd, POLLOUT | error_flags, 0},
-    };
+	ssize_t   rval;
+	uint8_t   junkBuf;
+	const int error_flags = POLLERR | POLLNVAL | POLLHUP;
+	pthread_mutex_lock(&s_write_mutex);
+	const int out_flag = (s_write_length > 0) ? POLLOUT : 0;
+	pthread_mutex_unlock(&s_write_mutex);
+	struct pollfd pollfd[] = {
+	    {s_in_fd, POLLIN | error_flags, 0},
+	    {s_out_fd, out_flag | error_flags, 0},
+	    {selfpipe[0], POLLIN | error_flags, 0},
+	};
 
 	errno = 0;
 
-	rval = poll(pollfd, sizeof(pollfd) / sizeof(*pollfd), 0);
+	rval = poll(pollfd, sizeof(pollfd) / sizeof(*pollfd), -1);
+	read(selfpipe[0], &junkBuf, 1);
 
 	if (rval < 0)
 	{

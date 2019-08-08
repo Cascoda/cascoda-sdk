@@ -13,12 +13,16 @@ The Bare-Metal BSPs provide a set of common functionality for baremetal platform
 ## Building
 
 ### CMake
-The Cascoda SDK makes full use of CMake as a build system, to enable advanced configuration and cross-platform development. In order to build the Cascoda SDK, you will require CMake version 3.12 or newer. This can be downloaded from the [CMake Website.](https://cmake.org/download/)
+The Cascoda SDK makes full use of CMake as a build system, to enable advanced configuration and cross-platform development. In order to build the Cascoda SDK, you will require CMake version 3.13 or newer. This can be downloaded from the [CMake Website.](https://cmake.org/download/)
 
 ### Compilers
 The Cascoda SDK can be built natively for Linux using any preferred native compiler.
 
-For Cross-Compiling to baremetal, we have fully implemented the ARM GCC compilers for use. They can be downloaded [here.](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) The code can be built in other embedded compilers, and full integration in the CMake suite is coming soon. Currently the OpenThread library can only be built from a Linux system (Windows Subsystem for Linux also works).
+For Cross-Compiling to baremetal, we have fully implemented the ARM GCC compilers for use. They can be downloaded [here.](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) The code can be built in other embedded compilers, and full integration in the CMake suite is coming soon. Currently the OpenThread library can only be built from a Linux system (Windows Subsystem for Linux also works). For building openthread, certain extra packages must be installed:
+
+```Bash
+sudo apt install automake libtool lsb-release libhidapi-dev -y
+```
 
 ### Instructions
 To build the Cascoda SDK, follow the instructions below (written for Linux):
@@ -50,30 +54,34 @@ make -j12
 
 Libraries will be built into the ``lib/`` directory, while application binaries will be built into the ``bin/`` directory. For the Chili platforms, both elf format and binary .bin format files will be created.
 
-In order to compile for the chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
+In order to compile for the Chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
 
 ### Debugging
-The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in arm-none-eabi-gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
+The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the Chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in arm-none-eabi-gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
 
 ## Directory layout
 
-### ca821x-api
-ca821x-api contains the cross-platform api which abstracts all of the functionality of the CA-8210 and CA-8211. It is required for every project.
+### [ca821x-api](ca821x-api/README.md)
+`ca821x-api` contains the cross-platform API which abstracts all of the functionality of the CA-8210 and CA-8211. It is required for every project.
 
-### baremetal
-baremetal contains the cross-platform baremetal drivers, some example applications, and a set of platform abstractions.
+### [baremetal](baremetal/cascoda-bm-driver/README.md)
+`baremetal` contains the cross-platform baremetal drivers, some example applications, and a set of platform abstractions. The baremetal drivers implement useful, cross-platform functionality, and should be your go-to API when trying to interact with peripherals and outside world.
+
+The platform abstractions (sometimes referred to in the source code as the Board Support Package) are what enables the baremetal drivers to be cross-platform. They provide a set of functions which abstract away the specifics of what platform you are dealing on, such as how to set up the device and how to communicate with peripherals.
+
+While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to control the chip from your top-level application, it is a lot easier to rely on the functionality provided by the baremetal drivers, such as the functions in `cascoda_time.h`, `cascoda_evbme.h` and so on.
 
 ### toolchain
-toolchain contains the platform configuration files to enable cross compilation for different systems and compilers.
+`toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#Instructions).
 
-### posix
-posix contains the Posix-specific drivers and tools, as well as some example applications that can be run from a Linux system.
+### [posix](posix/ca821x-posix/README.md)
+`posix` contains the Posix-specific drivers and tools, as well as some example applications that can be run from a Linux system.
 
 ### openthread
-openthread contains the glue configuration to download the openthread repository from https://github.com/Cascoda/openthread, and configure it to be built with the SDK.
+`openthread` contains the glue configuration to download the openthread repository from https://github.com/Cascoda/openthread, and configure it to be built with the SDK.
 
 ### etc
-etc contains miscellaneous resources.
+`etc` contains miscellaneous resources.
 
 ## CMake Targets
 
@@ -85,11 +93,16 @@ Useful CMake target libraries to include:
 | cascoda-bm | The baremetal Cascoda Drivers, abstracting away the platform to a common interface, and providing a suite of helper functions |
 | ca821x-posix | The posix Cascoda driver interface, supporting USB, UART or SPI communications to a connected Cascoda device |
 | sensorif | A library containing drivers for interfacing with I2C sensors |
-| ca821x-openthread-bm-ftd | OpenThread baremetal library for FTDs |
-| ca821x-openthread-bm-mtd | OpenThread baremetal library for MTDs |
+| ca821x-openthread-bm-ftd | OpenThread baremetal library for FTDs (Full Thread Devices)|
+| ca821x-openthread-bm-mtd | OpenThread baremetal library for MTDs (Minimal Thread Devices) |
 | ca821x-openthread-posix-ftd | OpenThread posix library for FTDs |
 | ca821x-openthread-posix-mtd | OpenThread posix library for MTDs |
 | openthread-cli-ftd | OpenThread CLI library for FTDs |
 | openthread-cli-mtd | OpenThread CLI library for MTDs |
 | openthread-ncp-ftd | OpenThread NCP library for FTDs |
 | openthread-ncp-mtd | OpenThread NCP library for MTDs |
+
+## Useful Links
+
+- [Cascoda Posix Thread Description](posix/ca821x-posix-thread/Readme.md)
+- [Baremetal Temperature Sensing Application](/baremetal/app/tempsense-bm/README.md)

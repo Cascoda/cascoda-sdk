@@ -33,10 +33,12 @@
  *                           progress during the crash, it will be locked until
  *                           the recovery is complete, then completed afterwards.
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS Device was initialised successfully
+ * @retval CA_ERROR_ALREADY Device was already initialised
+ * @retval CA_ERROR_NOT_FOUND Device could not be initialised
  *
  */
-int ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler);
+ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler);
 
 /**
  * Generic function to deinitialise an initialised ca821x device. This will
@@ -45,8 +47,6 @@ int ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHan
  * Calling on an uninitialised pDeviceRef produces undefined behaviour.
  *
  * @param[in]   pDeviceRef   Device reference to be deinitialised.
- *
- * @returns 0 for success, -1 for error
  *
  */
 void ca821x_util_deinit(struct ca821x_dev *pDeviceRef);
@@ -58,10 +58,11 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]   pDeviceRef   Device reference for device to be reset.
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS The device has been reset successfully
+ * @retval CA_ERROR_FAIL The device could not be reset
  *
  */
-int ca821x_util_reset(struct ca821x_dev *pDeviceRef);
+ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef);
 
 /**
  * Generic function to poll the receive queue and call callbacks for received
@@ -91,10 +92,11 @@ int ca821x_util_dispatch_poll(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]  callback   Function pointer to an user-command-handling callback
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS Callback successfully registered
+ * @retval CA_ERROR_FAIL Could not register callback
  *
  */
-int exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef);
+ca_error exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef);
 
 /**
  * Sends a user-defined command over the connected interface. This is not useful for direct CA-821x

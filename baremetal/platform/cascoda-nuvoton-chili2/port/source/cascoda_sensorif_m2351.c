@@ -170,7 +170,14 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 			control0 = I2C_CTL_SI;
 			break;
 		case SENSORIF_I2C_ST_RX_AD_ACK: /* slave has ACKed SLA+RD */
-			control0 = I2C_CTL_SI_AA;   /* set ACK */
+			if (inlen > 1)
+			{
+				control0 = I2C_CTL_SI_AA;   /* set ACK */
+			}
+			else
+			{
+				control0 = I2C_CTL_SI; 		/* clear ACK as only one byte will be read */
+			}
 			break;
 		case SENSORIF_I2C_ST_RX_AD_NACK:   /* slave has NACKed SLA+RD */
 			control0     = I2C_CTL_STO_SI; /* send STOP */

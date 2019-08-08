@@ -202,16 +202,16 @@ exit:
 	return 0;
 }
 
-int exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef)
+ca_error exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 
 	if (priv->user_callback)
-		return -1;
+		return CA_ERROR_FAIL;
 
 	priv->user_callback = callback;
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, struct ca821x_dev *pDeviceRef)

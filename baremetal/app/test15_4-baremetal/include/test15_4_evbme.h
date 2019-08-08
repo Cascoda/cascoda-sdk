@@ -49,6 +49,7 @@ void TEST15_4_SetupAwaitOrphan(uint8_t *pDeviceAddress, uint16_t OrphanShortAddr
 static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params,
                                              struct ca821x_dev *                    pDeviceRef);
 static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);

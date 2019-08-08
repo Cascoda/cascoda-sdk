@@ -60,10 +60,12 @@ enum uart_exchange_errors
  * @warning It is recommended to use the uart_exchange_init_withandler function
  * instead, so that any errors can be handled by your application.
  *
- * @returns 0 for success, -1 for error, 1 if already initialised
+ * @retval CA_ERROR_SUCCESS Successful initialisation
+ * @retval CA_ERROR_FAIL Could not initialise
+ * @retval CA_ERROR_ALREADY The exchange was already initialised
  *
  */
-int uart_exchange_init(struct ca821x_dev *pDeviceRef);
+ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef);
 
 /**
  * Initialise the uart exchange, using the supplied errorhandling callback to
@@ -72,10 +74,12 @@ int uart_exchange_init(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]  callback   Function pointer to an error-handling callback
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS for success
+ * @retval CA_ERROR_NOT_FOUND for error
+ * @retval CA_ERROR_ALREADY if the device was already initialised
  *
  */
-int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the uart exchange, so that it can be reinitialised by another

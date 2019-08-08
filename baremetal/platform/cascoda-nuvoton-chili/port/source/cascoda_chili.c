@@ -191,14 +191,6 @@ void CHILI_GPIOInit(void)
 	GPIO_ENABLE_PULL_UP(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN)); /* CHARGE_STAT is low or tri-state */
 	GPIO_ENABLE_DEBOUNCE(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
 
-	/* USB_PRESENT */
-	/* input, no pull-up, debounced */
-	GPIO_SetMode(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN), GPIO_PMD_INPUT);
-	GPIO_DISABLE_PULL_UP(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
-	GPIO_ENABLE_DEBOUNCE(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
-	/* Immediately get USBPresent State */
-	USBPresent = USB_PRESENT_PVAL;
-
 #if (CASCODA_CHILI_REV == 3)
 	/* PROGRAM Pin */
 	/* enable pull-up just in case */
@@ -294,12 +286,8 @@ void CHILI_GPIOEnableInterrupts(void)
 	/* RFIRQ */
 	GPIO_EnableInt(ZIG_IRQB_PORT, ZIG_IRQB_PIN, GPIO_INT_FALLING);
 
-	/* USB_PRESENT */
-	GPIO_EnableInt(USB_PRESENT_PORT, USB_PRESENT_PIN, GPIO_INT_BOTH_EDGE);
-
 	/* NVIC Enable */
 	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
-	NVIC_EnableIRQ(USB_PRESENT_IRQn);
 }
 
 /******************************************************************************/

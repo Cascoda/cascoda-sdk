@@ -32,6 +32,7 @@
 #include "uart.h"
 #include "usbd.h"
 /* Cascoda */
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
@@ -386,6 +387,15 @@ u8_t BSP_SPIExchangeByte(u8_t OutByte)
 	return InByte;
 }
 
+/**
+ *    * Get the number of bytes in the tx fifo.
+ *       * For some reason this isn't in the nuvoton vendorcode.
+ *          */
+static inline uint8_t getTxFifoCount()
+{
+	return ((SPI1->STATUS & SPI_STATUS_TX_FIFO_CNT_Msk) >> SPI_STATUS_TX_FIFO_CNT_Pos) & 0x0f;
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief See cascoda-bm/cascoda_interface.h
@@ -393,7 +403,7 @@ u8_t BSP_SPIExchangeByte(u8_t OutByte)
  ******************************************************************************/
 u8_t BSP_SPIPushByte(u8_t OutByte)
 {
-	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI1) && (SPI_GET_RX_FIFO_COUNT(SPI1) < 7))
+	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI1) && (SPI_GET_RX_FIFO_COUNT(SPI1) + getTxFifoCount() < 7))
 	{
 		SPI_WRITE_TX0(SPI1, OutByte);
 		return 1;
@@ -421,7 +431,7 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
  * \brief See cascoda-bm/cascoda_interface.h
  *******************************************************************************
  ******************************************************************************/
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef)
 {
 	u8_t lxt_connected = 0;
 	u8_t use_watchdog  = 0;
@@ -458,7 +468,10 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	/* reconfig GPIO debounce clock to LIRC */
 	GPIO_SET_DEBOUNCE_TIME(GPIO_DBCLKSRC_IRC10K, GPIO_DBCLKSEL_1);
 
+	asleep = 1;	/* set before TIMER0 is disabled */
+
 	TIMER_Stop(TIMER0);
+
 	TIMER0->CTL |= TIMER_CTL_SW_RST_Msk;
 	while (TIMER0->CTL & TIMER_CTL_SW_RST_Msk)
 		;
@@ -510,7 +523,6 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 		TIMER_Start(TIMER0);
 	}
 
-	asleep = 1;
 	SYS_UnlockReg();
 
 	CLK->PWRCTL |= (CLK_PWRCTL_PWRDOWN_EN | CLK_PWRCTL_DELY_EN); /* Set power down bit */
@@ -527,11 +539,15 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 
 	GPIO_SET_DEBOUNCE_TIME(GPIO_DBCLKSRC_HCLK, GPIO_DBCLKSEL_8);
 
-	asleep = 0;
-
-	CHILI_TimersInit();
 	CHILI_GPIOPowerUp();
 	CHILI_SystemReInit();
+
+	asleep = 0;	/* reset after TIMER0 is re-enabled */
+
+	/* read downstream message that has woken up device */
+	if(!use_timer0)
+		DISPATCH_ReadCA821x(pDeviceRef);
+
 }
 
 /******************************************************************************/
@@ -716,7 +732,7 @@ void BSP_WatchdogDisable(void)
 void BSP_EnableUSB(void)
 {
 #if defined(USE_USB)
-	if (USBPresent || !USB_PRESENT_PVAL)
+	if (USBPresent)
 		return;
 	USBPresent = 1;
 	CHILI_SystemReInit();
@@ -746,4 +762,13 @@ void BSP_DisableUSB(void)
 u8_t BSP_IsUSBPresent(void)
 {
 	return USBPresent;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief See cascoda-bm/cascoda_interface.h
+ *******************************************************************************
+ ******************************************************************************/
+void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
+{
 }

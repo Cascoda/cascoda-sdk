@@ -87,7 +87,6 @@ add_library(cascoda-chili2
 target_link_libraries(cascoda-chili2
 	PUBLIC
 		cascoda-bm
-	PRIVATE
 		nuvoton-vendor-m2351
 	)
 

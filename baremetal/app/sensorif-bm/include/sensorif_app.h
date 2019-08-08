@@ -31,13 +31,15 @@
 #define SENSORIF_REPORT_TMEAS 1
 
 /* flag which sensors to include in test */
-#define SENSORIF_TEST_SI7021 1
-#define SENSORIF_TEST_MAX30205 0
+#define SENSORIF_TEST_SI7021    0
+#define SENSORIF_TEST_MAX30205  0
+#define SENSORIF_TEST_LTR303ALS 1
 
 /* functions */
 u8_t SENSORIF_Initialise(struct ca821x_dev *pDeviceRef);
 void SENSORIF_Handler(struct ca821x_dev *pDeviceRef);
 void SENSORIF_Handler_SI7021(void);
 void SENSORIF_Handler_MAX30205(void);
+void SENSORIF_Handler_LTR303ALS(void);
 
 #endif // SENSORIF_APP_H

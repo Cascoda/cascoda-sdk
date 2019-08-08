@@ -14,5 +14,5 @@ When porting to a new baremetal platform, there are are also requirements that m
 the SPI driver for the CA-821x, and to run the basic example applications.
 - All required functions in `cascoda-bm/cascoda_interface.h` should be implemented. All non-required optional features should be implemented as stubs.
 - The callback functions in `cascoda-bm/cascoda_interface.h` such as `button1_pressed` and should be called when the given event occurs - but only if they are populated and not-null.
-- The TIME_1msTick() Function should be called once per millisecond by the BSP - except when in an EVME sleep mode.
+- The TIME_1msTick() Function should be called once per millisecond by the BSP - except when in an EVBME sleep mode.
 - If I2C sensor connectivity is desired, then the functions in `cascoda-bm/cascoda_sensorif.h` should be implemented. If not, they can be implemented as stubs returning `SENSORIF_I2C_ST_NOT_IMPLEMENTED`.

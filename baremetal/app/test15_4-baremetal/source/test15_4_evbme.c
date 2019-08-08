@@ -415,6 +415,24 @@ static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Callback for MCPS_DATA_confirm
+ *******************************************************************************
+ ******************************************************************************/
+static ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	if (PHY_TESTPAR.MACENABLED)
+	{
+		if (PHY_TESTMODE == PHY_TEST_TX_PKT)
+		{
+			PHY_TXPKT_MAC_confirm(params, pDeviceRef);
+			return CA_ERROR_SUCCESS;
+		}
+	}
+	return CA_ERROR_NOT_HANDLED;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Callback for TDME_EDDET_indication
  *******************************************************************************
  ******************************************************************************/
@@ -435,6 +453,11 @@ static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset 
  ******************************************************************************/
 void TEST15_4_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 {
+	if ((PHY_TESTMODE == PHY_TEST_TX_PKT) && (PHY_TESTPAR.MACENABLED))
+		pDeviceRef->callbacks.MCPS_DATA_confirm = &TEST15_4_MAC_TXPKT_confirm;
+	else
+		pDeviceRef->callbacks.MCPS_DATA_confirm = NULL;
+
 	if (((PHY_TESTMODE == PHY_TEST_RX_PSN) || (PHY_TESTMODE == PHY_TEST_RX_PER)) && (PHY_TESTPAR.MACENABLED))
 		pDeviceRef->callbacks.MCPS_DATA_indication = &TEST15_4_MAC_RXPKT_indication;
 	else

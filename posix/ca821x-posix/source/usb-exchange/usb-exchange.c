@@ -406,7 +406,7 @@ exit:
 	return error;
 }
 
-int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
 {
 	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
 	hid_device *              dev   = NULL;
@@ -416,18 +416,18 @@ int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_de
 
 	if (!s_initialised)
 	{
-		error = init_statics();
+		error = init_statics() ? CA_ERROR_NOT_FOUND : CA_ERROR_SUCCESS;
 		if (error)
 			return error;
 	}
 
 	if (pDeviceRef->exchange_context)
-		return 1;
+		return CA_ERROR_ALREADY;
 
 	pthread_mutex_lock(&devs_mutex);
 	if (s_devcount >= USB_MAX_DEVICES)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
@@ -445,7 +445,7 @@ int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_de
 	}
 	if (hid_cur == NULL)
 	{ //Device not found
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
@@ -462,11 +462,11 @@ int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_de
 	strncpy(priv->hid_path, hid_cur->path, len);
 	priv->hid_dev = dev;
 
-	error = init_generic(pDeviceRef);
+	error = (ca_error) init_generic(pDeviceRef);
 
-	if (error != 0)
+	if (error != CA_ERROR_SUCCESS)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 

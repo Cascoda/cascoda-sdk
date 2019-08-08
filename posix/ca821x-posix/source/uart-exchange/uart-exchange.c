@@ -429,16 +429,16 @@ static ca_error setup_port(int fd, int baudrate)
 	return CA_ERROR_SUCCESS;
 }
 
-int uart_exchange_init(struct ca821x_dev *pDeviceRef)
+ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef)
 {
 	return uart_exchange_init_withhandler(NULL, pDeviceRef);
 }
 
-int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = NULL;
 	struct uart_device *       uartdev;
-	int                        error = 0;
+	ca_error                   error = 0;
 
 	if (!s_initialised)
 	{
@@ -448,12 +448,12 @@ int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_d
 	}
 
 	if (pDeviceRef->exchange_context)
-		return 1;
+		return CA_ERROR_ALREADY;
 
 	pthread_mutex_lock(&devs_mutex);
 	if (s_devcount >= UART_MAX_DEVICES)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
@@ -492,7 +492,7 @@ int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_d
 
 	if (priv->fd < 0)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
@@ -500,7 +500,7 @@ int uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_d
 
 	if (error != 0)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 

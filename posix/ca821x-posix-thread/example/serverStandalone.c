@@ -28,9 +28,11 @@
 
 #include <assert.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "openthread/coap.h"
@@ -65,6 +67,21 @@ void otPlatUartSendDone(void)
 {
 }
 
+void printf_time(const char *format, ...)
+{
+	struct timeval tv;
+	char           timeString[40];
+	va_list        args;
+
+	gettimeofday(&tv, NULL);
+	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
+	printf("%s - ", timeString);
+
+	va_start(args, format);
+	vprintf(format, args);
+	va_end(args);
+}
+
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
@@ -74,15 +91,15 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
-	printf("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 6),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 8),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 10),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
-	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
+	printf_time("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 6),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 8),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 10),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
+	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
 	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
@@ -114,19 +131,65 @@ static void handleTemperature(void *aContext, otMessage *aMessage, const otMessa
 	otMessage * responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-	int32_t     temperature;
+	uint16_t    offset          = otMessageGetOffset(aMessage);
+	int32_t     temperature     = 0;
+	uint32_t    humidity        = 0;
+	uint32_t    pir_counter     = 0;
+	uint16_t    light_level     = 0;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
 		return;
 
-	if (length != sizeof(temperature))
+	if (length >= sizeof(temperature))
+	{
+		otMessageRead(aMessage, offset, &temperature, sizeof(temperature));
+		offset += sizeof(temperature);
+		length -= sizeof(temperature);
+	}
+	if (length >= sizeof(humidity))
+	{
+		otMessageRead(aMessage, offset, &humidity, sizeof(humidity));
+		offset += sizeof(humidity);
+		length -= sizeof(humidity);
+	}
+	if (length >= sizeof(pir_counter))
+	{
+		otMessageRead(aMessage, offset, &pir_counter, sizeof(pir_counter));
+		offset += sizeof(pir_counter);
+		length -= sizeof(pir_counter);
+	}
+	if (length >= sizeof(light_level))
+	{
+		otMessageRead(aMessage, offset, &light_level, sizeof(light_level));
+		offset += sizeof(light_level);
+		length -= sizeof(light_level);
+	}
+	if (length)
+	{
+		//Unrecognised message format
 		return;
+	}
 
-	otMessageRead(aMessage, otMessageGetOffset(aMessage), &temperature, sizeof(temperature));
+	printf_time("Server received");
 
-	printf("Server received temperature %d.%d*C from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
-	       (temperature / 10),
-	       (temperature % 10),
+	if (temperature)
+	{
+		printf(" temperature %d.%d*C", (temperature / 10), (temperature % 10));
+	}
+	if (humidity)
+	{
+		printf(", humidity %d%%", humidity);
+	}
+	if (pir_counter)
+	{
+		printf(", PIR count %u", pir_counter);
+	}
+	if (light_level)
+	{
+		printf(", light level %u", light_level);
+	}
+
+	printf(" from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
 	       GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
@@ -152,7 +215,7 @@ static void handleTemperature(void *aContext, otMessage *aMessage, const otMessa
 exit:
 	if (error != OT_ERROR_NONE && responseMessage != NULL)
 	{
-		printf("Temperature ack failed: Error %d: %s\r\n", error, otThreadErrorToString(error));
+		printf_time("Temperature ack failed: Error %d: %s\r\n", error, otThreadErrorToString(error));
 		otMessageFree(responseMessage);
 	}
 }
@@ -190,6 +253,8 @@ int main(int argc, char *argv[])
 {
 	otInstance *OT_INSTANCE;
 
+	printf_time("Thread Sensor Server %s initialising...\r\n", ca821x_get_version());
+
 	if (argc > 1)
 		NODE_ID = atoi(argv[1]);
 	else
@@ -212,6 +277,8 @@ int main(int argc, char *argv[])
 	otThreadSetAutoStart(OT_INSTANCE, true);
 
 	registerCoapResources(OT_INSTANCE);
+
+	printf_time("Initialisation complete.\r\n");
 
 	while (isRunning)
 	{

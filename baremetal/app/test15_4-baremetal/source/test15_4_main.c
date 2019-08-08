@@ -30,6 +30,7 @@
 
 /* Insert Application-Specific Includes here */
 #include "test15_4_evbme.h"
+#include "txrx_led.h"
 
 /******************************************************************************/
 /****** Application name                                                 ******/
@@ -75,6 +76,7 @@ int main(void)
 
 	/* Insert Application-Specific Initialisation Routines here */
 	TEST15_4_Initialise(&dev);
+	TXRX_LED_Initialise(&dev);
 
 	/* Endless Polling Loop */
 	while (1)
@@ -83,6 +85,6 @@ int main(void)
 
 		/* Insert Application-Specific Event Handlers here */
 		TEST15_4_Handler(&dev);
-
+		TXRX_LED_Handler(&dev);
 	} /* while(1) */
 }

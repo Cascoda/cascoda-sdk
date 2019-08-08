@@ -58,8 +58,6 @@
 /** LQI limit, below which received frames should be rejected */
 #define API_LQI_LIMIT (75)
 
-ca_error (*ca821x_wait_for_message)(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
-
 uint8_t ca821x_get_sync_response_id(uint8_t cmdid)
 {
 	uint8_t rval = 0;

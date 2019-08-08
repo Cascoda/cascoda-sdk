@@ -64,10 +64,11 @@ int kernel_exchange_init(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]  callback   Function pointer to an error-handling callback
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS Successful initialisation
+ * @retval CA_ERROR_NOT_FOUND Did not succeed
  *
  */
-int kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the kernel exchange, so that it can be reinitialised by another

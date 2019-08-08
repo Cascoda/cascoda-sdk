@@ -37,9 +37,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "openthread/platform/settings.h"
 #include "openthread-core-config.h"
 
-#include "openthread/platform/settings.h"
+#include "cascoda-bm/cascoda_interface.h"
 
 #include "code_utils.h"
 #include "flash.h"
@@ -81,26 +82,6 @@ struct settingsBlock
 #define SETTINGS_CONFIG_BASE_ADDRESS 0
 #endif // SETTINGS_CONFIG_BASE_ADDRESS
 
-/**
- * @def SETTINGS_CONFIG_PAGE_SIZE
- *
- * The page size of settings.
- *
- */
-#ifndef SETTINGS_CONFIG_PAGE_SIZE
-#define SETTINGS_CONFIG_PAGE_SIZE 512
-#endif // SETTINGS_CONFIG_PAGE_SIZE
-
-/**
- * @def SETTINGS_CONFIG_PAGE_NUM
- *
- * The page number of settings.
- *
- */
-#ifndef SETTINGS_CONFIG_PAGE_NUM
-#define SETTINGS_CONFIG_PAGE_NUM 4
-#endif // SETTINGS_CONFIG_PAGE_NUM
-
 static uint32_t sSettingsBaseAddress;
 static uint32_t sSettingsUsedSize;
 
@@ -116,15 +97,15 @@ static void setSettingsFlag(uint32_t aBase, uint32_t aFlag)
 
 static void initSettings(uint32_t aBase, uint32_t aFlag)
 {
-	uint32_t address      = aBase;
-	uint32_t settingsSize = SETTINGS_CONFIG_PAGE_NUM > 1 ? SETTINGS_CONFIG_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM / 2
-	                                                     : SETTINGS_CONFIG_PAGE_SIZE;
+	uint32_t address = aBase;
+	uint32_t settingsSize =
+	    BSP_FlashInfo.numPages > 1 ? (BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages) / 2 : BSP_FlashInfo.pageSize;
 
 	while (address < (aBase + settingsSize))
 	{
 		utilsFlashErasePage(address);
 		utilsFlashStatusWait(1000);
-		address += SETTINGS_CONFIG_PAGE_SIZE;
+		address += BSP_FlashInfo.pageSize;
 	}
 
 	setSettingsFlag(aBase, aFlag);
@@ -135,8 +116,8 @@ static uint32_t swapSettingsBlock(otInstance *aInstance)
 	uint32_t oldBase      = sSettingsBaseAddress;
 	uint32_t swapAddress  = oldBase;
 	uint32_t usedSize     = sSettingsUsedSize;
-	uint8_t  pageNum      = SETTINGS_CONFIG_PAGE_NUM;
-	uint32_t settingsSize = pageNum > 1 ? SETTINGS_CONFIG_PAGE_SIZE * pageNum / 2 : SETTINGS_CONFIG_PAGE_SIZE;
+	uint8_t  pageNum      = BSP_FlashInfo.numPages;
+	uint32_t settingsSize = pageNum > 1 ? BSP_FlashInfo.pageSize * pageNum / 2 : BSP_FlashInfo.pageSize;
 
 	(void)aInstance;
 
@@ -219,8 +200,8 @@ static otError addSetting(otInstance *   aInstance,
 		struct settingsBlock block;
 		uint8_t              data[kSettingsBlockDataSize];
 	} OT_TOOL_PACKED_END addBlock;
-	uint32_t settingsSize = SETTINGS_CONFIG_PAGE_NUM > 1 ? SETTINGS_CONFIG_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM / 2
-	                                                     : SETTINGS_CONFIG_PAGE_SIZE;
+	uint32_t             settingsSize =
+	    BSP_FlashInfo.numPages > 1 ? BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages / 2 : BSP_FlashInfo.pageSize;
 
 	addBlock.block.flag = 0xff;
 	addBlock.block.key  = aKey;
@@ -263,8 +244,8 @@ exit:
 void otPlatSettingsInit(otInstance *aInstance)
 {
 	uint8_t  index;
-	uint32_t settingsSize = SETTINGS_CONFIG_PAGE_NUM > 1 ? SETTINGS_CONFIG_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM / 2
-	                                                     : SETTINGS_CONFIG_PAGE_SIZE;
+	uint32_t settingsSize =
+	    BSP_FlashInfo.numPages > 1 ? BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages / 2 : BSP_FlashInfo.pageSize;
 
 	(void)aInstance;
 

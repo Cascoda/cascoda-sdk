@@ -7,6 +7,15 @@
 
 extern otInstance *OT_INSTANCE;
 
+#define SuccessOrExit(aCondition) \
+	do                            \
+	{                             \
+		if ((aCondition) != 0)    \
+		{                         \
+			goto exit;            \
+		}                         \
+	} while (0)
+
 enum openthread_message_codes
 {
 	OT_SERIAL_DOWNLINK = 0xB2,

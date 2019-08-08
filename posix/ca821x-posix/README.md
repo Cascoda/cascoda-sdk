@@ -1,4 +1,4 @@
-# ca8210-posix
+# ca821x-posix
 Glue code for linking Cascoda's API code to the ca8210 Linux driver or a ca821x usb dongle
 
 # example

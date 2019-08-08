@@ -184,29 +184,29 @@ int kernel_exchange_init(struct ca821x_dev *pDeviceRef)
 	return kernel_exchange_init_withhandler(NULL, pDeviceRef);
 }
 
-int kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
 {
-	int                          error;
+	ca_error                          error;
 	struct kernel_exchange_priv *priv = NULL;
 
 	if (!s_initialised)
 	{
-		error = init_statics();
+		error = init_statics() ? CA_ERROR_NOT_FOUND : CA_ERROR_SUCCESS;
 		if (error)
 			return error;
 	}
 
 	if (pDeviceRef->exchange_context)
-		return 1;
+		return CA_ERROR_ALREADY;
 
 	if (DriverFileDescriptor != -1)
-		return 1;
+		return CA_ERROR_ALREADY;
 
 	DriverFileDescriptor = open(DriverFilePath, O_RDWR | O_NONBLOCK);
 
 	if (DriverFileDescriptor == -1)
 	{
-		return -1;
+		return CA_ERROR_NOT_FOUND;
 	}
 
 	pipe(DriverFDPipe);
@@ -221,11 +221,11 @@ int kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x
 	priv->base.read_func         = kernel_exchange_try_read;
 	priv->base.flush_func        = flush_unread_ke;
 
-	error = init_generic(pDeviceRef);
+	error = init_generic(pDeviceRef) ? CA_ERROR_NOT_FOUND : CA_ERROR_SUCCESS;
 
 	if (error != 0)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 

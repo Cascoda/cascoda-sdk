@@ -35,7 +35,7 @@
 #include "uart-exchange.h"
 #include "usb-exchange.h"
 
-int ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler)
+ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler)
 {
 	int error = 0;
 	error     = ca821x_api_init(pDeviceRef);
@@ -77,24 +77,24 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef)
 	}
 }
 
-int ca821x_util_reset(struct ca821x_dev *pDeviceRef)
+ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *base  = pDeviceRef->exchange_context;
-	int                          error = -1;
+	ca_error                     error = CA_ERROR_FAIL;
 
 	if (base == NULL)
-		return -1;
+		return CA_ERROR_FAIL;
 
 	switch (base->exchange_type)
 	{
 	case ca821x_exchange_kernel:
-		error = kernel_exchange_reset(1, pDeviceRef);
+		error = kernel_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
 	case ca821x_exchange_uart:
-		error = uart_exchange_reset(1, pDeviceRef);
+		error = uart_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
 	case ca821x_exchange_usb:
-		error = usb_exchange_reset(1, pDeviceRef);
+		error = usb_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
 	}
 

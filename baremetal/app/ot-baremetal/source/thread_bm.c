@@ -15,7 +15,11 @@
 #include "openthread/thread.h"
 #include "platform.h"
 
+#include "sensordemo.h"
+
 otInstance *OT_INSTANCE;
+
+static otCliCommand sCliCommand;
 
 /**
  * Handle application specific commands.
@@ -89,6 +93,12 @@ int main(void)
 	otIp6SetMulticastPromiscuousEnabled(OT_INSTANCE, true);
 #elif OT_CLI
 	otCliUartInit(OT_INSTANCE);
+
+	sCliCommand.mCommand = handle_cli_sensordemo;
+	sCliCommand.mName    = "sensordemo";
+	otCliSetUserCommands(&sCliCommand, 1);
+
+	init_sensordemo(OT_INSTANCE, &dev);
 #else
 #error "Build system error, neither OT_NCP or OT_CLI defined."
 #endif
@@ -96,6 +106,9 @@ int main(void)
 	// Endless Polling Loop
 	while (1)
 	{
+#if OT_CLI
+		handle_sensordemo(&dev);
+#endif
 		cascoda_io_handler(&dev);
 		PlatformAlarmProcess(OT_INSTANCE);
 		cascoda_io_handler(&dev);

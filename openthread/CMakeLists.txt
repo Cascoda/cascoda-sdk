@@ -64,7 +64,7 @@ include(ExternalProject)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG d45241516e52db3f49ad3cbb05c709f81ee54b7c)
+	set(OT_TAG 7b6629a34acc8485821d50b88a8f7a1d8f27d1cc)
 endif()
 
 FetchContent_Declare(

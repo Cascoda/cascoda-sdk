@@ -72,10 +72,12 @@ int usb_exchange_init(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]  callback   Function pointer to an error-handling callback
  *
- * @returns 0 for success, -1 for error
+ * @retval CA_ERROR_SUCCESS for success
+ * @retval CA_ERROR_NOT_FOUND for error
+ * @retval CA_ERROR_ALREADY if the device is already initialised
  *
  */
-int usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the usb exchange, so that it can be reinitialised by another

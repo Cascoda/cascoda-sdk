@@ -584,7 +584,7 @@ int PlatformRadioInit(void)
 	int status;
 
 	status = ca821x_util_init(&s_pDeviceRef, driverErrorCallback);
-	if (status < 0)
+	if (status == CA_ERROR_NOT_FOUND)
 	{
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "No ca821x device found");
 		return status;

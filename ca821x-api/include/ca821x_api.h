@@ -57,24 +57,6 @@ typedef ca_error (*ca821x_api_downstream_t)(const uint8_t *    buf,
                                             uint8_t *          response,
                                             struct ca821x_dev *pDeviceRef);
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Function pointer for waiting for messages
- *******************************************************************************
- * This function pointer can be called by applications to wait for a specific
- * primitive to be received by the interface driver underlying the api. The
- * function should block until the primitive has been received, then copy this
- * message into buf.
- *******************************************************************************
- * \param cmdid - The id of the command to wait for
- * \param timeout_ms - Timeout for the wait in milliseconds
- * \param buf - The buffer to populate with the received message
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
- *******************************************************************************
- * \return CA_ERROR_SUCCESS for message successfully received, anything else for failure
- ******************************************************************************/
-extern ca_error (*ca821x_wait_for_message)(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
-
 /***************************************************************************/ /**
  * \brief API user callbacks structure
  *

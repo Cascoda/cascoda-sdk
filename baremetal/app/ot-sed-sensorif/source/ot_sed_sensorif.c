@@ -4,6 +4,7 @@
 /******************************************************************************/
 /******************************************************************************/
 /****** Openthread standalone SED w/ basic CoAP server discovery & reporting **/
+/*******Includes sensorif sensor reading using the i2c sensor interface *******/
 /******************************************************************************/
 /******************************************************************************/
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
@@ -23,13 +25,17 @@
 #include "openthread/thread.h"
 #include "platform.h"
 
+#include "sif_ltr303als.h"
+#include "sif_si7021.h"
+
 /******************************************************************************/
 /****** Application name                                                 ******/
 /******************************************************************************/
-const char *APP_NAME = "OT SED";
+static const char *APP_NAME = "SENSORIF SED";
 
-const char *uriCascodaDiscover    = "ca/di";
-const char *uriCascodaTemperature = "ca/te";
+static const char *  uriCascodaDiscover    = "ca/di";
+static const char *  uriCascodaTemperature = "ca/te";
+static const uint8_t ledPin                = 34;
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
@@ -40,6 +46,42 @@ static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
 static uint32_t     appNextSendTime = 5000;
+
+/******************************************************************************/
+/****** Counter variable of how many times GPIO ISR executed             ******/
+/******************************************************************************/
+static volatile uint32_t isr_counter = 0;
+
+/******************************************************************************/
+/****** Minimum time required (in ms) between counter incrementations    ******/
+/******************************************************************************/
+static const uint32_t MIN_TIME           = 500;
+static uint32_t       min_counter_period = 500;
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR triggered by rising edge of GPIO pin.
+ *******************************************************************************
+ ******************************************************************************/
+static int counter_ISR(void)
+{
+	if (TIME_ReadAbsoluteTime() < min_counter_period)
+		return 0;
+
+	isr_counter++;
+	min_counter_period = TIME_ReadAbsoluteTime() + MIN_TIME;
+	return 0;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Sets up a GPIO pin as an input
+ *******************************************************************************
+ ******************************************************************************/
+static void set_up_GPIO_input(u8_t mpin)
+{
+	BSP_ModuleRegisterGPIOInput(mpin, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_RISE, &counter_ISR);
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -65,10 +107,8 @@ static void sleep_if_possible(void)
 
 			if (idleTimeLeft > 5)
 			{
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
-				PlatformSleep(idleTimeLeft);
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+				BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
+				//PlatformSleep(idleTimeLeft);
 			}
 		}
 	}
@@ -79,26 +119,24 @@ static void sleep_if_possible(void)
  * \brief Initialisation function
  *******************************************************************************
  ******************************************************************************/
-static void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
+static void SED_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
-	/* register LED_G */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
-	/* register LED_R */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+	/* register LED */
+	BSP_ModuleRegisterGPIOOutput(ledPin, MODULE_PIN_TYPE_LED);
 
 	if (status == CA_ERROR_FAIL)
 	{
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
 		return;
 	}
 
-	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
-	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+	BSP_ModuleSetGPIOPin(ledPin, LED_ON);
 
 	EVBME_SwitchClock(pDeviceRef, 1);
 
-	//NANO120_APP_SaveOrRestoreAddress();
-} // End of NANO120_Initialise()
+	SENSORIF_I2C_Init();
+	SIF_LTR303ALS_Initialise();
+	SENSORIF_I2C_Deinit();
+} // End of SED_Initialise()
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -217,8 +255,12 @@ static otError sendSensorData(void)
 	otError       error   = OT_ERROR_NONE;
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
-	int32_t       temperature = BSP_GetTemperature();
+	int32_t       temperature;
+	uint32_t      humidity;
+	uint16_t      lightLevel0, lightLevel1;
+	uint32_t      counter_copy = isr_counter;
 
+	BSP_ModuleSetGPIOPin(ledPin, LED_ON);
 	//allocate message buffer
 	message = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (message == NULL)
@@ -238,13 +280,23 @@ static otError sendSensorData(void)
 	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
 	messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 
+	SENSORIF_I2C_Init();
+	temperature = 10 * SIF_SI7021_ReadTemperature();
+	humidity    = SIF_SI7021_ReadHumidity();
+	SIF_LTR303ALS_ReadLight(&lightLevel0, &lightLevel1);
+	SENSORIF_I2C_Deinit();
+
 	//Payload
 	SuccessOrExit(error = otMessageAppend(message, &temperature, sizeof(temperature)));
+	SuccessOrExit(error = otMessageAppend(message, &humidity, sizeof(humidity)));
+	SuccessOrExit(error = otMessageAppend(message, &counter_copy, sizeof(counter_copy)));
+	SuccessOrExit(error = otMessageAppend(message, &lightLevel0, sizeof(lightLevel0)));
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleSensorConfirm, NULL);
 
 exit:
+	BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
 	if (error && message)
 	{
 		//error, we have to free
@@ -291,7 +343,7 @@ int main(void)
 	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
 
 	// Insert Application-Specific Initialisation Routines here
-	NANO120_Initialise(StartupStatus, &dev);
+	SED_Initialise(StartupStatus, &dev);
 
 	PlatformRadioInitWithDev(&dev);
 
@@ -311,6 +363,9 @@ int main(void)
 	otThreadSetAutoStart(OT_INSTANCE, true);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
+
+	// Sets up GPIO module pin 31 (PB.5) as an input for the interrupt.
+	set_up_GPIO_input(31);
 
 	// Endless Polling Loop
 	while (1)

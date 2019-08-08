@@ -44,8 +44,14 @@ static int TEMPSENSE_reinitialise(struct ca821x_dev *pDeviceRef);
  ******************************************************************************/
 void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
-	usb_present_changed = TEMPSENSE_usb_present_changed;
-	app_reinitialise    = TEMPSENSE_reinitialise;
+	app_reinitialise = TEMPSENSE_reinitialise;
+
+	/* register USB_PRESENT */
+	BSP_ModuleRegisterGPIOInput(BSP_ModuleSpecialPins.USB_PRESENT,
+	                            MODULE_PIN_PULLUP_OFF,
+	                            MODULE_PIN_DEBOUNCE_ON,
+	                            MODULE_PIN_IRQ_BOTH,
+	                            TEMPSENSE_usb_present_changed);
 
 	/* register SWITCH */
 	BSP_ModuleRegisterGPIOInput(BSP_ModuleSpecialPins.SWITCH,
@@ -84,7 +90,11 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	else
 	{
 		TEMPSENSE_APP_Initialise(pDeviceRef);
+		TEMPSENSE_usb_present_changed();
 	}
+
+	if (APP_STATE == APP_ST_DEVICE)
+		BSP_SystemConfig(FSYS_4MHZ, 0);
 
 } // End of TEMPSENSE_Initialise()
 
@@ -145,11 +155,19 @@ static int TEMPSENSE_mode_button_pressed(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief usb_present_changed called by GPIO ISR
+ * \brief TEMPSENSE_usb_present_changed called by GPIO ISR
  *******************************************************************************
  ******************************************************************************/
 static int TEMPSENSE_usb_present_changed(void)
 {
+	u8_t pinval;
+
+	BSP_ModuleSenseGPIOPin(BSP_ModuleSpecialPins.USB_PRESENT, &pinval);
+	if (pinval)
+		BSP_EnableUSB();
+	else
+		BSP_DisableUSB();
+
 	if (BSP_IsUSBPresent())
 	{
 		APP_STATE_new = APP_ST_NORMAL;
@@ -242,26 +260,29 @@ static ca_error TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication(struct MLME_ASSOCI
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Callback for MLME_COMM_STATUS_indication in TEMPSENSE COORDINATOR Mode
+ * \brief Callback for MLME_COMM_STATUS_indication in TEMPSENSE
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
-                                                                struct ca821x_dev *                      pDeviceRef)
+static ca_error TEMPSENSE_APP_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
+                                                          struct ca821x_dev *                      pDeviceRef)
 {
-	if (APP_STATE == APP_ST_COORDINATOR)
-	{
-		/* only supress message */
-		if ((params->Status == MAC_SUCCESS) || (params->Status == MAC_TRANSACTION_EXPIRED))
-		{
-			return CA_ERROR_SUCCESS;
-		}
-	}
+	u16_t panid;
+
+	panid = GETLE16(params->PANId);
+
+	/* supress message from other networks */
+	if (panid != APP_PANId)
+		return CA_ERROR_SUCCESS;
+	/* supress message if expected */
+	if ((params->Status == MAC_SUCCESS) || (params->Status == MAC_TRANSACTION_EXPIRED))
+		return CA_ERROR_SUCCESS;
+
 	return CA_ERROR_NOT_HANDLED;
-} // End of TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication()
+} // End of TEMPSENSE_APP_COORD_COMM_STATUS_indication()
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Callback for MLME_COMM_STATUS_indication in TEMPSENSE COORDINATOR Mode
+ * \brief Callback for HWME_WAKEUP_indication in TEMPSENSE COORDINATOR Mode
  *******************************************************************************
  ******************************************************************************/
 static ca_error TEMPSENSE_APP_COORD_HWME_WAKEUP_indication(struct HWME_WAKEUP_indication_pset *params,
@@ -273,7 +294,7 @@ static ca_error TEMPSENSE_APP_COORD_HWME_WAKEUP_indication(struct HWME_WAKEUP_in
 		return CA_ERROR_SUCCESS;
 	}
 	return CA_ERROR_NOT_HANDLED;
-} // End of TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication()
+} // End of TEMPSENSE_APP_COORD_HWME_WAKEUP_indication()
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -323,7 +344,7 @@ void TEMPSENSE_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 		pDeviceRef->callbacks.MCPS_DATA_indication        = &TEMPSENSE_APP_COORD_MCPS_DATA_indication;
 		pDeviceRef->callbacks.MCPS_DATA_confirm           = &TEMPSENSE_APP_COORD_MCPS_DATA_confirm;
 		pDeviceRef->callbacks.MLME_ASSOCIATE_indication   = &TEMPSENSE_APP_COORD_MLME_ASSOCIATE_indication;
-		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &TEMPSENSE_APP_COORD_MLME_COMM_STATUS_indication;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &TEMPSENSE_APP_MLME_COMM_STATUS_indication;
 		pDeviceRef->callbacks.HWME_WAKEUP_indication      = &TEMPSENSE_APP_COORD_HWME_WAKEUP_indication;
 		pDeviceRef->callbacks.MLME_ASSOCIATE_confirm      = NULL;
 		pDeviceRef->callbacks.MLME_SCAN_confirm           = &TEMPSENSE_APP_COORD_MLME_SCAN_confirm;
@@ -333,7 +354,7 @@ void TEMPSENSE_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 		pDeviceRef->callbacks.MCPS_DATA_indication        = &TEMPSENSE_APP_DEV_MCPS_DATA_indication;
 		pDeviceRef->callbacks.MCPS_DATA_confirm           = &TEMPSENSE_APP_DEV_MCPS_DATA_confirm;
 		pDeviceRef->callbacks.MLME_ASSOCIATE_indication   = NULL;
-		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = NULL;
+		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &TEMPSENSE_APP_MLME_COMM_STATUS_indication;
 		pDeviceRef->callbacks.HWME_WAKEUP_indication      = NULL;
 		pDeviceRef->callbacks.MLME_ASSOCIATE_confirm      = &TEMPSENSE_APP_DEV_MLME_ASSOCIATE_confirm;
 		pDeviceRef->callbacks.MLME_SCAN_confirm           = &TEMPSENSE_APP_DEV_MLME_SCAN_confirm;

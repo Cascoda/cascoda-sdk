@@ -147,30 +147,6 @@ void GPA_IRQHandler(void)
  ******************************************************************************/
 void GPB_IRQHandler(void)
 {
-#if (CASCODA_CHILI2_CONFIG == 1)
-	uint32_t USB_PRESENT_status;
-
-	/* Get Port status */
-	USB_PRESENT_status = USB_PRESENT_PORT->INTSRC;
-	GPIO_CLR_INT_FLAG(USB_PRESENT_PORT, BITMASK(USB_PRESENT_PIN));
-
-	/* USB_PRESENT */
-	if (USB_PRESENT_status & BITMASK(USB_PRESENT_PIN))
-	{
-		/* get USBPresent State and re-initialise System */
-		USBPresent = USB_PRESENT_PVAL;
-		if (!USBPresent)
-		{
-			CHILI_SystemReInit();
-		}
-		if (usb_present_changed)
-		{
-			usb_present_changed();
-		}
-		return; /* should make handling quicker if no other interrupts are triggered */
-	}
-#endif
-
 	CHILI_ModulePinIRQHandler(PN_B);
 }
 

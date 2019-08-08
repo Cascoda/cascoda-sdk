@@ -33,6 +33,7 @@
 #include "uart.h"
 #include "usbd.h"
 /* Cascoda */
+#include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
@@ -401,6 +402,7 @@ u8_t BSP_SPIExchangeByte(u8_t OutByte)
 	return InByte;
 }
 
+static uint8_t fifo_imbalance = 0;
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief See cascoda-bm/cascoda_interface.h
@@ -408,8 +410,9 @@ u8_t BSP_SPIExchangeByte(u8_t OutByte)
  ******************************************************************************/
 u8_t BSP_SPIPushByte(u8_t OutByte)
 {
-	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI) && (SPI_GET_RX_FIFO_COUNT(SPI) < 7))
+	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI) && (fifo_imbalance < 7))
 	{
+		fifo_imbalance++;
 		SPI_WRITE_TX(SPI, OutByte);
 		return 1;
 	}
@@ -425,6 +428,7 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
 {
 	if (!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI))
 	{
+		fifo_imbalance--;
 		*InByte = SPI_READ_RX(SPI) & 0xFF;
 		return 1;
 	}
@@ -436,7 +440,7 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
  * \brief See cascoda-bm/cascoda_interface.h
  *******************************************************************************
  ******************************************************************************/
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef)
 {
 	u8_t lxt_connected = 0;
 	u8_t use_watchdog  = 0;
@@ -482,12 +486,15 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	GPIO_SET_DEBOUNCE_TIME(PG, GPIO_DBCTL_DBCLKSRC_LIRC, GPIO_DBCTL_DBCLKSEL_2);
 	GPIO_SET_DEBOUNCE_TIME(PH, GPIO_DBCTL_DBCLKSRC_LIRC, GPIO_DBCTL_DBCLKSEL_2);
 
+	asleep = 1;	/* set before TIMER0 is disabled */
+
 	TIMER_Stop(TIMER0);
 	SYS_ResetModule(TMR0_RST);
 	TIMER_ResetCounter(TIMER0);
 
-	if ((use_timer0 || use_watchdog) && (!dpd))
+	if (!dpd)
 	{
+		/* timer has to be set up otherwise wakeup is unreliable when not in dpd */
 		CLK_EnableModuleClock(TMR0_MODULE);
 		if (use_watchdog)
 			CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_LIRC, 0);
@@ -498,42 +505,45 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 
 		/*  1s period - 1Hz */
 		TIMER_Open(TIMER0, TIMER_ONESHOT_MODE, 1);
-		if (use_watchdog)
+
+		if (use_timer0 || use_watchdog)
 		{
-			/* always uses 10 kHz LIRC clock, 10 kHz Clock: prescaler 9 gives 1 ms units */
-			WDTimeout = 0;
-			TIMER_SET_PRESCALE_VALUE(TIMER0, 9);
-			TIMER_SET_CMP_VALUE(TIMER0, 2 * sleeptime_ms);
-		}
-		else if (lxt_connected)
-		{
-			if (sleeptime_ms < 1000)
+			if (use_watchdog)
 			{
-				/* 32.768 kHz Clock: prescaler 32 gives roughly 1 ms units */
-				TIMER_SET_PRESCALE_VALUE(TIMER0, 32);
-				TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
+				/* always uses 10 kHz LIRC clock, 10 kHz Clock: prescaler 9 gives 1 ms units */
+				WDTimeout = 0;
+				TIMER_SET_PRESCALE_VALUE(TIMER0, 9);
+				TIMER_SET_CMP_VALUE(TIMER0, 2 * sleeptime_ms);
+			}
+			else if (lxt_connected)
+			{
+				if (sleeptime_ms < 1000)
+				{
+					/* 32.768 kHz Clock: prescaler 32 gives roughly 1 ms units */
+					TIMER_SET_PRESCALE_VALUE(TIMER0, 32);
+					TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
+				}
+				else
+				{
+					/* 32.768 kHz Clock: prescaler 255 gives 7.8125 ms units, so 128 is 1 sec */
+					TIMER_SET_PRESCALE_VALUE(TIMER0, 255);
+					TIMER_SET_CMP_VALUE(TIMER0, (128 * sleeptime_ms) / 1000);
+				}
 			}
 			else
 			{
-				/* 32.768 kHz Clock: prescaler 255 gives 7.8125 ms units, so 128 is 1 sec */
-				TIMER_SET_PRESCALE_VALUE(TIMER0, 255);
-				TIMER_SET_CMP_VALUE(TIMER0, (128 * sleeptime_ms) / 1000);
+				/*  10 kHz Clock: prescaler 9 gives 1 ms units */
+				TIMER_SET_PRESCALE_VALUE(TIMER0, 9);
+				TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
 			}
-		}
-		else
-		{
-			/*  10 kHz Clock: prescaler 9 gives 1 ms units */
-			TIMER_SET_PRESCALE_VALUE(TIMER0, 9);
-			TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
-		}
 
-		NVIC_EnableIRQ(TMR0_IRQn);
-		TIMER_EnableInt(TIMER0);
-		TIMER_EnableWakeup(TIMER0);
-		TIMER_Start(TIMER0);
+			NVIC_EnableIRQ(TMR0_IRQn);
+			TIMER_EnableInt(TIMER0);
+			TIMER_EnableWakeup(TIMER0);
+			TIMER_Start(TIMER0);
+		}
 	}
 
-	asleep = 1;
 	SYS_UnlockReg();
 
 	if (dpd)
@@ -572,11 +582,15 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	GPIO_SET_DEBOUNCE_TIME(PG, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 	GPIO_SET_DEBOUNCE_TIME(PH, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 
-	asleep = 0;
-
-	CHILI_TimersInit();
 	CHILI_GPIOPowerUp();
 	CHILI_SystemReInit();
+
+	asleep = 0;	/* reset after TIMER0 is re-enabled */
+
+	/* read downstream message that has woken up device */
+	if(!use_timer0)
+		DISPATCH_ReadCA821x(pDeviceRef);
+
 }
 
 /******************************************************************************/

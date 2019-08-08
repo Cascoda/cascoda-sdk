@@ -36,6 +36,9 @@
 #if SENSORIF_TEST_MAX30205
 #include "sif_max30205.h"
 #endif
+#if SENSORIF_TEST_LTR303ALS
+#include "sif_ltr303als.h"
+#endif
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -46,13 +49,18 @@ u8_t SENSORIF_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	u8_t status = 0;
 
+	SENSORIF_I2C_Init();        /* enable interface */
 	/* select device-specific initialisation here */
 #if (SENSORIF_TEST_SI7021)
 	; /* no initialisation */
 #endif
 #if (SENSORIF_TEST_MAX30205)
-	status = SIF_MAX30205_Initialise();
+	status |= SIF_MAX30205_Initialise();
 #endif
+#if (SENSORIF_TEST_LTR303ALS)
+	status |= SIF_LTR303ALS_Initialise();
+#endif
+	SENSORIF_I2C_Deinit(); /* disable interface */
 	return (status);
 }
 
@@ -70,6 +78,10 @@ void SENSORIF_Handler(struct ca821x_dev *pDeviceRef)
 #if (SENSORIF_TEST_MAX30205)
 	SENSORIF_Handler_MAX30205();
 #endif
+#if (SENSORIF_TEST_LTR303ALS)
+	SENSORIF_Handler_LTR303ALS();
+#endif
+
 }
 
 /******************************************************************************/
@@ -167,6 +179,51 @@ void SENSORIF_Handler_MAX30205(void)
 		printf("%u.%03u'C", ((temp >> 8) & 0xFF), (((u32_t)(temp & 0x00FF) * 1000) / 256));
 #if SENSORIF_REPORT_TMEAS
 		printf("; TmeasT=%ums", (t2 - t1));
+#endif
+		printf("\n");
+	}
+	if ((TIME_ReadAbsoluteTime() % SENSORIF_MEASUREMENT_PERIOD) >
+	    (SENSORIF_MEASUREMENT_PERIOD - SENSORIF_MEASUREMENT_DELTA))
+	{
+		handled = 0;
+	}
+}
+#endif
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief SENSORIF Handler Example for LTR303ALS
+ *******************************************************************************
+ ******************************************************************************/
+#if (SENSORIF_TEST_LTR303ALS)
+void SENSORIF_Handler_LTR303ALS(void)
+{
+	static u8_t ticker  = 0;
+	static u8_t handled = 0;
+	u16_t       light_ch0 = 0;
+	u16_t       light_ch1 = 0;
+	u32_t       t1, t2;
+
+	/* Note:
+	 * This is a tick based handler for polling only
+	 * In applications this should be based on timer-interrupts.
+	 */
+
+	if (((TIME_ReadAbsoluteTime() % SENSORIF_MEASUREMENT_PERIOD) < SENSORIF_MEASUREMENT_DELTA) && (!handled))
+	{
+		printf("LTR303ALS: ");
+		++ticker;
+		handled = 1;
+		SENSORIF_I2C_Init(); /* enable interface */
+		t1   = TIME_ReadAbsoluteTime();
+		/* read LTR303ALS light measurement for both channels */
+		SIF_LTR303ALS_ReadLight(&light_ch0, &light_ch1);
+		t2   = TIME_ReadAbsoluteTime();
+		SENSORIF_I2C_Deinit(); /* disable interface */
+		printf("Meas %u:", ticker);
+		printf("; Light Ch0 (visible) = 0x%04X; Ch1 (IR) = 0x%04X", light_ch0, light_ch1);
+#if SENSORIF_REPORT_TMEAS
+		printf("; TmeasL=%ums", (t2 - t1));
 #endif
 		printf("\n");
 	}
