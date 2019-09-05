@@ -61,6 +61,14 @@ enum powerdown_mode
 };
 /**@}*/
 
+/** Structure of the EVBME_COMM_CHECK message that can be used to test comms by host. */
+struct EVBME_COMM_CHECK_request
+{
+	uint8_t mHandle;   //!< Handle identifying this comm check
+	uint8_t mDelay;    //!< Delay before sending responses
+	uint8_t mIndCount; //!< Number of indications to send up
+};
+
 /******************************************************************************/
 /****** Message Definitions for UpStream (Serial) and  DownStream (SPI)  ******/
 /******************************************************************************/

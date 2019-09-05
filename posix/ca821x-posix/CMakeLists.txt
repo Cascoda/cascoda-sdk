@@ -15,6 +15,20 @@ option( CA821X_ASYNC_CALLBACK
 # Mark the device as being FTD-capable
 set(CASCODA_OPENTHREAD_FTD ON PARENT_SCOPE)
 
+# Option for the Raspberry pi USB workaround, with crude autodetection
+if(UNIX
+	AND CMAKE_HOST_UNIX
+	AND NOT CASCODA_ENABLE_RASPI_USB_WORKAROUND
+	AND EXISTS "/sys/bus/usb/devices/usb1/manufacturer")
+	file(READ "/sys/bus/usb/devices/usb1/manufacturer" USB_ROOT_INFO)
+	if(USB_ROOT_INFO MATCHES "dwc_otg_hcd")
+		set(CASCODA_ENABLE_RASPI_USB_WORKAROUND ON)
+	endif()
+endif()
+option( CASCODA_RASPI_USB_WORKAROUND
+	"Enable the raspberry pi USB workaround which keeps the connection active"
+	${CASCODA_ENABLE_RASPI_USB_WORKAROUND})
+
 # Config file generation ------------------------------------------------------
 configure_file(
 	"${PROJECT_SOURCE_DIR}/include/ca821x-posix/ca821x-posix-config.h.in"

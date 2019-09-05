@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "hidapi/hidapi.h"
@@ -59,11 +60,18 @@
 #define FRAG_LAST_MASK (1 << 7)
 #define FRAG_FIRST_MASK (1 << 6)
 
+/**
+ * The usb exchange private-data struct representing a single device.
+ */
 struct usb_exchange_priv
 {
-	struct ca821x_exchange_base base;
-	hid_device *                hid_dev;
-	char *                      hid_path;
+	struct ca821x_exchange_base base;     //!< Exchange base struct
+	hid_device *                hid_dev;  //!< hidapi device reference struct
+	char *                      hid_path; //!< platform-specific device string
+
+#if CASCODA_RASPI_USB_WORKAROUND
+	struct timespec prev_send; //!< The time that the previous usb packet was sent
+#endif
 };
 
 static struct ca821x_dev *s_devs[USB_MAX_DEVICES] = {0};
@@ -84,6 +92,12 @@ static int reload_hid_device(struct ca821x_dev *pDeviceRef);
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 
+/**
+ * Assert that the device is a usb device, and crash if not.
+ *
+ * If this crashes the program, then a serious programmer error
+ * is the cause.
+ */
 static void assert_usb_exchange(struct ca821x_dev *pDeviceRef)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
@@ -172,6 +186,48 @@ void test_frag_loopback()
 }
 #endif
 
+/**
+ * This function applies a workaround that is necessary on the Raspberry pi for
+ * reliable USB communications. Essentially, on the raspberry pi, if there is not
+ * regular USB transmission to the OUT endpoint, the next OUT transmission will
+ * take up to 1000ms to complete. This behaviour has only been observed on the
+ * Raspberry pi. The hotfix for this is to send a USB transmission every 1 second
+ * on the raspi platform.
+ */
+void usb_apply_raspi_workaround(struct ca821x_dev *pDeviceRef)
+{
+#if CASCODA_RASPI_USB_WORKAROUND
+	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
+	struct timespec           curTime;
+
+	if (clock_gettime(CLOCK_REALTIME, &curTime))
+		return;
+
+	curTime.tv_sec -= priv->prev_send.tv_sec;
+	curTime.tv_nsec -= priv->prev_send.tv_nsec;
+
+	// Normalize the struct in case the subtraction made negative nsec
+	if (curTime.tv_nsec < 0)
+	{
+		curTime.tv_nsec += 1000000000;
+		curTime.tv_sec -= 1;
+	}
+
+	// Not enough time has passed, no need to send packet
+	if (curTime.tv_sec < 1)
+		return;
+
+	// Add a USB packet (EVBME COMM_CHECK to the queue)
+	uint8_t comm_check[] = {0xA1, 0, 0, 0};
+	add_to_queue(
+	    &(priv->base.out_buffer_queue), &(priv->base.out_queue_mutex), comm_check, sizeof(comm_check), pDeviceRef);
+
+	clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+#else
+	(void)pDeviceRef;
+#endif
+}
+
 ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
@@ -180,6 +236,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	int                       error;
 
 	assert_usb_exchange(pDeviceRef);
+	usb_apply_raspi_workaround(pDeviceRef);
 
 	if (peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
 	{ //Use a nonblocking read if we are waiting to send messages
@@ -253,6 +310,12 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 		error = -usb_exchange_err_usb;
 		reload_hid_device(pDeviceRef); //usb disconnected - attempt to grab new device
 	}
+#if CASCODA_RASPI_USB_WORKAROUND
+	else
+	{
+		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+	}
+#endif
 	return error;
 }
 
@@ -462,7 +525,7 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	strncpy(priv->hid_path, hid_cur->path, len);
 	priv->hid_dev = dev;
 
-	error = (ca_error) init_generic(pDeviceRef);
+	error = (ca_error)init_generic(pDeviceRef);
 
 	if (error != CA_ERROR_SUCCESS)
 	{

@@ -13,8 +13,8 @@
 #include <unistd.h>
 
 #include "ca821x-posix/ca821x-posix-config.h"
-#include "ca821x_error.h"
 #include "ca821x_api.h"
+#include "ca821x_error.h"
 
 /**
  * \brief Error callback
@@ -61,7 +61,9 @@ typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x
  *
  * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
  * 
- * \returns Cascoda error code
+ * \returns Status
+ * \retval CA_ERROR_SUCCESS The exchange is ready to send a packet
+ * \retval CA_ERROR_BUSY The exhange is not ready to send a packet
  */
 typedef ca_error (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
 

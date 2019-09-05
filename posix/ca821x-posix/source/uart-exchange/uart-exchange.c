@@ -195,11 +195,11 @@ exit:
 	return len;
 }
 
-int uart_write_isready(struct ca821x_dev *pDeviceRef)
+ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
 
-	return !priv->tx_stalled;
+	return priv->tx_stalled ? CA_ERROR_BUSY : CA_ERROR_SUCCESS;
 }
 
 int uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)

@@ -24,11 +24,12 @@ char *ptsname(int fd);
 static struct ca821x_dev  sDeviceRef;
 static struct ca821x_dev *pDeviceRef;
 
-static uint8_t        s_receive_buffer[128];
-static const uint8_t *s_write_buffer;
-static size_t         s_write_length;
-static int            s_in_fd;
-static int            s_out_fd;
+static uint8_t s_receive_buffer[128];
+static uint8_t s_write_buffer[255];
+static size_t  s_write_length;
+static size_t  s_write_offset;
+static int     s_in_fd;
+static int     s_out_fd;
 
 static int selfpipe[2];
 
@@ -190,8 +191,9 @@ int handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 	write(selfpipe[1], "a", 1);
 	while (s_write_length) pthread_cond_wait(&s_write_cond, &s_write_mutex);
 
-	s_write_buffer = buf + 2;
 	s_write_length = len - 2;
+	s_write_offset = 0;
+	memcpy(s_write_buffer, buf + 2, s_write_length);
 
 	pthread_mutex_unlock(&s_write_mutex);
 
@@ -255,7 +257,7 @@ void process_io(void)
 		pthread_mutex_lock(&s_write_mutex);
 		if ((s_write_length > 0) && (pollfd[1].revents & POLLOUT))
 		{
-			rval = write(s_out_fd, s_write_buffer, s_write_length);
+			rval = write(s_out_fd, s_write_buffer + s_write_offset, s_write_length);
 
 			if (rval <= 0)
 			{
@@ -263,7 +265,7 @@ void process_io(void)
 				exit(EXIT_FAILURE);
 			}
 
-			s_write_buffer += rval;
+			s_write_offset += rval;
 			s_write_length -= rval;
 
 			if (s_write_length == 0)

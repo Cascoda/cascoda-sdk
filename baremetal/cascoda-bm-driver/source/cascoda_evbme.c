@@ -111,13 +111,6 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	return status;
 } // End of EVBMEInitialise()
 
-struct EVBME_COMM_CHECK_request
-{
-	uint8_t mHandle;   //!< Handle identifying this comm check
-	uint8_t mDelay;    //!< Delay before sending responses
-	uint8_t mIndCount; //!< Number of indications to send up
-};
-
 void EVBME_COMM_CHECK_request(struct EVBME_COMM_CHECK_request *msg)
 {
 	TIME_WaitTicks(msg->mDelay);
@@ -368,7 +361,7 @@ ca_error EVBME_SET_request(uint8_t            Attribute,
 	return status;
 } // End of EVBME_SET_request()
 
-int EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	ca_error  status;
 	ca_error *context = (ca_error *)WAIT_GetContext();
@@ -410,7 +403,7 @@ int EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca82
 exit:
 	if (context)
 		*context = status;
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -694,7 +687,7 @@ void EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca
 	}
 } // End of EVBME_CAX_PowerDown()
 
-int EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	u8_t condition = params->WakeUpCondition;
 	u8_t mode;
@@ -716,7 +709,7 @@ int EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct
 		TDME_ChipInit(pDeviceRef);
 	}
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/

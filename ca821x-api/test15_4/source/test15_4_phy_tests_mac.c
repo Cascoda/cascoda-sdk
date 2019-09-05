@@ -266,6 +266,7 @@ uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca82
 	uint8_t status;
 
 	status = params->Status;
+	(void) pDeviceRef;
 
 	if (status == MAC_NO_ACK)
 	{
