@@ -1,23 +1,33 @@
 /**
- * @file test15_4_phy_tests_mac.c
+ * @file
  * @brief PHY Test Functions using MAC Functions for Data Reliablity
- * @author Wolfgang Bruchner
- * @date 19/07/14
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <stdio.h>
@@ -52,11 +62,6 @@ uint8_t  PHYRxLongAddress[8];
 
 uint8_t DSN_OLD;
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Address Initialisation
- *******************************************************************************
- ******************************************************************************/
 void PHYTestMACAddInit(void)
 {
 	PHYPANId          = PHY_PANID;
@@ -66,15 +71,6 @@ void PHYTestMACAddInit(void)
 	memcpy(PHYRxLongAddress, (uint8_t[])PHY_RX_LONGADD, 8);
 } // End of PHYTestMACAddInit()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialisation for using MAC layer in EVBME (Tx)
- *******************************************************************************
- * \param pDeviceRef - Device Reference
- *******************************************************************************
- * \return Status
- *******************************************************************************
- ******************************************************************************/
 uint8_t PHYTestMACTxInitialise(struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
@@ -120,15 +116,6 @@ uint8_t PHYTestMACTxInitialise(struct ca821x_dev *pDeviceRef)
 	return status;
 } // End of PHYTestMACTxInitialise()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialisation for using MAC layer in EVBME (Rx)
- *******************************************************************************
- * \param pDeviceRef - Device Reference
- *******************************************************************************
- * \return Status
- *******************************************************************************
- ******************************************************************************/
 uint8_t PHYTestMACRxInitialise(struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
@@ -165,15 +152,6 @@ uint8_t PHYTestMACRxInitialise(struct ca821x_dev *pDeviceRef)
 	return status;
 } // End of PHYTestMACRxInitialise()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Denitialisation for using MAC layer in EVBME
- *******************************************************************************
- * \param pDeviceRef - Device Reference
- *******************************************************************************
- * \return Status
- *******************************************************************************
- ******************************************************************************/
 uint8_t PHYTestMACDeinitialise(struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
@@ -251,22 +229,12 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	return (status);
 } // End of PHY_TXPKT_MAC_request()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief PHY Test Wrapper for MCPS_DATA_confirm()
- *******************************************************************************
- * \param data_cnf - MCPS data confirm buffer
- * \param pDeviceRef - Device Reference
- *******************************************************************************
- * \return Status
- *******************************************************************************
- ******************************************************************************/
 uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
 
 	status = params->Status;
-	(void) pDeviceRef;
+	(void)pDeviceRef;
 
 	if (status == MAC_NO_ACK)
 	{
@@ -284,16 +252,6 @@ uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca82
 	return (status);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief PHY Test Wrapper for MCPS_DATA_indication()
- *******************************************************************************
- * \param data_ind - MCPS data indication buffer
- * \param pDeviceRef - Device Reference
- *******************************************************************************
- * \return Status
- *******************************************************************************
- ******************************************************************************/
 uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t                           status = 0;

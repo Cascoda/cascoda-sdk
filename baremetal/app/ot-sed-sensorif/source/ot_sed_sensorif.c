@@ -80,7 +80,8 @@ static int counter_ISR(void)
  ******************************************************************************/
 static void set_up_GPIO_input(u8_t mpin)
 {
-	BSP_ModuleRegisterGPIOInput(mpin, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_RISE, &counter_ISR);
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
+	    mpin, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_RISE, &counter_ISR});
 }
 
 /******************************************************************************/

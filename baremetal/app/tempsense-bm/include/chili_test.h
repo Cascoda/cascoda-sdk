@@ -1,23 +1,33 @@
 /**
- * @file chili_test.h
+ * @file
  * @brief Chili Module Production Test Modes
- * @author Wolfgang Bruchner
- * @date 08/02/17
- *//*
- * Copyright (C) 2017  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 #include "cascoda-bm/cascoda_types.h"
 
@@ -100,21 +110,111 @@
 /******************************************************************************/
 /****** TEST Functions                                                   ******/
 /******************************************************************************/
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Production Test Initialisation
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_Initialise(u8_t status, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+  * \brief Chili Production Test Handler
+  *******************************************************************************
+  ******************************************************************************/
 void CHILI_TEST_Handler(struct ca821x_dev *pDeviceRef);
-int  CHILI_TEST_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Test Dispatch Branch (UpStream, Serial)
+ *******************************************************************************
+ ******************************************************************************/
+int CHILI_TEST_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Production Test Start of Test Device Initialisation
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Production Test Initialisation of MAC PIB
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reference Device Process incoming Data Indication
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reference Device Process incoming Data Confirm
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_REF_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Data Exchange
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Process incoming Data Indication
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Process incoming Data Confirm
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Timeout Check
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Display Test Result
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Checks if Device is in Production Test Mode (yes if non-zero)
+ *******************************************************************************
+ ******************************************************************************/
 u8_t CHILI_TEST_IsInTestMode(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief module LEDs signalling
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_LED_Handler(void);
 /* Callbacks */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Dynamically Register Callbacks for CHILI_TEST_MODE
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
 
 #endif // CHILI_TEST_H

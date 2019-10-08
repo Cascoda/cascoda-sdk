@@ -19,6 +19,8 @@ if(NOT CASCODA_GIT_VER)
 	set(CASCODA_GIT_VER "unknown")
 endif()
 
+message(STATUS "Cascoda SDK: ${CASCODA_GIT_VER}")
+
 configure_file(
 	"${GITVER_IN}"
 	"${GITVER_OUT}"

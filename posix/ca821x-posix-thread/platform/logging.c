@@ -63,7 +63,7 @@ OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const 
 	gettimeofday(&tv, NULL);
 	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
 
-	LOG_PRINTF("%s.%06d ", timeString, (uint32_t)tv.tv_usec);
+	LOG_PRINTF("%s.%03d ", timeString, (uint32_t)tv.tv_usec / 1000);
 
 	switch (aLogLevel)
 	{

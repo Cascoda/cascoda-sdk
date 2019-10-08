@@ -10,5 +10,8 @@ Example applications
 ### cascoda-bm-driver
 General baremetal driver and api.
 
+### cascoda-bm-driver-core
+Minimal baremetal driver.
+
 ### platform
 Platform abstraction layers

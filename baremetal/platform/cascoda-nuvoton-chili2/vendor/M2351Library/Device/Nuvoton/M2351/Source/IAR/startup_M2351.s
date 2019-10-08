@@ -15,9 +15,9 @@
 
     EXTERN  SystemInit	
     EXTERN  __iar_program_start
+    EXTERN  SCU_IRQHandler
     PUBLIC  __vector_table
     PUBLIC  __Vectors
-
     DATA
 __Vectors    
 __vector_table
@@ -40,109 +40,109 @@ __vector_table
     DCD     SysTick_Handler
 
     ; External Interrupts
-                                                   ; maximum of 32 External Interrupts are possible
-                DCD     BOD_IRQHandler		       ; 0  
-                DCD     IRC_IRQHandler             ; 1  
-                DCD     PWRWU_IRQHandler           ; 2  
-                DCD     SRAM_IRQHandler            ; 3  
-                DCD     CLKFAIL_IRQHandler         ; 4  
-                DCD     DEFAULT_IRQHandler         ; 5  
-                DCD     RTC_IRQHandler             ; 6  
-                DCD     TAMPER_IRQHandler          ; 7  
-                DCD     WDT_IRQHandler             ; 8  
-                DCD     WWDT_IRQHandler            ; 9  
-                DCD     EINT0_IRQHandler           ; 10 
-                DCD     EINT1_IRQHandler           ; 11 
-                DCD     EINT2_IRQHandler           ; 12 
-                DCD     EINT3_IRQHandler           ; 13 
-                DCD     EINT4_IRQHandler           ; 14 
-                DCD     EINT5_IRQHandler           ; 15 
-                DCD     GPA_IRQHandler             ; 16 
-                DCD     GPB_IRQHandler             ; 17 
-                DCD     GPC_IRQHandler             ; 18 
-                DCD     GPD_IRQHandler             ; 19 
-                DCD     GPE_IRQHandler             ; 20 
-                DCD     GPF_IRQHandler             ; 21 
-                DCD     QSPI0_IRQHandler           ; 22 
-                DCD     SPI0_IRQHandler            ; 23 
-                DCD     BRAKE0_IRQHandler          ; 24 
-                DCD     EPWM0_P0_IRQHandler        ; 25 
-                DCD     EPWM0_P1_IRQHandler        ; 26 
-                DCD     EPWM0_P2_IRQHandler        ; 27 
-                DCD     BRAKE1_IRQHandler          ; 28 
-                DCD     EPWM1_P0_IRQHandler        ; 29 
-                DCD     EPWM1_P1_IRQHandler        ; 30 
-                DCD     EPWM1_P2_IRQHandler        ; 31 
-                DCD     TMR0_IRQHandler            ; 32 
-                DCD     TMR1_IRQHandler            ; 33 
-                DCD     TMR2_IRQHandler            ; 34 
-                DCD     TMR3_IRQHandler            ; 35 
-                DCD     UART0_IRQHandler           ; 36 
-                DCD     UART1_IRQHandler           ; 37 
-                DCD     I2C0_IRQHandler            ; 38 
-                DCD     I2C1_IRQHandler            ; 39 
-                DCD     PDMA0_IRQHandler           ; 40 
-                DCD     DAC_IRQHandler             ; 41 
-                DCD     EADC0_IRQHandler           ; 42 
-                DCD     EADC1_IRQHandler           ; 43 
-                DCD     ACMP01_IRQHandler          ; 44 
-                DCD     DEFAULT_IRQHandler         ; 45 
-                DCD     EADC2_IRQHandler           ; 46 
-                DCD     EADC3_IRQHandler           ; 47 
-                DCD     UART2_IRQHandler           ; 48 
-                DCD     UART3_IRQHandler           ; 49 
-                DCD     DEFAULT_IRQHandler         ; 50 
-                DCD     SPI1_IRQHandler            ; 51 
-                DCD     SPI2_IRQHandler            ; 52 
-                DCD     USBD_IRQHandler            ; 53 
-                DCD     USBH_IRQHandler            ; 54 
-                DCD     USBOTG_IRQHandler          ; 55 
-                DCD     CAN0_IRQHandler            ; 56 
-                DCD     DEFAULT_IRQHandler         ; 57 
-                DCD     SC0_IRQHandler             ; 58 
-                DCD     SC1_IRQHandler             ; 59 
-                DCD     SC2_IRQHandler             ; 60 
-                DCD     DEFAULT_IRQHandler         ; 61 
-                DCD     SPI3_IRQHandler            ; 62 
-                DCD     DEFAULT_IRQHandler         ; 63 
-                DCD     SDH0_IRQHandler            ; 64 
-                DCD     DEFAULT_IRQHandler         ; 65 
-                DCD     DEFAULT_IRQHandler         ; 66 
-                DCD     DEFAULT_IRQHandler         ; 67 
-                DCD     I2S0_IRQHandler            ; 68 
-                DCD     DEFAULT_IRQHandler         ; 69 
-                DCD     OPA0_IRQHandler            ; 70 
-                DCD     CRPT_IRQHandler            ; 71 
-                DCD     GPG_IRQHandler             ; 72 
-                DCD     EINT6_IRQHandler           ; 73 
-                DCD     UART4_IRQHandler           ; 74 
-                DCD     UART5_IRQHandler           ; 75 
-                DCD     USCI0_IRQHandler           ; 76 
-                DCD     USCI1_IRQHandler           ; 77 
-                DCD     BPWM0_IRQHandler           ; 78 
-                DCD     BPWM1_IRQHandler           ; 79 
-                DCD     DEFAULT_IRQHandler         ; 80 
-                DCD     DEFAULT_IRQHandler         ; 81 
-                DCD     I2C2_IRQHandler            ; 82 
-                DCD     DEFAULT_IRQHandler         ; 83 
-                DCD     QEI0_IRQHandler            ; 84 
-                DCD     QEI1_IRQHandler            ; 85 
-                DCD     ECAP0_IRQHandler           ; 86 
-                DCD     ECAP1_IRQHandler           ; 87 
-                DCD     GPH_IRQHandler             ; 88 
-                DCD     EINT7_IRQHandler           ; 89 
-                DCD     SDH1_IRQHandler            ; 90 
-                DCD     DEFAULT_IRQHandler         ; 91 
-                DCD     DEFAULT_IRQHandler         ; 92 
-                DCD     DEFAULT_IRQHandler         ; 93 
-                DCD     DEFAULT_IRQHandler         ; 94 
-                DCD     DEFAULT_IRQHandler         ; 95 
-                DCD     DEFAULT_IRQHandler         ; 96 
-                DCD     DEFAULT_IRQHandler         ; 97 
-                DCD     PDMA1_IRQHandler           ; 98 
-                DCD     SCU_IRQHandler             ; 99 
-                DCD     LCD_IRQHandler             ; 100
-                DCD     TRNG_IRQHandler            ; 101
+                                       ; maximum of 32 External Interrupts are possible
+    DCD     BOD_IRQHandler		       ; 0  
+    DCD     IRC_IRQHandler             ; 1  
+    DCD     PWRWU_IRQHandler           ; 2  
+    DCD     SRAM_IRQHandler            ; 3  
+    DCD     CLKFAIL_IRQHandler         ; 4  
+    DCD     DEFAULT_IRQHandler         ; 5  
+    DCD     RTC_IRQHandler             ; 6  
+    DCD     TAMPER_IRQHandler          ; 7  
+    DCD     WDT_IRQHandler             ; 8  
+    DCD     WWDT_IRQHandler            ; 9  
+    DCD     EINT0_IRQHandler           ; 10 
+    DCD     EINT1_IRQHandler           ; 11 
+    DCD     EINT2_IRQHandler           ; 12 
+    DCD     EINT3_IRQHandler           ; 13 
+    DCD     EINT4_IRQHandler           ; 14 
+    DCD     EINT5_IRQHandler           ; 15 
+    DCD     GPA_IRQHandler             ; 16 
+    DCD     GPB_IRQHandler             ; 17 
+    DCD     GPC_IRQHandler             ; 18 
+    DCD     GPD_IRQHandler             ; 19 
+    DCD     GPE_IRQHandler             ; 20 
+    DCD     GPF_IRQHandler             ; 21 
+    DCD     QSPI0_IRQHandler           ; 22 
+    DCD     SPI0_IRQHandler            ; 23 
+    DCD     BRAKE0_IRQHandler          ; 24 
+    DCD     EPWM0_P0_IRQHandler        ; 25 
+    DCD     EPWM0_P1_IRQHandler        ; 26 
+    DCD     EPWM0_P2_IRQHandler        ; 27 
+    DCD     BRAKE1_IRQHandler          ; 28 
+    DCD     EPWM1_P0_IRQHandler        ; 29 
+    DCD     EPWM1_P1_IRQHandler        ; 30 
+    DCD     EPWM1_P2_IRQHandler        ; 31 
+    DCD     TMR0_IRQHandler            ; 32 
+    DCD     TMR1_IRQHandler            ; 33 
+    DCD     TMR2_IRQHandler            ; 34 
+    DCD     TMR3_IRQHandler            ; 35 
+    DCD     UART0_IRQHandler           ; 36 
+    DCD     UART1_IRQHandler           ; 37 
+    DCD     I2C0_IRQHandler            ; 38 
+    DCD     I2C1_IRQHandler            ; 39 
+    DCD     PDMA0_IRQHandler           ; 40 
+    DCD     DAC_IRQHandler             ; 41 
+    DCD     EADC0_IRQHandler           ; 42 
+    DCD     EADC1_IRQHandler           ; 43 
+    DCD     ACMP01_IRQHandler          ; 44 
+    DCD     DEFAULT_IRQHandler         ; 45 
+    DCD     EADC2_IRQHandler           ; 46 
+    DCD     EADC3_IRQHandler           ; 47 
+    DCD     UART2_IRQHandler           ; 48 
+    DCD     UART3_IRQHandler           ; 49 
+    DCD     DEFAULT_IRQHandler         ; 50 
+    DCD     SPI1_IRQHandler            ; 51 
+    DCD     SPI2_IRQHandler            ; 52 
+    DCD     USBD_IRQHandler            ; 53 
+    DCD     USBH_IRQHandler            ; 54 
+    DCD     USBOTG_IRQHandler          ; 55 
+    DCD     CAN0_IRQHandler            ; 56 
+    DCD     DEFAULT_IRQHandler         ; 57 
+    DCD     SC0_IRQHandler             ; 58 
+    DCD     SC1_IRQHandler             ; 59 
+    DCD     SC2_IRQHandler             ; 60 
+    DCD     DEFAULT_IRQHandler         ; 61 
+    DCD     SPI3_IRQHandler            ; 62 
+    DCD     DEFAULT_IRQHandler         ; 63 
+    DCD     SDH0_IRQHandler            ; 64 
+    DCD     DEFAULT_IRQHandler         ; 65 
+    DCD     DEFAULT_IRQHandler         ; 66 
+    DCD     DEFAULT_IRQHandler         ; 67 
+    DCD     I2S0_IRQHandler            ; 68 
+    DCD     DEFAULT_IRQHandler         ; 69 
+    DCD     OPA0_IRQHandler            ; 70 
+    DCD     CRPT_IRQHandler            ; 71 
+    DCD     GPG_IRQHandler             ; 72 
+    DCD     EINT6_IRQHandler           ; 73 
+    DCD     UART4_IRQHandler           ; 74 
+    DCD     UART5_IRQHandler           ; 75 
+    DCD     USCI0_IRQHandler           ; 76 
+    DCD     USCI1_IRQHandler           ; 77 
+    DCD     BPWM0_IRQHandler           ; 78 
+    DCD     BPWM1_IRQHandler           ; 79 
+    DCD     DEFAULT_IRQHandler         ; 80 
+    DCD     DEFAULT_IRQHandler         ; 81 
+    DCD     I2C2_IRQHandler            ; 82 
+    DCD     DEFAULT_IRQHandler         ; 83 
+    DCD     QEI0_IRQHandler            ; 84 
+    DCD     QEI1_IRQHandler            ; 85 
+    DCD     ECAP0_IRQHandler           ; 86 
+    DCD     ECAP1_IRQHandler           ; 87 
+    DCD     GPH_IRQHandler             ; 88 
+    DCD     EINT7_IRQHandler           ; 89 
+    DCD     SDH1_IRQHandler            ; 90 
+    DCD     DEFAULT_IRQHandler         ; 91 
+    DCD     DEFAULT_IRQHandler         ; 92 
+    DCD     DEFAULT_IRQHandler         ; 93 
+    DCD     DEFAULT_IRQHandler         ; 94 
+    DCD     DEFAULT_IRQHandler         ; 95 
+    DCD     DEFAULT_IRQHandler         ; 96 
+    DCD     DEFAULT_IRQHandler         ; 97 
+    DCD     PDMA1_IRQHandler           ; 98 
+    DCD     SCU_IRQHandler             ; 99 
+    DCD     LCD_IRQHandler             ; 100
+    DCD     TRNG_IRQHandler            ; 101
                 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -263,7 +263,7 @@ Reset_Handler
          ;PUBWEAK  0                          ; 96 
          ;PUBWEAK  0                          ; 97 
           PUBWEAK  PDMA1_IRQHandler           ; 98 
-          PUBWEAK  SCU_IRQHandler             ; 99 
+         ;PUBWEAK  SCU_IRQHandler             ; 99 
           PUBWEAK  LCD_IRQHandler             ; 100
           PUBWEAK  TRNG_IRQHandler            ; 101
                           
@@ -274,6 +274,15 @@ Reset_Handler
     SECTION .text:CODE:NOROOT:REORDER(2)
 
 HardFault_Handler
+                IMPORT  ProcessHardFault
+                MOV     R0, LR                 
+                MRS     R1, MSP                
+                MRS     R2, PSP                
+                LDR     R3, =ProcessHardFault 
+                BLX     R3                     
+                BX      R0                     
+
+
 NMI_Handler       
 SVC_Handler       
 PendSV_Handler    
@@ -378,7 +387,7 @@ SDH1_IRQHandler            ; 90
 ;0                          ; 96 
 ;0                          ; 97 
 PDMA1_IRQHandler           ; 98 
-SCU_IRQHandler             ; 99 
+;SCU_IRQHandler             ; 99 
 LCD_IRQHandler             ; 100
 TRNG_IRQHandler            ; 101
 DEFAULT_IRQHandler

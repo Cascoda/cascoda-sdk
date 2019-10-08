@@ -1,23 +1,33 @@
 /**
- * @file tempsense_app.c
+ * @file
  * @brief Chili temperature sensing app functions for device and coordinator
- * @author Wolfgang Bruchner
- * @date 14/09/15
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <inttypes.h>
@@ -52,11 +62,6 @@ u16_t APP_ShortAddress;
 u8_t  APP_LongAddress[8];
 u8_t  APP_Channel = 18;
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Application Handler
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Handler(struct ca821x_dev *pDeviceRef)
 {
 	if (APP_INITIALISE)
@@ -81,11 +86,6 @@ void TEMPSENSE_APP_Handler(struct ca821x_dev *pDeviceRef)
 	TEMPSENSE_APP_LED_Handler();
 } // End of TEMPSENSE_APP_Handler()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Application Initialisation of MAC etc.
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	APP_INITIALISE = 0;
@@ -107,9 +107,6 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 	else
 	{
 		/* normal */
-		/* disable watchdog timer for normal mode */
-		if (APP_USE_WATCHDOG)
-			BSP_WatchdogDisable();
 		/* reset program PIB */
 		APP_Channel = 18;
 		APP_PANId   = 0xFFFF;
@@ -132,11 +129,6 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_Initialise()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Dispatch Branch (UpStream, Serial)
- *******************************************************************************
- ******************************************************************************/
 int TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
 	/* switch clock otherwise chip is locking up as it loses external clock */
@@ -159,11 +151,6 @@ int TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct c
 	return 0;
 } // End of TEMPSENSE_APP_UpStreamDispatch()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Switch Mode
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_SwitchMode(u8_t mode)
 {
 	if (mode > APP_ST_DEVICE)
@@ -179,11 +166,6 @@ void TEMPSENSE_APP_SwitchMode(u8_t mode)
 	APP_INITIALISE = 1;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Application Initialisation of MAC PIB
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef)
 {
 	u16_t ptime;
@@ -226,13 +208,6 @@ void TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_InitPIB()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Get Temperature Reading
- *******************************************************************************
- * \return Temperature, 8 bit signed (1s complement)
- *******************************************************************************
- ******************************************************************************/
 u8_t TEMPSENSE_APP_GetTempVal(void)
 {
 	i32_t t32val;
@@ -247,13 +222,6 @@ u8_t TEMPSENSE_APP_GetTempVal(void)
 	return (tval);
 } // End of TEMPSENSE_APP_GetTempVal()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Get Battery Voltage Reading
- *******************************************************************************
- * \return 8-Bit VBat, full range = 5.5V
- *******************************************************************************
- ******************************************************************************/
 u16_t TEMPSENSE_APP_GetVoltsVal(void)
 {
 	u32_t adcval;
@@ -265,13 +233,6 @@ u16_t TEMPSENSE_APP_GetVoltsVal(void)
 	return (vval);
 } // End of TEMPSENSE_APP_GetVoltsVal()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Get ScanChannels from MAC_CHANNELLIST
- *******************************************************************************
- * \return ScanChannels Parameter for Scan Requests
- *******************************************************************************
- ******************************************************************************/
 u32_t TEMPSENSE_APP_GetScanChannels(void)
 {
 	u32_t scanchannels = 0; /* All: 0x07FFF800 */
@@ -294,11 +255,6 @@ u32_t TEMPSENSE_APP_GetScanChannels(void)
 	return (scanchannels);
 } // End of TEMPSENSE_APP_GetScanChannels()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Print MAC_CHANNELLIST
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_PrintScanChannels(void)
 {
 	u8_t lsize;
@@ -317,26 +273,17 @@ void TEMPSENSE_APP_PrintScanChannels(void)
 
 } // End of TEMPSENSE_APP_PrintScanChannels()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Prints AboluteTime in Seconds
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_PrintSeconds(void)
 {
 	printf("%us; ", TIME_ReadAbsoluteTime() / 1000);
 } // End of TEMPSENSE_APP_PrintSeconds()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief module LEDs signalling
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_LED_Handler(void)
 {
-	u32_t ledtime_g, ledtime_r;
-	u32_t TON_G, TOFF_G;
-	u32_t TON_R, TOFF_R;
+	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
+	u32_t                    ledtime_g, ledtime_r;
+	u32_t                    TON_G, TOFF_G;
+	u32_t                    TON_R, TOFF_R;
 
 	if (APP_STATE == APP_ST_DEVICE)
 	{
@@ -382,13 +329,13 @@ void TEMPSENSE_APP_LED_Handler(void)
 
 	/* green */
 	if (ledtime_g < TON_G)
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+		BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 	else
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
+		BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
 
 	/* red */
 	if (ledtime_r < TON_R)
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
+		BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_ON);
 	else
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
+		BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
 }

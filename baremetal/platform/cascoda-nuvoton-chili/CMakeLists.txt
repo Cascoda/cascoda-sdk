@@ -30,7 +30,7 @@ configure_file(
 	)
 
 # Sub-project configuration ---------------------------------------------------
-add_subdirectory(${PROJECT_SOURCE_DIR}/vendor ${PROJECT_BINARY_DIR}/vendor)
+add_subdirectory(vendor)
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-chili
@@ -41,12 +41,14 @@ add_library(cascoda-chili
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_nano120.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_nano120.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_time.c
 	$<TARGET_OBJECTS:nuvoton-vendor-nano120>
 	)
 
 target_link_libraries(cascoda-chili
 	PUBLIC
 		cascoda-bm
+		nuvoton-vendor-nano120
 	)
 
 # Add linker file dependancy
@@ -64,4 +66,4 @@ target_include_directories( cascoda-chili
 	)
 
 # Export the chili platform as cascoda-bm-plat
-target_link_libraries(cascoda-bm-plat INTERFACE cascoda-chili nuvoton-vendor-nano120)
+target_link_libraries(cascoda-bm-plat INTERFACE cascoda-chili)

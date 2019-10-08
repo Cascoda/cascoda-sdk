@@ -34,7 +34,7 @@ target_compile_definitions(test15-4 PRIVATE
 
 # Test app config -------------------------------------------------------------
 add_executable(test15-4-app ${PROJECT_SOURCE_DIR}/source/test15_4_main.c)
-target_link_libraries(test15-4-app test15-4)
+target_link_libraries(test15-4-app test15-4 cascoda-bm-plat cascoda-bm)
 
 # convert to bin file format
 cascoda_make_binary(test15-4-app)

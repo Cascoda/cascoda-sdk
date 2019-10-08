@@ -5,6 +5,11 @@ project (ca821x-api-lib)
 # Set configuration variables -------------------------------------------------
 cascoda_dropdown(CASCODA_CA_VER "CA-xxxx Version number of target part" 8211 8210)
 
+cascoda_dropdown(CASCODA_LOG_LEVEL
+	"The minimum log level to print messages for (CRIT>WARN>NOTE>INFO>DEBG)"
+	NOTE CRIT WARN INFO DEBG
+	)
+
 # Config file generation ------------------------------------------------------
 configure_file(
 	"${PROJECT_SOURCE_DIR}/include/ca821x_config.h.in"
@@ -53,4 +58,4 @@ target_link_libraries(test15-4-api
 cascoda_use_warnings(test15-4-api)
 
 # Tests
-add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+add_subdirectory(test)

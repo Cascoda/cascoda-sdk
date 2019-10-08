@@ -102,7 +102,8 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
     }
 
     /* Configure I2S controller according to input parameters. */
-    i2s->CTL0 = u32MasterSlave | u32WordWidth | u32MonoData | u32DataFormat | I2S_FIFO_TX_LEVEL_WORD_8 | I2S_FIFO_RX_LEVEL_WORD_8;
+    i2s->CTL0 = u32MasterSlave | u32WordWidth | u32MonoData | u32DataFormat;
+    i2s->CTL1 = I2S_FIFO_TX_LEVEL_WORD_8 | I2S_FIFO_RX_LEVEL_WORD_8;
 
     /* Get I2S source clock frequency */
     u32SrcClk = I2S_GetSourceClockFreq(i2s);

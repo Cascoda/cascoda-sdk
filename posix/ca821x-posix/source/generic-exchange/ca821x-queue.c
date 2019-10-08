@@ -1,7 +1,8 @@
 /**
- * @file ca821x_queue.c
+ * @file
  * @brief Queue manipulation for ca821x-posix data exchange
- *//*
+ */
+/*
  * Copyright (c) 2016, Cascoda
  * All rights reserved.
  *

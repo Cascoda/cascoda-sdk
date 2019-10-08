@@ -1,42 +1,57 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Cascoda Interface to Vendor BSP/Library Support Package.
+/**
+ * @file
+ * @brief Cascoda Interface to Vendor BSP/Library Support Package.
  * MCU:    Nuvoton Nano120
  * MODULE: Chili 1 (1.2, 1.3)
  * Module Pin and GPIO Mapping
  */
-#include "cascoda-bm/cascoda_interface.h"
-#include "cascoda-bm/cascoda_types.h"
-#include "cascoda_chili_config.h"
 
 #ifndef CASCODA_CHILI_GPIO_H
 #define CASCODA_CHILI_GPIO_H
 
+#include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_types.h"
+#include "cascoda_chili_config.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************/
 /* Helper Macros for Port Handling                                       ******/
 /******************************************************************************/
-#ifndef GPIO_BASE
-#define GPIO_BASE GPIOA_BASE
-#endif
 /* gives port (GPIO_T *), i.e. PA */
-#define MGPIO_PORT(portnum) ((GPIO_T *)(GPIO_BASE + (portnum * 0x40UL)))
+#define MGPIO_PORT(portnum) ((GPIO_T *)(GPIO_BASE + ((int)PA & NS_OFFSET) + (portnum * 0x40UL)))
 /* gives port pin, i.e. PA0 */
-#define MGPIO_PORTPIN(portnum, pin) (*((volatile uint32_t *)((GPIO_PIN_DATA_BASE + (0x40 * (portnum))) + ((pin) << 2))))
+#define MGPIO_PORTPIN(portnum, pin) \
+	(*((volatile uint32_t *)((GPIO_PIN_DATA_BASE + ((int)PA & NS_OFFSET) + (0x40 * (portnum))) + ((pin) << 2))))
 /* gives register bit mask for port pin x */
 #define BITMASK(x) (1UL << x)
 
@@ -56,13 +71,14 @@ typedef enum enPortnum
 
 /* MFP definitions (need to be checked when changing pins or package!) */
 #define PMFP_GPIO 0
+#define PMFP_ADC 1
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 #define PMFP_SPI 4
 #elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
 #define PMFP_SPI 6
 #endif /* CASCODA_CHILI2_REV */
 #define PMFP_UART 6
-#define PMFP_ADC 1
+#define PMFP_X32 10
 
 /******************************************************************************/
 /****** Hard Connected Ports / Pins                                      ******/
@@ -75,6 +91,7 @@ typedef enum enPortnum
  * PORTNAME_PIN:	port pin, i.e. 20 for PA.20
  * PORTNAME_PVAL: 	port value for r/w, i.e. PA20
  */
+
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 /* ZIG_RESET: PC.1 */
 #define ZIG_RESET_PORT PC
@@ -204,14 +221,75 @@ typedef enum enPortnum
 #define UART_TXD_PVAL PB5
 #endif /* UART_CHANNEL */
 #endif /* USE_UART */
+/* X32I: PF.5 */
+#define X32I_PORT PF
+#define X32I_PNUM PN_F
+#define X32I_PIN 5
+#define X32I_PVAL PF5
+/* X32O: PF.4 */
+#define X32O_PORT PF
+#define X32O_PNUM PN_F
+#define X32O_PIN 4
+#define X32O_PVAL PF4
+/* VBUS: PA.12 */
+#define VBUS_PORT PA
+#define VBUS_PNUM PN_A
+#define VBUS_PIN 12
+#define VBUS_PVAL PA12
+/* VBUS_CONNECTED */
+#define VBUS_CONNECTED_PORT PB
+#define VBUS_CONNECTED_PNUM PN_B
+#define VBUS_CONNECTED_PIN 12
+#define VBUS_CONNECTED_PVAL PB12
 
 /******************************************************************************/
 /****** Functions                                                        ******/
 /******************************************************************************/
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Gets List Index from Module Pin
+ *******************************************************************************
+ * \param mpin     - module pin number
+ *******************************************************************************
+ * \return list index or P_NA
+ *******************************************************************************
+ ******************************************************************************/
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Sets MFP Functionality
+ *******************************************************************************
+ * \param portnum  - returned port number
+ * \param portbit  - returned port b
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t func);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Re-configure GPIOs for PowerDown
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_ModulePowerDownGPIOs(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Re-configure GPIOs for PowerUp
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_ModulePowerUpGPIOs(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR: Module Pin Interrupt Handling
+ *******************************************************************************
+ ******************************************************************************/
 void CHILI_ModulePinIRQHandler(enPortnum portnum);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CASCODA_CHILI_GPIO_H */

@@ -62,10 +62,11 @@ void sleep_if_possible()
 
 			if (idleTimeLeft > 5)
 			{
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_OFF);
+				struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
+				BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
+				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
 				PlatformSleep(idleTimeLeft);
-				BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 			}
 		}
 	}
@@ -85,19 +86,20 @@ void sleep_if_possible()
 /******************************************************************************/
 void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
+	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
 	/* register LED_G */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutput(special_pins.LED_GREEN, MODULE_PIN_TYPE_LED);
 	/* register LED_R */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutput(special_pins.LED_RED, MODULE_PIN_TYPE_LED);
 
 	if (status == CA_ERROR_FAIL)
 	{
-		BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_ON);
+		BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_ON);
 		return;
 	}
 
-	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_RED, LED_OFF);
-	BSP_ModuleSetGPIOPin(BSP_ModuleSpecialPins.LED_GREEN, LED_ON);
+	BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
+	BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 
 	EVBME_SwitchClock(pDeviceRef, 1);
 

@@ -41,22 +41,33 @@
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
 
-static int s_worker_run_flag     = 0;
-static int s_generic_initialised = 0;
+/** Is the downstream dispatch thread supposed to be running? */
+static int dd_run_flag = 0;
 
-pthread_mutex_t s_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+/** Is the generic dispatch initialised (statics)? */
+static int generic_initialised = 0;
 
+/** Mutex for protecting static flags */
+static pthread_mutex_t s_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/** Queue of buffers to be processed by downstream dispatch */
 static struct buffer_queue *downstream_dispatch_queue = NULL;
-static pthread_mutex_t      downstream_queue_mutex    = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t            dd_thread;
-static pthread_cond_t       dd_cond = PTHREAD_COND_INITIALIZER;
+
+/** mutex protecting downstream_dispatch_queue */
+static pthread_mutex_t downstream_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/** Thread for running the downstream dispatch functions on the dd queue */
+static pthread_t dd_thread;
+
+/** Condition variable for the dd queue */
+static pthread_cond_t dd_cond = PTHREAD_COND_INITIALIZER;
 
 void (*wake_hw_worker)(void);
 
 static int init_generic_statics(void);
 static int deinit_generic_statics(void);
 
-int ca821x_run_downstream_dispatch()
+static int ca821x_run_downstream_dispatch()
 {
 	struct ca821x_dev *          pDeviceRef;
 	struct ca821x_exchange_base *priv;
@@ -80,12 +91,29 @@ int ca821x_run_downstream_dispatch()
 	return len;
 }
 
+ca_error ca821x_util_dispatch_poll()
+{
+	int is_async;
+
+	pthread_mutex_lock(&s_flag_mutex);
+	is_async = dd_run_flag;
+	pthread_mutex_unlock(&s_flag_mutex);
+
+	if (is_async)
+		return CA_ERROR_INVALID_STATE;
+
+	if (ca821x_run_downstream_dispatch())
+		return CA_ERROR_SUCCESS;
+	else
+		return CA_ERROR_NOT_FOUND;
+}
+
 static void *ca821x_downstream_dispatch_worker(void *arg)
 {
 	(void)arg;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	while (s_worker_run_flag)
+	while (dd_run_flag)
 	{
 		pthread_mutex_unlock(&s_flag_mutex);
 
@@ -95,9 +123,54 @@ static void *ca821x_downstream_dispatch_worker(void *arg)
 
 		pthread_mutex_lock(&s_flag_mutex);
 	}
-
 	pthread_mutex_unlock(&s_flag_mutex);
+
 	return 0;
+}
+
+ca_error ca821x_util_start_downstream_dispatch_worker()
+{
+	int rval = 0;
+	int old_runflag;
+
+	pthread_mutex_lock(&s_flag_mutex);
+	old_runflag = dd_run_flag;
+	pthread_mutex_unlock(&s_flag_mutex);
+
+	if (old_runflag)
+		return CA_ERROR_ALREADY;
+
+	pthread_mutex_lock(&s_flag_mutex);
+	dd_run_flag = 1;
+	pthread_mutex_unlock(&s_flag_mutex);
+
+	rval = pthread_create(&dd_thread, PTHREAD_CREATE_JOINABLE, &ca821x_downstream_dispatch_worker, NULL);
+
+	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
+}
+
+ca_error ca821x_util_stop_downstream_dispatch_worker()
+{
+	int rval = 0;
+	int old_runflag;
+
+	pthread_mutex_lock(&s_flag_mutex);
+	old_runflag = dd_run_flag;
+	pthread_mutex_unlock(&s_flag_mutex);
+
+	if (!old_runflag)
+		return CA_ERROR_ALREADY;
+
+	pthread_mutex_lock(&s_flag_mutex);
+	dd_run_flag = 0;
+	pthread_mutex_unlock(&s_flag_mutex);
+
+	//Wake the downstream dispatch thread up so that it dies cleanly
+	add_to_waiting_queue(&downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, NULL, 0, NULL);
+
+	rval = pthread_join(dd_thread, NULL);
+
+	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 }
 
 int init_generic(struct ca821x_dev *pDeviceRef)
@@ -159,13 +232,10 @@ static int init_generic_statics()
 {
 	int rval = 0, error = 0;
 
-	if (s_generic_initialised++)
+	if (generic_initialised++)
 		goto exit;
 
-#if CA821X_ASYNC_CALLBACK
-	s_worker_run_flag = 1;
-	rval              = pthread_create(&dd_thread, PTHREAD_CREATE_JOINABLE, &ca821x_downstream_dispatch_worker, NULL);
-#endif
+	//Potential static initialisation
 
 	if (rval != 0)
 	{
@@ -183,18 +253,10 @@ exit:
 
 static int deinit_generic_statics()
 {
-	if (!(--s_generic_initialised))
+	if (!(--generic_initialised))
 		goto exit;
 
-	s_generic_initialised = 0;
-	pthread_mutex_lock(&s_flag_mutex);
-	s_worker_run_flag = 0;
-	pthread_mutex_unlock(&s_flag_mutex);
-
-	//Wake the downstream dispatch thread up so that it dies cleanly
-	add_to_waiting_queue(&downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, NULL, 0, NULL);
-
-	pthread_join(dd_thread, NULL);
+	ca821x_util_stop_downstream_dispatch_worker();
 
 	flush_queue(&downstream_dispatch_queue, &downstream_queue_mutex);
 
@@ -272,7 +334,7 @@ static void *ca821x_recovery_worker(void *arg)
 	return NULL;
 }
 
-int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef)
+ca_error exchange_handle_error(ca_error error, struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 	int                          rval = 0;
@@ -306,7 +368,8 @@ int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef)
 	}
 
 	pthread_create(&priv->rescue_thread, NULL, &ca821x_recovery_worker, pDeviceRef);
-	return 0;
+
+	return CA_ERROR_SUCCESS;
 }
 
 static inline ca_error ca8210_try_read(struct ca821x_dev *pDeviceRef)
@@ -335,7 +398,7 @@ static inline ca_error ca8210_try_read(struct ca821x_dev *pDeviceRef)
 	}
 	else if (len < 0)
 	{
-		exchange_handle_error(len, pDeviceRef);
+		exchange_handle_error(CA_ERROR_FAIL, pDeviceRef);
 	}
 	return CA_ERROR_NOT_FOUND;
 }
@@ -346,7 +409,7 @@ static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
 	uint8_t                      buffer[MAX_BUF_SIZE];
 	ssize_t                      len;
 
-	if (priv->write_isready_func && !priv->write_isready_func(pDeviceRef))
+	if (priv->write_isready_func && priv->write_isready_func(pDeviceRef))
 	{
 		return CA_ERROR_BUSY;
 	}
@@ -355,10 +418,10 @@ static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
 
 	if (len > 0)
 	{
-		int error = 0;
+		ca_error error;
 
 		error = priv->write_func(buffer, len, pDeviceRef);
-		if (error < 0)
+		if (error)
 		{
 			exchange_handle_error(error, pDeviceRef);
 			return CA_ERROR_FAIL;
@@ -402,7 +465,7 @@ ca_error ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 	size_t                       success    = 0;
 	uint8_t                      is_rescuer = 0;
 
-	if (!s_generic_initialised)
+	if (!generic_initialised)
 		return CA_ERROR_INVALID_STATE;
 	//Synchronous must execute synchronously
 	//Get sync responses from the in queue

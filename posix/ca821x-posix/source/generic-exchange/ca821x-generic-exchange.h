@@ -42,15 +42,7 @@ int init_generic(struct ca821x_dev *pDeviceRef);
 /* Deinitialise an initialised pDeviceRef struct */
 int deinit_generic(struct ca821x_dev *pDeviceRef);
 
-#if !CA821X_ASYNC_CALLBACK
-/* Run the downstream dispatch and process Asynchronous commands that have
- * come in. The return value will be zero if no command was processed, and
- * nonzero (command length) if a command was processed.
- */
-int ca821x_run_downstream_dispatch(void);
-#endif
-
-int exchange_handle_error(int error, struct ca821x_dev *pDeviceRef);
+ca_error exchange_handle_error(ca_error error, struct ca821x_dev *pDeviceRef);
 
 void *ca8210_io_worker(void *arg);
 

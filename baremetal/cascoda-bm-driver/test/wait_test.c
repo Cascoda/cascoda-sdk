@@ -1,8 +1,6 @@
 /**
- * @file   wait_test.c
+ * @file
  * @brief  Unit tests for WAIT module
- * @author Ciaran Woodward
- * @date   25/02/19
  */
 #include <setjmp.h>
 #include <stdarg.h>
@@ -17,12 +15,15 @@
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
 
+//Dummy CHILI_FastForward declaration
+void CHILI_FastForward(u32_t ticks);
+
 static struct ca821x_dev sdev;
 void *const              magicNumber = (void *)0x12345;
 
 void __wrap_BSP_Waiting()
 {
-	TIME_FastForward((u32_t)mock());
+	CHILI_FastForward((u32_t)mock());
 }
 
 u8_t __wrap_BSP_SPIPopByte(u8_t *InByte)

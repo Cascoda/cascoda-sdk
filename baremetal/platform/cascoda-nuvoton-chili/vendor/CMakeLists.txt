@@ -2,8 +2,6 @@
 cmake_minimum_required (VERSION 3.11)
 project (nuvoton-vendor-lib)
 
-enable_language(ASM)
-
 add_library(nuvoton-vendor-nano120 OBJECT
 	${PROJECT_SOURCE_DIR}/Nano100Library/StdDriver/src/adc.c
 	${PROJECT_SOURCE_DIR}/Nano100Library/StdDriver/src/clk.c

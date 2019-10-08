@@ -1,23 +1,33 @@
 /**
- * @file test15_4_main.c
+ * @file
  * @brief test15_4 main program loop and supporting functions
- * @author Wolfgang Bruchner
- * @date 19/07/14
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Example application for external sensor interfaces
@@ -40,17 +50,12 @@
 #include "sif_ltr303als.h"
 #endif
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SENSORIF Initialisation
- *******************************************************************************
- ******************************************************************************/
 u8_t SENSORIF_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	u8_t status = 0;
 
-	SENSORIF_I2C_Init();        /* enable interface */
-	/* select device-specific initialisation here */
+	SENSORIF_I2C_Init(); /* enable interface */
+	                     /* select device-specific initialisation here */
 #if (SENSORIF_TEST_SI7021)
 	; /* no initialisation */
 #endif
@@ -64,11 +69,6 @@ u8_t SENSORIF_Initialise(struct ca821x_dev *pDeviceRef)
 	return (status);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SENSORIF Application Handler
- *******************************************************************************
- ******************************************************************************/
 void SENSORIF_Handler(struct ca821x_dev *pDeviceRef)
 {
 	/* select device-specific handlers here */
@@ -81,7 +81,6 @@ void SENSORIF_Handler(struct ca821x_dev *pDeviceRef)
 #if (SENSORIF_TEST_LTR303ALS)
 	SENSORIF_Handler_LTR303ALS();
 #endif
-
 }
 
 /******************************************************************************/
@@ -198,8 +197,8 @@ void SENSORIF_Handler_MAX30205(void)
 #if (SENSORIF_TEST_LTR303ALS)
 void SENSORIF_Handler_LTR303ALS(void)
 {
-	static u8_t ticker  = 0;
-	static u8_t handled = 0;
+	static u8_t ticker    = 0;
+	static u8_t handled   = 0;
 	u16_t       light_ch0 = 0;
 	u16_t       light_ch1 = 0;
 	u32_t       t1, t2;
@@ -215,10 +214,10 @@ void SENSORIF_Handler_LTR303ALS(void)
 		++ticker;
 		handled = 1;
 		SENSORIF_I2C_Init(); /* enable interface */
-		t1   = TIME_ReadAbsoluteTime();
+		t1 = TIME_ReadAbsoluteTime();
 		/* read LTR303ALS light measurement for both channels */
 		SIF_LTR303ALS_ReadLight(&light_ch0, &light_ch1);
-		t2   = TIME_ReadAbsoluteTime();
+		t2 = TIME_ReadAbsoluteTime();
 		SENSORIF_I2C_Deinit(); /* disable interface */
 		printf("Meas %u:", ticker);
 		printf("; Light Ch0 (visible) = 0x%04X; Ch1 (IR) = 0x%04X", light_ch0, light_ch1);

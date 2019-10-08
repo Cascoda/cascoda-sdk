@@ -1,8 +1,6 @@
 /**
- * @file   wait_test.c
+ * @file
  * @brief  Unit tests for WAIT module
- * @author Ciaran Woodward
- * @date   25/02/19
  */
 #include <setjmp.h>
 #include <stdarg.h>
@@ -17,6 +15,9 @@
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
 
+//Dummy CHILI_FastForward declaration
+void CHILI_FastForward(u32_t ticks);
+
 static struct ca821x_dev sdev;
 
 enum TestMsduHandle
@@ -27,7 +28,7 @@ enum TestMsduHandle
 
 void __wrap_BSP_Waiting()
 {
-	TIME_FastForward(1);
+	CHILI_FastForward(1);
 }
 
 static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
@@ -47,14 +48,14 @@ static void timeout_mcps_test(void **state)
 	fa.AddressMode = MAC_MODE_SHORT_ADDR;
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle1, 0, NULL, &sdev);
 
-	TIME_FastForward(250);
+	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle2, 0, NULL, &sdev);
 
-	TIME_FastForward(250);
+	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
-	TIME_FastForward(250);
+	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 }
 

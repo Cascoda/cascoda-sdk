@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Cascoda Interface to Vendor BSP/Library Support Package.
@@ -93,6 +104,10 @@ const struct ModuleSpecialPins BSP_ModuleSpecialPins = {
     .USB_PRESENT = PIN_USB_PRESENT,
 };
 
+struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
+{
+	return BSP_ModuleSpecialPins;
+}
 /******************************************************************************/
 /****** Static Variables                                                 ******/
 /******************************************************************************/
@@ -126,15 +141,6 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
 #endif
 };
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Gets List Index from Module Pin
- *******************************************************************************
- * \param mpin     - module pin number
- *******************************************************************************
- * \return list index or P_NA
- *******************************************************************************
- ******************************************************************************/
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 {
 	u8_t i;
@@ -148,14 +154,6 @@ u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 	return (P_NA);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Sets MFP Functionality
- *******************************************************************************
- * \param portnum  - returned port number
- * \param portbit  - returned port b
- *******************************************************************************
- ******************************************************************************/
 void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t func)
 {
 	u32_t mask, data;
@@ -194,11 +192,6 @@ void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t func)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Re-configure GPIOs for PowerDown
- *******************************************************************************
- ******************************************************************************/
 void CHILI_ModulePowerDownGPIOs(void)
 {
 	u8_t    i;
@@ -220,11 +213,6 @@ void CHILI_ModulePowerDownGPIOs(void)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Re-configure GPIOs for PowerUp
- *******************************************************************************
- ******************************************************************************/
 void CHILI_ModulePowerUpGPIOs(void)
 {
 	u8_t    i;
@@ -244,11 +232,6 @@ void CHILI_ModulePowerUpGPIOs(void)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief ISR: Module Pin Interrupt Handling
- *******************************************************************************
- ******************************************************************************/
 void CHILI_ModulePinIRQHandler(enPortnum portnum)
 {
 	GPIO_T *port;
@@ -272,25 +255,17 @@ void CHILI_ModulePinIRQHandler(enPortnum portnum)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Registers GPIO Functionality for Module Pin Input
- *******************************************************************************
- * \param mpin  - module pin number
- * \param pullup - none/pullup/pulldown for input
- * \param debounce - enable debounce for input
- * \param irq - enable interupt for input
- * \param callback - pointer to ISR for input
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
-ca_error BSP_ModuleRegisterGPIOInput(u8_t                mpin,
-                                     module_pin_pullup   pullup,
-                                     module_pin_debounce debounce,
-                                     module_pin_irq      irq,
-                                     int (*callback)(void))
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleRegisterGPIOInput(struct gpio_input_args *args)
 {
+	u8_t                mpin     = args->mpin;
+	module_pin_pullup   pullup   = args->pullup;
+	module_pin_debounce debounce = args->debounce;
+	module_pin_irq      irq      = args->irq;
+	int (*callback)(void)        = args->callback;
+
 	u8_t    index;
 	GPIO_T *port;
 
@@ -349,16 +324,9 @@ ca_error BSP_ModuleRegisterGPIOInput(u8_t                mpin,
 	return CA_ERROR_SUCCESS;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Registers GPIO Functionality for Module Pin Output
- *******************************************************************************
- * \param mpin  - module pin number
- * \param isled - pin is attached to led
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
 {
 	u8_t    index;
@@ -387,15 +355,9 @@ ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
 	return CA_ERROR_SUCCESS;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Unregisters GPIO Functionality for Module Pin to Default Settings
- *******************************************************************************
- * \param mpin  - module pin number
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	u8_t    index;
@@ -424,15 +386,9 @@ ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 	return CA_ERROR_SUCCESS;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Checks if a Module Pin is already registered / used
- *******************************************************************************
- * \param mpin  - module pin number
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 u8_t BSP_ModuleIsGPIOPinRegistered(u8_t mpin)
 {
 	u8_t index;
@@ -441,16 +397,9 @@ u8_t BSP_ModuleIsGPIOPinRegistered(u8_t mpin)
 	return ModulePinStatus[index].blocked;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Sets Module Pin GPIO Output Value
- *******************************************************************************
- * \param mpin  - module pin
- * \param val - output value
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val)
 {
 	u8_t index;
@@ -467,16 +416,9 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val)
 	return CA_ERROR_SUCCESS;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Senses GPIO Input Value of Module Pin
- *******************************************************************************
- * \param mpin  - module pin
- * \param val - output value
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val)
 {
 	u8_t index;
@@ -493,16 +435,9 @@ ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val)
 	return CA_ERROR_SUCCESS;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Reads ADC Conversion Value on Module Pin
- *******************************************************************************
- * \param mpin  - module pin
- * \param val - 32-bit conversion value
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 {
 	u8_t    index;

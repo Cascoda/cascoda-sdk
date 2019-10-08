@@ -13,7 +13,7 @@ add_executable(tempsense
 	${PROJECT_SOURCE_DIR}/source/chili_test.c
 	)
 
-target_link_libraries(tempsense cascoda-bm test15-4)
+target_link_libraries(tempsense cascoda-bm test15-4 cascoda-bm-plat)
 
 target_include_directories( tempsense
 	PRIVATE

@@ -1,34 +1,52 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Cascoda Interface to Vendor BSP/Library Support Package.
+/**
+ * @file
+ * @brief Cascoda Interface to Vendor BSP/Library Support Package.
  * MCU:    Nuvoton M2351
  * MODULE: Chili 2.0 (and NuMaker-PFM-M2351 Development Board)
  * Internal (Non-Interface)
 */
-#include "cascoda-bm/cascoda_interface.h"
-#include "cascoda-bm/cascoda_types.h"
-#include "M2351.h"
-#include "cascoda_chili_config.h"
-#include "spi.h"
-#include "sys.h"
 
 #ifndef CASCODA_CHILI_H
 #define CASCODA_CHILI_H
+
+#include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_types.h"
+#include "cascoda_chili_config.h"
+
+#include "M2351.h"
+#include "spi.h"
+#include "sys.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /******************************************************************************/
 /****** Global Variables defined in cascoda_bsp_*.c                      ******/
@@ -44,13 +62,16 @@ extern volatile u8_t     EnableCommsInterface; /* enable communications interfac
 /* SPI Master Clock Rate [Hz] */
 #define FCLK_SPI 2000000
 /* Use Timer0 as watchdog for POWEROFF mode */
-#define USE_WATCHDOG_POWEROFF 0
+#define USE_WATCHDOG_POWEROFF 1
+/* Use LXT instead of LIRC32 for RTC (more accurate, but higher power consumption) */
+#define USE_RTC_LXT 0
 
 struct device_link
 {
 	uint32_t volatile *chip_select_gpio;
 	uint32_t volatile *irq_gpio;
 	uint32_t volatile *reset_gpio;
+	dispatch_read_t    dispatch_read;
 	struct ca821x_dev *dev;
 };
 
@@ -58,33 +79,234 @@ struct device_link
 extern struct device_link device_list[NUM_DEVICES];
 
 /* Non-Interface Functions */
-u32_t    CHILI_ADCConversion(u32_t channel, u32_t reference);
-void     CHILI_LEDBlink(void);
-void     CHILI_GPIOInit(void);
-void     CHILI_GPIOEnableInterrupts(void);
-void     CHILI_SetClockExternalCFGXT1(u8_t clk_external);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Perform ADC Conversion
+ *******************************************************************************
+ ******************************************************************************/
+u32_t CHILI_ADCConversion(u32_t channel, u32_t reference);
+void  CHILI_LEDBlink(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialise Essential GPIOs for various Functions
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_GPIOInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Enable GPIO Interrupts
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_GPIOEnableInterrupts(void);
+
+/******************************************************************************/
+/**************************************************************************/ /**
+ * \brief Configure CFGXT1 bit for HXT mode in CONFIG0
+ *
+ * This isn't specifically related to dataflash, but in order to set the clock
+ * on the M2351, the config is loaded into the flash.
+ *******************************************************************************
+ * \param clk_external - 1: external clock input on HXT, 0: HXT is crystal osc.
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_SetClockExternalCFGXT1(u8_t clk_external);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Select System Clocks depending on Power Source
+ *******************************************************************************
+ ******************************************************************************/
 ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms);
-void     CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms);
-void     CHILI_EnableIntOscCal(void);
-void     CHILI_DisableIntOscCal(void);
-void     CHILI_GPIOPowerDown(u8_t tristateCax);
-void     CHILI_GPIOPowerUp(void);
-void     CHILI_TimersInit(void);
-void     CHILI_SystemReInit(void);
-void     TMR0_IRQHandler();
-u8_t     CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Completes Clock (Re-)Initialisation.
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Enable Internal Oscillator Calibration
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_EnableIntOscCal(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Disable Internal Oscillator Calibration
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_DisableIntOscCal(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Re-program GPIOs for PowerDown
+ * \param tristateCax - bool: set to 1 to tri-state the CA-821x interface
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_GPIOPowerDown(u8_t tristateCax);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Re-program GPIOs for active Mode after PowerDown
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_GPIOPowerUp(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief (Re-)Initialise System Timers
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_TimersInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief System Re-Initialisation
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_SystemReInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief ISR 32: Timer0 interrupt
+ *******************************************************************************
+ ******************************************************************************/
+void TMR0_IRQHandler();
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief System Clock
+ *******************************************************************************
+ ******************************************************************************/
+u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief RTC IRQ Handler
+  *******************************************************************************
+ ******************************************************************************/
+void CHILI_RTCIRQHandler(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief 1 ms Tick for TMR0_IRQHandler ISR
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_1msTick(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief FastForward time by the given amount
+ *******************************************************************************
+ * \param ticks - Time in Ticks (1ms/100ms)
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_FastForward(u32_t ticks);
+
 #if defined(USE_UART)
-void  CHILI_UARTInit(void);
-void  CHILI_UARTDeinit(void);
-void  CHILI_UARTDeinit(void);
-void  CHILI_UARTDMAWrite(u8_t *pBuffer, u32_t BufferSize);
-void  CHILI_UARTFIFOWrite(u8_t *pBuffer, u32_t BufferSize);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialise UART for Comms
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief De-Initialise UART
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTDeinit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Complete Buffer Write using DMA
+ *******************************************************************************
+ * \param pBuffer - Pointer to Data Buffer
+ * \param BufferSize - Max. Characters to Read
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTDMAWrite(u8_t *pBuffer, u32_t BufferSize);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Complete Buffer Write using FIFO
+ *******************************************************************************
+ * \param pBuffer - Pointer to Data Buffer
+ * \param BufferSize - Max. Characters to Read
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTFIFOWrite(u8_t *pBuffer, u32_t BufferSize);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Buffer FIFO Read
+ *******************************************************************************
+ * \param pBuffer - Pointer to Data Buffer
+ * \param BufferSize - Max. Characters to Read
+ *******************************************************************************
+ * \return Number of Characters placed in Buffer
+ *******************************************************************************
+ ******************************************************************************/
 u32_t CHILI_UARTFIFORead(u8_t *pBuffer, u32_t BufferSize);
-void  CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize);
-void  CHILI_UARTFIFOIRQHandler(void);
-void  CHILI_UARTDMAIRQHandler(void);
-void  CHILI_UARTWaitWhileBusy(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Set up DMA for UART Read
+ *******************************************************************************
+ * \param pBuffer - Pointer to Data Buffer
+ * \param BufferSize - Max. Characters to Read
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Interrupt Handler for UART FIFO
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTFIFOIRQHandler(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Interrupt Handler for UART DMA
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTDMAIRQHandler(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Waits While UART transfer is going on (DMA or FIFO)
+ *******************************************************************************
+ * \param pBuffer - Pointer to Data Buffer
+ * \param BufferSize - Max. Characters to Read
+ *******************************************************************************
+ * \return Number of Characters placed in Buffer
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_UARTWaitWhileBusy(void);
 #endif /* USE_UART */
+
+/**
+ * Enable CRYPTO Module clock
+ */
+void CHILI_CRYPTOEnableClock(void);
+
+/**
+ * Disable CRYPTO Module clock
+ */
+void CHILI_CRYPTODisableClock(void);
+
+/** function to kick the linker into including strong ISR overrides */
+void cascoda_isr_secure_init(void);
+/** function to kick the linker into including strong ISR overrides */
+void cascoda_isr_chili_init(void);
 
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 #define SPI SPI0
@@ -160,5 +382,9 @@ void  CHILI_UARTWaitWhileBusy(void);
 #error "UART Channel not available"
 #endif /* UART_CHANNEL */
 #endif /* USE_UART */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CASCODA_CHILI_H */

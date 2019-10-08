@@ -54,7 +54,7 @@ void CRC_Open(uint32_t u32Mode, uint32_t u32Attribute, uint32_t u32Seed, uint32_
     }
     else
     {
-        pCRC = CRC;
+        pCRC = CRC_S;
     }
 
     pCRC->SEED = u32Seed;
@@ -84,7 +84,7 @@ uint32_t CRC_GetChecksum(void)
     }
     else
     {
-        pCRC = CRC;
+        pCRC = CRC_S;
     }
 
     switch(pCRC->CTL & CRC_CTL_CRCMODE_Msk)

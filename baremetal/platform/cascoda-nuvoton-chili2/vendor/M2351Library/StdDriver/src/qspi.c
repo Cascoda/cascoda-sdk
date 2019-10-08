@@ -73,7 +73,7 @@ uint32_t QSPI_Open(QSPI_T *qspi,
             if(!(__PC() & (1UL << 28UL)))
             {
                 /* Select PCLK as the clock source of QSPI */
-                if((qspi == QSPI0) || (qspi == QSPI0_NS))
+                if(qspi == QSPI0)
                 {
                     CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_QSPI0SEL_Msk)) | CLK_CLKSEL2_QSPI0SEL_PCLK0;
                 }
@@ -81,7 +81,7 @@ uint32_t QSPI_Open(QSPI_T *qspi,
         }
 
         /* Check clock source of QSPI */
-        if((qspi == QSPI0) || (qspi == QSPI0_NS))
+        if(qspi == QSPI0)
         {
             if((CLK_GetModuleClockSource(QSPI0_MODULE) << CLK_CLKSEL2_QSPI0SEL_Pos) == CLK_CLKSEL2_QSPI0SEL_HXT)
             {
@@ -154,7 +154,7 @@ uint32_t QSPI_Open(QSPI_T *qspi,
         if(!(__PC() & (1UL << 28UL)))
         {
             /* Select PCLK as the clock source of QSPI */
-            if((qspi == QSPI0) || (qspi == QSPI0_NS))
+            if(qspi == QSPI0)
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_QSPI0SEL_Msk)) | CLK_CLKSEL2_QSPI0SEL_PCLK0;
                 /* Return slave peripheral clock rate */
@@ -164,7 +164,7 @@ uint32_t QSPI_Open(QSPI_T *qspi,
         else
         {
             /* Check clock source of QSPI */
-            if((qspi == QSPI0) || (qspi == QSPI0_NS))
+            if(qspi == QSPI0)
             {
                 if((CLK_GetModuleClockSource(QSPI0_MODULE) << CLK_CLKSEL2_QSPI0SEL_Pos) == CLK_CLKSEL2_QSPI0SEL_HXT)
                 {
@@ -275,7 +275,7 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
         if(!(__PC() & (1UL << 28UL)))
         {
             /* Select PCLK as the clock source of QSPI */
-            if((qspi == QSPI0) || (qspi == QSPI0_NS))
+            if(qspi == QSPI0)
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_QSPI0SEL_Msk)) | CLK_CLKSEL2_QSPI0SEL_PCLK0;
             }
@@ -283,7 +283,7 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     }
 
     /* Check clock source of QSPI */
-    if((qspi == QSPI0) || (qspi == QSPI0_NS))
+    if(qspi == QSPI0)
     {
         if((CLK_GetModuleClockSource(QSPI0_MODULE) << CLK_CLKSEL2_QSPI0SEL_Pos) == CLK_CLKSEL2_QSPI0SEL_HXT)
         {
@@ -375,7 +375,7 @@ uint32_t QSPI_GetBusClock(QSPI_T *qspi)
     u32Div = (qspi->CLKDIV & QSPI_CLKDIV_DIVIDER_Msk) >> QSPI_CLKDIV_DIVIDER_Pos;
 
     /* Check clock source of QSPI */
-    if((qspi == QSPI0) || (qspi == QSPI0_NS))
+    if(qspi == QSPI0)
     {
         if((CLK_GetModuleClockSource(QSPI0_MODULE) << CLK_CLKSEL2_QSPI0SEL_Pos) == CLK_CLKSEL2_QSPI0SEL_HXT)
         {

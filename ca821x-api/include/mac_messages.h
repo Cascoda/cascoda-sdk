@@ -1,21 +1,33 @@
 /**
- * @file mac_messages.h
+ * @file
  * @brief Definitions relating to API messages.
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef MAC_MESSAGES_H
@@ -24,8 +36,13 @@
 #include <stdint.h>
 
 #include "ca821x_config.h"
+#include "ca821x_error.h"
 #include "hwme_tdme.h"
 #include "ieee_802_15_4.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define MAX_HWME_ATTRIBUTE_SIZE 16 /**< Longest hwme attribute in octets */
 #define MAX_TDME_ATTRIBUTE_SIZE 2  /**< Longest tdme attribute in octets */
@@ -37,21 +54,21 @@
 /** Contains full addressing information for a node */
 struct FullAddr
 {
-	uint8_t AddressMode; /** Clarifies the contents of \ref Address (empty, short, extended)*/
-	uint8_t PANId[2];    /** PanId (little-endian) */
-	uint8_t Address[8];  /** Short or Extended Address, based on AddressMode (little-endian) */
+	uint8_t AddressMode; /**< Clarifies the contents of \ref Address (empty, short, extended)*/
+	uint8_t PANId[2];    /**< PanId (little-endian) */
+	uint8_t Address[8];  /**< Short or Extended Address, based on AddressMode (little-endian) */
 };
 
 /** Contains raw little endian short address */
 struct ShortAddr
 {
-	uint8_t Address[2]; /** Short Address (little-endian) */
+	uint8_t Address[2]; /**< Short Address (little-endian) */
 };
 
 /** Contains raw extended address */
 struct ExtAddr
 {
-	uint8_t Address[8]; /** Extended Address */
+	uint8_t Address[8]; /**< Extended Address */
 };
 
 /** Holds either short or extended address */
@@ -82,10 +99,6 @@ struct PanDescriptor
 	uint8_t         SecurityFailure;   /**< Security processing status of the beacon frame */
 	struct SecSpec  Security;          /**< Security specification of the beacon */
 };
-
-/***************************************************************************/ /**
- * \defgroup DownPSets Parameter set definitions (Downstream)
- ************************************************************************** @{*/
 
 // MCPS
 
@@ -278,12 +291,6 @@ struct TDME_LOTLK_request_pset
 	uint8_t TestRxTxb;
 };
 
-/**@}*/
-
-/***************************************************************************/ /**
- * \defgroup UpPSets Parameter set definitions (Upstream)
- ***************************************************************************@{*/
-
 // MCPS
 
 /** MCPS_DATA_confirm parameter set */
@@ -304,7 +311,11 @@ struct MCPS_PURGE_confirm_pset
 	uint8_t Status;
 };
 
-/** MCPS_DATA_indication parameter set */
+/**
+ * MCPS_DATA_indication parameter set
+ *
+ * See ca821x_api_helper.h to extract the struct SecSpec.
+ */
 struct MCPS_DATA_indication_pset
 {
 	struct FullAddr Src;
@@ -374,12 +385,7 @@ struct MLME_DISASSOCIATE_indication_pset
 struct MLME_BEACON_NOTIFY_indication_pset
 {
 	uint8_t              BSN;
-	struct PanDescriptor PanDescriptor; /* variable size and so following
-                                         fields have to be dealt with
-                                         separately */
-	                                    /* struct PendAddrSpec  PendAddrSpec */
-	                                    /* variable             Address List  */
-	                                    /* variable             Beacon payload */
+	struct PanDescriptor PanDescriptor; /**< Variable length, see ca821x_api_helper.h */
 };
 
 /** MLME_GET_confirm parameter set */
@@ -552,8 +558,6 @@ struct TDME_LOTLK_confirm_pset
 	uint8_t TestLOTXCALValue;
 };
 
-/**@}*/
-
 /******************************************************************************/
 /****** Security PIB Table Size Definitions                              ******/
 /******************************************************************************/
@@ -569,14 +573,10 @@ enum SecurityPibSize
 #elif (CASCODA_CA_VER == 8211)
 	KEY_DEVICE_TABLE_SIZE = 32, /** Maximum value of KeyDeviceListEntries */
 	DEVICE_TABLE_SIZE     = 32, /** Maximum value of macDeviceTableEntries */
-#elif
+#else
 #error "Security table sizes undefined"
 #endif
 };
-
-/***************************************************************************/ /**
- * \defgroup SecPIBStructs Security PIB attribute structures
- ***************************************************************************@{*/
 
 struct M_KeyIdLookupDesc
 {
@@ -650,8 +650,6 @@ struct M_KeyDescriptor
 	struct M_KeyDeviceDesc      KeyDeviceList[KEY_DEVICE_TABLE_SIZE];
 	struct M_KeyUsageDesc       KeyUsageList[SECURITY_LEVEL_TABLE_SIZE];
 };
-
-/**@}*/
 
 /***************************************************************************/ /**
  * SPI Callback templates
@@ -803,8 +801,8 @@ enum spi_command_masks
 enum spi_command_ids
 {
 	//CA821x control bytes
-	SPI_IDLE = 0xFF, /** Present on SPI when stream is idle - No Data */
-	SPI_NACK = 0xF0, /** Present on SPI when buffer full or busy - resend Request */
+	SPI_IDLE = 0xFF, ///< Present on SPI when stream is idle - No Data
+	SPI_NACK = 0xF0, ///< Present on SPI when buffer full or busy - resend Request
 	// MAC MCPS
 	SPI_MCPS_DATA_REQUEST    = 0x00,
 	SPI_MCPS_PURGE_REQUEST   = 0x41,
@@ -873,5 +871,9 @@ enum spi_command_ids
 	SPI_TDME_ERROR_INDICATION = 0x3E,
 	SPI_TDME_LOTLK_CONFIRM    = 0x7F,
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MAC_MESSAGES_H

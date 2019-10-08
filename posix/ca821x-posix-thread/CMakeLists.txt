@@ -89,8 +89,13 @@ add_executable(ot-server-standalone
 	${PROJECT_SOURCE_DIR}/example/serverStandalone.c
 	)
 
+add_executable(ot-server-eink
+	${PROJECT_SOURCE_DIR}/example/serverEink.c
+	)
+
 target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
 target_link_libraries(ncpapp openthread-ncp-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
 target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd)
+target_link_libraries(ot-server-eink ca821x-openthread-posix-ftd)

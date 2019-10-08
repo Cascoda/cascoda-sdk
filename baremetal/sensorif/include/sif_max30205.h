@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Sensor interface for Maxim MAX30205 human body temperature sensor
@@ -20,6 +31,10 @@
 
 #ifndef SIF_MAX30205_H
 #define SIF_MAX30205_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* slave addresses */
 /* Note that the slave address is hardware progammable by 3 bits (A2,A1,A0)
@@ -47,7 +62,27 @@ enum sif_max30205_mode
 #define SIF_MAX30205_CONFIG_SHUTDOWN 0x01
 
 /* functions */
-u16_t SIF_MAX30205_ReadTemperature(void); /* measure temperature */
-u8_t  SIF_MAX30205_Initialise(void);      /* initialise sensor, shutdown mode */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MAX30205: Read Temperature
+ *******************************************************************************
+ * \return Temperature as defined in MAX30205 Datasheet, normal format
+ *******************************************************************************
+ ******************************************************************************/
+u16_t SIF_MAX30205_ReadTemperature(void);                                     /* measure temperature */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MAX30205: Initialise Sensor
+ *******************************************************************************
+ * \return status, 0 = success
+ *******************************************************************************
+ ******************************************************************************/
+u8_t SIF_MAX30205_Initialise(void);                                           /* initialise sensor, shutdown mode */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // SIF_MAX30205_H

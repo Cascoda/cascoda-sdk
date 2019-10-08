@@ -1,3 +1,31 @@
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef CASCODA_INTERFACE_H
 #define CASCODA_INTERFACE_H
 
@@ -5,7 +33,12 @@
 #include <stdint.h>
 
 #include "cascoda-bm/cascoda_bm.h"
+#include "cascoda-bm/cascoda_interface_core.h"
 #include "ca821x_api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /****** Enums system core clock frequency [MHz] ******/
 typedef enum fsys_mhz
@@ -27,6 +60,7 @@ typedef enum wakeup_reason
 	WAKEUP_WATCHDOG       = 2, ///< Watchdog Timeout
 	WAKEUP_HARDFAULT      = 3, ///< Hardfault
 	WAKEUP_SYSRESET       = 4, ///< System Reset
+	WAKEUP_RTCALARM       = 5, ///< RTC Alarm
 } wakeup_reason;
 
 /****** Enums for module pin handling                                 ******/
@@ -67,6 +101,22 @@ enum module_pin_not_available
 	P_NA = 255 //!< Pin/Port functionality not available
 };
 
+/**
+ * @brief Arguments for the BSP_ModuleRegisterGPIOInput function.
+ *
+ * Passing the arguments through a structure is necessary because GCC TrustZone
+ * support is very primitive. Because there are too many arguments to pass them
+ * through registers, GCC refuses to compile the sensible way of doing this.
+ */
+struct gpio_input_args
+{
+	u8_t                mpin;     ///< Number of the pin
+	module_pin_pullup   pullup;   ///< Whether to use a pullup or not
+	module_pin_debounce debounce; ///< Whether to use debouncing
+	module_pin_irq      irq;      ///< Which edge, if any, to trigger an interrupt on
+	int (*callback)(void);        ///< Callback called when an interrupt is triggered by this pin
+};
+
 /**********************************************************************/
 /****** If LEDs are used they should be tied to VDD and pulled   ******/
 /****** to Ground with a Resistor when on to avoid Dark Current. ******/
@@ -90,65 +140,31 @@ struct ModuleSpecialPins
 /** Description of the internal flash */
 struct FlashInfo
 {
-	u32_t pageSize; //!< Size of each flash page (in bytes)
+	u16_t pageSize; //!< Size of each flash page (in bytes)
 	u8_t  numPages; //!< Number of flash pages that make up the user flash region
 };
 
-//BSP should fill these in with correct values
-extern const struct FlashInfo         BSP_FlashInfo;
-extern const struct ModuleSpecialPins BSP_ModuleSpecialPins;
+// Getter for variables that must be populated by the BSP
+struct ModuleSpecialPins BSP_GetModuleSpecialPins(void);
+struct FlashInfo         BSP_GetFlashInfo(void);
+
+// Type for a function pointer that points to DISPATCH_ReadCA821x
+typedef void (*dispatch_read_t)(struct ca821x_dev *pDeviceRef);
+
+/** Interface Structure for RTC Date and Time */
+struct RTCDateAndTime
+{
+	u32_t year;  //!< Year (i.e. 2019)
+	u32_t month; //!< Month (1-12)
+	u32_t day;   //!< Day (1-31)
+	u32_t hour;  //!< Hour (0-23)
+	u32_t min;   //!< Minutes (0-59)
+	u32_t sec;   //!< Seconds (0-59)
+};
 
 /*******************************************************************************/
 /****** REQUIRED Function Declarations for cascoda_bsp_*.c               ******/
 /*******************************************************************************/
-
-/**
- * \brief Wait for specified Time in Microseconds (max. 1000)
- *
- * \param us - Time in microseconds
- *
- */
-void BSP_WaitUs(u32_t us);
-
-/**
- * \brief Reset CAX RF Chip
- *
- * \param ms - Reset Low Time in [ms]
- *
- */
-void BSP_ResetRF(u8_t ms);
-
-/**
- * \brief Sense whether SPI IRQ is high or low
- *
- * \return State of IRQ Pin  PA.10
- *
- */
-u8_t BSP_SenseRFIRQ(void);
-
-/**
- * \brief Inhibit SPI IRQ, supresses interrupt but still latches it
- *
- */
-void BSP_DisableRFIRQ(void);
-
-/**
- * \brief Allow SPI IRQ, re-enabling interrupt after BSP_DisableRFIRQ()
- *
- */
-void BSP_EnableRFIRQ(void);
-
-/**
- * \brief Put SPI Select (SSB) Pin high
- *
- */
-void BSP_SetRFSSBHigh(void);
-
-/**
- * \brief Put SPI Select (SSB) Pin low
- *
- */
-void BSP_SetRFSSBLow(void);
 
 /**
  * \brief Enable the serial (usb/uart) irq
@@ -209,59 +225,6 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize);
 #endif // USE_UART
 
 /**
- * \brief Initialise GPIO and SPI Pins for Comms with CA-821X
- *
- */
-void BSP_SPIInit(void);
-
-/**
- * \brief Transmit Byte to SPI and Receive Byte at same Time
- *
- * \param OutByte - Character to transmit
- *
- * \return Character received
- *
- * It is required that the Exchange & push/pop methods can work together,
- * so it is recommended that one is implemented with the other. The FIFO
- * behaviour is optimal, as it allows maximal usage of the SPI bus. Then
- * SPIExchangeByte can be implemented like:
- *
- * u8_t BSP_SPIExchangeByte( u8_t OutByte )
- * {
- *    u8_t InByte;
- *    while(!BSP_SPIPushByte(OutByte));
- *    while(!BSP_SPIPopByte(&InByte));
- *    return InByte;
- * }
- *
- * If the given board doesn't support FIFO behaviour, then the push/pop methods
- * can be implemented by using a virtual receive FIFO of length 1, and actually
- * doing the SPI byte exchange when PushByte is called.
- *
- */
-u8_t BSP_SPIExchangeByte(u8_t OutByte);
-
-/**
- * \brief Push byte to FIFO for transmitting over SPI
- *
- * \param OutByte - Character to transmit
- *
- * \return 1 if successful, 0 if the FIFO is full
- *
- */
-u8_t BSP_SPIPushByte(u8_t OutByte);
-
-/**
- * \brief Get Byte from SPI receive FIFO
- *
- * \param InByte - output, filled with the received byte if retval is 1
- *
- * \return 1 if successful, 0 if the FIFO is full
- *
- */
-u8_t BSP_SPIPopByte(u8_t *InByte);
-
-/**
  * \brief Set up wake on timer/IRQ, Power down MCU and return on wakeup
  *
  * \param sleeptime_ms - sleep time [milliseconds]
@@ -275,30 +238,22 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_
  * \brief Initialise the system for a given ca821x_dev
  *
  */
-void BSP_Initialise(struct ca821x_dev *pDeviceRef);
+void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchReadCallback);
 
 /**
  * \brief Enable or disable the usage of the external clock from the CA821x
- * \params useExternalClock - (0: Use internal clock) (1: Use the clock from CA821x)
+ * \param useExternalClock - (0: Use internal clock) (1: Use the clock from CA821x)
  *
  */
 void BSP_UseExternalClock(u8_t useExternalClock);
 
 /**
  * \brief Registers GPIO Functionality for Module Pin
- * \param mpin  - module pin number
- * \param pullup - none/pullup/pulldown for input
- * \param debounce - enable debounce for input
- * \param irq - enable interupt for input
- * \param callback - pointer to ISR for input
+ * \param args Arguments
  * \return status
  *
  */
-ca_error BSP_ModuleRegisterGPIOInput(u8_t                mpin,
-                                     module_pin_pullup   pullup,
-                                     module_pin_debounce debounce,
-                                     module_pin_irq      irq,
-                                     int (*callback)(void));
+ca_error BSP_ModuleRegisterGPIOInput(struct gpio_input_args *args);
 
 /**
  * \brief Registers GPIO Functionality for Module Pin
@@ -364,14 +319,6 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val);
 void BSP_SystemReset();
 
 /**
- * \brief This function will be called repeatedly when the Baremetal drivers
- * are blocking & waiting (eg. TIME_WaitTicks or WAIT_Callback), in case the
- * BSP needs to do any system maintenance or wants to reduce power consumption.
- *
- */
-void BSP_Waiting(void);
-
-/**
  * \brief Get a 64-bit ID that is unique to this device
  */
 u64_t BSP_GetUniqueId(void);
@@ -387,7 +334,7 @@ u8_t BSP_GetChargeStat(void);
 /**
  * \brief Measure and Read Temperature Value
  *
- * \return Temperature in tenths of a degree (celcius)
+ * \return Temperature in tenths of a degree (celsius)
  *
  */
 i32_t BSP_GetTemperature(void);
@@ -422,7 +369,13 @@ void BSP_WatchdogEnable(u32_t timeout_ms);
   * \param timeout_ms - timeout in milliseconds
  *
  */
-void BSP_WatchdogReset(u32_t timeout_ms);
+void BSP_WatchdogReset(void);
+
+/**
+ * \brief Watchdog Disable
+ *
+ */
+void BSP_WatchdogDisable(void);
 
 /**
  * \brief Checks if the watchdog has been triggered, clears the warning if so
@@ -431,12 +384,6 @@ void BSP_WatchdogReset(u32_t timeout_ms);
  *
  */
 u8_t BSP_IsWatchdogTriggered(void);
-
-/**
- * \brief Watchdog Disable
- *
- */
-void BSP_WatchdogDisable(void);
 
 /**
  * \brief Enable the USB if connected
@@ -507,5 +454,68 @@ void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize);
  *
  */
 void BSP_ClearDataFlash(void);
+
+/**
+ * \brief Initialises RTC
+ *
+ */
+void BSP_RTCInitialise(void);
+
+/**
+ * \brief Sets RTC Alarm in seconds from current time
+ * \param seconds - seconds to be added to current time
+ * \return status
+ *
+ */
+ca_error BSP_RTCSetAlarmSeconds(u32_t seconds);
+
+/**
+ * \brief Disables RTC Alarm
+ *
+ */
+void BSP_RTCDisableAlarm(void);
+
+/**
+ * \brief Sets RTC Date+Time
+ * \param dateandtime - RTCDateAndTime structure
+ * \return status
+ *
+ */
+ca_error BSP_RTCSetDateAndTime(struct RTCDateAndTime dateandtime);
+
+/**
+ * \brief Gets RTC Date+Time
+ * \param dateandtime - pointer to RTCDateAndTime structure
+ * \return status
+ *
+ */
+void BSP_RTCGetDateAndTime(struct RTCDateAndTime *dateandtime);
+
+/**
+ * \brief Converts Unix Time seconds to RTC Date+Time
+ * \param seconds - Unix time seconds
+ * \param dateandtime - pointer to RTCDateAndTime structure
+ *
+ */
+void BSP_RTCConvertSecondsToDateAndTime(i64_t seconds, struct RTCDateAndTime *dateandtime);
+
+/**
+ * \brief Converts RTC Date+Time to Unix Time seconds
+ * \param dateandtime - RTCDateAndTime structure
+ * \return Unix time seconds
+ *
+ */
+i64_t BSP_RTCConvertDateAndTimeToSeconds(struct RTCDateAndTime dateandtime);
+
+/**
+ * \brief Registers RTC IRQ function callback
+ * \param callback - pointer to ISR for input
+ *
+ */
+void BSP_RTCRegisterCallback(int (*callback)(void));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CASCODA_BSP_H

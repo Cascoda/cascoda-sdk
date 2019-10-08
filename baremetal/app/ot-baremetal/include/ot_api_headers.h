@@ -20,14 +20,17 @@
 #define THREAD_DOWNLINK_ID (0x88)
 #define THREAD_UPLINK_ID (0xA8)
 
-/**
- * \defgroup  OT_API_HEADERS ot_api.c
- * \addtogroup OT_API_HEADERS
- *
- * CODE This module gets commands from Wing Commander
- *
- * @{ */
+/******************************************************************************/
+/******************************************************************************/
+/****** otApi_Dispatch()                                                 ******/
+/******************************************************************************/
+/******************************************************************************/
+/** otApi_Dispatch()
+ **
+ ** \brief Dispatch a thread command in the SPI receive buffer
+ **
+ ** \return None
+ **/
 int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer);
-/** @} OT_API_HEADERS */
 
 #endif // OT_API_HEADERS_H

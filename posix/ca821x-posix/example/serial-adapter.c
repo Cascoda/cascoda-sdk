@@ -179,23 +179,30 @@ exit:
 	return error;
 }
 
-int handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	ca_error error = CA_ERROR_SUCCESS;
+	ca_error error = CA_ERROR_NOT_HANDLED;
 
-	if (buf[0] != 0xB3)
-		return CA_ERROR_NOT_HANDLED;
+	if (buf[0] == 0xA0)
+	{
+		struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
+		fprintf(stderr, "Rx: %.*s\r\n", (int)(len - 2), buf + 2);
+		error = CA_ERROR_SUCCESS;
+	}
+	if (buf[0] == 0xB3)
+	{
+		pthread_mutex_lock(&s_write_mutex);
 
-	pthread_mutex_lock(&s_write_mutex);
+		write(selfpipe[1], "a", 1);
+		while (s_write_length) pthread_cond_wait(&s_write_cond, &s_write_mutex);
 
-	write(selfpipe[1], "a", 1);
-	while (s_write_length) pthread_cond_wait(&s_write_cond, &s_write_mutex);
+		s_write_length = len - 2;
+		s_write_offset = 0;
+		memcpy(s_write_buffer, buf + 2, s_write_length);
 
-	s_write_length = len - 2;
-	s_write_offset = 0;
-	memcpy(s_write_buffer, buf + 2, s_write_length);
-
-	pthread_mutex_unlock(&s_write_mutex);
+		pthread_mutex_unlock(&s_write_mutex);
+		error = CA_ERROR_SUCCESS;
+	}
 
 	return error;
 }
@@ -288,6 +295,7 @@ int main(int argc, const char *argv[])
 	}
 	configure_io();
 	exchange_register_user_callback(handle_user_command, pDeviceRef);
+	ca821x_util_start_downstream_dispatch_worker();
 
 	while (1)
 	{

@@ -64,22 +64,12 @@ extern "C"
 #define OTG_ENABLE()    (OTG->CTL |= OTG_CTL_OTGEN_Msk)
 
 /**
-  * @brief This macro is used to enable OTG function Macro for Non-Secure
-  */
-#define OTG_ENABLE_NS() (OTG_NS->CTL |= OTG_CTL_OTGEN_Msk)
-
-/**
   * @brief This macro is used to disable OTG function
   * @param None
   * @return None
   * @details This macro will clear OTGEN bit of OTG_CTL register to disable OTG function.
   */
 #define OTG_DISABLE()    (OTG->CTL &= ~OTG_CTL_OTGEN_Msk)
-
-/**
-  * @brief This macro is used to disable OTG function Macro for Non-Secure
-  */
-#define OTG_DISABLE_NS() (OTG_NS->CTL &= ~OTG_CTL_OTGEN_Msk)
 
 /**
   * @brief This macro is used to enable USB PHY
@@ -91,22 +81,12 @@ extern "C"
 #define OTG_ENABLE_PHY()    (OTG->PHYCTL |= OTG_PHYCTL_OTGPHYEN_Msk)
 
 /**
-  * @brief This macro is used to enable USB PHY Macro for Non-Secure
-  */
-#define OTG_ENABLE_PHY_NS() (OTG_NS->PHYCTL |= OTG_PHYCTL_OTGPHYEN_Msk)
-
-/**
   * @brief This macro is used to disable USB PHY
   * @param None
   * @return None
   * @details This macro will clear OTGPHYEN bit of OTG_PHYCTL register to disable USB PHY.
   */
 #define OTG_DISABLE_PHY()    (OTG->PHYCTL &= ~OTG_PHYCTL_OTGPHYEN_Msk)
-
-/**
-  * @brief This macro is used to disable USB PHY Macro for Non-Secure
-  */
-#define OTG_DISABLE_PHY_NS() (OTG_NS->PHYCTL &= ~OTG_PHYCTL_OTGPHYEN_Msk)
 
 /**
   * @brief This macro is used to enable ID detection function
@@ -117,22 +97,12 @@ extern "C"
 #define OTG_ENABLE_ID_DETECT()    (OTG->PHYCTL |= OTG_PHYCTL_IDDETEN_Msk)
 
 /**
-  * @brief This macro is used to enable ID detection function Macro for Non-Secure
-  */
-#define OTG_ENABLE_ID_DETECT_NS() (OTG_NS->PHYCTL |= OTG_PHYCTL_IDDETEN_Msk)
-
-/**
   * @brief This macro is used to disable ID detection function
   * @param None
   * @return None
   * @details This macro will clear IDDETEN bit of OTG_PHYCTL register to disable ID detection function.
   */
 #define OTG_DISABLE_ID_DETECT()    (OTG->PHYCTL &= ~OTG_PHYCTL_IDDETEN_Msk)
-
-/**
-  * @brief This macro is used to disable ID detection function Macro for Non-Secure
-  */
-#define OTG_DISABLE_ID_DETECT_NS() (OTG_NS->PHYCTL &= ~OTG_PHYCTL_IDDETEN_Msk)
 
 /**
   * @brief This macro is used to enable OTG wake-up function
@@ -143,22 +113,12 @@ extern "C"
 #define OTG_ENABLE_WAKEUP()    (OTG->CTL |= OTG_CTL_WKEN_Msk)
 
 /**
-  * @brief This macro is used to enable OTG wake-up function Macro for Non-Secure
-  */
-#define OTG_ENABLE_WAKEUP_NS() (OTG_NS->CTL |= OTG_CTL_WKEN_Msk)
-
-/**
   * @brief This macro is used to disable OTG wake-up function
   * @param None
   * @return None
   * @details This macro will clear WKEN bit of OTG_CTL register to disable OTG wake-up function.
   */
 #define OTG_DISABLE_WAKEUP()    (OTG->CTL &= ~OTG_CTL_WKEN_Msk)
-
-/**
-  * @brief This macro is used to disable OTG wake-up function Macro for Non-Secure
-  */
-#define OTG_DISABLE_WAKEUP_NS() (OTG_NS->CTL &= ~OTG_CTL_WKEN_Msk)
 
 /**
   * @brief This macro is used to set the polarity of USB_VBUS_EN pin
@@ -171,11 +131,6 @@ extern "C"
 #define OTG_SET_VBUS_EN_POL(u32Pol)    (OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBENPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBENPOL_Pos))
 
 /**
-  * @brief This macro is used to set the polarity of USB_VBUS_EN pin Macro for Non-Secure
-  */
-#define OTG_SET_VBUS_EN_POL_NS(u32Pol) (OTG_NS->PHYCTL = (OTG_NS->PHYCTL & (~OTG_PHYCTL_VBENPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBENPOL_Pos))
-
-/**
   * @brief This macro is used to set the polarity of USB_VBUS_ST pin
   * @param[in] u32Pol The polarity selection. Valid values are listed below.
   *                    - \ref OTG_VBUS_ST_VALID_HIGH
@@ -184,11 +139,6 @@ extern "C"
   * @details This macro is used to set the polarity of external USB VBUS power switch status signal.
   */
 #define OTG_SET_VBUS_STS_POL(u32Pol)    (OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBSTSPOL_Pos))
-
-/**
-  * @brief This macro is used to set the polarity of USB_VBUS_ST pin Macro for Non-Secure
-  */
-#define OTG_SET_VBUS_STS_POL_NS(u32Pol) (OTG_NS->PHYCTL = (OTG_NS->PHYCTL & (~OTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBSTSPOL_Pos))
 
 /**
   * @brief This macro is used to enable OTG related interrupts
@@ -212,11 +162,6 @@ extern "C"
 #define OTG_ENABLE_INT(u32Mask)    (OTG->INTEN |= (u32Mask))
 
 /**
-  * @brief This macro is used to enable OTG related interrupts Macro for Non-Secure
-  */
-#define OTG_ENABLE_INT_NS(u32Mask) (OTG_NS->INTEN |= (u32Mask))
-
-/**
   * @brief This macro is used to disable OTG related interrupts
   * @param[in] u32Mask The combination of interrupt source. Each bit corresponds to a interrupt source. Valid values are listed below.
   *                    - \ref OTG_INTEN_ROLECHGIEN_Msk
@@ -236,11 +181,6 @@ extern "C"
   * @details This macro will disable OTG related interrupts specified by u32Mask parameter.
   */
 #define OTG_DISABLE_INT(u32Mask)    (OTG->INTEN &= ~(u32Mask))
-
-/**
-  * @brief This macro is used to disable OTG related interrupts Macro for Non-Secure
-  */
-#define OTG_DISABLE_INT_NS(u32Mask) (OTG_NS->INTEN &= ~(u32Mask))
 
 /**
   * @brief This macro is used to get OTG related interrupt flags
@@ -264,11 +204,6 @@ extern "C"
 #define OTG_GET_INT_FLAG(u32Mask)    (OTG->INTSTS & (u32Mask))
 
 /**
-  * @brief This macro is used to get OTG related interrupt flags Macro for Non-Secure
-  */
-#define OTG_GET_INT_FLAG_NS(u32Mask) (OTG_NS->INTSTS & (u32Mask))
-
-/**
   * @brief This macro is used to clear OTG related interrupt flags
   * @param[in] u32Mask The combination of interrupt source. Each bit corresponds to a interrupt source. Valid values are listed below.
   *                    - \ref OTG_INTSTS_ROLECHGIF_Msk
@@ -290,11 +225,6 @@ extern "C"
 #define OTG_CLR_INT_FLAG(u32Mask)    (OTG->INTSTS = (u32Mask))
 
 /**
-  * @brief This macro is used to clear OTG related interrupt flags Macro for Non-Secure
-  */
-#define OTG_CLR_INT_FLAG_NS(u32Mask) (OTG_NS->INTSTS = (u32Mask))
-
-/**
   * @brief This macro is used to get OTG related status
   * @param[in] u32Mask The combination of user specified source. Valid values are listed below.
   *                    - \ref OTG_STATUS_OVERCUR_Msk
@@ -307,11 +237,6 @@ extern "C"
   * @details This macro will return OTG related status specified by u32Mask parameter.
   */
 #define OTG_GET_STATUS(u32Mask)    (OTG->STATUS & (u32Mask))
-
-/**
-  * @brief This macro is used to get OTG related status Macro for Non-Secure
-  */
-#define OTG_GET_STATUS_NS(u32Mask) (OTG_NS->STATUS & (u32Mask))
 
 
 

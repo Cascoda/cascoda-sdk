@@ -47,12 +47,12 @@ static u8_t SIF_LTR303ALS_write_register(u8_t add, u8_t data)
 	status = SENSORIF_I2C_Write(SIF_SAD_LTR303ALS, wdata, &num);
 	if (status)
 	{
-		printf("SIF_LTR303ALS_write_register() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_LTR303ALS_write_register() Error; write status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 2)
 	{
-		printf("SIF_LTR303ALS_write_register() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_LTR303ALS_write_register() Error: bytes written: %02X", num);
 		return (0xFF);
 	}
 
@@ -78,12 +78,12 @@ static u8_t SIF_LTR303ALS_read_register(u8_t add, u8_t *data)
 	status = SENSORIF_I2C_Write(SIF_SAD_LTR303ALS, &wdata, &num);
 	if (status)
 	{
-		printf("SIF_LTR303ALS_read_register() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_LTR303ALS_read_register() Error; write status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 1)
 	{
-		printf("SIF_LTR303ALS_read_register() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_LTR303ALS_read_register() Error: bytes written: %02X", num);
 		return (0xFF);
 	}
 
@@ -92,25 +92,18 @@ static u8_t SIF_LTR303ALS_read_register(u8_t add, u8_t *data)
 	status = SENSORIF_I2C_Read(SIF_SAD_LTR303ALS, data, &num);
 	if (status)
 	{
-		printf("SIF_LTR303ALS_read_register() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_LTR303ALS_read_register() Error; read status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 1)
 	{
-		printf("SIF_LTR303ALS_read_register() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_LTR303ALS_read_register() Error: bytes read: %02X", num);
 		return (0xFF);
 	}
 
 	return (0x00);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief LTR303ALS: Initialise Sensor
- *******************************************************************************
- * \return status, 0 = success
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_LTR303ALS_Initialise(void)
 {
 	u32_t tnow;
@@ -127,14 +120,14 @@ u8_t SIF_LTR303ALS_Initialise(void)
 		return (status);
 	if (dbyte != SIF_LTR303ALS_PARTID)
 	{
-		printf("SIF_LTR303ALS_Initialise() Error: Invalid Part ID %02X\n", dbyte);
+		ca_log_warn("SIF_LTR303ALS_Initialise() Error: Invalid Part ID %02X", dbyte);
 		return (0xFF);
 	}
 	if ((status = SIF_LTR303ALS_read_register(REG_LTR303ALS_MANUFAC_ID, &dbyte)))
 		return (status);
 	if (dbyte != SIF_LTR303ALS_MANFID)
 	{
-		printf("SIF_LTR303ALS_Initialise() Error: Invalid Manufacturer ID %02X\n", dbyte);
+		ca_log_warn("SIF_LTR303ALS_Initialise() Error: Invalid Manufacturer ID %02X", dbyte);
 		return (0xFF);
 	}
 
@@ -153,17 +146,6 @@ u8_t SIF_LTR303ALS_Initialise(void)
 	return (0);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief LTR303ALS: Configure Sensor
- *******************************************************************************
- * \param gain:  gain setting (sif_ltr303als_gain)
- * \param tint:  integration time setting (sif_ltr303als_tint)
- * \param tmeas: measurement period setting (sif_ltr303als_tmeas)
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_LTR303ALS_Configure(u8_t gain, u8_t tint, u8_t tmeas)
 {
 	u8_t dbyte;
@@ -184,16 +166,6 @@ u8_t SIF_LTR303ALS_Configure(u8_t gain, u8_t tint, u8_t tmeas)
 	return (0);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief LTR303ALS: Read Light Measurement
- *******************************************************************************
- * \param pch0: pointer to 16-bit result for channel 0 (visible spectrum)
- * \param pch1: pointer to 16-bit result for channel 1 (infrared)
- *******************************************************************************
- * \return status
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_LTR303ALS_ReadLight(u16_t *pch0, u16_t *pch1)
 {
 	u8_t creg;
@@ -221,13 +193,13 @@ u8_t SIF_LTR303ALS_ReadLight(u16_t *pch0, u16_t *pch1)
 	{
 		if ((status = SIF_LTR303ALS_read_register(REG_LTR303ALS_STATUS, &dbyte)))
 			return (status);
-		if(!(--countdown))
+		if (!(--countdown))
 			return (0xFF);
 	}
 	/* check data valid */
 	if (dbyte & 0x80)
 	{
-		printf("SIF_LTR303ALS_ReadLight(): measured Data Invalid\n");
+		ca_log_warn("SIF_LTR303ALS_ReadLight(): measured Data Invalid");
 		return (0xFF);
 	}
 

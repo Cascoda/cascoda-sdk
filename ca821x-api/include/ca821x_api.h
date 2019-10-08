@@ -1,19 +1,38 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ *   The main ca821x-api include file.
+ *
+ *   The functions in this file provide a high-level abstraction for controlling the
+ *   ca821x.
+ */
+
 #ifndef CA821X_API_H
 #define CA821X_API_H
 
@@ -23,7 +42,12 @@
 #include "ca821x_config.h"
 #include "ca821x_endian.h"
 #include "ca821x_error.h"
+#include "ca821x_log.h"
 #include "mac_messages.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if CASCODA_CA_VER != 8210 && CASCODA_CA_VER != 8211
 #error "UNSUPPORTED CASCODA_CA_VER VERSION (or build incorrectly configured - use cmake)"
@@ -97,15 +121,30 @@ struct ca821x_api_callbacks
 	ca_error (*generic_dispatch)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 };
 
-/******************************************************************************/
-/****** device_ref struct for all internal state                         ******/
-/******************************************************************************/
+/**
+ * CA-821x Device reference struct
+ *
+ * This contains all internal state, so that one program instance can control
+ * multiple CA-821x devices at a time. This device struct is required to be
+ * passed to most ca821x-api functions in order to operate on the provided device.
+ */
 struct ca821x_dev
 {
-	void *context;          //< Context for free use by the application
-	void *exchange_context; //< Context for free use by the exchange
+	/**
+	 * Context pointer for free use by the application. This context pointer can be set
+	 * by the application as required, such as to track the application
+	 * state belonging to a certain device.
+	 */
+	void *context;
+	/**
+	 * Context for free use by the exchange (internal to the cascoda stack)
+	 */
+	void *exchange_context;
 
-	/** Set by the exchange for the api to use to send messages to CA821x */
+	/**
+	 * Function for the api to use to send messages to CA821x. This is set
+	 * internally by the exchange, and should not be modified by the application.
+	 */
 	ca821x_api_downstream_t ca821x_api_downstream;
 
 	/** Callback routines registered by the user, to be called by the api for upstream commands */
@@ -125,6 +164,22 @@ struct ca821x_dev
 /****** MAC MCPS/MLME Downlink                                           ******/
 /******************************************************************************/
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MCPS_DATA_request (Send Data) according to API Spec
+ *******************************************************************************
+ * \param SrcAddrMode - Source Addressing Mode
+ * \param DstAddr - Destination Address and PanId
+ * \param MsduLength - Length of Data
+ * \param pMsdu - Pointer to Data
+ * \param MsduHandle - Handle of Data
+ * \param TxOptions - Tx Options Bit Field
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
                                 struct FullAddr    DstAddr,
                                 uint8_t            MsduLength,
@@ -134,57 +189,221 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
                                 struct SecSpec *   pSecurity,
                                 struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MCPS_PURGE_request/confirm according to API Spec
+ *******************************************************************************
+ * \param MsduHandle - Handle of Data
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return: 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PCPS_DATA_request (Send Data) according to API Spec
+ *******************************************************************************
+ * \param PsduHandle - User-assigned handle to identify data request
+ * \param TxOpts - TxOpts (such as for sending indirectly)
+ * \param PsduLength - Length of Data
+ * \param pPsdu - Pointer to Data
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
+                                uint8_t            TxOpts,
+                                uint8_t            PsduLength,
+                                uint8_t *          pPsdu,
+                                struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_ASSOCIATE_request according to API Spec
+ *******************************************************************************
+ * \param LogicalChannel - Channel Number
+ * \param DstAddrMode - Destination Addressing Mode
+ * \param DstPANId - Destination PAN ID
+ * \param pDstAddr - Pointer to Destination Address
+ * \param CapabilityInfo - Bitmap of operational Capabilities
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
                                      struct FullAddr    DstAddr,
                                      uint8_t            CapabilityInfo,
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_ASSOCIATE_response according to API Spec
+ *******************************************************************************
+ * \param pDeviceAddress - Pointer to IEEE Address
+ * \param AssocShortAddress - Short Address given to Device
+ * \param Status - Status
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_ASSOCIATE_response(uint8_t *          pDeviceAddress,
                                       uint16_t           AssocShortAddress,
                                       uint8_t            Status,
                                       struct SecSpec *   pSecurity,
                                       struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_DISASSOCIATE_request according to API Spec
+ *******************************************************************************
+ * \param DevAddr - Device Address
+ * \param DisassociateReason - Reason for Disassociation
+ * \param TxIndirect - TxIndirect Flag
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_DISASSOCIATE_request(struct FullAddr    DevAddr,
                                         uint8_t            DisassociateReason,
                                         uint8_t            TxIndirect,
                                         struct SecSpec *   pSecurity,
                                         struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_GET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param PIBAttribute - Attribute Number
+ * \param PIBAttributeIndex - Index within Attribute if an Array
+ * \param pPIBAttributeLength - Pointer to Attribute Length
+ * \param pPIBAttributeValue - Pointer to Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_GET_request_sync(uint8_t            PIBAttribute,
                                     uint8_t            PIBAttributeIndex,
                                     uint8_t *          pPIBAttributeLength,
                                     void *             pPIBAttributeValue,
                                     struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_ORPHAN_response according to API Spec
+ *******************************************************************************
+ * \param pOrphanAddress - Pointer to Orphan IEEE Address
+ * \param ShortAddress - Short Address for Orphan
+ * \param AssociatedMember - TRUE if associated
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
                                    uint16_t           ShortAddress,
                                    uint8_t            AssociatedMember,
                                    struct SecSpec *   pSecurity,
                                    struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_RESET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param SetDefaultPIB - Set defaults in PIB
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_RX_ENABLE_request/confirm according to API Spec
+ *******************************************************************************
+ * \param DeferPermit - Defer Permit Flag
+ * \param RxOnTime - Receiver On Time
+ * \param RxOnDuration - Receiver On Duration
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
                                           uint32_t           RxOnTime,
                                           uint32_t           RxOnDuration,
                                           struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_SCAN_request according to API Spec
+ *******************************************************************************
+ * \param ScanType - Scan Type (see \ref mlme_scan_type)
+ * \param ScanChannels -  Channel Bit mask (32 Bit)
+ * \param ScanDuration - Time to scan for (See \ref ca821x_scan_durations enum)
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return: 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_SCAN_request(uint8_t            ScanType,
                                 uint32_t           ScanChannels,
                                 uint8_t            ScanDuration,
                                 struct SecSpec *   pSecurity,
                                 struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_SET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param PIBAttribute - Attribute Number
+ * \param PIBAttributeIndex - Index within Attribute if an Array
+ * \param PIBAttributeLength - Attribute Length
+ * \param pPIBAttributeValue - Pointer to Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
                                     uint8_t            PIBAttributeIndex,
                                     uint8_t            PIBAttributeLength,
                                     const void *       pPIBAttributeValue,
                                     struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_START_request/confirm according to API Spec
+ *******************************************************************************
+ * \param PANId - PAN Identifier
+ * \param LogicalChannel - Channel Number
+ * \param BeaconOrder - Beacon Order
+ * \param SuperframeOrder - Superframe Order
+ * \param PANCoordinator - 1 if Coordinator
+ * \param BatteryLifeExtension - 1 if battery save mode
+ * \param CoordRealignment - 1 if a Coordinator Realignment
+ * \param pCoordRealignSecurity - Pointer to Security Structure or NULLP for
+ *                                coordinator realignment frames
+ * \param pBeaconSecurity - Pointer to Security Structure or NULLP for beacon
+ *                          frames
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       uint8_t            LogicalChannel,
                                       uint8_t            BeaconOrder,
@@ -196,6 +415,18 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       struct SecSpec *   pBeaconSecurity,
                                       struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_POLL_request/confirm according to API Spec
+ *******************************************************************************
+ * \param CoordAddress - Coordinator Address
+ * \param Interval - Polling Interval in 0.1 Seconds Resolution
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 #if CASCODA_CA_VER == 8210
                                      uint8_t Interval[2], /* polling interval in 0.1 seconds res */
@@ -209,45 +440,153 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 /****** HWME Downlink                                                    ******/
 /******************************************************************************/
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief HWME_SET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param HWAttribute - Attribute Number
+ * \param HWAttributeLength - Attribute Length
+ * \param pHWAttributeValue - Pointer to Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status HWME_SET_request_sync(uint8_t            HWAttribute,
                                     uint8_t            HWAttributeLength,
                                     uint8_t *          pHWAttributeValue,
                                     struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief HWME_GET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param HWAttribute - Attribute Number
+ * \param HWAttributeLength - Attribute Length
+ * \param pHWAttributeValue - Pointer to Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status HWME_GET_request_sync(uint8_t            HWAttribute,
                                     uint8_t *          HWAttributeLength,
                                     uint8_t *          pHWAttributeValue,
                                     struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief HWME_HAES_request/confirm according to API Spec
+ *******************************************************************************
+ * \param HAESMode - AES Mode (Encrypt/Decrypt)
+ * \param pHAESData - Pointer to AES Input/Output Data
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /****** TDME Downlink                                                    ******/
 /******************************************************************************/
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_SETSFR_request/confirm according to API Spec
+ *******************************************************************************
+ * \param SFRPage - SFR Page
+ * \param SFRAddress - SFR Address
+ * \param SFRValue - SFR Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_SETSFR_request_sync(uint8_t            SFRPage,
                                        uint8_t            SFRAddress,
                                        uint8_t            SFRValue,
                                        struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_GETSFR_request/confirm according to API Spec
+ *******************************************************************************
+ * \param SFRPage - SFR Page
+ * \param SFRAddress - SFR Address
+ * \param SFRValue - SFR Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_GETSFR_request_sync(uint8_t            SFRPage,
                                        uint8_t            SFRAddress,
                                        uint8_t *          SFRValue,
                                        struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_TESTMODE_request/confirm according to API Spec
+ *******************************************************************************
+ * \param TestMode - Test Mode to be set
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_SET_request/confirm according to API Spec
+ *******************************************************************************
+ * \param TestAttribute - Test Attribute Number
+ * \param TestAttributeLength - Test Attribute Length
+ * \param pTestAttributeValue - Pointer to Test Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_SET_request_sync(uint8_t            TestAttribute,
                                     uint8_t            TestAttributeLength,
                                     void *             pTestAttributeValue,
                                     struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_TXPKT_request/confirm according to API Spec
+ *******************************************************************************
+ * \param TestPacketDataType - Test Packet Data Type
+ * \param TestPacketSequenceNumber - Pointer to Sequence Number
+ * \param TestPacketLength - Pointer to Test Packet Length
+ * \param pTestPacketData - Pointer to Test Packet Data or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
                                       uint8_t *          TestPacketSequenceNumber,
                                       uint8_t *          TestPacketLength,
                                       void *             pTestPacketData,
                                       struct ca821x_dev *pDeviceRef);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME_LOTLK_request/confirm according to API Spec
+ *******************************************************************************
+ * \param TestChannel - Pointer to Channel
+ * \param TestRxTxb - Pointer to LO Mode (Rx when 1, Tx when 0)
+ * \param TestLOFDACValue - Pointer LOFDAC Value
+ * \param TestLOAMPValue - Pointer LOAMP Value
+ * \param TestLOTXCALValue - Pointer LOTXCAL Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_LOTLK_request_sync(uint8_t *          TestChannel,
                                       uint8_t *          TestRxTxb,
                                       uint8_t *          TestLOFDACValue,
@@ -258,11 +597,73 @@ ca_mac_status TDME_LOTLK_request_sync(uint8_t *          TestChannel,
 /******************************************************************************/
 /****** TDME Register Default Initialisation and Checking Functions      ******/
 /******************************************************************************/
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME Chip Register Default Initialisation Macro
+ *******************************************************************************
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of constituent commands
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief TDME Channel Register Default Initialisation Macro (Tx)
+ *******************************************************************************
+ * \param channel - 802.15.4 channel to initialise chip for
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return: 802.15.4 status of constituent commands
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Checks Attribute Values that are not checked in MAC
+ *******************************************************************************
+ * \param PIBAttribute - Attribute Number
+ * \param PIBAttributeLength - Attribute Length
+ * \param pPIBAttributeValue - Pointer to Attribute Value
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength, const void *pPIBAttributeValue);
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Sets the tx power for MLME_SET phyTransmitPower
+ *******************************************************************************
+ *  Normalised to 802.15.4 Definition (6-bit, signed):\n
+ *  Bit 7-6: not used\n
+ *  Bit 5-0: tx power (-32 - +31 dB)
+ *******************************************************************************
+ * \param txp - Transmit Power
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Returns the tx power for MLME_GET phyTransmitPower
+ *******************************************************************************
+ * Normalised to 802.15.4 Definition (6-bit, signed):
+ * Bit 7-6: not used
+ * Bit 5-0: tx power (-32 - +31 dB)
+ *******************************************************************************
+ * \param *txp - Transmit Power
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
 ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
@@ -324,17 +725,22 @@ const char *ca821x_get_version(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Function called by the exchange to dispatch indications from the ca821x
+ * \brief Call the relevant callback routine if populated or the
+ *        generic_dispatch for a received command.
  *******************************************************************************
- * FOR USE IN THE EXCHANGE ONLY. If the application needs to process incoming
- * indications, this should be by connecting callbacks using
- * ca821x_register_callbacks and a ca821x_api_callbacks struct.
+ * \param *buf - Receive buffer
+ * \param len - Length of command in octets
+ * \param *pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
- * \param buf - entire buffer of message, including command and length bytes
- * \param len - length of buffer
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
- * \reval CA_ERROR_SUCCESS for success, CA_ERROR_NOT_HANDLED if not handled, or another CA_ERROR
+ * \return CA_ERROR_NOT_HANDLED: command was unhandled<br>
+ *         CA_ERROR_SUCCESS: command was handled<br>
+ *         CA_ERROR_*: any other error
+ *******************************************************************************
  ******************************************************************************/
 ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CA821X_API_H

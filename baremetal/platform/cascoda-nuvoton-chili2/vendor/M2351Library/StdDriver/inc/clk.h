@@ -235,17 +235,31 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  PCLKDIV constant definitions.                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
-#define CLK_PCLKDIV_APB0DIV_HCLK            (0x0UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = HCLK */
-#define CLK_PCLKDIV_APB0DIV_HCLK_DIV2       (0x1UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/2 HCLK */
+#define CLK_PCLKDIV_APB0DIV_DIV1            (0x0UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = HCLK      */
+#define CLK_PCLKDIV_APB0DIV_DIV2            (0x1UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/2 HCLK  */
+#define CLK_PCLKDIV_APB0DIV_DIV4            (0x2UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/4 HCLK  */
+#define CLK_PCLKDIV_APB0DIV_DIV8       	    (0x3UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/8 HCLK  */
+#define CLK_PCLKDIV_APB0DIV_DIV16      	    (0x4UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/16 HCLK */
+#define CLK_PCLKDIV_APB0DIV_DIV32      	    (0x5UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/32 HCLK */
+
+#define CLK_PCLKDIV_APB0DIV_HCLK            (0x0UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = HCLK      */
+#define CLK_PCLKDIV_APB0DIV_HCLK_DIV2       (0x1UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/2 HCLK  */
 #define CLK_PCLKDIV_APB0DIV_HCLK_DIV4       (0x2UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/4 HCLK  */
-#define CLK_PCLKDIV_APB0DIV_HCLK_DIV8       (0x3UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/8 HCLK */
+#define CLK_PCLKDIV_APB0DIV_HCLK_DIV8       (0x3UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/8 HCLK  */
 #define CLK_PCLKDIV_APB0DIV_HCLK_DIV16      (0x4UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/16 HCLK */
 #define CLK_PCLKDIV_APB0DIV_HCLK_DIV32      (0x5UL << CLK_PCLKDIV_APB0DIV_Pos)  /*!< PCLKDIV Setting for PCLK0 = 1/32 HCLK */
 
-#define CLK_PCLKDIV_APB1DIV_HCLK            (0x0UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = HCLK */
-#define CLK_PCLKDIV_APB1DIV_HCLK_DIV2       (0x1UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/2 HCLK */
-#define CLK_PCLKDIV_APB1DIV_HCLK_DIV4       (0x2UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/4 HCLK */
-#define CLK_PCLKDIV_APB1DIV_HCLK_DIV8       (0x3UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/8 HCLK */
+#define CLK_PCLKDIV_APB1DIV_DIV1            (0x0UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = HCLK      */
+#define CLK_PCLKDIV_APB1DIV_DIV2       	    (0x1UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/2 HCLK  */
+#define CLK_PCLKDIV_APB1DIV_DIV4       	    (0x2UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/4 HCLK  */
+#define CLK_PCLKDIV_APB1DIV_DIV8       	    (0x3UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/8 HCLK  */
+#define CLK_PCLKDIV_APB1DIV_DIV16      	    (0x4UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/16 HCLK */
+#define CLK_PCLKDIV_APB1DIV_DIV32      	    (0x5UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/32 HCLK */
+
+#define CLK_PCLKDIV_APB1DIV_HCLK            (0x0UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = HCLK      */
+#define CLK_PCLKDIV_APB1DIV_HCLK_DIV2       (0x1UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/2 HCLK  */
+#define CLK_PCLKDIV_APB1DIV_HCLK_DIV4       (0x2UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/4 HCLK  */
+#define CLK_PCLKDIV_APB1DIV_HCLK_DIV8       (0x3UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/8 HCLK  */
 #define CLK_PCLKDIV_APB1DIV_HCLK_DIV16      (0x4UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/16 HCLK */
 #define CLK_PCLKDIV_APB1DIV_HCLK_DIV32      (0x5UL << CLK_PCLKDIV_APB1DIV_Pos)  /*!< PCLKDIV Setting for PCLK1 = 1/32 HCLK */
 
@@ -325,11 +339,15 @@ extern "C"
 
 #define CRC_MODULE     (MODULE_APBCLK_ENC( 0UL)|MODULE_IP_EN_Pos_ENC((uint32_t)CLK_AHBCLK_CRCCKEN_Pos)|\
                         MODULE_CLKSEL_ENC( NA)|MODULE_CLKSEL_Msk_ENC(NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                        MODULE_CLKDIV_ENC( NA)|MODULE_CLKDIV_Msk_ENC(NA)|MODULE_CLKDIV_Pos_ENC(NA))     /*!< CRC Module */
+                        MODULE_CLKDIV_ENC( NA)|MODULE_CLKDIV_Msk_ENC(NA)|MODULE_CLKDIV_Pos_ENC(NA))       /*!< CRC Module */
 
 #define CRPT_MODULE    (MODULE_APBCLK_ENC( 0UL)|MODULE_IP_EN_Pos_ENC((uint32_t)CLK_AHBCLK_CRPTCKEN_Pos)|\
                         MODULE_CLKSEL_ENC(  NA)|MODULE_CLKSEL_Msk_ENC(NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                         MODULE_CLKDIV_ENC(  NA)|MODULE_CLKDIV_Msk_ENC(NA)|MODULE_CLKDIV_Pos_ENC(NA))      /*!< CRPT Module */
+
+#define FMCIDLE_MODULE (MODULE_APBCLK_ENC( 0)|MODULE_IP_EN_Pos_ENC(CLK_AHBCLK_FMCIDLE_Pos)|\
+                        MODULE_CLKSEL_ENC(NA)|MODULE_CLKSEL_Msk_ENC(NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
+                        MODULE_CLKDIV_ENC(NA)|MODULE_CLKDIV_Msk_ENC(NA)|MODULE_CLKDIV_Pos_ENC(NA))        /*!< FMCIDLE Module */
 
 #define USBH_MODULE    (MODULE_APBCLK_ENC( 0UL)|MODULE_IP_EN_Pos_ENC((uint32_t)CLK_AHBCLK_USBHCKEN_Pos)|\
                         MODULE_CLKSEL_ENC( 0UL)|MODULE_CLKSEL_Msk_ENC(  1UL)|MODULE_CLKSEL_Pos_ENC( 8UL)|\
@@ -812,7 +830,7 @@ void CLK_DisablePLL(void);
 uint32_t CLK_WaitClockReady(uint32_t u32ClkMask);
 void CLK_EnableSysTick(uint32_t u32ClkSrc, uint32_t u32Count);
 void CLK_DisableSysTick(void);
-void CLK_SetPowerDownMode(uint32_t u32powerdown_mode);
+void CLK_SetPowerDownMode(uint32_t u32PDMode);
 void CLK_EnableDPDWKPin(uint32_t u32TriggerType);
 uint32_t CLK_GetPMUWKSrc(void);
 void CLK_EnableSPDWKPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn);

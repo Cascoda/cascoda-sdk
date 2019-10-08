@@ -42,8 +42,7 @@
 #include "flash.h"
 #include "openthread-core-config.h"
 
-#define FLASH_FOLDER "/usr/local/etc/"
-#define FLASH_FILE FLASH_FOLDER ".otConfig"
+static const char flashFileName[] = "otConfig";
 
 static int sFlashFd;
 uint32_t   sEraseAddress;
@@ -57,21 +56,13 @@ enum
 
 otError utilsFlashInit(void)
 {
-	otError        error = OT_ERROR_NONE;
-	char           fileName[30];
-	struct stat    st;
-	bool           create = false;
-	struct timeval tv;
+	otError     error       = OT_ERROR_NONE;
+	bool        create      = false;
+	const char *dataDir     = posixGetDataDir();
+	size_t      fileNameLen = sizeof(flashFileName) + strlen(dataDir) + 1; //"datadir/filename"
+	char        fileName[fileNameLen];
 
-	gettimeofday(&tv, NULL);
-
-	memset(&st, 0, sizeof(st));
-
-	if (stat(FLASH_FOLDER, &st) == -1)
-	{
-		mkdir(FLASH_FOLDER, 0777);
-	}
-	snprintf(fileName, sizeof(fileName), "%s.%02d", FLASH_FILE, NODE_ID);
+	snprintf(fileName, fileNameLen, "%s/%s", dataDir, flashFileName);
 
 	if (access(fileName, 0))
 	{

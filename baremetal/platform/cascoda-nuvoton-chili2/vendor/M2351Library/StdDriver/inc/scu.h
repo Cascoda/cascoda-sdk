@@ -53,8 +53,8 @@ typedef enum NSATTR
     I2S0_Attr   = 64 + 8,
     OTG_Attr    = 64 + 13,
     TMR23_Attr  = 64 + 17,
-    PWM0_Attr   = 64 + 24,
-    PWM1_Attr   = 64 + 25,
+    EPWM0_Attr  = 64 + 24,
+    EPWM1_Attr  = 64 + 25,
     BPWM0_Attr  = 64 + 26,
     BPWM1_Attr  = 64 + 27,
     /******  PNNSET3 **********************************************************************************/
@@ -84,6 +84,7 @@ typedef enum NSATTR
     QEI1_Attr   = 160 + 17,
     ECAP0_Attr  = 160 + 20,
     ECAP1_Attr  = 160 + 21,
+    TRNG_Attr   = 160 + 25,
 
     /******  PNNSET6 **********************************************************************************/
     USBD_Attr   = 192 + 0,

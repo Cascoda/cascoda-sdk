@@ -30,7 +30,9 @@
  */
 
 #include <assert.h>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -79,7 +81,9 @@ static int                s_devcount              = 0;
 static int                s_initialised           = 0;
 
 //Dynamic hid-api library
+#ifndef _WIN32
 static void *s_hid_lib_handle = NULL;
+#endif
 static struct hid_device_info *(*dhid_enumerate)(unsigned short, unsigned short);
 static hid_device *(*dhid_open_path)(const char *);
 static void (*dhid_close)(hid_device *);
@@ -101,7 +105,9 @@ static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 static void assert_usb_exchange(struct ca821x_dev *pDeviceRef)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
-	assert(priv->base.exchange_type == ca821x_exchange_usb);
+
+	if (priv->base.exchange_type != ca821x_exchange_usb)
+		abort();
 }
 
 //returns 1 for non-final fragment, 0 for final
@@ -268,7 +274,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		static int ecount = 0;
 		if (ecount < 20)
 		{
-			fprintf(stderr, "\r\nERROR CODE 0x%02x\r\n", buf[2]);
+			ca_log_crit("ERROR CODE 0x%02x", buf[2]);
 			fflush(stderr);
 			ecount++;
 		}
@@ -284,12 +290,13 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	return len;
 }
 
-int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t                   offset = 0;
 	uint8_t                   frag_buf[MAX_FRAG_SIZE + 1]; //+1 for report ID
 	int                       rval, error;
-	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
+	ca_error                  caerror = CA_ERROR_SUCCESS;
+	struct usb_exchange_priv *priv    = pDeviceRef->exchange_context;
 
 	assert_usb_exchange(pDeviceRef);
 
@@ -306,8 +313,8 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 
 	if (error < 0)
 	{
-		fprintf(stderr, "\r\nUSB Send error!\r\n");
-		error = -usb_exchange_err_usb;
+		ca_log_crit("USB Send error!");
+		caerror = CA_ERROR_FAIL;
 		reload_hid_device(pDeviceRef); //usb disconnected - attempt to grab new device
 	}
 #if CASCODA_RASPI_USB_WORKAROUND
@@ -316,7 +323,7 @@ int usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceR
 		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
 	}
 #endif
-	return error;
+	return caerror;
 }
 
 void flush_unread_usb(struct ca821x_dev *pDeviceRef)
@@ -333,9 +340,24 @@ void flush_unread_usb(struct ca821x_dev *pDeviceRef)
 	} while (rval > 0);
 }
 
-static int load_dlibs()
+#ifdef _WIN32
+//No Dynamic library, use statically linked
+static ca_error load_dlibs()
 {
-	int error = 0;
+	dhid_enumerate        = &hid_enumerate;
+	dhid_open_path        = &hid_open_path;
+	dhid_close            = &hid_close;
+	dhid_free_enumeration = &hid_free_enumeration;
+	dhid_read_timeout     = &hid_read_timeout;
+	dhid_write            = &hid_write;
+
+	return CA_ERROR_SUCCESS;
+}
+#else
+//Use dynamic lib
+static ca_error load_dlibs()
+{
+	ca_error error = CA_ERROR_SUCCESS;
 
 	//Load the dynamic library
 	s_hid_lib_handle = dlopen("libhidapi-libusb.so", RTLD_NOW);
@@ -346,20 +368,20 @@ static int load_dlibs()
 
 	if (s_hid_lib_handle == NULL)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
-	dhid_enumerate        = dlsym(s_hid_lib_handle, "hid_enumerate");
-	dhid_open_path        = dlsym(s_hid_lib_handle, "hid_open_path");
-	dhid_close            = dlsym(s_hid_lib_handle, "hid_close");
+	dhid_enumerate = dlsym(s_hid_lib_handle, "hid_enumerate");
+	dhid_open_path = dlsym(s_hid_lib_handle, "hid_open_path");
+	dhid_close = dlsym(s_hid_lib_handle, "hid_close");
 	dhid_free_enumeration = dlsym(s_hid_lib_handle, "hid_free_enumeration");
-	dhid_read_timeout     = dlsym(s_hid_lib_handle, "hid_read_timeout");
-	dhid_write            = dlsym(s_hid_lib_handle, "hid_write");
+	dhid_read_timeout = dlsym(s_hid_lib_handle, "hid_read_timeout");
+	dhid_write = dlsym(s_hid_lib_handle, "hid_write");
 
 	if (dlerror() != NULL)
 	{
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
@@ -370,10 +392,11 @@ exit:
 	}
 	return error;
 }
+#endif
 
-static int init_statics()
+static ca_error init_statics()
 {
-	int error = 0;
+	ca_error error = CA_ERROR_SUCCESS;
 
 	error = load_dlibs();
 	if (error)
@@ -385,12 +408,13 @@ exit:
 	return error;
 }
 
-static int deinit_statics()
+static ca_error deinit_statics()
 {
 	s_initialised = 0;
-
+#ifndef _WIN32
 	dlclose(s_hid_lib_handle);
-	return 0;
+#endif
+	return CA_ERROR_SUCCESS;
 }
 
 int usb_exchange_init(struct ca821x_dev *pDeviceRef)
@@ -458,8 +482,8 @@ static int reload_hid_device(struct ca821x_dev *pDeviceRef)
 		goto exit;
 	}
 
-	len            = strlen(hid_cur->path);
-	priv->hid_path = calloc(1, len + 1);
+	len            = strlen(hid_cur->path) + 1;
+	priv->hid_path = malloc(len);
 	strncpy(priv->hid_path, hid_cur->path, len);
 
 exit:
@@ -474,12 +498,12 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
 	hid_device *              dev   = NULL;
 	struct usb_exchange_priv *priv  = NULL;
-	int                       error = 0;
+	ca_error                  error = CA_ERROR_SUCCESS;
 	size_t                    len   = 0;
 
 	if (!s_initialised)
 	{
-		error = init_statics() ? CA_ERROR_NOT_FOUND : CA_ERROR_SUCCESS;
+		error = init_statics();
 		if (error)
 			return error;
 	}
@@ -520,12 +544,12 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	priv->base.read_func         = usb_try_read;
 	priv->base.flush_func        = flush_unread_usb;
 
-	len            = strlen(hid_cur->path);
-	priv->hid_path = calloc(1, len + 1);
+	len            = strlen(hid_cur->path) + 1;
+	priv->hid_path = malloc(len);
 	strncpy(priv->hid_path, hid_cur->path, len);
 	priv->hid_dev = dev;
 
-	error = (ca_error)init_generic(pDeviceRef);
+	error = init_generic(pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 
 	if (error != CA_ERROR_SUCCESS)
 	{
@@ -555,6 +579,8 @@ exit:
 		pDeviceRef->exchange_context = NULL;
 	}
 	pthread_mutex_unlock(&devs_mutex);
+	if (error == CA_ERROR_SUCCESS)
+		ca_log_info("Successfully started USB Exchange.");
 	return error;
 }
 

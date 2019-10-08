@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Sensor interface for Silicon Labs Si7021 temperature / humidity sensor
@@ -27,13 +38,6 @@
 #include "ca821x_api.h"
 #include "sif_si7021.h"
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SI7021: Read Temperature
- *******************************************************************************
- * \return Temperature in 'C, 1s complement (-128 to +127 'C)
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_SI7021_ReadTemperature(void)
 {
 	u32_t num = 0;
@@ -53,12 +57,12 @@ u8_t SIF_SI7021_ReadTemperature(void)
 	status = SENSORIF_I2C_Write(SIF_SAD_SI7021, &wdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadTemperature() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadTemperature() Error; write status: %02X", status);
 		return (0x00);
 	}
 	if (num != 1)
 	{
-		printf("SIF_SI7021_ReadTemperature() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadTemperature() Error: bytes written: %02X", num);
 		return (0x00);
 	}
 
@@ -72,7 +76,7 @@ u8_t SIF_SI7021_ReadTemperature(void)
 	{
 		if ((TIME_ReadAbsoluteTime() - tstart) > SIF_SI7021_TCONV_MAX_TEMP)
 		{
-			printf("SIF_SI7021_ReadTemperature() Error; NACK timeout\n");
+			ca_log_warn("SIF_SI7021_ReadTemperature() Error; NACK timeout");
 			return (0x00);
 		}
 		num = 2;
@@ -80,18 +84,18 @@ u8_t SIF_SI7021_ReadTemperature(void)
 
 	if (status)
 	{
-		printf("SIF_SI7021_ReadTemperature() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadTemperature() Error; read status: %02X", status);
 		return (0x00);
 	}
 	if (num != 2)
 	{
-		printf("SIF_SI7021_ReadTemperature() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadTemperature() Error: bytes read: %02X", num);
 		return (0x00);
 	}
 
 	/* 16-bit read value */
 	tread = (rdata[0] << 8) + rdata[1];
-	// printf("TRAW=%u\n", tread);
+	// ca_log_warn("TRAW=%u", tread);
 
 	/* 32-bit converted value
 	 * T = (175.7 * tread)/65536 - 46.85
@@ -103,13 +107,6 @@ u8_t SIF_SI7021_ReadTemperature(void)
 	return (LS0_BYTE(tconv));
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SI7021: Read Humidity
- *******************************************************************************
- * \return Humidity in % (0 to 100 %)
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_SI7021_ReadHumidity(void)
 {
 	u32_t num = 0;
@@ -129,12 +126,12 @@ u8_t SIF_SI7021_ReadHumidity(void)
 	status = SENSORIF_I2C_Write(SIF_SAD_SI7021, &wdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadHumidity() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadHumidity() Error; write status: %02X", status);
 		return (0x00);
 	}
 	if (num != 1)
 	{
-		printf("SIF_SI7021_ReadHumidity() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadHumidity() Error: bytes written: %02X", num);
 		return (0x00);
 	}
 
@@ -148,7 +145,7 @@ u8_t SIF_SI7021_ReadHumidity(void)
 	{
 		if ((TIME_ReadAbsoluteTime() - tstart) > SIF_SI7021_TCONV_MAX_HUM)
 		{
-			printf("SIF_SI7021_ReadHumidity() Error; NACK timeout\n");
+			ca_log_warn("SIF_SI7021_ReadHumidity() Error; NACK timeout");
 			return (0x00);
 		}
 		num = 2;
@@ -156,18 +153,18 @@ u8_t SIF_SI7021_ReadHumidity(void)
 
 	if (status)
 	{
-		printf("SIF_SI7021_ReadHumidity() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadHumidity() Error; read status: %02X", status);
 		return (0x00);
 	}
 	if (num != 2)
 	{
-		printf("SIF_SI7021_ReadHumidity() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadHumidity() Error: bytes read: %02X", num);
 		return (0x00);
 	}
 
 	/* 16-bit read value */
 	hread = (rdata[0] << 8) + rdata[1];
-	// printf("HRAW=%u\n", hread);
+	// ca_log_warn("HRAW=%u", hread);
 
 	/* 32-bit converted value
 	 * H = (125 * hread)/65536 - 6
@@ -178,11 +175,6 @@ u8_t SIF_SI7021_ReadHumidity(void)
 	return (LS0_BYTE(hconv));
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SI7021: Soft Reset Command
- *******************************************************************************
- ******************************************************************************/
 void SIF_SI7021_Reset(void)
 {
 	u32_t num = 0;
@@ -194,22 +186,15 @@ void SIF_SI7021_Reset(void)
 	status = SENSORIF_I2C_Write(SIF_SAD_SI7021, &wdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_Reset() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_Reset() Error; write status: %02X", status);
 	}
 	else if (num != 1)
 	{
-		printf("SIF_SI7021_Reset() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_SI7021_Reset() Error: bytes written: %02X", num);
 	}
 	TIME_WaitTicks(20);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief SI7021: Read ID byte of Electronic Serial Number
- *******************************************************************************
- * \return Sensr ID
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_SI7021_ReadID(void)
 {
 	u32_t num = 0;
@@ -231,12 +216,12 @@ u8_t SIF_SI7021_ReadID(void)
 	status   = SENSORIF_I2C_Write(SIF_SAD_SI7021, wdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadID() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadID() Error; write status: %02X", status);
 		return (0x00);
 	}
 	if (num != 2)
 	{
-		printf("SIF_SI7021_ReadID() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadID() Error: bytes written: %02X", num);
 		return (0x00);
 	}
 	/* read data */
@@ -244,12 +229,12 @@ u8_t SIF_SI7021_ReadID(void)
 	status = SENSORIF_I2C_Read(SIF_SAD_SI7021, rdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadID() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadID() Error; read status: %02X", status);
 		return (0x00);
 	}
 	if (num != 8)
 	{
-		printf("SIF_SI7021_ReadID() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadID() Error: bytes read: %02X", num);
 		return (0x00);
 	}
 
@@ -261,12 +246,12 @@ u8_t SIF_SI7021_ReadID(void)
 	status   = SENSORIF_I2C_Write(SIF_SAD_SI7021, wdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadID() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadID() Error; write status: %02X", status);
 		return (0x00);
 	}
 	if (num != 2)
 	{
-		printf("SIF_SI7021_ReadID() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadID() Error: bytes written: %02X", num);
 		return (0x00);
 	}
 	/* read data */
@@ -274,12 +259,12 @@ u8_t SIF_SI7021_ReadID(void)
 	status = SENSORIF_I2C_Read(SIF_SAD_SI7021, rdata, &num);
 	if (status)
 	{
-		printf("SIF_SI7021_ReadID() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_SI7021_ReadID() Error; read status: %02X", status);
 		return (0x00);
 	}
 	if (num != 6)
 	{
-		printf("SIF_SI7021_ReadID() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_SI7021_ReadID() Error: bytes read: %02X", num);
 		return (0x00);
 	}
 

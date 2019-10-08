@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Cascoda Interface to Vendor BSP/Library Support Package.
@@ -39,99 +50,6 @@
 
 #define UART_WAITTIMEOUT 50 /* wait while uart is busy timeout [ms] */
 
-/* Local Functions */
-static void CHILI_UARTDMAInitialise(void);
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialise UART for Comms
- *******************************************************************************
- ******************************************************************************/
-void CHILI_UARTInit(void)
-{
-	if (UART_BAUDRATE <= 115200)
-	{
-		// 4 MHz
-		if (UseExternalClock)
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_HXT, UART_CLKDIV(1));
-		else
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_HIRC, UART_CLKDIV(3));
-	}
-	else
-	{
-		// 48 MHz
-		if ((SystemFrequency == FSYS_32MHZ) || (SystemFrequency == FSYS_64MHZ))
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(2));
-		else
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(1));
-	}
-
-	CLK_EnableModuleClock(UART_MODULE);
-
-	/* Initialise UART */
-	SYS_ResetModule(UART_RST);
-	UART_SetLineConfig(UART, UART_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
-	UART_Open(UART, UART_BAUDRATE);
-	UART_EnableInt(UART, UART_INTEN_RDAIEN_Msk);
-	NVIC_EnableIRQ(UART_IRQn);
-
-	CHILI_ModuleSetMFP(UART_TXD_PNUM, UART_TXD_PIN, PMFP_UART);
-	CHILI_ModuleSetMFP(UART_RXD_PNUM, UART_RXD_PIN, PMFP_UART);
-
-	/* enable DMA */
-	CHILI_UARTDMAInitialise();
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief De-Initialise UART
- *******************************************************************************
- ******************************************************************************/
-void CHILI_UARTDeinit(void)
-{
-	NVIC_DisableIRQ(UART_IRQn);
-	UART_DisableInt(UART, UART_INTEN_RDAIEN_Msk);
-	CLK_DisableModuleClock(UART_MODULE);
-	UART_Close(UART);
-	/* disable DMA */
-	PDMA_Close(PDMA0);
-	CLK_DisableModuleClock(PDMA0_MODULE);
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialises DMA access for UART
- *******************************************************************************
- ******************************************************************************/
-static void CHILI_UARTDMAInitialise(void)
-{
-	CLK_EnableModuleClock(PDMA0_MODULE);
-
-	/* Reset PDMA module */
-	SYS_ResetModule(PDMA0_RST);
-
-	/* Open DMA channels */
-	PDMA_Open(PDMA0, (1 << UART_RX_DMA_CH) | (1 << UART_TX_DMA_CH));
-
-	/* Single request type */
-	PDMA_SetBurstType(PDMA0, UART_TX_DMA_CH, PDMA_REQ_SINGLE, 0);
-	PDMA_SetBurstType(PDMA0, UART_RX_DMA_CH, PDMA_REQ_SINGLE, 0);
-
-	/* Disable table interrupt */
-	PDMA0->DSCT[UART_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
-	PDMA0->DSCT[UART_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
-
-	NVIC_EnableIRQ(PDMA0_IRQn);
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Complete Buffer Write using FIFO
- *******************************************************************************
- * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTFIFOWrite(u8_t *pBuffer, u32_t BufferSize)
 {
 	u8_t i;
@@ -142,14 +60,6 @@ void CHILI_UARTFIFOWrite(u8_t *pBuffer, u32_t BufferSize)
 	for (i = 0; i < BufferSize; ++i) UART->DAT = pBuffer[i];
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Complete Buffer Write using DMA
- *******************************************************************************
- * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTDMAWrite(u8_t *pBuffer, u32_t BufferSize)
 {
 	/* Wait until Tx DMA channel is released */
@@ -168,16 +78,6 @@ void CHILI_UARTDMAWrite(u8_t *pBuffer, u32_t BufferSize)
 	UART->INTEN |= UART_INTEN_TXPDMAEN_Msk;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Buffer FIFO Read
- *******************************************************************************
- * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
- *******************************************************************************
- * \return Number of Characters placed in Buffer
- *******************************************************************************
- ******************************************************************************/
 u32_t CHILI_UARTFIFORead(u8_t *pBuffer, u32_t BufferSize)
 {
 	u32_t numBytes = 0;
@@ -194,14 +94,6 @@ u32_t CHILI_UARTFIFORead(u8_t *pBuffer, u32_t BufferSize)
 	return (numBytes);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Set up DMA for UART Read
- *******************************************************************************
- * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize)
 {
 	/* Note: */
@@ -240,11 +132,6 @@ void CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize)
 	UART->INTEN |= UART_INTEN_RXPDMAEN_Msk;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Interrupt Handler for UART FIFO
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTFIFOIRQHandler(void)
 {
 	/* tx fifo empty trigerred when tx dma with fast baud rates (why?) */
@@ -257,11 +144,6 @@ void CHILI_UARTFIFOIRQHandler(void)
 	while (UART->INTSTS & UART_INTSTS_RDAINT_Msk) Serial_ReadInterface();
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Interrupt Handler for UART DMA
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTDMAIRQHandler(void)
 {
 	/* UART Tx PDMA transfer done interrupt flag */
@@ -287,23 +169,13 @@ void CHILI_UARTDMAIRQHandler(void)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Waits While UART transfer is going on (DMA or FIFO)
- *******************************************************************************
- * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
- *******************************************************************************
- * \return Number of Characters placed in Buffer
- *******************************************************************************
- ******************************************************************************/
 void CHILI_UARTWaitWhileBusy(void)
 {
-	u32_t sttime = TIME_ReadAbsoluteTime();
+	u32_t sttime = BSP_ReadAbsoluteTime();
 	/* check DMA */
 	while (PDMA_IS_CH_BUSY(PDMA0, UART_TX_DMA_CH) || PDMA_IS_CH_BUSY(PDMA0, UART_RX_DMA_CH))
 	{
-		if ((TIME_ReadAbsoluteTime() - sttime) > UART_WAITTIMEOUT)
+		if ((BSP_ReadAbsoluteTime() - sttime) > UART_WAITTIMEOUT)
 			return;
 	}
 
@@ -312,7 +184,7 @@ void CHILI_UARTWaitWhileBusy(void)
 	{
 		while (!(UART->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk))
 		{
-			if ((TIME_ReadAbsoluteTime() - sttime) > UART_WAITTIMEOUT)
+			if ((BSP_ReadAbsoluteTime() - sttime) > UART_WAITTIMEOUT)
 				return;
 		}
 		/* wait for last byte */

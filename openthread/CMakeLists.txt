@@ -51,11 +51,6 @@ else()
 	)
 endif()
 
-cascoda_dropdown(CASCODA_LOG_LEVEL
-	"The minimum log level to print messages for"
-	CRIT WARN NOTE INFO DEBG
-	)
-
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
 include(ExternalProject)
@@ -87,7 +82,19 @@ if(CMAKE_BUILD_TYPE)
 	string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UC)
 endif()
 
-set(OPENTHREAD_CONFIG_DEFINE OPENTHREAD_PROJECT_CORE_CONFIG_FILE="ca821x-openthread-config.h")
+if(TARGET openthread-mbedtls-plat)
+	get_target_property(MBEDTLS_DEFINITIONS openthread-mbedtls-plat INTERFACE_COMPILE_DEFINITIONS)
+	#TODO: This will only work with compilers that support -Ddefine=definition syntax
+	string(REPLACE \" \\\" MBEDTLS_DEFINITIONS "${MBEDTLS_DEFINITIONS}")
+	list(TRANSFORM MBEDTLS_DEFINITIONS PREPEND -D)
+	get_target_property(MBEDTLS_INCLUDES openthread-mbedtls-plat INTERFACE_INCLUDE_DIRECTORIES)
+	list(TRANSFORM MBEDTLS_INCLUDES PREPEND -I)
+	string(REPLACE ";" " " MBEDTLS_INCLUDES "${MBEDTLS_INCLUDES}")
+	string(REPLACE ";" " " MBEDTLS_DEFINITIONS "${MBEDTLS_DEFINITIONS}")
+endif()
+set(MBEDTLS_DEFINITIONS "${MBEDTLS_DEFINITIONS} -DMBEDTLS_CONFIG_FILE=\\\"mbedtls-config.h\\\" -I${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include -I${openthread_SOURCE_DIR}/third_party/mbedtls ${MBEDTLS_INCLUDES}")
+
+set(OPENTHREAD_CONFIG_DEFINE OPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"ca821x-openthread-config.h\")
 set(OPENTHREAD_INCLUDE_ARG "-DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=\\\"ca821x-openthread-config.h\\\" -I${PROJECT_BINARY_DIR}/include")
 ExternalProject_Add(
   openthread-build
@@ -105,6 +112,7 @@ ExternalProject_Add(
 	    "CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
 	    "CPPFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
 	    "CXXFLAGS=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UC}} ${OPENTHREAD_INCLUDE_ARG}"
+	    "MBEDTLS_CPPFLAGS=${MBEDTLS_DEFINITIONS} "
 	    "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS_${BUILD_TYPE_UC}}"
 	    "--host=${MACHINE_NAME}"
   BUILD_COMMAND ${CASCODA_OPENTHREAD_MAKE} ${CASCODA_OPENTHREAD_MAKE_ARGS}
@@ -126,7 +134,7 @@ add_library(openthread-ncp-ftd STATIC IMPORTED GLOBAL)
 add_dependencies(openthread-ncp-ftd openthread-build)
 add_library(openthread-ncp-mtd STATIC IMPORTED GLOBAL)
 add_dependencies(openthread-ncp-mtd openthread-build)
-add_library(openthread-mbedtls STATIC IMPORTED)
+add_library(openthread-mbedtls STATIC IMPORTED GLOBAL)
 add_dependencies(openthread-mbedtls openthread-build)
 add_library(openthread-api INTERFACE)
 add_library(openthread-plat-api INTERFACE)
@@ -145,6 +153,9 @@ set_property(TARGET openthread-ncp-mtd
 set_property(TARGET openthread-mbedtls
              PROPERTY IMPORTED_LOCATION ${openthread_BINARY_DIR}/third_party/mbedtls/${CMAKE_STATIC_LIBRARY_PREFIX}mbedcrypto${CMAKE_STATIC_LIBRARY_SUFFIX})
 
+#Workaround to stop cmake complaining about include dir that doesn't exist at config time
+file (MAKE_DIRECTORY ${openthread_BINARY_DIR}/include)
+
 target_include_directories(openthread-api
 	INTERFACE
 		${openthread_SOURCE_DIR}/include
@@ -157,6 +168,12 @@ target_include_directories(openthread-plat-api
 		${openthread_BINARY_DIR}/include
 )
 
+target_include_directories(openthread-mbedtls
+	INTERFACE
+		${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include
+		${openthread_SOURCE_DIR}/third_party/mbedtls
+)
+
 target_link_libraries(openthread-plat-api INTERFACE openthread-api)
 target_link_libraries(openthread-ftd INTERFACE openthread-mbedtls openthread-api)
 target_link_libraries(openthread-mtd INTERFACE openthread-mbedtls openthread-api)
@@ -164,11 +181,21 @@ target_link_libraries(openthread-cli-ftd INTERFACE openthread-ftd)
 target_link_libraries(openthread-cli-mtd INTERFACE openthread-mtd)
 target_link_libraries(openthread-ncp-ftd INTERFACE openthread-ftd)
 target_link_libraries(openthread-ncp-mtd INTERFACE openthread-mtd)
+target_link_libraries(openthread-mbedtls INTERFACE openthread-plat-api)
+
+if(TARGET openthread-mbedtls-plat)
+	target_link_libraries(openthread-mbedtls INTERFACE openthread-mbedtls-plat)
+endif()
 
 target_compile_definitions(openthread-api
 	INTERFACE
 		${OPENTHREAD_CONFIG_DEFINE}
-	)
+)
+
+target_compile_definitions(openthread-mbedtls
+	INTERFACE
+		MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\"
+)
 
 # Config file generation ------------------------------------------------------
 if(${CASCODA_CA_VER} EQUAL 8210)

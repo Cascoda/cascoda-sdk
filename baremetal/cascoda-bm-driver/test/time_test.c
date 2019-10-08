@@ -1,8 +1,6 @@
 /**
- * @file   time_test.c
+ * @file
  * @brief  Unit tests for TIME module
- * @author Ciaran Woodward
- * @date   25/02/19
  */
 #include <setjmp.h>
 #include <stdarg.h>
@@ -12,20 +10,12 @@
 
 #include "cascoda-bm/cascoda_time.h"
 
+//Dummy CHILI_FastForward declaration
+void CHILI_FastForward(u32_t ticks);
+
 void __wrap_BSP_Waiting()
 {
-	TIME_FastForward((u32_t)mock());
-}
-
-static void tick_test(void **state)
-{
-	u32_t newTime, origTime = TIME_ReadAbsoluteTime();
-	(void)state;
-
-	TIME_1msTick();
-	newTime = TIME_ReadAbsoluteTime();
-
-	assert_int_equal(origTime + 1, newTime);
+	CHILI_FastForward((u32_t)mock());
 }
 
 static void ff_test(void **state)
@@ -35,14 +25,14 @@ static void ff_test(void **state)
 
 	//100ms Fastforward
 	origTime = TIME_ReadAbsoluteTime();
-	TIME_FastForward(100);
+	CHILI_FastForward(100);
 	newTime = TIME_ReadAbsoluteTime();
 
 	assert_int_equal(origTime + 100, newTime);
 
 	//Test 0 Fastforward
 	origTime = TIME_ReadAbsoluteTime();
-	TIME_FastForward(0);
+	CHILI_FastForward(0);
 	newTime = TIME_ReadAbsoluteTime();
 
 	assert_int_equal(origTime, newTime);
@@ -65,7 +55,6 @@ static void wait_test(void **state)
 int main(void)
 {
 	const struct CMUnitTest tests[] = {
-	    cmocka_unit_test(tick_test),
 	    cmocka_unit_test(ff_test),
 	    cmocka_unit_test(wait_test),
 	};

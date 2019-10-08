@@ -43,6 +43,7 @@ __HeapLimit:
     .section .vectors
     .align  2
     .global __Vectors
+    .extern SCU_IRQHandler
 __Vectors:
     .long   __StackTop            /* Top of Stack */
     .long   Reset_Handler         /* Reset Handler */
@@ -169,8 +170,18 @@ __Vectors:
     .size   __Vectors, . - __Vectors
 
 
-
-    .text
+    /* Reset_Handler is placed in its own text subsection so that it can be placed
+     * at a hard-coded position in memory. Normally this would be achieved through
+     * -ffunction-sections, but this flag does not work on assembly files.
+     *
+     * Reset_Handler must always be in a known place in memory in order to work around
+     * a bug within the TrustZone secure boot process. Due to the bug, the device can
+     * only boot successfully while it is being debugged. Booting without stepping through
+     * the first transition between secure code and non-secure code results in a hard fault.
+     * This is because the vector table holds an incorrect address for the reset  handler,
+     * unless the program is being debugged when the non-secure vector table is being set up.
+     */
+    .section .text.Reset_Handler
     .thumb
     .thumb_func
     .align  2
@@ -322,6 +333,7 @@ Reset_Handler:
     .pool
     .size   Reset_Handler, . - Reset_Handler
 
+    .text
     .align  1
     .thumb_func
     .weak   Default_Handler
@@ -330,6 +342,24 @@ Reset_Handler:
 Default_Handler:
     b   .
     .size   Default_Handler, . - Default_Handler
+
+    .align 2
+    .thumb_func
+    .weak HardFault_Handler
+    .type HardFault_Handler, % function
+
+HardFault_Handler:
+	.extern ProcessHardFault
+    MOV     R0, LR
+    MRS     R1, MSP
+    MRS     R2, PSP
+    LDR     R3, =ProcessHardFault
+    BLX     R3
+    BX      R0
+	b    .
+
+    .size   HardFault_Handler, . - HardFault_Handler
+
 
     /*    Macro to define default handlers. Default handler
      *    will be weak symbol and just dead loops. They can be
@@ -341,7 +371,7 @@ Default_Handler:
     .endm
 
     def_irq_handler NMI_Handler
-    def_irq_handler HardFault_Handler
+    /*def_irq_handler HardFault_Handler*/
     def_irq_handler SVC_Handler
     def_irq_handler PendSV_Handler
     def_irq_handler SysTick_Handler
@@ -412,6 +442,8 @@ Default_Handler:
 
     def_irq_handler SDH0_IRQHandler
 
+
+
     def_irq_handler I2S0_IRQHandler
 
     def_irq_handler OPA0_IRQHandler
@@ -425,6 +457,7 @@ Default_Handler:
     def_irq_handler BPWM0_IRQHandler
     def_irq_handler BPWM1_IRQHandler
 
+
     def_irq_handler I2C2_IRQHandler
 
     def_irq_handler QEI0_IRQHandler
@@ -434,10 +467,19 @@ Default_Handler:
     def_irq_handler GPH_IRQHandler
     def_irq_handler EINT7_IRQHandler
 
+
+
+
+
+
+
+
     def_irq_handler PDMA1_IRQHandler
-    def_irq_handler SCU_IRQHandler
+    /*def_irq_handler SCU_IRQHandler*/
 
     def_irq_handler TRNG_IRQHandler
+
+
 
     /* ;int32_t SH_DoCommand(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0) */
     .align 2

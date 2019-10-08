@@ -68,7 +68,7 @@ int otCliOutput(const char *aBuf, uint16_t aBufLength, void *aContext)
  **
  ** \return Pointer to allocated buffer or NULLP
  **/
-void *xcalloc(size_t a, size_t b)
+static void *xcalloc(size_t a, size_t b)
 {
 	//printf("xcalloc %d ", a*b );
 	if ((a * b) <= 128)
@@ -103,7 +103,7 @@ void *xcalloc(size_t a, size_t b)
  **
  ** \return void
  **/
-void xfree(void *a)
+static void xfree(void *a)
 {
 	if (a == xmalloc_buf)
 	{
@@ -142,7 +142,7 @@ size_t missing_strlcpy(uint8_t *dst, uint8_t *src, size_t max)
  **
  ** \return None
  **/
-void Openthread_Confirm(otError error, u8_t DispatchId)
+static void Openthread_Confirm(otError error, u8_t DispatchId)
 {
 	OT_GEN_CNF_t response;
 
@@ -154,17 +154,6 @@ void Openthread_Confirm(otError error, u8_t DispatchId)
 	}
 }
 
-/******************************************************************************/
-/******************************************************************************/
-/****** otApi_Dispatch()                                                 ******/
-/******************************************************************************/
-/******************************************************************************/
-/** otApi_Dispatch()
- **
- ** \brief Dispatch a thread command in the SPI receive buffer
- **
- ** \return None
- **/
 int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 {
 	otError            error = OT_ERROR_NONE;

@@ -54,7 +54,7 @@ extern "C" {
 #define __LIRC      (10000UL)       /*!< Internal 10K RC Oscillator Frequency */
 #define __HIRC      (12000000UL)    /*!< Internal 12M RC Oscillator Frequency */
 #define __LXT       (32768UL)       /*!< External Crystal Clock Frequency 32.768KHz */
-#define __HSI       (48000000UL)    /*!< PLL Output Clock Frequency */
+#define __HSI       (16000000UL)    /*!< PLL Output Clock Frequency */
 #define __HIRC48    (48000000UL)    /*!< Internal 48M RC Oscillator Frequency */
 #define __LIRC32    (32000UL)       /*!< Internal 32K RC Oscillator Frequency */
 

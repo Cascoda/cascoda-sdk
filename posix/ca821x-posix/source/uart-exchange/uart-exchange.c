@@ -81,7 +81,9 @@ static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
-	assert(priv->base.exchange_type == ca821x_exchange_uart);
+
+	if (priv->base.exchange_type != ca821x_exchange_uart)
+		abort();
 }
 
 static ca_error send_uart_ack(int fd)
@@ -142,7 +144,7 @@ ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		 * and the baud rate should be decreased. If a stream of these occur in a row
 		 * then it is likely a SOM has been missed and a packet has been lost.
 		 */
-		fprintf(stderr, "\r\nWARN: No SOM, got 0x%02x\r\n", priv->buf[0]);
+		ca_log_warn("No SOM, got 0x%02x", priv->buf[0]);
 		memmove(priv->buf, priv->buf + 1, priv->offset);
 		priv->offset -= 1;
 	}
@@ -151,12 +153,14 @@ ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	// thing comes through.
 	if ((priv->offset >= 3) && (priv->offset >= (*cmdlen + 3U)))
 	{
+		ssize_t framelen = *cmdlen + 3;
+
 		//Skip SOM byte in copy
-		len = *cmdlen + 2;
+		len = framelen - 1;
 		memcpy(buf, cmdid, len);
 		// If extra data has been received, shuffle about
-		memmove(priv->buf, priv->buf + priv->offset, priv->offset - len);
-		priv->offset -= len + 1; //+1 is SOM byte
+		memmove(priv->buf, priv->buf + framelen, (priv->offset - framelen));
+		priv->offset -= framelen;
 
 		//Send ACK
 		if (buf[0] != UART_ACK && send_uart_ack(priv->fd) != CA_ERROR_SUCCESS)
@@ -179,7 +183,7 @@ ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 
 	if (len >= 3 && buf[0] == 0xF0)
 	{
-		fprintf(stderr, "\r\nERROR CODE 0x%02x\r\n", buf[2]);
+		ca_log_crit("ERROR CODE 0x%02x", buf[2]);
 		fflush(stderr);
 		//Error packet indicating coprocessor has reset ca821x - let app know
 		if (buf[3])
@@ -202,10 +206,11 @@ ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
 	return priv->tx_stalled ? CA_ERROR_BUSY : CA_ERROR_SUCCESS;
 }
 
-int uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	int                        rval = 0, error = 0;
-	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
+	int                        rval  = 0;
+	ca_error                   error = CA_ERROR_SUCCESS;
+	struct uart_exchange_priv *priv  = pDeviceRef->exchange_context;
 
 	assert_uart_exchange(pDeviceRef);
 
@@ -215,7 +220,7 @@ int uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDevice
 		rval = write(priv->fd, &UART_SOM, 1);
 		if (rval < 0)
 		{
-			error = -uart_exchange_err_uart;
+			error = CA_ERROR_FAIL;
 			break;
 		}
 	} while (rval != 1);
@@ -226,7 +231,7 @@ int uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDevice
 		rval = write(priv->fd, buffer, len);
 		if (rval < 0)
 		{
-			error = -uart_exchange_err_uart;
+			error = CA_ERROR_FAIL;
 			break;
 		}
 		len -= len;
@@ -235,8 +240,8 @@ int uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDevice
 
 	if (error < 0)
 	{
-		fprintf(stderr, "\r\nUART Send error!\r\n");
-		error = -uart_exchange_err_uart;
+		ca_log_crit("UART Send error!");
+		error = CA_ERROR_FAIL;
 	}
 	else
 	{
@@ -282,7 +287,7 @@ static ca_error init_statics()
 	// so make a static copy that can be tokenized and used in our linked list.
 	envLen         = strlen(CONST_CASCODA_UART) + 1;
 	s_CASCODA_UART = malloc(envLen);
-	strncpy(s_CASCODA_UART, CONST_CASCODA_UART, envLen);
+	memcpy(s_CASCODA_UART, CONST_CASCODA_UART, envLen);
 	s_CASCODA_UART[envLen - 1] = '\0';
 	masterStr                  = s_CASCODA_UART;
 
@@ -401,7 +406,7 @@ static ca_error setup_port(int fd, int baudrate)
 
 	if (cfsetospeed(&port, baudcode) || cfsetispeed(&port, baudcode))
 	{
-		fprintf(stderr, "Errno %d, Failed setting baud rate %d\n", errno, baudrate);
+		ca_log_crit("Errno %d, Failed setting baud rate %d", errno, baudrate);
 		return CA_ERROR_INVALID_ARGS;
 	}
 
@@ -478,7 +483,7 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 
 		if (setup_port(priv->fd, uartdev->baud) != CA_ERROR_SUCCESS)
 		{
-			fprintf(stderr, "Failed setup for device %s\n", uartdev->device);
+			ca_log_crit("Failed setup for device %s", uartdev->device);
 			close(priv->fd);
 			priv->fd = -1;
 		}
@@ -523,6 +528,8 @@ exit:
 		pDeviceRef->exchange_context = NULL;
 	}
 	pthread_mutex_unlock(&devs_mutex);
+	if (error == CA_ERROR_SUCCESS)
+		ca_log_info("Successfully started UART Exchange.");
 	return error;
 }
 

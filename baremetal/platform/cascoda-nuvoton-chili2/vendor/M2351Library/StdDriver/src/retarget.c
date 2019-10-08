@@ -57,6 +57,86 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp);
 
 #endif 
 
+typedef struct {
+    char *name;
+    uint32_t u32Addr;
+    uint8_t u8NSIdx;
+} IP_T;
+
+IP_T ip_tbl[] = {
+{"SYS",SYS_BASE,0},
+{"CLK",CLK_BASE,0},
+{"INT",INT_BASE,0},
+{"GPIOA",GPIOA_BASE,224+0},
+{"GPIOB",GPIOB_BASE,224+1},
+{"GPIOC",GPIOC_BASE,224+2},
+{"GPIOD",GPIOD_BASE,224+3},
+{"GPIOE",GPIOE_BASE,224+4},
+{"GPIOF",GPIOF_BASE,224+5},
+{"GPIOG",GPIOG_BASE,224+6},
+{"GPIOH",GPIOH_BASE,224+7},
+{"GPIO_DBCTL",GPIO_DBCTL_BASE,0},
+{"PA",GPIO_PIN_DATA_BASE       ,224+0},
+{"PB",GPIO_PIN_DATA_BASE+16*4  ,224+0},
+{"PC",GPIO_PIN_DATA_BASE+2*16*4,224+0},
+{"PD",GPIO_PIN_DATA_BASE+3*16*4,224+0},
+{"PE",GPIO_PIN_DATA_BASE+4*16*4,224+0},
+{"PF",GPIO_PIN_DATA_BASE+5*16*4,224+0},
+{"PG",GPIO_PIN_DATA_BASE+6*16*4,224+0},
+{"PH",GPIO_PIN_DATA_BASE+7*16*4,224+0},
+{"PDMA0",PDMA0_BASE,0},
+{"PDMA1",PDMA1_BASE,PDMA1_Attr},
+{"USBH",USBH_BASE,USBH_Attr},
+{"FMC",FMC_BASE,0},
+{"SDH0",SDH0_BASE,SDH0_Attr},
+{"EBI",EBI_BASE,EBI_Attr},
+{"SCU",SCU_BASE,0},
+{"CRC",CRC_BASE,CRC_Attr},
+{"CRPT",CRPT_BASE,CRPT_Attr},
+{"WDT",WDT_BASE,0},
+{"WWDT",WWDT_BASE,0},
+{"RTC",RTC_BASE,RTC_Attr},
+{"EADC",EADC_BASE,EADC_Attr},
+{"ACMP01",ACMP01_BASE,ACMP01_Attr},
+{"DAC0",DAC0_BASE,DAC_Attr},
+{"DAC1",DAC1_BASE,DAC_Attr},
+{"I2S0",I2S0_BASE,I2S0_Attr},
+{"OTG",OTG_BASE,OTG_Attr},
+{"TMR01",TMR01_BASE,0},
+{"TMR23",TMR23_BASE,TMR23_Attr},
+{"EPWM0",EPWM0_BASE,EPWM0_Attr},
+{"EPWM1",EPWM1_BASE,EPWM1_Attr},
+{"BPWM0",BPWM0_BASE,BPWM0_Attr},
+{"BPWM1",BPWM1_BASE,BPWM1_Attr},
+{"QSPI0",QSPI0_BASE,QSPI0_Attr},
+{"SPI0",SPI0_BASE,SPI0_Attr},
+{"SPI1",SPI1_BASE,SPI1_Attr},
+{"SPI2",SPI2_BASE,SPI2_Attr},
+{"SPI3",SPI3_BASE,SPI3_Attr},
+{"UART0",UART0_BASE,UART0_Attr},
+{"UART1",UART1_BASE,UART1_Attr},
+{"UART2",UART2_BASE,UART2_Attr},
+{"UART3",UART3_BASE,UART3_Attr},
+{"UART4",UART4_BASE,UART4_Attr},
+{"UART5",UART5_BASE,UART5_Attr},
+{"I2C0",I2C0_BASE,I2C0_Attr},
+{"I2C1",I2C1_BASE,I2C1_Attr},
+{"I2C2",I2C2_BASE,I2C2_Attr},
+{"SC0",SC0_BASE,SC0_Attr},
+{"SC1",SC1_BASE,SC1_Attr},
+{"SC2",SC2_BASE,SC2_Attr},
+{"CAN0",CAN0_BASE,CAN0_Attr},
+{"QEI0",QEI0_BASE,QEI0_Attr},
+{"QEI1",QEI1_BASE,QEI1_Attr},
+{"ECAP0",ECAP0_BASE,ECAP0_Attr},
+{"ECAP1",ECAP1_BASE,ECAP1_Attr},
+{"TRNG",TRNG_BASE,TRNG_Attr},
+{"USBD",USBD_BASE,USBD_Attr},
+{"USCI0",USCI0_BASE, USCI0_Attr},
+{"USCI1",USCI1_BASE, USCI1_Attr},
+{0,USCI1_BASE+4096, 0},
+};
+
 int kbhit(void);
 int IsDebugFifoEmpty(void);
 void _ttywrch(int ch);
@@ -186,12 +266,19 @@ __attribute__((weak))
 #endif
 uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 {
+    extern void SCU_IRQHandler();
     uint32_t *sp;
-    /* It is casued by hardfault. Just process the hard fault */
-    /* TODO: Implement your hardfault handle code here */
-    
+    int32_t i;
+    uint32_t inst, addr,taddr,tdata;
+    int32_t secure;
+    uint32_t rm,rn,rt, imm5, imm8;
+    int32_t eFlag;
+    uint8_t idx, bit;
+    int32_t s;
+
     /* Check the used stack */
-    if(lr & 0x40UL)
+    secure = (lr & 0x40ul)?1:0;
+    if(secure)
     {
         /* Secure stack used */
         if(lr & 4UL)
@@ -217,16 +304,177 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 #endif    
     
     /*
-    printf("  HardFault!\n\n");
-    printf("r0  = 0x%x\n", sp[0]);
-    printf("r1  = 0x%x\n", sp[1]);
-    printf("r2  = 0x%x\n", sp[2]);
-    printf("r3  = 0x%x\n", sp[3]);
-    printf("r12 = 0x%x\n", sp[4]);
-    printf("lr  = 0x%x\n", sp[5]);
-    printf("pc  = 0x%x\n", sp[6]);
-    printf("psr = 0x%x\n", sp[7]);
+        r0  = sp[0]
+        r1  = sp[1]
+        r2  = sp[2]
+        r3  = sp[3]
+        r12 = sp[4]
+        lr  = sp[5]
+        pc  = sp[6]
+        psr = sp[7]
     */
+    
+    printf("!!---------------------------------------------------------------!!\n");
+    printf("                       <<< HardFault >>>\n");
+    /* Get the instruction caused the hardfault */
+    addr = sp[6];
+    inst = M16(addr);
+    eFlag = 0;
+    if((!secure) && ((addr & NS_OFFSET) == 0) )
+    {
+        printf("  Non-secure CPU try to fetch secure code in 0x%x\n", addr);
+        printf("  Try to check NSC region or SAU settings.\n");
+        
+        eFlag = 1;
+    }else if(inst == 0xBEAB)
+    {
+        printf("  Execute BKPT without ICE connected\n");
+        eFlag = 2;
+    }    
+    else if((inst >> 12) == 5)
+    {
+        eFlag = 3;
+        /* 0101xx Load/store (register offset) on page C2-327 of armv8m ref */
+        rm = (inst >> 6) & 0x7;
+        rn = (inst >> 3) & 0x7;
+        rt = inst & 0x7;
+        
+        taddr = sp[rn] + sp[rm];
+        tdata = sp[rt];
+        if(rn == rt)
+        {
+            printf("  [0x%08x] 0x%04x %s R%d [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",rt, taddr);
+        }
+        else
+        {
+            printf("  [0x%08x] 0x%04x %s 0x%x [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",tdata, taddr);
+        }
+        
+    }
+    else if((inst >> 13) == 3)
+    {
+        eFlag = 3;
+        /* 011xxx	 Load/store word/byte (immediate offset) on page C2-327 of armv8m ref */
+        imm5 = (inst >> 6) & 0x1f;
+        rn = (inst >> 3) & 0x7;
+        rt = inst & 0x7;
+        
+        taddr = sp[rn] + imm5;
+        tdata = sp[rt];
+        if(rt == rn)
+        {
+            printf("  [0x%08x] 0x%04x %s R%d [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",rt, taddr);
+        }
+        else
+        {
+            printf("  [0x%08x] 0x%04x %s 0x%x [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",tdata, taddr);
+        }
+    }
+    else if((inst >> 12) == 8)
+    {
+        eFlag = 3;
+        /* 1000xx	 Load/store halfword (immediate offset) on page C2-328 */
+        imm5 = (inst >> 6) & 0x1f;
+        rn = (inst >> 3) & 0x7;
+        rt = inst & 0x7;
+        
+        taddr = sp[rn] + imm5;
+        tdata = sp[rt];
+        if(rt == rn)
+        {
+            printf("  [0x%08x] 0x%04x %s R%d [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",rt, taddr);
+        }
+        else
+        {
+            printf("  [0x%08x] 0x%04x %s 0x%x [0x%x]\n",addr, inst, 
+            (inst&BIT11)?"LDR":"STR",tdata, taddr);
+        }
+        
+    }
+    else if((inst >> 12) == 9)
+    {
+        eFlag = 3;
+        /* 1001xx	 Load/store (SP-relative) on page C2-328 */
+        imm8 = inst & 0xff;
+        rt = (inst >> 8) & 0x7;
+        
+        taddr = sp[6] + imm8;
+        tdata = sp[rt];
+        printf("  [0x%08x] 0x%04x %s 0x%x [0x%x]\n",addr, inst, 
+        (inst&BIT11)?"LDR":"STR",tdata, taddr);
+    }
+    else
+    {
+        eFlag = 4;
+        printf("  Unexpected instruction: 0x%04x \n", inst);
+    }
+    
+    if(eFlag == 3)
+    {
+        /* It is LDR/STR hardfault */
+        if(!secure) 
+        {
+            /* It is happened in Nonsecure code */
+            
+            for(i=0;i< sizeof(ip_tbl)-1;i++)
+            {
+                /* Case 1: Nonsecure code try to access secure IP. It also causes SCU violation */
+                if((taddr >= ip_tbl[i].u32Addr) && (taddr < (ip_tbl[i+1].u32Addr)))
+                {
+                    idx = ip_tbl[i].u8NSIdx;
+                    bit = idx & 0x1f;
+                    idx = idx >> 5;
+                    s = (SCU->PNSSET[idx] >> bit) & 1ul;
+                    printf("  Illegal access to %s %s in Nonsecure code.\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                    break;
+                }
+                
+                /* Case 2: Nonsecure code try to access Nonsecure IP but the IP is secure IP */
+                if((taddr >= (ip_tbl[i].u32Addr+NS_OFFSET)) && (taddr < (ip_tbl[i+1].u32Addr+NS_OFFSET)))
+                {
+                    idx = ip_tbl[i].u8NSIdx;
+                    bit = idx & 0x1f;
+                    idx = idx >> 5;
+                    s = (SCU->PNSSET[idx] >> bit) & 1ul;
+                    printf("  Illegal access to %s %s in Nonsecure code.\nIt may be set as secure IP here.\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            /* It is happened in secure code */
+            
+            
+            if(taddr > NS_OFFSET)
+            {
+                /* Case 3: Secure try to access secure IP through Nonsecure address. It also causes SCU violation */
+                for(i=0;i< sizeof(ip_tbl)-1;i++)
+                {
+                    if((taddr >= (ip_tbl[i].u32Addr+NS_OFFSET)) && (taddr < (ip_tbl[i+1].u32Addr+NS_OFFSET)))
+                    {
+                        idx = ip_tbl[i].u8NSIdx;
+                        bit = idx & 0x1f;
+                        idx = idx >> 5;
+                        s = (SCU->PNSSET[idx] >> bit) & 1ul;
+                        printf("  Illegal to use Nonsecure address to access %s %s in Secure code\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                        break;
+                    }
+                }
+            }
+        
+        
+        }
+    }
+    
+    SCU_IRQHandler();
+    
+    printf("!!---------------------------------------------------------------!!\n");
     
     /* Or *sp to remove compiler warning */
     while(1U|*sp){}

@@ -71,6 +71,9 @@ static void restore_stdout_termios(void)
 
 void posixPlatformRestoreTerminal(void)
 {
+	if (!s_enabled)
+		return;
+
 	restore_stdin_termios();
 	restore_stdout_termios();
 }
@@ -202,6 +205,9 @@ exit:
 
 void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd)
 {
+	if (!s_enabled)
+		return;
+
 	if (aReadFdSet != NULL)
 	{
 		FD_SET(s_in_fd, aReadFdSet);
@@ -231,6 +237,9 @@ void platformUartProcess(void)
         {s_in_fd, POLLIN | error_flags, 0},
         {s_out_fd, POLLOUT | error_flags, 0},
     };
+
+	if (!s_enabled)
+		return;
 
 	errno = 0;
 

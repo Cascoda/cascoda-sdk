@@ -1,24 +1,39 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef CA821X_API_INCLUDE_CA821X_API_HELPER_H_
 #define CA821X_API_INCLUDE_CA821X_API_HELPER_H_
 
 #include "ca821x_api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * \brief Get pointer to the security spec of the MCPS Data Indication
@@ -102,7 +117,7 @@ struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, struct
  * All Key..Entries fields MUST be filled out prior to filling the lists, so that
  * these helper functions can successfully parse the structure.
  *
- * \params aKte - Pointer to the fixed part of the key table entry
+ * \param aKte - Pointer to the fixed part of the key table entry
  * \return Pointer to the start of the KeyIdLookupDescriptor list (even if length=0)
  *
  */
@@ -119,7 +134,7 @@ struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(struct M_KeyTableEn
  * All Key..Entries fields MUST be filled out prior to filling the lists, so that
  * these helper functions can successfully parse the structure.
  *
- * \params aKte - Pointer to the fixed part of the key table entry
+ * \param aKte - Pointer to the fixed part of the key table entry
  * \return Pointer to the start of the KeyDeviceDescriptor list (even if length=0)
  *
  */
@@ -136,10 +151,14 @@ struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(struct M_KeyTableEntryF
  * All Key..Entries fields MUST be filled out prior to filling the lists, so that
  * these helper functions can successfully parse the structure.
  *
- * \params aKte - Pointer to the fixed part of the key table entry
+ * \param aKte - Pointer to the fixed part of the key table entry
  * \return Pointer to the start of the KeyUsageDescriptor list (even if length=0)
  *
  */
 struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(struct M_KeyTableEntryFixed *aKte);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CA821X_API_INCLUDE_CA821X_API_HELPER_H_ */

@@ -1,23 +1,33 @@
 /**
- * @file test15_4_phy_tests.h
+ * @file
  * @brief PHY Tests Definitions and Function Declarations
- * @author Wolfgang Bruchner
- * @date 19/07/14
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef TEST15_4_PHY_TESTS_H
@@ -61,9 +71,6 @@
 #define PHY_TESTPAR_MAX PHY_TESTPAR_MACENABLED
 #define PHY_TESTPAR_ALL (PHY_TESTPAR_MAX + 1) // for Reporting
 
-/***************************************************************************/ /**
- * \defgroup PHY Testmode Parameter Defaults
- ************************************************************************** @{*/
 #define PHY_TESTPARDEF_PACKETPERIOD 1000
 #define PHY_TESTPARDEF_PACKETLENGTH 20
 #define PHY_TESTPARDEF_NUMBEROFPKTS 10000
@@ -82,7 +89,6 @@
 #define PHY_TESTPARDEF_ATM 0x00
 #define PHY_TESTPARDEF_MPW2_OVWR 0x03
 #define PHY_TESTPARDEF_MACENABLED 0
-/**@}*/
 
 /* PHY Testmode Setup Parameter Structure */
 struct PHYTestPar
@@ -153,57 +159,386 @@ extern struct PHYTestRes PHY_TESTRES;
 /******************************************************************************/
 /****** Function Declarations for Externally Defined Functions           ******/
 /******************************************************************************/
+
+/******************************************************************************/
+/***************************************************************************/ /**
+* \brief Returns the current time
+*******************************************************************************
+* \return ms since start of execution
+*******************************************************************************
+******************************************************************************/
 unsigned long test15_4_getms(void);
 
 /******************************************************************************/
 /****** Function Declarations for test15_4_phy_tests.c                   ******/
 /******************************************************************************/
 /* PHY Test Functions */
-void     PHYTestModeHandler(struct ca821x_dev *pDeviceRef);
-uint8_t  PHYTestInitialise(struct ca821x_dev *pDeviceRef);
-void     PHYTestDeinitialise(struct ca821x_dev *pDeviceRef);
-uint8_t  PHYTestTransmitPacket(struct ca821x_dev *pDeviceRef);
-void     PHYTestReceivePacketPER(struct ca821x_dev *pDeviceRef);
-void     PHYTestReceivePacketPSN(struct ca821x_dev *pDeviceRef);
-void     PHYTestReceiveED(struct ca821x_dev *pDeviceRef);
-uint8_t  PHYTestLOLocking(struct ca821x_dev *pDeviceRef);
-void     PHYTestExit(char *errmsg);
-void     PHYTestInitTestResults(void);
-void     PHYTestReset(void);
-void     PHYTestStatistics(uint8_t mode, uint8_t ed, uint8_t cs, uint8_t fo);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Dispatch Branch for PHY Tests including Initialisation
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestModeHandler(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Sequential Initialisation of TDME
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+uint8_t PHYTestInitialise(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Deinitialisation of TDME
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestDeinitialise(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Transmit Packet
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+uint8_t PHYTestTransmitPacket(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Receive Packet in PER Mode (Packet Error Rate)
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestReceivePacketPER(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Receive Packet in in PSN Mode (Packet Sniffer)
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestReceivePacketPSN(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Receive in ED Detect Mode (Energy Sniffer)
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestReceiveED(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test LO_3 (Locking) Test
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+uint8_t PHYTestLOLocking(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Mode Exit
+ *******************************************************************************
+ * \param status - Status to be reported
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestExit(char *errmsg);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Initialise Results and Run Parameters
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestInitTestResults(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Reset Testmode PIB
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestReset(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Calculate Test Statistics
+ *******************************************************************************
+ * \param mode - mode: accumulation, initialisation, rollover report, final report
+ * \param rollover - rollover for reporting when 1
+ * \param final - final calculations for end of test reporting
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestStatistics(uint8_t mode, uint8_t ed, uint8_t cs, uint8_t fo);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Division of Unsigned 32-Bit Values with Rounding
+ *******************************************************************************
+ * \param va - Dividend
+ * \param vb - Divisor
+ *******************************************************************************
+ * \return Result
+ *******************************************************************************
+ ******************************************************************************/
 uint32_t PHYTest_divu32round(uint32_t va, uint32_t vb);
-int32_t  PHYTest_divs32round(int32_t va, int32_t vb);
-uint8_t  PHYTestCalculateReportTime(uint8_t init);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Division of Signed 32-Bit Values with Rounding
+ *******************************************************************************
+ * \param va - Dividend
+ * \param vb - Divisor
+ *******************************************************************************
+ * \return Result
+ *******************************************************************************
+ ******************************************************************************/
+int32_t PHYTest_divs32round(int32_t va, int32_t vb);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Calculate Time when to report Results
+ *******************************************************************************
+ * \param init - Initialise when 1
+ *******************************************************************************
+ * \return 1: report results
+ *******************************************************************************
+ ******************************************************************************/
+uint8_t PHYTestCalculateReportTime(uint8_t init);
 /* PHY Test Reporting Functions */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Test Mode after Initialisation is done
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportTestMode(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Test Parameter PIB
+ *******************************************************************************
+ * \param parameter - Specific Parameter or PHY_TESTPAR_ALL
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportTestParameters(uint8_t parameter);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Successful Transmission of Packet
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportPacketTransmitted(struct MAC_Message *msg, uint8_t status);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Packet Transmission Analysis
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportTransmitPacketAnalysis(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Reception of Packet
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportPacketReceived(struct TDME_RXPKT_indication_pset *params);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Packet Reception Analysis
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportReceivedPacketAnalysis(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Complete Test Result
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportTestResult(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report Reception of ED above Threshold
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportEDReceived(struct TDME_EDDET_indication_pset *params);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Report LO Test 3 Result (Locking Test)
+ *******************************************************************************
+ * \param ntest - Number of Test
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestReportLOLocking(struct TDME_LOTLK_confirm_pset *params, uint8_t ntest);
 /* PHY Functions in EVBME Attribute Control */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Change Test Configuration
+ *******************************************************************************
+ * \param val - Value to set the Configurations to
+ *******************************************************************************
+ ******************************************************************************/
 void PHYTestCfg(uint8_t val);
 /* PHY Test Wrappers for TDME Commands and Responses */
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_TESTMODE_request_sync
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_TESTMODE_request(uint8_t testmode, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_SET_request_sync
+ *******************************************************************************
+ * \param attribute - TDME Attribute
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_SET_request(uint8_t evbme_attribute, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_TXPKT_request_sync
+ *******************************************************************************
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_TXPKT_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_LOTLK_request_sync
+ *******************************************************************************
+ * \param ch - 802.15.4 Channel to be tested
+ * \param rx_txb - rx Mode to be tested when 1, Tx Mode when 0
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_LOTLK_request(uint8_t ch, uint8_t rx_txb, uint8_t ntest, struct ca821x_dev *pDeviceRef);
-int     PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
-int     PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_RXPKT_indication
+ *******************************************************************************
+ * \param indication - rxpkt indication buffer
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+int PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for TDME_EDDET_indication
+ *******************************************************************************
+ * \param indication - eddet indication buffer
+ * \param pDeviceRef - Device reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+int PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
 /******************************************************************************/
 /****** Function Declarations for test15_4_phy_tests_mac.c               ******/
 /******************************************************************************/
 /* PHY_MAC Test Functions */
-void    PHYTestMACAddInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Address Initialisation
+ *******************************************************************************
+ ******************************************************************************/
+void PHYTestMACAddInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialisation for using MAC layer in EVBME (Tx)
+ *******************************************************************************
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHYTestMACTxInitialise(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialisation for using MAC layer in EVBME (Rx)
+ *******************************************************************************
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHYTestMACRxInitialise(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Denitialisation for using MAC layer in EVBME
+ *******************************************************************************
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHYTestMACDeinitialise(struct ca821x_dev *pDeviceRef);
 /* PHY_MAC Test Wrappers for MCPS Commands and Responses */
 uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for MCPS_DATA_indication()
+ *******************************************************************************
+ * \param data_ind - MCPS data indication buffer
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PHY Test Wrapper for MCPS_DATA_confirm()
+ *******************************************************************************
+ * \param data_cnf - MCPS data confirm buffer
+ * \param pDeviceRef - Device Reference
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
 uint8_t PHY_TXPKT_MAC_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 
 #endif /* TEST15_4_PHY_TESTS_H */

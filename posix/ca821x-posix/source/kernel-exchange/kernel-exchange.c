@@ -75,14 +75,16 @@ struct kernel_exchange_priv
 static void assert_kernel_exchange(struct ca821x_dev *pDeviceRef)
 {
 	struct kernel_exchange_priv *priv = pDeviceRef->exchange_context;
-	assert(priv->base.exchange_type == ca821x_exchange_kernel);
+
+	if (priv->base.exchange_type != ca821x_exchange_kernel)
+		abort();
 }
 
-static int ca8210_test_int_write(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+static ca_error ca8210_test_int_write(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	int remaining = len;
-	int attempts  = 0;
-	int error     = 0;
+	int      remaining = len;
+	int      attempts  = 0;
+	ca_error error     = CA_ERROR_SUCCESS;
 
 	assert_kernel_exchange(pDeviceRef);
 
@@ -98,10 +100,11 @@ static int ca8210_test_int_write(const uint8_t *buf, size_t len, struct ca821x_d
 
 		if (returnvalue == -1)
 		{
-			error = errno;
+			error = CA_ERROR_FAIL;
 
 			if (errno == EAGAIN) //If the error is that the device is busy, try again after a short wait
 			{
+				error = CA_ERROR_BUSY;
 				if (attempts++ < 5)
 				{
 					struct timespec toSleep;
@@ -186,7 +189,7 @@ int kernel_exchange_init(struct ca821x_dev *pDeviceRef)
 
 ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
 {
-	ca_error                          error;
+	ca_error                     error;
 	struct kernel_exchange_priv *priv = NULL;
 
 	if (!s_initialised)
@@ -235,6 +238,8 @@ exit:
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
 	}
+	if (error == CA_ERROR_SUCCESS)
+		ca_log_info("Successfully started Kernel Exchange.");
 	return error;
 }
 

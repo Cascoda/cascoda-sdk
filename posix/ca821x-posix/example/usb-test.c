@@ -9,24 +9,24 @@
 
 struct ca821x_dev sDeviceRef;
 
-int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	if (buf[0] == 0xA0)
 	{
 		if (strstr((char *)(buf + 2), "dispatching on SPI") != NULL)
 		{
-			return 1;
+			return CA_ERROR_SUCCESS;
 		}
 
 		fprintf(stderr, "IN: %.*s\r\n", (int)(len - 2), buf + 2);
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
 	else if (buf[0] == 0xA2)
 	{
 		printf("Got Handle [%x]\r\n", buf[2]);
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 struct EVBME_COMM_CHECK_request
@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 	}
 	//Register callbacks for async messages
 	exchange_register_user_callback(&handleUserCallback, pDeviceRef);
+	ca821x_util_start_downstream_dispatch_worker();
+
 	MLME_RESET_request_sync(1, pDeviceRef);
 
 	printf("\r\nInitialised.\r\n");

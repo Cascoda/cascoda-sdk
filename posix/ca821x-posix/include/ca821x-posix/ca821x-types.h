@@ -16,6 +16,10 @@
 #include "ca821x_api.h"
 #include "ca821x_error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \brief Error callback
  *
@@ -25,7 +29,7 @@
  * 
  * \returns Cascoda error code
  */
-typedef ca_error (*ca821x_errorhandler)(int error_number, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*ca821x_errorhandler)(ca_error error, struct ca821x_dev *pDeviceRef);
 
 /**
  * @brief Optional Exchange User Callback
@@ -41,7 +45,8 @@ typedef ca_error (*ca821x_errorhandler)(int error_number, struct ca821x_dev *pDe
  */
 typedef ca_error (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
-/* \brief Exchange write function
+/**
+ *  \brief Exchange write function
  *
  * Function for the exchange to implement. The implementation should
  * send the data in 'buf' to the ca821x.
@@ -54,7 +59,8 @@ typedef ca_error (*exchange_user_callback)(const uint8_t *buf, size_t len, struc
  */
 typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
-/* \brief Exchange write isready function
+/**
+ * \brief Exchange write isready function
  *
  * Function for the exchange to implement. The implementation should
  * return true (nonzero) if it is ready to send, or 0 if not.
@@ -67,7 +73,8 @@ typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x
  */
 typedef ca_error (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
 
-/* \brief Exchange read function
+/**
+ * \brief Exchange read function
  *
  * Function for the exchange to implement. The implementation should
  * read from the ca821x and copy the data into buf. This function
@@ -84,7 +91,8 @@ typedef ca_error (*exchange_write_isready)(struct ca821x_dev *pDeviceRef);
  */
 typedef ssize_t (*exchange_read)(struct ca821x_dev *pDeviceRef, uint8_t *buf);
 
-/* \brief Exchange signalling function to trigger read return
+/**
+ *  \brief Exchange signalling function to trigger read return
  *
  * Function for the exchange to implement. The implementation should
  * cause the associated exchange_read function to stop blocking and
@@ -95,7 +103,8 @@ typedef ssize_t (*exchange_read)(struct ca821x_dev *pDeviceRef, uint8_t *buf);
  */
 typedef void (*exchange_signal_read)(struct ca821x_dev *pDeviceRef);
 
-/* \brief Exchange signalling function to flush external buffers
+/**
+ *  \brief Exchange signalling function to flush external buffers
  *
  * Function for the exchange to implement. The implementation should
  * clear all external buffers, discarding any messages that were left
@@ -119,33 +128,34 @@ enum ca821x_exchange_type
 /** Base structure for exchange private data collections */
 struct ca821x_exchange_base
 {
-	enum ca821x_exchange_type exchange_type;
+	enum ca821x_exchange_type exchange_type; //!< Which exchange is connected to this device
 
-	ca821x_errorhandler    error_callback;
-	exchange_user_callback user_callback;
-	exchange_write         write_func;
-	exchange_write_isready write_isready_func;
-	exchange_signal_read   signal_func;
-	exchange_read          read_func;
-	exchange_flush_unread  flush_func;
+	ca821x_errorhandler    error_callback;     //!< Exchange error callback
+	exchange_user_callback user_callback;      //!< User unhandled command callback
+	exchange_write         write_func;         //!< Exchange write callback
+	exchange_write_isready write_isready_func; //!< Exchange write isready callback
+	exchange_signal_read   signal_func;        //!< Exchange write signalling callback
+	exchange_read          read_func;          //!< Exchange read callback
+	exchange_flush_unread  flush_func;         //!< Exchange flush callback
 
 	//Synchronous queue
-	pthread_t       io_thread;
-	int             io_thread_runflag;
-	pthread_mutex_t flag_mutex;
-	pthread_cond_t  sync_cond;
-	pthread_mutex_t sync_mutex;
+	pthread_t       io_thread;         //!< Thread for io handling
+	int             io_thread_runflag; //!< flag to shutdown io thread
+	pthread_mutex_t flag_mutex;        //!< mutex for generic flag handling
+	pthread_cond_t  sync_cond;         //!< condition variable for synchronous exchanges
+	pthread_mutex_t sync_mutex;        //!< condition variable for synchronous exchanges
 	//In queue = Device to host(us)
 	//Out queue = Host(us) to device
-	pthread_mutex_t      in_queue_mutex, out_queue_mutex;
-	struct buffer_queue *in_buffer_queue, *out_buffer_queue;
+	pthread_mutex_t      in_queue_mutex, out_queue_mutex;    //!< queue mutexes
+	struct buffer_queue *in_buffer_queue, *out_buffer_queue; //!< queues
 
 	//Error handling
-	int                  error;
-	int                  restoreflag;
-	pthread_t            rescue_thread;
-	pthread_cond_t       restore_cond;
-	struct buffer_queue *restore_in_buffer_queue, *restore_out_buffer_queue;
+	ca_error             error;         //!< Error code
+	int                  restoreflag;   //!< is currently recovering from error
+	pthread_t            rescue_thread; //!< recovery thread
+	pthread_cond_t       restore_cond;  //!< restoration condition variable
+	struct buffer_queue *restore_in_buffer_queue,
+	    *restore_out_buffer_queue; //!< working queues to properly restore comms
 };
 
 /** Single index in a singly-linked list of data buffers */
@@ -156,5 +166,9 @@ struct buffer_queue
 	struct ca821x_dev *  pDeviceRef; //!< Data's target/originating device
 	struct buffer_queue *next;       //!< Next queue item
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CA821X_TYPES_H_ */

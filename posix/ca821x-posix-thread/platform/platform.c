@@ -36,6 +36,8 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include "ca821x-posix-thread/posix-platform.h"
@@ -47,9 +49,10 @@
 uint32_t NODE_ID           = 1;
 uint32_t WELLKNOWN_NODE_ID = 34;
 
-static fd_set read_fds;
-static fd_set write_fds;
-static int    max_fd = -1;
+static fd_set      read_fds;
+static fd_set      write_fds;
+static int         max_fd  = -1;
+static const char *dataDir = NULL;
 
 int    gArgumentsCount = 0;
 char **gArguments      = NULL;
@@ -63,7 +66,6 @@ void posixPlatformSetOrigArgs(int argc, char *argv[])
 int posixPlatformInit(void)
 {
 	posixPlatformAlarmInit();
-	otPlatUartEnable();
 	if (PlatformRadioInit() < 0)
 	{
 		return -1;
@@ -112,4 +114,73 @@ void posixPlatformProcessDrivers(otInstance *aInstance)
 	posixPlatformProcessDriversQuick(aInstance);
 	posixPlatformGetTimeout(aInstance, &timeout);
 	posixPlatformSleep(aInstance, &timeout);
+}
+
+/**
+ * Find the best place to place the data files, and initialise the directory if it doesn't
+ * already exist.
+ */
+static const char *getDataDirPath()
+{
+	const char *ddp         = NULL;
+	char *      dataPath    = NULL;
+	size_t      dataPathLen = 0;
+	struct stat st;
+
+	memset(&st, 0, sizeof(st));
+
+	if ((ddp = getenv("XDG_DATA_HOME")))
+	{
+		size_t     homelen  = strlen(ddp);
+		const char subdir[] = "/cascoda/ot";
+
+		dataPathLen = homelen + sizeof(subdir) + 4;
+		//This allocation only occurs once, and is used until program end, so we don't need to bother free-ing
+		dataPath = malloc(dataPathLen);
+		snprintf(dataPath, dataPathLen, "%s%s%04d", ddp, subdir, NODE_ID);
+	}
+	else if ((ddp = getenv("HOME")))
+	{
+		size_t     homelen  = strlen(ddp);
+		const char subdir[] = "/.local/share/cascoda/ot";
+
+		dataPathLen = homelen + sizeof(subdir) + 4;
+		//This allocation only occurs once, and is used until program end, so we don't need to bother free-ing
+		dataPath = malloc(dataPathLen);
+		snprintf(dataPath, dataPathLen, "%s%s%04d", ddp, subdir, NODE_ID);
+	}
+	else
+	{
+		//Fall back to system files
+		ddp         = "/usr/local/etc/cascoda/ot";
+		dataPathLen = strlen(ddp) + 4;
+		//This allocation only occurs once, and is used until program end, so we don't need to bother free-ing
+		dataPath = malloc(dataPathLen);
+		snprintf(dataPath, dataPathLen, "%s%04d", ddp, NODE_ID);
+	}
+
+	if (stat(dataPath, &st) == -1)
+	{
+		//Recursively create directories as necessary.
+		for (char *p = dataPath + 1; *p; p++)
+		{
+			if (*p == '/')
+			{
+				*p = '\0';
+				mkdir(dataPath, 0700);
+				*p = '/';
+			}
+		}
+		mkdir(dataPath, 0700);
+	}
+
+	return dataPath;
+}
+
+const char *posixGetDataDir()
+{
+	if (!dataDir)
+		dataDir = getDataDirPath();
+
+	return dataDir;
 }

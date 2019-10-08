@@ -1,23 +1,33 @@
 /**
- * @file   cascoda_evbme.h
+ * @file
  * @brief  EvaBoard Management Entity (EVBME) Definitions/Declarations
- * @author Wolfgang Bruchner
- * @date   19/07/14
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 #include "cascoda-bm/cascoda_bm.h"
 #include "ca821x_api.h"
@@ -25,9 +35,10 @@
 #ifndef CASCODA_EVBME_H
 #define CASCODA_EVBME_H
 
-/***************************************************************************/ /**
- * \defgroup EVBMEEnums EVBME Enumerations
- ************************************************************************** @{*/
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** EVBME message id codes */
 enum evbme_msg_id_code
 {
@@ -38,7 +49,6 @@ enum evbme_msg_id_code
 	EVBME_COMM_CHECK          = 0xA1,
 	EVBME_COMM_INDICATION     = 0xA2,
 	EVBME_TERMINAL_INDICATION = 0xFE,
-	EVBME_ERROR_INDICATION    = 0xF0
 };
 
 /** EVBME attribute ids */
@@ -59,7 +69,6 @@ enum powerdown_mode
 	PDM_POWEROFF  = 4, //!< No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
 	PDM_DPD       = 5  //!< No CAX Retention or MCU Retention (Data saved in NVM)
 };
-/**@}*/
 
 /** Structure of the EVBME_COMM_CHECK message that can be used to test comms by host. */
 struct EVBME_COMM_CHECK_request
@@ -68,13 +77,6 @@ struct EVBME_COMM_CHECK_request
 	uint8_t mDelay;    //!< Delay before sending responses
 	uint8_t mIndCount; //!< Number of indications to send up
 };
-
-/******************************************************************************/
-/****** Message Definitions for UpStream (Serial) and  DownStream (SPI)  ******/
-/******************************************************************************/
-struct MAC_Message;
-struct SerialBuffer;
-struct ca821x_dev;
 
 /******************************************************************************/
 /****** Global Parameters that can by set via EVBME_SET_request          ******/
@@ -89,23 +91,81 @@ extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 /******************************************************************************/
 /****** EVBME API Functions                                              ******/
 /******************************************************************************/
-ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *dev);
-int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-void     EVBMESendUpStream(struct MAC_Message *msg);
-int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-ca_error EVBME_SET_request(u8_t Attribute, u8_t AttributeLength, u8_t *AttributeValue, struct ca821x_dev *pDeviceRef);
-ca_error EVBME_ResetRF(u8_t ms, struct ca821x_dev *pDeviceRef);
-ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRef);
-void     EVBME_Disconnect(void);
-void     cascoda_io_handler(struct ca821x_dev *pDeviceRef);
 
-void     EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
-ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
-void     EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
-void     EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
-void     EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
-void     EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
-void     EVBME_WakeUpRF(void);
-void     EVBME_ERROR_Indication(ca_error error_code, u8_t has_restarted, struct ca821x_dev *pDeviceRef);
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialises EVBME after Reset
+ *******************************************************************************
+ * Initialises low level interfaces, resets and initialises CA-8210.
+ *******************************************************************************
+ * \param aAppName - App name string
+ *******************************************************************************
+ * \return Status of initialisation
+ *******************************************************************************
+ ******************************************************************************/
+ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *dev);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Sends DownStream Command from API UpStream to Serial
+ *******************************************************************************
+ * \param msg - Message to send upstream
+ *******************************************************************************
+ ******************************************************************************/
+void DISPATCH_NotHandled(struct MAC_Message *msg);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Processes messages received over available interfaces. This function
+ *        should be called regularly from application context eg the main loop.
+ * 		  Alternatively, you may use cascoda_io_signal() to notify the
+ *		  application that it must call cascoda_io_handler().
+ *******************************************************************************
+ ******************************************************************************/
+void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+* \brief Put the system into a state of power-down for a given time
+*******************************************************************************
+* \param mode - Power-Down Mode
+* \param sleeptime_sec - Seconds to sleep for
+*******************************************************************************
+* Power-Down Modes
+*
+* Enum              | MCU             | CAX              | Notes
+* ----------------- | --------------- | ---------------- | -------------------------
+* PDM_ALLON         | Active          | Active           | Mainly for Testing
+* PDM_ACTIVE        | Power-Down      | Active           | CAX Full Data Retention, MAC Running
+* PDM_STANDBY       | Power-Down      | Standby          | CAX Full Data Retention
+* PDM_POWERDOWN     | Power-Down      | Power-Down 0     | No CAX Retention, PIB has to be re-initialised
+* PDM_POWEROFF      | Power-Down      | Power-Down 1     | No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
+* PDM_DPD           | Deep-Power-Down | Power-Down 1     | No CAX Retention or MCU Retention (Data saved in NVM)
+*******************************************************************************
+******************************************************************************/
+void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief System Clock Switch
+ ********************************************************************************
+ * \param pDeviceRef - a pointer to the ca821x_dev struct
+ * \param useExternalClock - boolean (1: use external clock from ca821x, 0: use internal clock)
+ *******************************************************************************
+ ******************************************************************************/
+void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Restarts Air Interface
+ *******************************************************************************
+ * Resets and re-initialises CAX, calls app_reinitialise callback.
+ *******************************************************************************
+ ******************************************************************************/
+void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CASCODA_EVBME_H

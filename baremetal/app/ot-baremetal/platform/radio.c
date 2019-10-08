@@ -113,6 +113,7 @@ static otError ConvertErrorMacToOt(ca_mac_status aMacError)
 		error = OT_ERROR_ALREADY;
 		break;
 	default:
+		ca_log_debg("MAC Error %x unconverted", aMacError);
 		error = OT_ERROR_ABORT;
 		break;
 	}
@@ -360,6 +361,7 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 		memset(&(dataInd.mSecurity), 0, sizeof(dataInd.mSecurity));
 	}
 
+	ca_log_debg("MAC Rx Data Indication");
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
 
 	return CA_ERROR_SUCCESS;

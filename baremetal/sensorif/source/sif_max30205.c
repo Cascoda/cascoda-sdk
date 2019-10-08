@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * Sensor interface for Maxim MAX30205 human body temperature sensor
@@ -46,12 +57,12 @@ static u8_t SIF_MAX30205_WriteConfig(u8_t config)
 	status   = SENSORIF_I2C_Write((0x00 + (SIF_SAD_MAX30205 >> 1)), wdata, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_WriteConfig() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_WriteConfig() Error; write status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 2)
 	{
-		printf("SIF_MAX30205_WriteConfig() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_WriteConfig() Error: bytes written: %02X", num);
 		return (0xFF);
 	}
 
@@ -76,12 +87,12 @@ static u8_t SIF_MAX30205_ReadConfig(u8_t *config)
 	status = SENSORIF_I2C_Write((0x00 + (SIF_SAD_MAX30205 >> 1)), &wdata, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_ReadConfig() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_ReadConfig() Error; write status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 1)
 	{
-		printf("SIF_MAX30205_ReadConfig() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_ReadConfig() Error: bytes written: %02X", num);
 		return (0xFF);
 	}
 
@@ -89,25 +100,18 @@ static u8_t SIF_MAX30205_ReadConfig(u8_t *config)
 	status = SENSORIF_I2C_Read((0x00 + (SIF_SAD_MAX30205 >> 1)), config, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_ReadConfig() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_ReadConfig() Error; read status: %02X", status);
 		return (0xFF);
 	}
 	if (num != 1)
 	{
-		printf("SIF_MAX30205_ReadConfig() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_ReadConfig() Error: bytes read: %02X", num);
 		return (0xFF);
 	}
 
 	return (0x00);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief MAX30205: Read Temperature
- *******************************************************************************
- * \return Temperature as defined in MAX30205 Datasheet, normal format
- *******************************************************************************
- ******************************************************************************/
 u16_t SIF_MAX30205_ReadTemperature(void)
 {
 	u8_t  config;
@@ -150,12 +154,12 @@ u16_t SIF_MAX30205_ReadTemperature(void)
 	status = SENSORIF_I2C_Write((0x00 + (SIF_SAD_MAX30205 >> 1)), &wdata, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error; write status: %02X", status);
 		return (0);
 	}
 	if (num != 1)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error: bytes written: %02X", num);
 		return (0);
 	}
 
@@ -165,12 +169,12 @@ u16_t SIF_MAX30205_ReadTemperature(void)
 	status = SENSORIF_I2C_Write((0x00 + (SIF_SAD_MAX30205 >> 1)), &wdata, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error; write status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error; write status: %02X", status);
 		return (0);
 	}
 	if (num != 1)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error: bytes written: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error: bytes written: %02X", num);
 		return (0);
 	}
 
@@ -179,12 +183,12 @@ u16_t SIF_MAX30205_ReadTemperature(void)
 	status = SENSORIF_I2C_Read((0x00 + (SIF_SAD_MAX30205 >> 1)), rdata, &num);
 	if (status)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error; read status: %02X\n", status);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error; read status: %02X", status);
 		return (0);
 	}
 	if (num != 2)
 	{
-		printf("SIF_MAX30205_ReadTemperature() Error: bytes read: %02X\n", num);
+		ca_log_warn("SIF_MAX30205_ReadTemperature() Error: bytes read: %02X", num);
 		return (0);
 	}
 
@@ -194,13 +198,6 @@ u16_t SIF_MAX30205_ReadTemperature(void)
 	return (temp);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief MAX30205: Initialise Sensor
- *******************************************************************************
- * \return status, 0 = success
- *******************************************************************************
- ******************************************************************************/
 u8_t SIF_MAX30205_Initialise(void)
 {
 	u8_t config;

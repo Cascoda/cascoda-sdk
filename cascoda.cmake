@@ -83,3 +83,36 @@ function(cascoda_put_subdir target_in subdir)
 	set(RUN_DIRECTORY "${RUN_DIRECTORY}/${subdir}")
 	set_target_properties(${target_in} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${RUN_DIRECTORY})
 endfunction()
+
+# Helper macro to make a target compile as trustzone secure, and generate
+# an import library for the non-secure-callable functions. The import library
+# has the same name as the target, but with a '-implib' suffix.
+#
+# The linkerarg arguments are the arguments passed to the linker for config (eg ld script).
+# The nonsecure_linkerarg argument is used to set the link INTERFACE of the implib.
+# The secure_linkerarg is used to set the linker argument for the secure binary.
+macro(cascoda_tz_secure target_in secure_linkerarg nonsecure_linkerarg)
+	#TODO: Currently this only works for gcc - armclang would be nice
+	set(IMPORT_LIB ${PROJECT_BINARY_DIR}/CMSE_${target_in}_implib.o)
+	target_link_options(${target_in}
+		PUBLIC
+			-Wl,--cmse-implib,--out-implib,${IMPORT_LIB}
+			-Wl,${secure_linkerarg}
+	)
+	set_source_files_properties(
+	  ${IMPORT_LIB}
+	  PROPERTIES
+	  EXTERNAL_OBJECT true
+	  GENERATED true
+	)
+
+	# Create a new target for the import library. You must link this library with the nonsecure
+	# target that relies on the API provided by this binary.
+	add_library(${target_in}-implib INTERFACE)
+	add_dependencies(${target_in}-implib ${target_in})
+	target_link_libraries(${target_in}-implib INTERFACE ${IMPORT_LIB})
+
+	# Set the nonsecure linkerarg as interface of the import lib
+	target_link_options(${target_in}-implib INTERFACE -Wl,${nonsecure_linkerarg})
+	unset(IMPORT_LIB)
+endmacro()

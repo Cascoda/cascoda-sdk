@@ -77,8 +77,8 @@ static inline void barrier_worker_waitForMain(void);
 static inline void barrier_worker_endWork(void);
 //END BARRIER
 
-#define IEEEEUI_FILE "/usr/local/etc/.otEui"
-static uint8_t sIeeeEui64[8];
+static const char IeeeEuiFile[] = "otEui";
+static uint8_t    sIeeeEui64[8];
 
 //For cascoda API
 static struct ca821x_dev  s_pDeviceRef;
@@ -474,14 +474,14 @@ int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance)
 	return -105;
 }
 
-static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
+static ca_error driverErrorCallback(ca_error error, struct ca821x_dev *pDeviceRef)
 {
-	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "DRIVER FAILED WITH ERROR %d\n\r", (int)error);
 
 	if (!sRadioInitialised)
 		exit(EXIT_FAILURE);
 
-	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "Attempting restart...\n\r", error_number);
+	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "Attempting restart...\n\r", (int)error);
 
 	if (ca821x_util_reset(pDeviceRef) == 0)
 	{
@@ -490,7 +490,7 @@ static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
 	}
 
 	abort();
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 void PlatformRadioStop(void)
@@ -507,12 +507,13 @@ void PlatformRadioStop(void)
 
 void initIeeeEui64()
 {
-	int     file;
-	uint8_t create      = false;
-	size_t  fileNameLen = strlen(IEEEEUI_FILE) + 4; //"filename.00\0"
-	char    fileName[fileNameLen];
+	int         file;
+	uint8_t     create      = false;
+	const char *dataDir     = posixGetDataDir();
+	size_t      fileNameLen = sizeof(IeeeEuiFile) + strlen(dataDir) + 1; //"datadir/filename"
+	char        fileName[fileNameLen];
 
-	snprintf(fileName, fileNameLen, "%s.%02u", IEEEEUI_FILE, NODE_ID);
+	snprintf(fileName, fileNameLen, "%s/%s", dataDir, IeeeEuiFile);
 
 	if (!access(fileName, R_OK))
 	{
@@ -552,7 +553,7 @@ void initIeeeEui64()
 
 static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
-	fprintf(stderr, "Woke Up with status %02x\n", params->WakeUpCondition);
+	ca_log_info("Woke Up with status %02x", params->WakeUpCondition);
 	return CA_ERROR_SUCCESS;
 }
 
@@ -581,16 +582,25 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 
 int PlatformRadioInit(void)
 {
-	int status;
-
-	status = ca821x_util_init(&s_pDeviceRef, driverErrorCallback);
-	if (status == CA_ERROR_NOT_FOUND)
+	if (ca821x_util_init(&s_pDeviceRef, driverErrorCallback) == CA_ERROR_NOT_FOUND)
 	{
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "No ca821x device found");
-		return status;
+		return -1;
 	}
 
-	return PlatformRadioInitWithDev(&s_pDeviceRef);
+	if (PlatformRadioInitWithDev(&s_pDeviceRef))
+	{
+		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "Failed radio initialisation");
+		return -1;
+	}
+
+	if (ca821x_util_start_downstream_dispatch_worker())
+	{
+		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "Failed worker thread start");
+		return -1;
+	}
+
+	return 0;
 }
 
 int8_t otPlatRadioGetRssi(otInstance *aInstance)

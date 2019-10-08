@@ -45,7 +45,7 @@ uint32_t USPI_Open(USPI_T *uspi, uint32_t u32MasterSlave, uint32_t u32SPIMode,  
     uint32_t u32Pclk;
     uint32_t u32RetValue = 0UL;
 
-    if((uspi == USPI0) || (uspi == USPI0_NS))
+    if(uspi == USPI0)
     {
         u32Pclk = CLK_GetPCLK0Freq();
     }
@@ -171,7 +171,7 @@ uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock)
     uint32_t u32ClkDiv;
     uint32_t u32Pclk;
 
-    if((uspi == USPI0) || (uspi == USPI0_NS))
+    if(uspi == USPI0)
     {
         u32Pclk = CLK_GetPCLK0Freq();
     }
@@ -200,7 +200,7 @@ uint32_t USPI_GetBusClock(USPI_T *uspi)
 
     u32ClkDiv = (uspi->BRGEN & USPI_BRGEN_CLKDIV_Msk) >> USPI_BRGEN_CLKDIV_Pos;
 
-    if((uspi == USPI0) || (uspi == USPI0_NS))
+    if(uspi == USPI0)
     {
         u32BusClk = (CLK_GetPCLK0Freq() / ((u32ClkDiv + 1UL) << 1UL));
     }

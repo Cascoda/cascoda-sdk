@@ -72,7 +72,7 @@ The platform abstractions (sometimes referred to in the source code as the Board
 While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to control the chip from your top-level application, it is a lot easier to rely on the functionality provided by the baremetal drivers, such as the functions in `cascoda_time.h`, `cascoda_evbme.h` and so on.
 
 ### toolchain
-`toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#Instructions).
+`toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#Instructions). There is extra info on how to compile for different targets here, such as [cross compiling for the raspberry pi.)(toolchain/cross-compile-for-raspberry-pi.md)
 
 ### [posix](posix/ca821x-posix/README.md)
 `posix` contains the Posix-specific drivers and tools, as well as some example applications that can be run from a Linux system.

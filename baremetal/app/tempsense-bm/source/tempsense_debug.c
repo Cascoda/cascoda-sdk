@@ -1,23 +1,33 @@
 /**
- * @file tempsense_debug.c
+ * @file
  * @brief Over-Air Debug Queue
- * @author Wolfgang Bruchner
- * @date 31/05/16
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <stdio.h>
@@ -46,11 +56,6 @@ u8_t Debug_Handle    = 0; // Packet handle
 
 extern u8_t SPI_MLME_SCANNING; // from spi driver
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Send Debug Frame
- *******************************************************************************
- ******************************************************************************/
 void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 {
 	static u32_t    start_time = 0;
@@ -180,11 +185,6 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 
 } // End of APP_Debug_Send()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Debug Frame has been sent
- *******************************************************************************
- ******************************************************************************/
 int APP_Debug_Sent(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	u8_t rxidle;
@@ -207,11 +207,6 @@ int APP_Debug_Sent(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDe
 	return 1;
 } // End of APP_Debug_Sent()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Reset all APP Level Debug Codes
- *******************************************************************************
- ******************************************************************************/
 void APP_Debug_Reset(void)
 {
 	if (APP_STATE == APP_ST_NORMAL)
@@ -225,13 +220,6 @@ void APP_Debug_Reset(void)
 	Debug_App_Error = 0;
 } // End of APP_Debug_Reset()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Assign Error Code
- *******************************************************************************
- * \param code - debug code
- *******************************************************************************
- ******************************************************************************/
 void APP_Debug_Error(u8_t code)
 {
 	if (Debug_App_Error == 0)
@@ -240,13 +228,6 @@ void APP_Debug_Error(u8_t code)
 	}
 } // End of APP_Debug_Error()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Set Application Debug State
- *******************************************************************************
- * \param state- debug state
- *******************************************************************************
- ******************************************************************************/
 void APP_Debug_SetAppState(u8_t state)
 {
 	Debug_App_State = state;

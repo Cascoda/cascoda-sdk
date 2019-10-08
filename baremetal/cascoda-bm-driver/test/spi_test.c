@@ -1,8 +1,6 @@
 /**
- * @file   spi_test.c
+ * @file
  * @brief  Unit tests for SPI module
- * @author Ciaran Woodward
- * @date   25/02/19
  */
 #include <setjmp.h>
 #include <stdarg.h>
@@ -14,6 +12,9 @@
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "ca821x_api.h"
+
+//Dummy CHILI_FastForward declaration
+void CHILI_FastForward(u32_t ticks);
 
 static struct ca821x_dev sdev;
 
@@ -27,7 +28,7 @@ void __wrap_BSP_Waiting()
 	}
 	else
 	{
-		TIME_FastForward(ffTime);
+		CHILI_FastForward(ffTime);
 	}
 }
 

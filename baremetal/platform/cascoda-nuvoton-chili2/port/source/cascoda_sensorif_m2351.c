@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * sensor/actuator I2C interface functions
@@ -24,6 +35,7 @@
 /* Platform */
 #include "M2351.h"
 #include "i2c.h"
+#include "spi.h"
 #include "sys.h"
 /* Cascoda */
 #include "cascoda-bm/cascoda_evbme.h"
@@ -43,7 +55,20 @@
  * 1       I2C1     PB.0    PB.1    One-Sided Population (Solder-On) only
  * 2       I2C2     PB.12   PB.13   One-Sided Population (Solder-On) only
  */
-/* set interface number (0/1/2) */
+
+/* SPI Interface Module used:
+ * -------------------------------------------------------------------------
+ * Number  Module   MISO     MOSI     CLK     SS
+ * -------------------------------------------------------------------------
+ * 1       SPI1     PB.5     PB.4     PB.3    PB.2
+ * 2       SPI2     PA.14    PA.15    PA.13   PA.12
+ */
+
+/****************************************************************************/
+/* These values must also be updated in cascoda_sensorif_secure.c           */
+/****************************************************************************/
+
+/* set I2C interface number (0/1/2) */
 #define SENSORIF_I2CNUM 1
 
 /* I2C module */
@@ -57,16 +82,18 @@
 #error "sensorif I2C module not valid"
 #endif
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Writes bytes to I2C slave
- * \param slaveaddr - 6-Bit Slave Address
- * \param pdata - Pointer to Data Buffer
- * \param plen - Pointer to Buffer Length (actual length is returned in plen)
- *******************************************************************************
- * \return Status. 0: success, other: either I2C status or re-mapped
- *******************************************************************************
- ******************************************************************************/
+/* set SPI interface number (1/2)*/
+#define SENSORIF_SPINUM 1
+
+/* SPI module */
+#if (SENSORIF_SPINUM == 1)
+#define SENSORIF_SPIIF SPI1
+#elif (SENSORIF_SPINUM == 2)
+#define SENSORIF_SPIIF SPI2
+#else
+#error "sensorif SPI module not valid"
+#endif
+
 enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *plen)
 {
 	u8_t                     transferring = 1;
@@ -82,10 +109,10 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 	while (transferring)
 	{
 		/* wait until bus is ready */
-		starttime = TIME_ReadAbsoluteTime();
+		starttime = BSP_ReadAbsoluteTime();
 		while (!(SENSORIF_I2CIF->CTL0 & I2C_CTL0_SI_Msk))
 		{
-			if ((TIME_ReadAbsoluteTime() - starttime) > SENSORIF_I2C_TIMEOUT)
+			if ((BSP_ReadAbsoluteTime() - starttime) > SENSORIF_I2C_TIMEOUT)
 				return (SENSORIF_I2C_ST_TIMEOUT);
 		}
 
@@ -129,17 +156,6 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 	return status;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Reads bytes from I2C slave
- *******************************************************************************
- * \param slaveaddr - 6-Bit Slave Address
- * \param pdata - Pointer to Data Buffer
- * \param plen - Pointer to Buffer Length (actual length is returned in plen)
- *******************************************************************************
- * \return Status. 0: success, other: either I2C status or re-mapped
- *******************************************************************************
- ******************************************************************************/
 enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *plen)
 {
 	u8_t                     transferring = 1;
@@ -155,10 +171,10 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	while (transferring)
 	{
 		/* wait until bus is ready */
-		starttime = TIME_ReadAbsoluteTime();
+		starttime = BSP_ReadAbsoluteTime();
 		while (!(SENSORIF_I2CIF->CTL0 & I2C_CTL0_SI_Msk))
 		{
-			if ((TIME_ReadAbsoluteTime() - starttime) > SENSORIF_I2C_TIMEOUT)
+			if ((BSP_ReadAbsoluteTime() - starttime) > SENSORIF_I2C_TIMEOUT)
 				return (SENSORIF_I2C_ST_TIMEOUT);
 		}
 
@@ -172,11 +188,11 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 		case SENSORIF_I2C_ST_RX_AD_ACK: /* slave has ACKed SLA+RD */
 			if (inlen > 1)
 			{
-				control0 = I2C_CTL_SI_AA;   /* set ACK */
+				control0 = I2C_CTL_SI_AA; /* set ACK */
 			}
 			else
 			{
-				control0 = I2C_CTL_SI; 		/* clear ACK as only one byte will be read */
+				control0 = I2C_CTL_SI; /* clear ACK as only one byte will be read */
 			}
 			break;
 		case SENSORIF_I2C_ST_RX_AD_NACK:   /* slave has NACKed SLA+RD */
@@ -216,106 +232,12 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	return status;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialises and enables I2C interface
- *******************************************************************************
- ******************************************************************************/
-void SENSORIF_I2C_Init(void)
+__NONSECURE_ENTRY ca_error SENSORIF_SPI_Write(u8_t out_data)
 {
-	/* enable I2C peripheral clock */
-#if (SENSORIF_I2CNUM == 0)
-	CLK_EnableModuleClock(I2C0_MODULE);
-#elif (SENSORIF_I2CNUM == 1)
-	CLK_EnableModuleClock(I2C1_MODULE);
-#else
-	CLK_EnableModuleClock(I2C2_MODULE);
-#endif
-
-	/* SDA/SCL port configurations */
-#if (SENSORIF_I2CNUM == 0)
-	/* re-config PB.5 and PB.4 */
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT5);
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT4);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT5);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT4);
-#if (SENSORIF_INT_PULLUPS)
-	GPIO_SetPullCtl(PB, BIT5, GPIO_PUSEL_PULL_UP);
-	GPIO_SetPullCtl(PB, BIT4, GPIO_PUSEL_PULL_UP);
-#else
-	GPIO_SetPullCtl(PB, BIT5, GPIO_PUSEL_DISABLE);
-	GPIO_SetPullCtl(PB, BIT4, GPIO_PUSEL_DISABLE);
-#endif
-	/* initialise PB MFP for I2C0 SDA and SCL */
-	/* PB.5 = I2C0 SCL */
-	/* PB.4 = I2C0 SDA */
-	SYS->GPB_MFPL &= ~(SYS_GPB_MFPL_PB4MFP_Msk | SYS_GPB_MFPL_PB5MFP_Msk);
-	SYS->GPB_MFPL |= (SYS_GPB_MFPL_PB4MFP_I2C0_SDA | SYS_GPB_MFPL_PB5MFP_I2C0_SCL);
-#elif (SENSORIF_I2CNUM == 1)
-	/* re-config PB.1 and PB.0 */
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT1);
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT0);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT1);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT0);
-#if (SENSORIF_INT_PULLUPS)
-	GPIO_SetPullCtl(PB, BIT1, GPIO_PUSEL_PULL_UP);
-	GPIO_SetPullCtl(PB, BIT0, GPIO_PUSEL_PULL_UP);
-#else
-	GPIO_SetPullCtl(PB, BIT1, GPIO_PUSEL_DISABLE);
-	GPIO_SetPullCtl(PB, BIT0, GPIO_PUSEL_DISABLE);
-#endif
-	/* initialise PB MFP for I2C1 SDA and SCL */
-	/* PB.1 = I2C1 SCL */
-	/* PB.0 = I2C1 SDA */
-	SYS->GPB_MFPL &= ~(SYS_GPB_MFPL_PB0MFP_Msk | SYS_GPB_MFPL_PB1MFP_Msk);
-	SYS->GPB_MFPL |= (SYS_GPB_MFPL_PB0MFP_I2C1_SDA | SYS_GPB_MFPL_PB1MFP_I2C1_SCL);
-#else
-	/* re-config PB.13 and PB.12 */
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT13);
-	GPIO_ENABLE_DIGITAL_PATH(PB, BIT12);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT13);
-	GPIO_DISABLE_DEBOUNCE(PB, BIT12);
-#if (SENSORIF_INT_PULLUPS)
-	GPIO_SetPullCtl(PB, BIT13, GPIO_PUSEL_PULL_UP);
-	GPIO_SetPullCtl(PB, BIT12, GPIO_PUSEL_PULL_UP);
-#else
-	GPIO_SetPullCtl(PB, BIT13, GPIO_PUSEL_DISABLE);
-	GPIO_SetPullCtl(PB, BIT12, GPIO_PUSEL_DISABLE);
-#endif
-	/* initialise PB MFP for I2C2 SDA and SCL */
-	/* PB.13 = I2C2 SCL */
-	/* PB.12 = I2C2 SDA */
-	SYS->GPB_MFPL &= ~(SYS_GPB_MFPH_PB12MFP_Msk | SYS_GPB_MFPH_PB13MFP_Msk);
-	SYS->GPB_MFPL |= (SYS_GPB_MFPH_PB12MFP_I2C2_SDA | SYS_GPB_MFPH_PB13MFP_I2C2_SCL);
-#endif
-
-	/* reset I2C module */
-#if (SENSORIF_I2CNUM == 0)
-	SYS_ResetModule(I2C0_RST);
-#elif (SENSORIF_I2CNUM == 1)
-	SYS_ResetModule(I2C1_RST);
-#else
-	SYS_ResetModule(I2C2_RST);
-#endif
-
-	/* enable I2C */
-	I2C_Open(SENSORIF_I2CIF, SENSORIF_CLK_FREQUENCY);
-}
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Disables I2C interface
- *******************************************************************************
- ******************************************************************************/
-void SENSORIF_I2C_Deinit(void)
-{
-	I2C_DisableInt(SENSORIF_I2CIF);
-	I2C_Close(SENSORIF_I2CIF);
-#if (SENSORIF_I2CNUM == 0)
-	CLK_DisableModuleClock(I2C0_MODULE);
-#elif (SENSORIF_I2CNUM == 1)
-	CLK_DisableModuleClock(I2C1_MODULE);
-#else
-	CLK_DisableModuleClock(I2C2_MODULE);
-#endif
+	if (!SPI_GET_TX_FIFO_FULL_FLAG(SENSORIF_SPIIF))
+	{
+		SPI_WRITE_TX(SENSORIF_SPIIF, out_data);
+		return CA_ERROR_SUCCESS;
+	}
+	return CA_ERROR_FAIL;
 }

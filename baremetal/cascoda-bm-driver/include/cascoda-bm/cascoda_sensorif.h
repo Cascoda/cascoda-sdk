@@ -1,18 +1,29 @@
 /*
- * Copyright (C) 2019  Cascoda, Ltd.
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
  * sensor/actuator I2C interface functions
@@ -22,11 +33,18 @@
 #define CASCODA_SENSORIF_H
 
 #include "cascoda-bm/cascoda_types.h"
+#include "ca821x_api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* declarations */
-#define SENSORIF_I2C_TIMEOUT 100      /* I2C bus access time-out time in [ms] */
-#define SENSORIF_CLK_FREQUENCY 100000 /* I2C SCL frequency [Hz], 100kHz (full-speed) */
-#define SENSORIF_INT_PULLUPS 0        /* I2C use internal pull-ups flag */
+#define SENSORIF_I2C_TIMEOUT 100           /* I2C bus access time-out time in [ms] */
+#define SENSORIF_I2C_CLK_FREQUENCY 100000  /* I2C SCL frequency [Hz], 100kHz (full-speed) */
+#define SENSORIF_INT_PULLUPS 0             /* I2C use internal pull-ups flag */
+#define SENSORIF_SPI_CLK_FREQUENCY 4000000 /* SPI CLK frequency [Hz], 4MHz (max frequency for E-paper display) */
+#define SENSORIF_SPI_DATA_WIDTH 8
 
 /* Note: most internal GPIO pull-ups have a value of around 50kOhms which is usually
  * too high for I2C pull-up values, depending  on number of peripherals connected and
@@ -59,9 +77,72 @@ enum sensorif_i2c_status
 };
 
 /* functions for platform implementation */
-void                     SENSORIF_I2C_Init(void);
-void                     SENSORIF_I2C_Deinit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialises and enables I2C interface
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_I2C_Init(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Disables I2C interface
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_I2C_Deinit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Writes bytes to I2C slave
+ * \param slaveaddr - 6-Bit Slave Address
+ * \param pdata - Pointer to Data Buffer
+ * \param plen - Pointer to Buffer Length (actual length is returned in plen)
+ *******************************************************************************
+ * \return Status. 0: success, other: either I2C status or re-mapped
+ *******************************************************************************
+ ******************************************************************************/
 enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *data, u32_t *len);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reads bytes from I2C slave
+ *******************************************************************************
+ * \param slaveaddr - 6-Bit Slave Address
+ * \param pdata - Pointer to Data Buffer
+ * \param plen - Pointer to Buffer Length (actual length is returned in plen)
+ *******************************************************************************
+ * \return Status. 0: success, other: either I2C status or re-mapped
+ *******************************************************************************
+ ******************************************************************************/
 enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *plen);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialises and enables SPI interface
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_SPI_Init(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Disables SPI interface
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_SPI_Deinit(void);
+
+/************************************************************************************************************/
+/*********************************************************************************************************/ /**
+ * \brief Writes bytes to SPI slave
+ * \param out_data - 8-bit data to send
+ *************************************************************************************************************
+ * \return Return CA_ERROR_SUCCESS = 0x00 if successful and CA_ERROR_FAIL = 0x01 if transmit FIFO is full
+ *************************************************************************************************************
+ ************************************************************************************************************/
+ca_error SENSORIF_SPI_Write(u8_t out_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CASCODA_SENSORIF_H

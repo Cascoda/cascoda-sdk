@@ -51,7 +51,7 @@ if (MINGW)
 endif (MINGW)
 
 # check subdirectories
-add_subdirectory(doc)
+# add_subdirectory(doc)
 add_subdirectory(include)
 add_subdirectory(src)
 

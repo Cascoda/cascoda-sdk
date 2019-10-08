@@ -18,6 +18,7 @@ add_cmocka_test(time_test
 	LINK_LIBRARIES
 		${CMOCKA_SHARED_LIBRARY}
 		cascoda-bm
+		cascoda-bm-plat
 	LINK_OPTIONS
 		-Wl,--wrap=BSP_Waiting
 	)
@@ -28,6 +29,7 @@ add_cmocka_test(spi_test
 	LINK_LIBRARIES
 		${CMOCKA_SHARED_LIBRARY}
 		cascoda-bm
+		cascoda-bm-plat
 	LINK_OPTIONS
 		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte,--wrap=BSP_SPIExchangeByte
 	)
@@ -38,6 +40,8 @@ add_cmocka_test(wait_test
 	LINK_LIBRARIES
 		${CMOCKA_SHARED_LIBRARY}
 		cascoda-bm
+		cascoda-bm-core
+		cascoda-bm-plat
 	LINK_OPTIONS
 		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte,--wrap=BSP_SPIExchangeByte
 	)
@@ -48,6 +52,8 @@ add_cmocka_test(dispatch_test
 	LINK_LIBRARIES
 		${CMOCKA_SHARED_LIBRARY}
 		cascoda-bm
+		cascoda-bm-core
+		cascoda-bm-plat
 	LINK_OPTIONS
 		-Wl,--wrap=BSP_Waiting
 	)

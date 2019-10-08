@@ -4,6 +4,10 @@
 #include "ca821x-posix/ca821x-types.h"
 #include "ca821x_api.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Generic function to initialise an available ca821x device. This includes
  * initialisation of the api and an exchange. Use of these generic functions
@@ -66,23 +70,50 @@ ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef);
 
 /**
  * Generic function to poll the receive queue and call callbacks for received
- * commands. This function should only be used if POSIX_ASYNC_DISPATCH has been
- * set to 0. If POSIX_ASYNC_DISPATCH is set to 1, the callbacks will be called
- * immediately and asynchronously from another thread.
+ * commands. This function should only be used if ca821x_util_start_downstream_dispatch_worker
+ * has not been called. If ca821x_util_start_downstream_dispatch_worker has been
+ * called, the callbacks will be called immediately and asynchronously from another thread.
  *
- * It is recommended that if the return value is nonzero, the function should be
+ * It is recommended that if the return value is CA_ERROR_SUCCESS, this function should be
  * called again.
  *
- * Calling on an uninitialised pDeviceRef produces undefined behaviour.
- *
- * @param[in]   pDeviceRef   Device reference for device to be reset.
- *
- * @returns Length of processed command, or 0 if the queue was empty.
+ * @returns status
+ * @retval CA_ERROR_SUCCESS A message was pending and has been processed
+ * @retval CA_ERROR_NOT_FOUND No messages pending dispatch
+ * @retval CA_ERROR_INVALID_STATE This function cannot be used as the exchange is in
+ *                                asynchronous mode - all dispatch callbacks will be
+ *                                called from a separate thread.
  *
  */
-#if !CA821X_ASYNC_CALLBACK
-int ca821x_util_dispatch_poll(struct ca821x_dev *pDeviceRef);
-#endif
+ca_error ca821x_util_dispatch_poll();
+
+/**
+ * Start the downstream_dispatch worker, which asynchronously calls the message callbacks
+ * (such as MCPS_DATA_indication) as they are received. These callbacks will be triggered
+ * from a separate posix thread. Appropriate pthread locking should be used by the application
+ * or else the application logic could suffer from threading related issues.
+ *
+ * This should not be used in conjunction with ca821x_util_dispatch_poll. Use
+ * ca821x_util_dispatch_poll if you don't want to deal with pthreads, at the expense of
+ * having to poll a function in the application.
+ *
+ * @returns status
+ * @retval CA_ERROR_ALREADY Downstream dispatch worker already running.
+ * @retval CA_ERROR_FAIL Failed to start thread
+ * @retval CA_ERROR_SUCCESS Success
+ */
+ca_error ca821x_util_start_downstream_dispatch_worker();
+
+/**
+ * Stop the downstream_dispatch worker, so callbacks will no longer be triggered
+ * from a separate thread.
+ *
+ * @returns status
+ * @retval CA_ERROR_ALREADY Downstream dispatch worker already stopped.
+ * @retval CA_ERROR_FAIL Failed to stop thread
+ * @retval CA_ERROR_SUCCESS Success
+ */
+ca_error ca821x_util_stop_downstream_dispatch_worker();
 
 /**
  * Registers the callback to call for any non-ca821x commands that are sent over
@@ -114,5 +145,9 @@ ca_error exchange_register_user_callback(exchange_user_callback callback, struct
  *
  */
 ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, struct ca821x_dev *pDeviceRef);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CA821X_POSIX_H

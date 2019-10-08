@@ -19,6 +19,7 @@ add_library(cascoda-bm-plat INTERFACE)
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_dummy.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_time.c
 	)
 
 target_link_libraries(cascoda-dummy

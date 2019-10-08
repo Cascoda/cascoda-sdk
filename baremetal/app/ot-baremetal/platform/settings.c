@@ -97,15 +97,16 @@ static void setSettingsFlag(uint32_t aBase, uint32_t aFlag)
 
 static void initSettings(uint32_t aBase, uint32_t aFlag)
 {
-	uint32_t address = aBase;
-	uint32_t settingsSize =
-	    BSP_FlashInfo.numPages > 1 ? (BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages) / 2 : BSP_FlashInfo.pageSize;
+	uint32_t         address    = aBase;
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	uint32_t         settingsSize =
+	    flash_info.numPages > 1 ? (flash_info.pageSize * flash_info.numPages) / 2 : flash_info.pageSize;
 
 	while (address < (aBase + settingsSize))
 	{
 		utilsFlashErasePage(address);
 		utilsFlashStatusWait(1000);
-		address += BSP_FlashInfo.pageSize;
+		address += flash_info.pageSize;
 	}
 
 	setSettingsFlag(aBase, aFlag);
@@ -113,11 +114,12 @@ static void initSettings(uint32_t aBase, uint32_t aFlag)
 
 static uint32_t swapSettingsBlock(otInstance *aInstance)
 {
-	uint32_t oldBase      = sSettingsBaseAddress;
-	uint32_t swapAddress  = oldBase;
-	uint32_t usedSize     = sSettingsUsedSize;
-	uint8_t  pageNum      = BSP_FlashInfo.numPages;
-	uint32_t settingsSize = pageNum > 1 ? BSP_FlashInfo.pageSize * pageNum / 2 : BSP_FlashInfo.pageSize;
+	uint32_t         oldBase      = sSettingsBaseAddress;
+	uint32_t         swapAddress  = oldBase;
+	uint32_t         usedSize     = sSettingsUsedSize;
+	struct FlashInfo flash_info   = BSP_GetFlashInfo();
+	uint8_t          pageNum      = flash_info.numPages;
+	uint32_t         settingsSize = pageNum > 1 ? flash_info.pageSize * pageNum / 2 : flash_info.pageSize;
 
 	(void)aInstance;
 
@@ -200,8 +202,9 @@ static otError addSetting(otInstance *   aInstance,
 		struct settingsBlock block;
 		uint8_t              data[kSettingsBlockDataSize];
 	} OT_TOOL_PACKED_END addBlock;
+	struct FlashInfo     flash_info = BSP_GetFlashInfo();
 	uint32_t             settingsSize =
-	    BSP_FlashInfo.numPages > 1 ? BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages / 2 : BSP_FlashInfo.pageSize;
+	    flash_info.numPages > 1 ? flash_info.pageSize * flash_info.numPages / 2 : flash_info.pageSize;
 
 	addBlock.block.flag = 0xff;
 	addBlock.block.key  = aKey;
@@ -243,9 +246,10 @@ exit:
 // settings API
 void otPlatSettingsInit(otInstance *aInstance)
 {
-	uint8_t  index;
-	uint32_t settingsSize =
-	    BSP_FlashInfo.numPages > 1 ? BSP_FlashInfo.pageSize * BSP_FlashInfo.numPages / 2 : BSP_FlashInfo.pageSize;
+	uint8_t          index;
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	uint32_t         settingsSize =
+	    flash_info.numPages > 1 ? flash_info.pageSize * flash_info.numPages / 2 : flash_info.pageSize;
 
 	(void)aInstance;
 

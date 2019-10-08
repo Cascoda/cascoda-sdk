@@ -1,23 +1,33 @@
 /**
- * @file tempsense_app.c
+ * @file
  * @brief Chili temperature sensing app functions for device
- * @author Wolfgang Bruchner
- * @date 14/09/15
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 #include <inttypes.h>
 #include <stdio.h>
@@ -52,11 +62,6 @@ static u32_t APP_DevTimeout = 0; /* device timeout */
 static u32_t APP_FlashSaveAddr = 0x00000000; /* flash save address */
 static void  TEMPSENSE_APP_Device_GetFlashSaveAddress(void);
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Application Handler for Sensor Device
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_Handler(struct ca821x_dev *pDeviceRef)
 {
 	if (APP_CONNECTED)
@@ -79,11 +84,6 @@ void TEMPSENSE_APP_Device_Handler(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_Device_Handler()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Application Initialisation for Sensor Device
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	APP_Handle         = 0;
@@ -101,10 +101,6 @@ void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 	/* initialise MAC PIB */
 	TEMPSENSE_APP_InitPIB(pDeviceRef);
 
-	/* enable watchdog timer for device */
-	if (APP_USE_WATCHDOG)
-		BSP_WatchdogEnable(1000 * APP_TIMEOUTINTERVALL);
-
 	/* get address of first free flash entry */
 	if (APP_DEFAULT_PDN_MODE == PDM_DPD)
 	{
@@ -116,11 +112,6 @@ void TEMPSENSE_APP_Device_Initialise(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_Device_Initialise()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Get Device LongAddress from Dataflash
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_GetLongAddress(void)
 {
 	u32_t dsaved;
@@ -133,11 +124,6 @@ void TEMPSENSE_APP_Device_GetLongAddress(void)
 	APP_LongAddress[0] = LS0_BYTE(dsaved);
 } // End of TEMPSENSE_APP_Device_GetLongAddress()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Device Association Procedure
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_Start(struct ca821x_dev *pDeviceRef)
 {
 	u8_t status;
@@ -166,11 +152,6 @@ exit:
 
 } // End of TEMPSENSE_APP_Device_Start()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Device Process incoming Scan Confirm
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_ProcessScanCnf(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct FullAddr       CoordAdd;
@@ -256,11 +237,6 @@ exit:
 
 } // End of TEMPSENSE_APP_Device_ProcessScanCnf()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Device Process incoming Data Indications
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_ProcessAssociateCnf(struct MLME_ASSOCIATE_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	/* ignore if already connected */
@@ -290,11 +266,6 @@ void TEMPSENSE_APP_Device_ProcessAssociateCnf(struct MLME_ASSOCIATE_confirm_pset
 
 } // End of TEMPSENSE_APP_Device_ProcessAssociateCnf()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Device Process incoming Data Indications
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	struct FullAddr CoordFAdd;
@@ -376,11 +347,6 @@ exit:
 
 } // End of TEMPSENSE_APP_Device_ProcessDataInd()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Device Process incoming Data Confirms
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (params->Status != MAC_SUCCESS)
@@ -431,11 +397,6 @@ exit:
 
 } // End of TEMPSENSE_APP_Device_ProcessDataCnf()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Start exchanging Data with Coordinator
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_ExchangeData(struct ca821x_dev *pDeviceRef)
 {
 	u8_t            msdu[6];
@@ -487,11 +448,6 @@ void TEMPSENSE_APP_Device_ExchangeData(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_Device_ExchangeData()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Device Timeout Check
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_CheckTimeout(struct ca821x_dev *pDeviceRef)
 {
 	u32_t tnow;
@@ -518,11 +474,6 @@ void TEMPSENSE_APP_Device_CheckTimeout(struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_APP_Device_CheckTimeout()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Device prepare and enter sleep mode (and wake-up)
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 {
 	u8_t  rxidle;
@@ -566,20 +517,6 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 	/* after wakeup */
 	APP_DevTimeout = TIME_ReadAbsoluteTime();
 
-	/* watchdog used ? */
-	if (APP_USE_WATCHDOG)
-	{
-		if (BSP_IsWatchdogTriggered())
-		{
-#if APP_USE_DEBUG
-			APP_Debug_SetAppState(0xDA);
-			APP_Debug_Error(0x08);
-#endif /* APP_USE_DEBUG */
-			EVBME_CAX_Restart(pDeviceRef);
-		}
-		BSP_WatchdogReset(1000 * APP_TIMEOUTINTERVALL);
-	}
-
 	/* re-initialise MAC PIB if necessary */
 	if ((APP_DEFAULT_PDN_MODE == PDM_POWEROFF) || (APP_DEFAULT_PDN_MODE == PDM_POWERDOWN))
 	{
@@ -595,11 +532,12 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 {
-	u32_t add;
-	u32_t buffer;
+	u32_t            add;
+	u32_t            buffer;
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
 
 	/* look for first free entry */
-	for (add = 0; add < (BSP_FlashInfo.numPages * BSP_FlashInfo.pageSize); add += 8)
+	for (add = 0; add < (flash_info.numPages * flash_info.pageSize); add += 8)
 	{
 		BSP_ReadDataFlash(add, &buffer, 1);
 		if (buffer & 0x80000000)
@@ -610,24 +548,20 @@ static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Device save state to flash
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 {
 	u32_t buffer[2];
 	u32_t i;
 
 	BSP_ReadDataFlash(0, &buffer[0], 1);
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
 
 	/* erase next page if last address has been reached */
-	for (i = 1; i <= BSP_FlashInfo.numPages; ++i)
+	for (i = 1; i <= flash_info.numPages; ++i)
 	{
-		if (APP_FlashSaveAddr == (i * BSP_FlashInfo.pageSize - 8))
+		if (APP_FlashSaveAddr == (i * flash_info.pageSize - 8))
 		{
-			if (i == BSP_FlashInfo.numPages)
+			if (i == flash_info.numPages)
 			{
 				/* erase page 0 */
 				BSP_EraseDataFlashPage(0);
@@ -635,7 +569,7 @@ void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 			else
 			{
 				/* erase next page */
-				BSP_EraseDataFlashPage(i * BSP_FlashInfo.pageSize);
+				BSP_EraseDataFlashPage(i * flash_info.pageSize);
 			}
 		}
 	}
@@ -660,11 +594,6 @@ void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 	BSP_WriteDataFlashInitial(APP_FlashSaveAddr, buffer, 2);
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE App. Device restore state from flash
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 {
 	u32_t add;
@@ -675,9 +604,10 @@ void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 
 	/* get address of first free flash entry */
 	TEMPSENSE_APP_Device_GetFlashSaveAddress();
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
 
 	if (APP_FlashSaveAddr == 0)
-		add = ((BSP_FlashInfo.numPages * BSP_FlashInfo.pageSize) - 8);
+		add = ((flash_info.numPages * flash_info.pageSize) - 8);
 	else
 		add = APP_FlashSaveAddr - 8;
 
@@ -693,10 +623,10 @@ void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 	/* data integrity check */
 	if ((APP_Channel < 11) || (APP_Channel > 26))
 	{
-		for (i = 0; i < BSP_FlashInfo.numPages; ++i)
+		for (i = 0; i < flash_info.numPages; ++i)
 		{
 			/* erase all pages */
-			BSP_EraseDataFlashPage(i * BSP_FlashInfo.pageSize);
+			BSP_EraseDataFlashPage(i * flash_info.pageSize);
 		}
 		TEMPSENSE_APP_Initialise(pDeviceRef);
 		return;

@@ -622,6 +622,7 @@ void CLK_DisableXtalRC(uint32_t u32ClkMask)
   *             - \ref SDH0_MODULE
   *             - \ref CRC_MODULE
   *             - \ref CRPT_MODULE
+  *             - \ref FMCIDLE_MODULE
   *             - \ref USBH_MODULE
   *             - \ref WDT_MODULE
   *             - \ref WWDT_MODULE
@@ -691,6 +692,7 @@ void CLK_EnableModuleClock(uint32_t u32ModuleIdx)
   *             - \ref SDH0_MODULE
   *             - \ref CRC_MODULE
   *             - \ref CRPT_MODULE
+  *             - \ref FMCIDLE_MODULE
   *             - \ref USBH_MODULE
   *             - \ref WDT_MODULE
   *             - \ref WWDT_MODULE
@@ -989,7 +991,7 @@ void CLK_DisableSysTick(void)
 
 /**
   * @brief      Power-down mode selected
-  * @param[in]  u32powerdown_mode is power down mode index. Including :
+  * @param[in]  u32PDMode is power down mode index. Including :
   *             - \ref CLK_PMUCTL_PDMSEL_PD
   *             - \ref CLK_PMUCTL_PDMSEL_LLPD
   *             - \ref CLK_PMUCTL_PDMSEL_FWPD
@@ -999,9 +1001,9 @@ void CLK_DisableSysTick(void)
   * @return     None
   * @details    This function is used to set power-down mode.
   */
-void CLK_SetPowerDownMode(uint32_t u32powerdown_mode)
+void CLK_SetPowerDownMode(uint32_t u32PDMode)
 {
-    CLK->PMUCTL = (CLK->PMUCTL & (~CLK_PMUCTL_PDMSEL_Msk)) | (u32powerdown_mode);
+    CLK->PMUCTL = (CLK->PMUCTL & (~CLK_PMUCTL_PDMSEL_Msk)) | (u32PDMode);
 }
 
 /**

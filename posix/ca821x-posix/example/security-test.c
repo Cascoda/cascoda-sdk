@@ -99,13 +99,13 @@ static void quit(int sig)
 	exit(0);
 }
 
-static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
+static ca_error driverErrorCallback(ca_error error, struct ca821x_dev *pDeviceRef)
 {
 	struct inst_priv *priv          = pDeviceRef->context;
 	pthread_mutex_t * confirm_mutex = &(priv->confirm_mutex);
 	pthread_cond_t *  confirm_cond  = &(priv->confirm_cond);
 
-	printf(COLOR_SET(RED, "DRIVER FAILED FOR %x WITH ERROR %d") "\n\r", priv->mAddress, error_number);
+	printf(COLOR_SET(RED, "DRIVER FAILED FOR %x WITH ERROR %d") "\n\r", priv->mAddress, (int)error);
 	printf(COLOR_SET(BLUE, "Attempting restart...") "\n\r");
 
 	initInst(priv);
@@ -117,10 +117,10 @@ static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
 	pthread_cond_broadcast(confirm_cond);
 	pthread_mutex_unlock(confirm_mutex);
 
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
-int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	struct inst_priv *priv = pDeviceRef->context;
 
@@ -129,11 +129,11 @@ int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDevic
 		if (strstr((char *)(buf + 2), "dispatching on SPI") != NULL)
 		{
 			//spam
-			return 1;
+			return CA_ERROR_SUCCESS;
 		}
 
 		fprintf(stderr, "IN %04x: %.*s\n", priv->mAddress, (int)(len - 2), buf + 2);
-		return 1;
+		return CA_ERROR_SUCCESS;
 	}
 	else if (buf[0] == 0xA1)
 	{
@@ -163,7 +163,7 @@ int handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDevic
 
 		pthread_mutex_unlock(&out_mutex);
 	}
-	return 0;
+	return CA_ERROR_SUCCESS;
 }
 
 static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef) //Async
@@ -501,6 +501,7 @@ int main(int argc, char *argv[])
 		pDeviceRef->callbacks.MLME_COMM_STATUS_indication = &handleCommStatusIndication;
 		pDeviceRef->callbacks.generic_dispatch            = &handleGenericDispatchFrame;
 		exchange_register_user_callback(&handleUserCallback, pDeviceRef);
+		ca821x_util_start_downstream_dispatch_worker();
 
 		initInst(cur);
 		printf("Initialised. %d\r\n", i);

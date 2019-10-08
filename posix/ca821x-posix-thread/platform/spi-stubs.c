@@ -44,7 +44,7 @@ otError otPlatSpiSlaveEnable(otPlatSpiSlaveTransactionCompleteCallback aCallback
 	(void)aProcessCallback;
 	(void)aContext;
 
-	fprintf(stderr, "\nNo SPI support for posix platform.");
+	ca_log_crit("No SPI support for posix platform.");
 	exit(0);
 
 	return OT_ERROR_NOT_IMPLEMENTED;

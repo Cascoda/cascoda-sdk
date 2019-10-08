@@ -33,11 +33,11 @@
 
 #ifndef TXRX_LED_TX
 /// Pin to be used for the transmit LED
-#define TXRX_LED_TX BSP_ModuleSpecialPins.LED_GREEN
+#define TXRX_LED_TX BSP_GetModuleSpecialPins().LED_GREEN
 #endif
 #ifndef TXRX_LED_RX
 /// Pin to be used for the receive LED
-#define TXRX_LED_RX BSP_ModuleSpecialPins.LED_RED
+#define TXRX_LED_RX BSP_GetModuleSpecialPins().LED_RED
 #endif
 #ifndef TXRX_LED_DECAY_MS
 /// LED decay time so flashes are visible

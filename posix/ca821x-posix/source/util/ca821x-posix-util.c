@@ -41,17 +41,21 @@ ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler err
 	error     = ca821x_api_init(pDeviceRef);
 	if (error)
 		goto exit;
-
+#ifdef _WIN32
+	error = usb_exchange_init_withhandler(errorHandler, pDeviceRef);
+#else
 	error = kernel_exchange_init_withhandler(errorHandler, pDeviceRef);
+
 	if (error)
 	{
 		error = uart_exchange_init_withhandler(errorHandler, pDeviceRef);
 	}
+
 	if (error)
 	{
 		error = usb_exchange_init_withhandler(errorHandler, pDeviceRef);
 	}
-
+#endif
 exit:
 	return error;
 }
@@ -65,12 +69,18 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef)
 
 	switch (base->exchange_type)
 	{
+#ifdef _WIN32
+	case ca821x_exchange_kernel:
+	case ca821x_exchange_uart:
+		break;
+#else
 	case ca821x_exchange_kernel:
 		kernel_exchange_deinit(pDeviceRef);
 		break;
 	case ca821x_exchange_uart:
 		uart_exchange_deinit(pDeviceRef);
 		break;
+#endif
 	case ca821x_exchange_usb:
 		usb_exchange_deinit(pDeviceRef);
 		break;
@@ -87,26 +97,22 @@ ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef)
 
 	switch (base->exchange_type)
 	{
+#ifdef _WIN32
+	case ca821x_exchange_kernel:
+	case ca821x_exchange_uart:
+		break;
+#else
 	case ca821x_exchange_kernel:
 		error = kernel_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
 	case ca821x_exchange_uart:
 		error = uart_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
+#endif
 	case ca821x_exchange_usb:
 		error = usb_exchange_reset(1, pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 		break;
 	}
 
 	return error;
-}
-
-int ca821x_util_dispatch_poll(struct ca821x_dev *pDeviceRef)
-{
-	(void)pDeviceRef;
-#if !CA821X_ASYNC_CALLBACK
-	return ca821x_run_downstream_dispatch();
-#else
-	return 0;
-#endif
 }

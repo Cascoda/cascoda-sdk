@@ -65,7 +65,8 @@ otError utilsFlashInit(void)
  */
 uint32_t utilsFlashGetSize(void)
 {
-	return BSP_FlashInfo.numPages * BSP_FlashInfo.pageSize;
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	return flash_info.numPages * flash_info.pageSize;
 }
 
 /**

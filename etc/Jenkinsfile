@@ -1,37 +1,147 @@
+/* Tip: Use <jenkins-url>/pipeline-syntax to help write new command snippets */
+
 pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      parallel {
-        stage('Chili2') {
-          steps {
-            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
-            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
-            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=ON', steps: [[args: '-j10']])
-            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili2', cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=OFF', steps: [[args: '-j10']])
-          }
-        }
-        stage('Chili') {
-          steps {
-            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-chili', cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
-            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-chili', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
-          }
-        }
-        stage('Posix') {
-          steps {
-            cmakeBuild(cleanBuild: true, installation: 'InSearchPath', buildDir: 'build-posix', cmakeArgs: '-DCASCODA_CA_VER=8210', steps: [[args: '-j10']])
-            ctest(installation: 'InSearchPath', arguments: '--output-on-failure', workingDir: 'build-posix')
-            cmakeBuild(installation: 'InSearchPath', buildDir: 'build-posix', cmakeArgs: '-DCASCODA_CA_VER=8211', steps: [[args: '-j10']])
-            ctest(installation: 'InSearchPath', arguments: '--output-on-failure', workingDir: 'build-posix')
-          }
-        }
-      }
-    }
-    stage('PostBuild') {
-      steps {
-        publishIssues issues: [scanForIssues(tool: [$class: 'Gcc4'])]
-        echo 'Done'
-      }
-    }
-  }
+	agent any
+	stages {
+		/** Build Stage
+		 *  Compile for all major platforms in various configurations & run unit tests
+		 */
+		stage('Build') {
+			parallel {
+				stage('Chili2') {
+					steps {
+						/* Build for CA8210 */
+						cmakeBuild(
+							cleanBuild: true,
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210',
+							steps: [[args: '-j10 -O']]
+						)
+
+						/* Build for CA8211*/
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCASCODA_CA_VER=8211',
+							steps: [[args: '-j10 -O']]
+						)
+
+						/* Build with UART instead of USB */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=ON',
+							steps: [[args: '-j10 -O']]
+						)
+
+						/* Build with no comms interface */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=OFF',
+							steps: [[args: '-j10 -O']]
+						)
+					}
+				}
+
+				stage('Chili') {
+					steps {
+						/* Build for CA8210 */
+						cmakeBuild(
+							cleanBuild: true,
+							installation: 'InSearchPath',
+							buildDir: 'build-chili',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210',
+							steps: [[args: '-j10 -O']]
+						)
+
+						/* Build for CA8211 */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili',
+							cmakeArgs: '-DCASCODA_CA_VER=8211',
+							steps: [[args: '-j10 -O']]
+						)
+					}
+				}
+
+				stage('Posix') {
+					steps {
+						/* Build and test for CA8210 */
+						cmakeBuild(
+							cleanBuild: true,
+							installation: 'InSearchPath',
+							buildDir: 'build-posix',
+							cmakeArgs: '-DCASCODA_CA_VER=8210',
+							steps: [[args: '-j10 -O']]
+						)
+						ctest(
+							installation: 'InSearchPath',
+							arguments: '--output-on-failure',
+							workingDir: 'build-posix'
+						)
+
+						/* Build for CA8211 */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-posix',
+							cmakeArgs: '-DCASCODA_CA_VER=8211',
+							steps: [[args: '-j10 -O']]
+						)
+						ctest(
+							installation: 'InSearchPath',
+							arguments: '--output-on-failure',
+							workingDir: 'build-posix'
+						)
+
+						/* Build docs */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-posix',
+							cmakeArgs: '-DCASCODA_EXCLUDE_DOXYGEN="*/build-posix/* */build-chili/* */build-chili2/* */build-raspberrypi/*"',
+							steps: [[args: 'docs']]
+						)
+					}
+				}
+
+				stage('Raspberry Pi') {
+					steps {
+						/* Build for CA8211 */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-raspberrypi',
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake',
+							steps: [[args: '-j10 -O']]
+						)
+					}
+				}
+			}
+		}
+
+		/** PostBuild Stage
+		 *  Process the generated artifacts.
+		 */
+		stage('PostBuild') {
+			steps {
+				/* Read the logs for GCC Issues & publish to tool*/
+				recordIssues(tools: [gcc()])
+
+				/* Read the logs for doxygen Issues & publish to tool*/
+				recordIssues(tools: [doxygen(pattern: '**/doxyerr.txt')])
+
+				/* Publish the html docs to jenkins */
+				publishHTML(
+					target: [
+						reportName: "Doxygen",
+						reportDir: "build-posix/docs/docs/html",
+						reportFiles: "index.html",
+						keepAll: false,
+						alwaysLinkToLastBuild: false,
+						allowMissing: false
+					]
+				)
+			}
+		}
+	}
 }

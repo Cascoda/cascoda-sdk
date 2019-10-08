@@ -1,23 +1,33 @@
 /**
- * @file tempsense_evbme.c
+ * @file
  * @brief Chili temperature sensing EVBME functions
- * @author Wolfgang Bruchner
- * @date 14/09/15
- *//*
- * Copyright (C) 2016  Cascoda, Ltd.
+ */
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
 #include "cascoda-bm/cascoda_evbme.h"
@@ -35,34 +45,30 @@ static int TEMPSENSE_mode_button_pressed(void);
 static int TEMPSENSE_usb_present_changed(void);
 static int TEMPSENSE_reinitialise(struct ca821x_dev *pDeviceRef);
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Initialise Chili module for temperature sensing app
- *******************************************************************************
- * \param status - EVBME status
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
+	wakeup_reason wkup;
+
 	app_reinitialise = TEMPSENSE_reinitialise;
 
 	/* register USB_PRESENT */
-	BSP_ModuleRegisterGPIOInput(BSP_ModuleSpecialPins.USB_PRESENT,
-	                            MODULE_PIN_PULLUP_OFF,
-	                            MODULE_PIN_DEBOUNCE_ON,
-	                            MODULE_PIN_IRQ_BOTH,
-	                            TEMPSENSE_usb_present_changed);
+	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){special_pins.USB_PRESENT,
+	                                                      MODULE_PIN_PULLUP_OFF,
+	                                                      MODULE_PIN_DEBOUNCE_ON,
+	                                                      MODULE_PIN_IRQ_BOTH,
+	                                                      TEMPSENSE_usb_present_changed});
 
 	/* register SWITCH */
-	BSP_ModuleRegisterGPIOInput(BSP_ModuleSpecialPins.SWITCH,
-	                            MODULE_PIN_PULLUP_OFF,
-	                            MODULE_PIN_DEBOUNCE_ON,
-	                            MODULE_PIN_IRQ_FALL,
-	                            TEMPSENSE_mode_button_pressed);
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){special_pins.SWITCH,
+	                                                      MODULE_PIN_PULLUP_OFF,
+	                                                      MODULE_PIN_DEBOUNCE_ON,
+	                                                      MODULE_PIN_IRQ_FALL,
+	                                                      TEMPSENSE_mode_button_pressed});
 	/* register LED_G */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_GREEN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutput(special_pins.LED_GREEN, MODULE_PIN_TYPE_LED);
 	/* register LED_R */
-	BSP_ModuleRegisterGPIOOutput(BSP_ModuleSpecialPins.LED_RED, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutput(special_pins.LED_RED, MODULE_PIN_TYPE_LED);
 
 	if (status == CA_ERROR_FAIL)
 	{
@@ -81,7 +87,8 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	else
 		APP_STATE = APP_STATE_new = APP_ST_DEVICE;
 
-	if (BSP_GetWakeupReason() == WAKEUP_DEEP_POWERDOWN)
+	wkup = BSP_GetWakeupReason();
+	if ((wkup == WAKEUP_DEEP_POWERDOWN) || (wkup == WAKEUP_RTCALARM))
 	{
 		TEMPSENSE_APP_Device_RestoreStateFromFlash(pDeviceRef);
 		TEMPSENSE_RegisterCallbacks(pDeviceRef);
@@ -98,22 +105,12 @@ void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 
 } // End of TEMPSENSE_Initialise()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Chili Event Handler in Main Polling Loop
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_Handler(struct ca821x_dev *pDeviceRef)
 {
 	/* call application handler */
 	TEMPSENSE_APP_Handler(pDeviceRef);
 } // End of TEMPSENSE_Handler()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief TEMPSENSE Dispatch Branch (UpStream, Serial)
- *******************************************************************************
- ******************************************************************************/
 int TEMPSENSE_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
 	int ret;
@@ -160,9 +157,10 @@ static int TEMPSENSE_mode_button_pressed(void)
  ******************************************************************************/
 static int TEMPSENSE_usb_present_changed(void)
 {
-	u8_t pinval;
+	u8_t                     pinval;
+	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
 
-	BSP_ModuleSenseGPIOPin(BSP_ModuleSpecialPins.USB_PRESENT, &pinval);
+	BSP_ModuleSenseGPIOPin(special_pins.USB_PRESENT, &pinval);
 	if (pinval)
 		BSP_EnableUSB();
 	else
@@ -332,11 +330,6 @@ static ca_error TEMPSENSE_APP_DEV_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pse
 	return CA_ERROR_SUCCESS;
 } // End of TEMPSENSE_APP_DEV_MLME_SCAN_confirm()
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Dynamically Register Callbacks for TEMPSENSE
- *******************************************************************************
- ******************************************************************************/
 void TEMPSENSE_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 {
 	if (APP_STATE == APP_ST_COORDINATOR)
