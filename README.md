@@ -101,6 +101,8 @@ Useful CMake target libraries to include:
 | openthread-cli-mtd | OpenThread CLI library for MTDs |
 | openthread-ncp-ftd | OpenThread NCP library for FTDs |
 | openthread-ncp-mtd | OpenThread NCP library for MTDs |
+| freertos-default-secure | The basic FreeRTOS & TrustZone target, containing FreeRTOS secure code and the secure parts of the BSP |
+| freertos | The non-secure FreeRTOS code, meant to be used with `freertos-default-secure` |
 
 ## Useful Links
 

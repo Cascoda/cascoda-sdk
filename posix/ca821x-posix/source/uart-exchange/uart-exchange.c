@@ -50,20 +50,24 @@
 #define UART_MAX_DEVICES 5
 #endif
 
+/** Private data for the UART Exchange */
 struct uart_exchange_priv
 {
-	struct ca821x_exchange_base base;
-	int                         fd;
-	uint8_t                     tx_stalled;
-	uint8_t                     buf[MAX_BUF_SIZE];
-	size_t                      offset;
+	struct ca821x_exchange_base base;       //!< Exchange base structure
+	int                         fd;         //!< UART device file descriptor
+	uint8_t                     tx_stalled; //!< True if transmissions are stalled waiting for ack
+	uint8_t         buf[MAX_BUF_SIZE];      //!< Private buffer for buffering read data before full packet is received
+	size_t          offset;                 //!< Current offset for reading into buf
+	struct timespec prev_send;              //!< Time that previous message was sent (for timing out ack)
+	int             dummyPipe[2];           //!< Dummy pipe to release from select() call when write is due
 };
 
+/** struct for representing the contents of CASCODA_UART environment variable */
 struct uart_device
 {
-	struct uart_device *next;
-	const char *        device;
-	int                 baud;
+	struct uart_device *next;   //!< Next device in linked list
+	const char *        device; //!< path to uart device
+	int                 baud;   //!< Baudrate to be used for uart comms
 };
 
 static struct ca821x_dev * s_devs[UART_MAX_DEVICES] = {0};
@@ -72,8 +76,13 @@ static int                 s_initialised            = 0;
 static char *              s_CASCODA_UART           = NULL;
 static struct uart_device *s_uart_device_head       = NULL;
 
+//! Start of frame delimiter
 static const uint8_t UART_SOM = 0xDE;
+//! UART ACK command ID
 static const uint8_t UART_ACK = 0xAA;
+
+//! Timeout for waiting for ack = 2 seconds
+static const struct timespec ack_timeout = {2, 0};
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
@@ -86,6 +95,77 @@ static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 		abort();
 }
 
+/**
+ * Subtract one timespec from another.
+ * @param t1 timespec 1
+ * @param t2 timespec 2
+ * @return The difference between t1 and t2
+ */
+static struct timespec time_sub(const struct timespec *t1, const struct timespec *t2)
+{
+	struct timespec curTime = {t1->tv_sec, t1->tv_nsec};
+	//Get time difference
+	curTime.tv_sec -= t2->tv_sec;
+	curTime.tv_nsec -= t2->tv_nsec;
+
+	// Normalize the struct in case the subtraction made negative nsec
+	if (curTime.tv_nsec < 0)
+	{
+		curTime.tv_nsec += 1000000000;
+		curTime.tv_sec -= 1;
+	}
+
+	return curTime;
+}
+
+/**
+ * Get the amount of time that has passed since the last transmission.
+ * @param uart exchange private state
+ * @return the time that has passed since last UART transmission.
+ */
+static struct timespec get_time_passed(const struct uart_exchange_priv *priv)
+{
+	struct timespec curTime;
+	if (!clock_gettime(CLOCK_REALTIME, &curTime))
+	{
+		curTime = time_sub(&curTime, &priv->prev_send);
+	}
+	else
+	{
+		memset(&curTime, 0, sizeof(curTime));
+	}
+	return curTime;
+}
+
+/**
+ * Compare two timespec structures
+ *
+ * @param t1 first timespec
+ * @param t2 second timespec
+ * @return 0 if equal, 1 if t1 > t2, -1 if t1 < t2
+ */
+static int time_cmp(const struct timespec *t1, const struct timespec *t2)
+{
+	if (t1->tv_sec == t2->tv_sec && t1->tv_nsec == t2->tv_nsec)
+		return 0;
+
+	if (t1->tv_sec < t2->tv_sec)
+		return -1;
+	if (t1->tv_sec > t2->tv_sec)
+		return 1;
+	if (t1->tv_nsec < t2->tv_nsec)
+		return -1;
+	if (t1->tv_nsec > t2->tv_nsec)
+		return 1;
+
+	return 0;
+}
+
+/**
+ * Send a UART ACK packet over the interface
+ * @param fd The UART device to use to send the ACK
+ * @return ca_error value
+ */
 static ca_error send_uart_ack(int fd)
 {
 	ca_error error = CA_ERROR_SUCCESS;
@@ -108,16 +188,42 @@ static ca_error send_uart_ack(int fd)
 	return error;
 }
 
-ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
+static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
+	fd_set                     rx_block_fd_set;
+	struct timespec            timeout;
+	int                        nfds;
 	ssize_t                    len;
-	int                        error  = 0;
-	uint8_t *                  som    = priv->buf;
-	uint8_t *                  cmdid  = priv->buf + 1;
-	uint8_t *                  cmdlen = priv->buf + 2;
+	int                        error     = 0;
+	uint8_t *                  som       = priv->buf;
+	uint8_t *                  cmdid     = priv->buf + 1;
+	uint8_t *                  cmdlen    = priv->buf + 2;
+	uint8_t                    dummybyte = 0;
 
 	assert_uart_exchange(pDeviceRef);
+
+	//Initialise fd set for blocking select()
+	FD_ZERO(&rx_block_fd_set);
+	FD_SET(priv->fd, &rx_block_fd_set);
+	FD_SET(priv->dummyPipe[0], &rx_block_fd_set);
+	nfds = priv->fd > priv->dummyPipe[0] ? priv->fd : priv->dummyPipe[0];
+	nfds = nfds + 1;
+
+	//Set up timeout, taking ack timeout into account
+	if (priv->tx_stalled)
+	{
+		timeout = get_time_passed(priv);
+		timeout = time_sub(&ack_timeout, &timeout);
+	}
+	else
+	{
+		timeout = ack_timeout;
+	}
+
+	//Block until activity required, then read potential dummy byte
+	pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
+	read(priv->dummyPipe[0], &dummybyte, 1);
 
 	//Read from the device if possible
 	len = read(priv->fd, priv->buf + priv->offset, sizeof(priv->buf) - priv->offset);
@@ -199,14 +305,32 @@ exit:
 	return len;
 }
 
-ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
+static void unblock_read(struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
+
+	assert_uart_exchange(pDeviceRef);
+
+	const uint8_t dummybyte = 0;
+	write(priv->dummyPipe[1], &dummybyte, 1);
+}
+
+static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
+{
+	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
+
+	// Check ack timeout
+	if (priv->tx_stalled)
+	{
+		struct timespec timeDiff = get_time_passed(priv);
+		if (time_cmp(&timeDiff, &ack_timeout) > 0)
+			priv->tx_stalled = 0;
+	}
 
 	return priv->tx_stalled ? CA_ERROR_BUSY : CA_ERROR_SUCCESS;
 }
 
-ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
+static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	int                        rval  = 0;
 	ca_error                   error = CA_ERROR_SUCCESS;
@@ -247,11 +371,12 @@ ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pD
 	{
 		//Wait for ack
 		priv->tx_stalled = 1;
+		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
 	}
 	return error;
 }
 
-void flush_unread_uart(struct ca821x_dev *pDeviceRef)
+static void flush_unread_uart(struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
 	uint8_t                    junk_buf[100];
@@ -466,10 +591,11 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 	priv                          = pDeviceRef->exchange_context;
 	priv->base.exchange_type      = ca821x_exchange_uart;
 	priv->base.error_callback     = callback;
-	priv->base.write_func         = uart_try_write;
-	priv->base.write_isready_func = uart_write_isready;
-	priv->base.read_func          = uart_try_read;
-	priv->base.flush_func         = flush_unread_uart;
+	priv->base.write_func         = &uart_try_write;
+	priv->base.write_isready_func = &uart_write_isready;
+	priv->base.signal_func        = &unblock_read;
+	priv->base.read_func          = &uart_try_read;
+	priv->base.flush_func         = &flush_unread_uart;
 	priv->fd                      = -1;
 	priv->offset                  = 0;
 
@@ -500,6 +626,10 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
+
+	//Initialise the dummy pipe for releasing from select()
+	pipe(priv->dummyPipe);
+	fcntl(priv->dummyPipe[0], F_SETFL, O_NONBLOCK);
 
 	error = init_generic(pDeviceRef);
 

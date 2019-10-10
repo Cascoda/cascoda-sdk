@@ -62,7 +62,6 @@
 static int             DriverFileDescriptor, DriverFDPipe[2];
 static pthread_mutex_t tx_mutex      = PTHREAD_MUTEX_INITIALIZER;
 static int             s_initialised = 0;
-static fd_set          rx_block_fd_set;
 
 /******************************************************************************/
 
@@ -130,6 +129,7 @@ ssize_t kernel_exchange_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 
 	if (!peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
 	{
+		fd_set  rx_block_fd_set;
 		int     nfds;
 		uint8_t dummybyte = 0;
 
