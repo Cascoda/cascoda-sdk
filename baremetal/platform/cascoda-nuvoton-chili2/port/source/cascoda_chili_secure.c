@@ -1110,7 +1110,7 @@ __NONSECURE_ENTRY void CHILI_SystemReInit()
 	NVIC_SetPriority(TMR3_IRQn, 0);
 	NVIC_SetPriority(GPA_IRQn, 1);
 	NVIC_SetPriority(GPB_IRQn, 1);
-	NVIC_SetPriority(GPC_IRQn, 1);
+	NVIC_SetPriority(GPC_IRQn, 3); //Set to 3 so other interrupts can pre-empt this slow one
 	NVIC_SetPriority(GPD_IRQn, 1);
 	NVIC_SetPriority(GPE_IRQn, 1);
 	NVIC_SetPriority(GPF_IRQn, 1);

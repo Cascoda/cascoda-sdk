@@ -83,6 +83,8 @@ static const uint8_t UART_ACK = 0xAA;
 
 //! Timeout for waiting for ack = 2 seconds
 static const struct timespec ack_timeout = {2, 0};
+//! Timeout for posix select call = 0.5 seconds
+static const struct timespec select_timeout = {0, 5000000000L};
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
@@ -111,7 +113,7 @@ static struct timespec time_sub(const struct timespec *t1, const struct timespec
 	// Normalize the struct in case the subtraction made negative nsec
 	if (curTime.tv_nsec < 0)
 	{
-		curTime.tv_nsec += 1000000000;
+		curTime.tv_nsec += 1000000000L;
 		curTime.tv_sec -= 1;
 	}
 
@@ -210,15 +212,17 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	nfds = priv->fd > priv->dummyPipe[0] ? priv->fd : priv->dummyPipe[0];
 	nfds = nfds + 1;
 
-	//Set up timeout, taking ack timeout into account
+	//Set up timeout, taking ack timeout into account. Max block time = select_timeout
 	if (priv->tx_stalled)
 	{
 		timeout = get_time_passed(priv);
 		timeout = time_sub(&ack_timeout, &timeout);
+		if (time_cmp(&timeout, &select_timeout) > 0)
+			timeout = select_timeout;
 	}
 	else
 	{
-		timeout = ack_timeout;
+		timeout = select_timeout;
 	}
 
 	//Block until activity required, then read potential dummy byte

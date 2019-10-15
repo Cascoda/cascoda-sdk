@@ -215,7 +215,6 @@ static otError sendServerDiscover(void)
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr    = coapDestinationIp;
 	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
-	messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleServerDiscoverResponse, NULL);
@@ -279,7 +278,6 @@ static otError sendSensorData(void)
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr    = serverIp;
 	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
-	messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 
 	SENSORIF_I2C_Init();
 	temperature = 10 * SIF_SI7021_ReadTemperature();
