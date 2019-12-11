@@ -75,7 +75,12 @@ if(NOT openthread_POPULATED)
 endif()
 
 # get the prefix from gcc (openthread seems to be pretty much gcc/clang only)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(CASCODA_MACHINE_NAME)
+	set(MACHINE_NAME ${CASCODA_MACHINE_NAME})
+else()
+	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+message("Target machine: ${MACHINE_NAME}")
 
 # get an uppercase version of the build type, for extracting build_type specific flags
 if(CMAKE_BUILD_TYPE)
