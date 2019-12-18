@@ -140,7 +140,12 @@ static int get_next_frag(const uint8_t *buf_in, uint8_t len_in, uint8_t *frag_ou
 	return !is_last;
 }
 
-//returns 1 for non-final fragment, 0 for final
+/**
+ * Assemble received USB fragments into a receive buffer.
+ * @returns ca_error
+ * @retval 1 for non-final fragment received
+ * @retval 0 for final fragment or dropped packet
+ */
 static int assemble_frags(uint8_t *frag_in, uint8_t *buf_out, uint8_t *len_out, uint8_t *offset)
 {
 	uint8_t is_first = 0, is_last = 0, frag_len = 0;
@@ -148,7 +153,24 @@ static int assemble_frags(uint8_t *frag_in, uint8_t *buf_out, uint8_t *len_out, 
 	is_last  = !!(frag_in[0] & FRAG_LAST_MASK);
 	is_first = !!(frag_in[0] & FRAG_FIRST_MASK);
 
-	assert((is_first) == (*offset == 0));
+	if ((is_first) != (*offset == 0))
+	{
+		if (is_first)
+		{
+			// Drop previous frame and start processing this one
+			ca_log_crit("Dropped received frame: Missed 'last' packet. CmdId %x", buf_out[0]);
+			*offset  = 0;
+			*len_out = 0;
+		}
+		else
+		{
+			// Drop this frame, will be able to receive next packet
+			ca_log_crit("Dropped received frame: Missed 'first' packet.", buf_out[0]);
+			*offset  = 0;
+			*len_out = 0;
+			return 0;
+		}
+	}
 
 	memcpy(&buf_out[*offset], &frag_in[1], frag_len);
 
@@ -269,7 +291,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		reload_hid_device(pDeviceRef); //usb disconnected - attempt to grab new device
 	}
 
-	if (buf[0] == 0xF0)
+	if (buf[0] == 0xF0 && len)
 	{
 		static int ecount = 0;
 		if (ecount < 20)
