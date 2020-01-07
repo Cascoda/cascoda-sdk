@@ -165,8 +165,7 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 		goto exit;
 	}
 
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
-	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	otCoapMessageSetPayloadMarker(responseMessage);
@@ -256,8 +255,7 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 	fclose(fin);
 
 	// CoAP header
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
-	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	otCoapMessageSetPayloadMarker(responseMessage);
@@ -330,7 +328,6 @@ int main(int argc, char *argv[])
 	otThreadSetMasterKey(OT_INSTANCE, &key);
 	otLinkSetChannel(OT_INSTANCE, 23);
 	otThreadSetEnabled(OT_INSTANCE, true);
-	otThreadSetAutoStart(OT_INSTANCE, true);
 
 	registerCoapResources(OT_INSTANCE);
 

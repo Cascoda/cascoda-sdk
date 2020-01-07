@@ -1,12 +1,6 @@
 cmake_minimum_required (VERSION 3.12)
 project (ot-sed-freertos)
 
-if (NOT CMAKE_HOST_UNIX)
-	message(WARNING "Building Openthread on windows is a challenge. Contributions welcome but it's probably easier to switch to Linux.")
-	message(WARNING "Skipping openthread build due to non-unix build system!")
-	return()
-endif()
-
 if(NOT TARGET freertos-default-secure-implib)
 	return()
 endif()

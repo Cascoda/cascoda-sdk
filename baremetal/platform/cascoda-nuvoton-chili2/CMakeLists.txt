@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.12)
 project (cascoda-nuvoton-chili2)
 
 # Return if not suitable for system processor
@@ -41,7 +40,7 @@ if(CASCODA_BM_USE_UART)
 		0 1 2 4 5
 		)
 
-	set(CASCODA_CHILI2_UART_BAUDRATE 4000000 CACHE STRING "The baud rate to use for UART. Max 6MHz")
+	set(CASCODA_CHILI2_UART_BAUDRATE 1000000 CACHE STRING "The baud rate to use for UART. Max 6MHz")
 	if(CASCODA_CHILI2_UART_BAUDRATE GREATER 6000000)
 		message( FATAL_ERROR "Baud rate must be under 6MHz")
 	endif()
@@ -50,7 +49,7 @@ endif()
 # Default system clock
 cascoda_dropdown(CASCODA_CHILI2_DEFAULT_FSYS
 	"The default system frequency. Minimum is FSYS_12MHZ for USB comms or UART comms > 115200."
-	FSYS_16MHZ FSYS_4MHZ FSYS_12MHZ FSYS_24MHZ FSYS_32MHZ FSYS_48MHZ FSYS_64MHZ
+	FSYS_48MHZ FSYS_4MHZ FSYS_12MHZ FSYS_16MHZ FSYS_24MHZ FSYS_32MHZ FSYS_64MHZ
 	)
 if(CASCODA_CHILI2_DEFAULT_FSYS STREQUAL "FSYS_4MHZ")
 	if((CASCODA_BM_USE_UART AND CASCODA_CHILI2_UART_BAUDRATE GREATER 115200) OR (CASCODA_BM_USE_USB))
@@ -83,6 +82,7 @@ set(CHILI2_SOURCES
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_gpio_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_uart_m2351.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_m2351.c
 	)
 

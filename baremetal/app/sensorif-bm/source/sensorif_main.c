@@ -57,6 +57,7 @@
  *******************************************************************************
  * \param buf - serial buffer to dispatch
  * \param len - length of buf
+ * \param pDeviceRef - pointer to a CA-821x Device reference struct
  *******************************************************************************
  * \return 1: consumed by driver 0: command to be sent downstream to spi
  *******************************************************************************

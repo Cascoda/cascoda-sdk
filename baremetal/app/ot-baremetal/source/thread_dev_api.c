@@ -207,12 +207,10 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 			case 0:
 				printf("THREAD STOP\n");
 				error = otThreadSetEnabled(OT_INSTANCE, false);
-				otThreadSetAutoStart(OT_INSTANCE, false);
 				break;
 			case 1:
 				printf("THREAD START\n");
 				error = otThreadSetEnabled(OT_INSTANCE, true);
-				otThreadSetAutoStart(OT_INSTANCE, true);
 				break;
 			default:
 				error = OT_ERROR_INVALID_ARGS;
@@ -302,9 +300,6 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 			default:
 				error = OT_ERROR_NOT_IMPLEMENTED;
 				break;
-			case OT_ATTR_AUTO_START:
-				error = otThreadSetAutoStart(OT_INSTANCE, (TAM.Set->AttributeValue[0] ? 1 : 0));
-				break;
 			}
 			Openthread_Confirm(error, OT_CNF_SET);
 			break;
@@ -360,10 +355,6 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 			case OT_ATTR_ROUTER_UPGRADE_THRESHOLD:
 			default:
 				error = OT_ERROR_NOT_IMPLEMENTED;
-				break;
-			case OT_ATTR_AUTO_START:
-				response.AttributeValue[0] = otThreadGetAutoStart(OT_INSTANCE);
-				Length++;
 				break;
 			}
 			response.Status = (u8_t)error;

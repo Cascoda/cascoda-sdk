@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
 project (nuvoton-vendor-lib)
 
 add_library(nuvoton-vendor-nano120 OBJECT

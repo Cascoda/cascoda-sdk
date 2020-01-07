@@ -230,6 +230,7 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize);
  * \param sleeptime_ms - sleep time [milliseconds]
  * \param use_timer0 - flag if to use timer0 (1) or not (0), 0 to wake on IRQ
  * \param dpd - flag if to enter deep-power-down without data retention
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *
  */
 void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef);
@@ -365,8 +366,6 @@ void BSP_WatchdogEnable(u32_t timeout_ms);
 
 /**
  * \brief Watchdog Reset and Restart
- *
-  * \param timeout_ms - timeout in milliseconds
  *
  */
 void BSP_WatchdogReset(void);

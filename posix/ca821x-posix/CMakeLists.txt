@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
 project (ca821x-posix)
 
 # Get required packages
@@ -82,8 +81,8 @@ if(CASCODA_RASPI_USB_WORKAROUND)
 endif()
 
 # Test app config -------------------------------------------------------------
-add_executable(example_app
-	${PROJECT_SOURCE_DIR}/example/main.c
+add_executable(spam_test
+	${PROJECT_SOURCE_DIR}/example/spam-test.c
 	)
 
 add_executable(security_test
@@ -94,14 +93,38 @@ add_executable(usb_test
 	${PROJECT_SOURCE_DIR}/example/usb-test.c
 	)
 
-target_link_libraries(example_app ca821x-api ca821x-posix)
-target_link_libraries(security_test ca821x-api ca821x-posix)
-target_link_libraries(usb_test ca821x-api ca821x-posix)
-
-# For the moment, serial-adapter is Linux-only
-if(UNIX)
-	add_executable(serial-adapter
-		${PROJECT_SOURCE_DIR}/example/serial-adapter.c
+add_executable(sniffer
+	${PROJECT_SOURCE_DIR}/example/sniffer.c
 	)
-	target_link_libraries(serial-adapter ca821x-posix)
+
+add_executable(serial-adapter)
+
+if(WIN32)
+	target_sources(serial-adapter PRIVATE ${PROJECT_SOURCE_DIR}/example/serial-adapter-windows.c)
+else()
+	target_sources(serial-adapter PRIVATE ${PROJECT_SOURCE_DIR}/example/serial-adapter.c)
 endif()
+
+target_link_libraries(spam_test ca821x-api ca821x-posix)
+target_link_libraries(security_test ca821x-api ca821x-posix)
+target_link_libraries(usb_test ca821x-api ca821x-posix m)
+target_link_libraries(sniffer ca821x-api ca821x-posix)
+target_link_libraries(serial-adapter ca821x-posix)
+
+install(
+	TARGETS
+		sniffer serial-adapter
+	COMPONENT
+		tools
+	RUNTIME DESTINATION
+		${CMAKE_INSTALL_BINDIR}
+)
+
+install(
+	TARGETS
+		spam_test security_test usb_test
+	COMPONENT
+		tests
+	RUNTIME DESTINATION
+		${CMAKE_INSTALL_BINDIR}
+)

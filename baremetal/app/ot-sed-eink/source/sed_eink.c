@@ -41,7 +41,7 @@
 		}                         \
 	} while (0)
 
-/******************************************************************************
+/******************************************************************************/
 /****** Power Consumption Configuration                                  ******/
 /******************************************************************************/
 // How long to wait between discover request retries
@@ -79,7 +79,7 @@ static int          timeoutCount = 0;
 static otIp6Address serverIp;
 static uint32_t     appNextSendTime = 5000;
 
-/******************************************************************************
+/******************************************************************************/
 /****** FreeRTOS-related globals                                         ******/
 /******************************************************************************/
 TaskHandle_t      CommsTaskHandle;
@@ -224,8 +224,8 @@ static otError sendServerDiscover(void)
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = coapDestinationIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = coapDestinationIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleServerDiscoverResponse, NULL);
@@ -329,7 +329,7 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 
 	// Should not get here
 	for (;;)
-	;
+		;
 }
 
 static otError sendImageRequest(void)
@@ -355,8 +355,8 @@ static otError sendImageRequest(void)
 	SuccessOrExit(error = otCoapMessageAppendUriQueryOption(message, uriCascodaQueryOption));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = serverIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = serverIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleImageResponse, NULL);
@@ -559,4 +559,3 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
 	 * configTIMER_TASK_STACK_DEPTH is specified in words, not bytes. */
 	*pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
 }
-/*-----------------------------------------------------------*/

@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.12)
 project (cascoda-dummy-posix)
 
 # Return if not suitable for system processor

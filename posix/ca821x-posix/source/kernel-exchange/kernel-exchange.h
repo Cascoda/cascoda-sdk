@@ -63,6 +63,7 @@ int kernel_exchange_init(struct ca821x_dev *pDeviceRef);
  * (i.e. crash gracefully or attempt to reset the ca8210)
  *
  * @param[in]  callback   Function pointer to an error-handling callback
+ * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
  *
  * @retval CA_ERROR_SUCCESS Successful initialisation
  * @retval CA_ERROR_NOT_FOUND Did not succeed
@@ -83,7 +84,7 @@ void kernel_exchange_deinit(struct ca821x_dev *pDeviceRef);
  *
  * @param[in]  resettime   The length of time (in ms) to hold the reset pin
  *                         active for. 1ms is usually a suitable value for this.
- *
+ * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
  *
  */
 int kernel_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef);

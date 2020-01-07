@@ -203,6 +203,11 @@ exit:
 	return error;
 }
 
+otError otPlatUartFlush(void)
+{
+	return OT_ERROR_NOT_IMPLEMENTED;
+}
+
 void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxFd)
 {
 	if (!s_enabled)

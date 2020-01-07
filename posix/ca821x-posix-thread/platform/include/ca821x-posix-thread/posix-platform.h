@@ -104,7 +104,7 @@ void posixPlatformAlarmInit(void);
 /**
  * This method retrieves the time remaining until the alarm fires.
  *
- * @param[out]  aTimeval  A pointer to the timeval struct.
+ * @param[out]  tv  A pointer to the timeval struct.
  *
  */
 void posixPlatformAlarmUpdateTimeout(struct timeval *tv);

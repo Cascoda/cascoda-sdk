@@ -225,9 +225,7 @@ ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
  * \brief MLME_ASSOCIATE_request according to API Spec
  *******************************************************************************
  * \param LogicalChannel - Channel Number
- * \param DstAddrMode - Destination Addressing Mode
- * \param DstPANId - Destination PAN ID
- * \param pDstAddr - Pointer to Destination Address
+ * \param DstAddr - Destination Address
  * \param CapabilityInfo - Bitmap of operational Capabilities
  * \param pSecurity - Pointer to Security Structure or NULLP
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
@@ -415,26 +413,39 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       struct SecSpec *   pBeaconSecurity,
                                       struct ca821x_dev *pDeviceRef);
 
+#if CASCODA_CA_VER == 8210
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief MLME_POLL_request/confirm according to API Spec
  *******************************************************************************
  * \param CoordAddress - Coordinator Address
- * \param Interval - Polling Interval in 0.1 Seconds Resolution
+ * \param Interval - Polling Interval in 0.1 Seconds Resolution. 0 = poll once, 0xFFFF = stop polling.
  * \param pSecurity - Pointer to Security Structure or NULLP
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return 802.15.4 status of confirm
  *******************************************************************************
  ******************************************************************************/
-ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
-#if CASCODA_CA_VER == 8210
-                                     uint8_t Interval[2], /* polling interval in 0.1 seconds res */
-                                                          /* 0 means poll once */
-                                                          /* 0xFFFF means stop polling */
-#endif
+ca_mac_status MLME_POLL_request_sync(struct FullAddr    CoordAddress,
+                                     uint8_t            Interval[2],
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef);
+#else
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_POLL_request/confirm according to API Spec
+ *******************************************************************************
+ * \param CoordAddress - Coordinator Address
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status MLME_POLL_request_sync(struct FullAddr    CoordAddress,
+                                     struct SecSpec *   pSecurity,
+                                     struct ca821x_dev *pDeviceRef);
+#endif
 
 /******************************************************************************/
 /****** HWME Downlink                                                    ******/

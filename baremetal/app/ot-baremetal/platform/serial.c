@@ -63,6 +63,11 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 	return OT_ERROR_NONE;
 }
 
+otError otPlatUartFlush(void)
+{
+	return OT_ERROR_NOT_IMPLEMENTED;
+}
+
 otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength)
 {
 	otPlatUartReceived(aBuf, aBufLength);

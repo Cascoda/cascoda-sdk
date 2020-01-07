@@ -1184,6 +1184,7 @@ ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 	return (ca_mac_status)status;
 }
 
+#if (CASCODA_CA_VER == 8210)
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Checks a data indication to ensure that its destination address
@@ -1197,7 +1198,6 @@ ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
  *         -EFAULT: Address mismatch (unix)
  *******************************************************************************
  ******************************************************************************/
-#if (CASCODA_CA_VER == 8210)
 static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, struct ca821x_dev *pDeviceRef)
 {
 	int i;
@@ -1227,6 +1227,7 @@ static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, s
 }
 #endif //(CASCODA_CA_VER == 8210)
 
+#if CASCODA_CA_VER == 8210
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Checks an associate confirm for an assigned short address
@@ -1234,7 +1235,6 @@ static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, s
  * \param *assoc_cnf - Associate confirm parameter set
  *******************************************************************************
  ******************************************************************************/
-#if CASCODA_CA_VER == 8210
 static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf, struct ca821x_dev *pDeviceRef)
 {
 	if (GETLE16(assoc_cnf->AssocShortAddress) != 0xFFFF)
@@ -1244,6 +1244,7 @@ static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf
 }
 #endif
 
+#if CASCODA_CA_VER == 8210
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Checks a scan confirm for pan descriptor entries that have a beacon
@@ -1252,7 +1253,6 @@ static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf
  * \param *scan_cnf - Scan confirm message buffer
  *******************************************************************************
  ******************************************************************************/
-#if CASCODA_CA_VER == 8210
 static void verify_scancnf_results(struct MAC_Message *scan_cnf, struct ca821x_dev *pDeviceRef)
 {
 	struct MLME_SCAN_confirm_pset *scan_cnf_pset;

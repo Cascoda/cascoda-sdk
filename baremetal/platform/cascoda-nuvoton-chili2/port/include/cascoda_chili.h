@@ -51,11 +51,8 @@ extern "C" {
 /******************************************************************************/
 /****** Global Variables defined in cascoda_bsp_*.c                      ******/
 /******************************************************************************/
-extern volatile u8_t     WDTimeout;            /* Nonzero watchdog timeout if used */
-extern volatile u8_t     USBPresent;           /* 0: USB not active, 1: USB is active */
-extern volatile u8_t     UseExternalClock;     /* 0: Use internal clock, 1: Use clock from CA-821x */
-extern volatile fsys_mhz SystemFrequency;      /* system clock frequency [MHz] */
-extern volatile u8_t     EnableCommsInterface; /* enable communications interface */
+extern volatile u8_t WDTimeout;  /* Nonzero watchdog timeout if used */
+extern volatile u8_t USBPresent; /* 0: USB not active, 1: USB is active */
 
 /* maximum count delay when switching clocks */
 #define MAX_CLOCK_SWITCH_DELAY 100000

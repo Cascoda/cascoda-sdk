@@ -44,10 +44,10 @@ extern "C" {
 #endif
 
 /**
- * Perform any initialization for flash driver.
+ * \brief Perform any initialization for flash driver.
  *
- * @retval ::OT_ERROR_NONE    Initialize flash driver success.
- * @retval ::OT_ERROR_FAILED  Initialize flash driver fail.
+ * @retval OT_ERROR_NONE    Initialize flash driver success.
+ * @retval OT_ERROR_FAILED  Initialize flash driver fail.
  */
 otError utilsFlashInit(void);
 
@@ -112,7 +112,7 @@ uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize);
  * The input address should never be mapped to the firmware space or any other protected flash space.
  *
  * @param[in]   aAddress  The start address of the flash to read.
- * @param[Out]  aData     The pointer of buffer for reading.
+ * @param[out]  aData     The pointer of buffer for reading.
  * @param[in]   aSize     The size of the data to read.
  *
  * @returns The actual size of octets read to buffer.

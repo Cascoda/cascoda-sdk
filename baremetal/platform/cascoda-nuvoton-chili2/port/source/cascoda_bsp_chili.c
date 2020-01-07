@@ -46,6 +46,7 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_hash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_time.h"
@@ -72,7 +73,6 @@ struct device_link device_list[NUM_DEVICES];
  * file from the secure binaries into the library.
  */
 CRPT_T *CRPT_dyn = CRPT;
-
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
@@ -296,6 +296,20 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 }
 
 #endif /* USE_UART */
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+u64_t BSP_GetUniqueId(void)
+{
+	u64_t rval = 0;
+	u32_t UID[3];
+
+	CHILI_GetUID(UID);
+	rval = HASH_fnv1a_64(&UID, sizeof(UID));
+
+	return rval;
+}
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
@@ -525,4 +539,72 @@ void BSP_DisableUSB(void)
 u8_t BSP_IsUSBPresent(void)
 {
 	return USBPresent;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+void BSP_UseExternalClock(u8_t useExternalClock)
+{
+	if (CHILI_GetUseExternalClock() == useExternalClock)
+		return;
+	CHILI_SetUseExternalClock(useExternalClock);
+
+#ifdef USE_UART
+	CHILI_UARTWaitWhileBusy();
+#endif
+
+	if (useExternalClock)
+	{
+		/* swap then disable */
+		CHILI_SystemReInit();
+		CHILI_EnableIntOscCal();
+	}
+	else
+	{
+		/* disable then swap */
+		CHILI_DisableIntOscCal();
+		CHILI_SystemReInit();
+	}
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
+{
+	if (enable_comms)
+	{
+		/* check frequency settings */
+#if defined(USE_USB)
+		if (fsys == FSYS_4MHZ)
+		{
+			ca_log_crit("SystemConfig Error: Minimum clock frequency for USB is 12MHz");
+			return;
+		}
+#endif
+#if defined(USE_UART)
+		if ((fsys == FSYS_4MHZ) && (UART_BAUDRATE > 115200))
+		{
+			ca_log_crit("SystemConfig Error: Minimum clock frequency for UART @%u is 12MHz", UART_BAUDRATE);
+			return;
+		}
+		if ((fsys == FSYS_64MHZ) && (UART_BAUDRATE == 6000000))
+		{
+			ca_log_crit("SystemConfig Error: UART @%u cannot be used at 64 MHz", UART_BAUDRATE);
+			return;
+		}
+#endif
+	}
+
+#ifdef USE_UART
+	CHILI_UARTWaitWhileBusy();
+#endif
+
+	CHILI_SetSystemFrequency(fsys);
+	CHILI_SetEnableCommsInterface(enable_comms);
+
+	/* system  initialisation (clocks, timers ..) */
+	CHILI_SystemReInit();
+	cascoda_isr_secure_init();
 }

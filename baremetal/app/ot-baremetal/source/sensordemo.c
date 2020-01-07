@@ -26,10 +26,12 @@
 #include "openthread/thread.h"
 #include "platform.h"
 
+#include "cbor.h"
+
 // General
-const char *uriCascodaDiscover         = "ca/di";
-const char *uriCascodaTemperature      = "ca/te";
-const char *uriCascodaDiscoverResponse = "ca/dr";
+const char *uriCascodaDiscover            = "ca/di";
+const char *uriCascodaSensorDiscoverQuery = "t=sen";
+const char *uriCascodaSensor              = "ca/se";
 
 otInstance *          OT_INSTANCE;
 static const uint16_t sensordemo_key = 0xCA5C;
@@ -48,7 +50,7 @@ static otIp6Address serverIp;
 static uint32_t     appNextSendTime = 5000;
 
 // Server
-static otCoapResource sTempResource;
+static otCoapResource sSensorResource;
 static otCoapResource sDiscoverResource;
 static otCoapResource sDiscoverResponseResource;
 
@@ -56,9 +58,12 @@ static otCoapResource sDiscoverResponseResource;
  * \brief Handle the response to the server discover, and register the server
  * locally.
  */
-static void handleDiscoverResponse(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+static void handleServerDiscoverResponse(void *               aContext,
+                                         otMessage *          aMessage,
+                                         const otMessageInfo *aMessageInfo,
+                                         otError              aError)
 {
-	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
+	if (aError != OT_ERROR_NONE)
 		return;
 	if (isConnected)
 		return;
@@ -73,11 +78,13 @@ static void handleDiscoverResponse(void *aContext, otMessage *aMessage, const ot
 	timeoutCount = 0;
 }
 
-/**
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Send a multicast cascoda 'server discover' coap message. This is a
- * non-confirmable POST request, and the seperate POST responses will be handled
- * by the 'handleDiscoverResponse' function.
- */
+ * non-confirmable get request, and the get responses will be handled by the
+ * 'handleServerDiscoverResponse' function.
+ *******************************************************************************
+ ******************************************************************************/
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
@@ -96,16 +103,17 @@ static otError sendServerDiscover(void)
 	//Build CoAP header
 	//Realm local all-nodes multicast - this of course generates some traffic, so shouldn't be overused
 	SuccessOrExit(error = otIp6AddressFromString("FF03::1", &coapDestinationIp));
-	otCoapMessageInit(message, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_POST);
+	otCoapMessageInit(message, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
 	otCoapMessageGenerateToken(message, 2);
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
+	SuccessOrExit(error = otCoapMessageAppendUriQueryOption(message, uriCascodaSensorDiscoverQuery));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = coapDestinationIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = coapDestinationIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
 	//send
-	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, NULL, NULL);
+	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleServerDiscoverResponse, NULL);
 
 exit:
 	if (error && message)
@@ -152,6 +160,9 @@ static otError sendSensorData(void)
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature = BSP_GetTemperature();
+	uint8_t       buffer[32];
+	CborError     err;
+	CborEncoder   encoder, mapEncoder;
 
 	//allocate message buffer
 	message = otCoapNewMessage(OT_INSTANCE, NULL);
@@ -164,21 +175,31 @@ static otError sendSensorData(void)
 	//Build CoAP header
 	otCoapMessageInit(message, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_POST);
 	otCoapMessageGenerateToken(message, 2);
-	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaTemperature));
+	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaSensor));
+	otCoapMessageAppendContentFormatOption(message, OT_COAP_OPTION_CONTENT_FORMAT_CBOR);
 	otCoapMessageSetPayloadMarker(message);
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = serverIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = serverIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
-	//Payload
-	SuccessOrExit(error = otMessageAppend(message, &temperature, sizeof(temperature)));
+	//Initialise the CBOR encoder
+	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
 
-	//send
+	//Create and populate the CBOR map
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 1));
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "t"));
+	SuccessOrExit(err = cbor_encode_int(&mapEncoder, temperature));
+	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
+
+	size_t length = cbor_encoder_get_buffer_size(&encoder, buffer);
+
+	//Append and send the serialised message
+	SuccessOrExit(error = otMessageAppend(message, buffer, length));
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleSensorConfirm, NULL);
 
 exit:
-	if (error && message)
+	if ((err || error) && message)
 	{
 		//error, we have to free
 		otMessageFree(message);
@@ -204,26 +225,86 @@ static void sensordemo_handler(void)
 	}
 }
 
-/** Server: Handle a temperature message by printing it */
-static void handleTemperature(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+/** Server: Handle a sensor data message by printing it */
+static void handleSensorData(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
 	otMessage * responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-	int32_t     temperature;
+	uint16_t    offset          = otMessageGetOffset(aMessage);
+	int64_t     temperature;
+	int64_t     humidity;
+	int64_t     pir_counter;
+	int64_t     light_level;
+
+	CborParser parser;
+	CborValue  value;
+	CborValue  t_result;
+	CborValue  h_result;
+	CborValue  c_result;
+	CborValue  l_result;
+
+	unsigned char *temp_key     = "t";
+	unsigned char *humidity_key = "h";
+	unsigned char *counter_key  = "c";
+	unsigned char *light_key    = "l";
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
 		return;
 
-	if (length != sizeof(temperature))
+	if (length > 64)
 		return;
 
-	otMessageRead(aMessage, otMessageGetOffset(aMessage), &temperature, sizeof(temperature));
+	//Allocate a buffer and store the received serialised CBOR message into it
+	unsigned char buffer[64];
+	otMessageRead(aMessage, offset, buffer, length);
 
-	otCliOutputFormat("Server received temperature %d.%d*C from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
-	                  (temperature / 10),
-	                  (temperature % 10),
+	//Initialise the CBOR parser
+	SuccessOrExit(cbor_parser_init(buffer, length, 0, &parser, &value));
+
+	//Extract the values corresponding to the keys from the CBOR map
+	SuccessOrExit(cbor_value_map_find_value(&value, temp_key, &t_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, humidity_key, &h_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, counter_key, &c_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, light_key, &l_result));
+
+	//Retrieve and print the sensor values
+	otCliOutputFormat("Server received");
+
+	bool first_print = true;
+
+	if (cbor_value_get_type(&t_result) != CborInvalidType)
+	{
+		SuccessOrExit(cbor_value_get_int64(&t_result, &temperature));
+		otCliOutputFormat(" temperature %d.%d*C", (int)(temperature / 10), (int)abs(temperature % 10));
+		first_print = false;
+	}
+	if (cbor_value_get_type(&h_result) != CborInvalidType)
+	{
+		SuccessOrExit(cbor_value_get_int64(&h_result, &humidity));
+		if (!first_print)
+			otCliOutputFormat(",");
+		otCliOutputFormat(" humidity %d%%", (int)humidity);
+		first_print = false;
+	}
+	if (cbor_value_get_type(&c_result) != CborInvalidType)
+	{
+		SuccessOrExit(cbor_value_get_int64(&c_result, &pir_counter));
+		if (!first_print)
+			otCliOutputFormat(",");
+		otCliOutputFormat(" PIR count %d", (int)pir_counter);
+		first_print = false;
+	}
+	if (cbor_value_get_type(&l_result) != CborInvalidType)
+	{
+		if (!first_print)
+			otCliOutputFormat(",");
+		SuccessOrExit(cbor_value_get_int64(&l_result, &light_level));
+		otCliOutputFormat(" light level %d", (int)light_level);
+	}
+
+	otCliOutputFormat(" from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
 	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
 	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
 	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
@@ -240,8 +321,7 @@ static void handleTemperature(void *aContext, otMessage *aMessage, const otMessa
 		goto exit;
 	}
 
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
-	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
@@ -261,7 +341,29 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 	otMessage * responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 
-	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
+	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
+		return;
+
+	// Find the URI Query
+	const otCoapOption *option;
+	char                uri_query[6];
+	bool                valid_query = false;
+
+	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	{
+		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength <= 6)
+		{
+			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+
+			if (strncmp(uri_query, uriCascodaSensorDiscoverQuery, 5) == 0)
+			{
+				valid_query = true;
+				break;
+			}
+		}
+	}
+
+	if (!valid_query)
 		return;
 
 	otCliOutputFormat("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
@@ -281,13 +383,13 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 		goto exit;
 	}
 
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_POST);
-	otCoapMessageGenerateToken(responseMessage, 2);
-	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(responseMessage, uriCascodaDiscoverResponse));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
+	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
+
 	otCoapMessageSetPayloadMarker(responseMessage);
 
 	SuccessOrExit(error = otMessageAppend(responseMessage, otThreadGetMeshLocalEid(OT_INSTANCE), sizeof(otIp6Address)));
-	SuccessOrExit(error = otCoapSendRequest(OT_INSTANCE, responseMessage, aMessageInfo, NULL, NULL));
+	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 
 exit:
 	if (error != OT_ERROR_NONE && responseMessage != NULL)
@@ -300,14 +402,14 @@ exit:
 /** Add server coap resources to the coap stack */
 static void bind_server_resources()
 {
-	otCoapAddResource(OT_INSTANCE, &sTempResource);
+	otCoapAddResource(OT_INSTANCE, &sSensorResource);
 	otCoapAddResource(OT_INSTANCE, &sDiscoverResource);
 }
 
 /** Remove server coap resources to the coap stack */
 static void unbind_server_resources()
 {
-	otCoapRemoveResource(OT_INSTANCE, &sTempResource);
+	otCoapRemoveResource(OT_INSTANCE, &sSensorResource);
 	otCoapRemoveResource(OT_INSTANCE, &sDiscoverResource);
 }
 
@@ -377,18 +479,14 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 
-	memset(&sTempResource, 0, sizeof(sTempResource));
-	sTempResource.mUriPath = uriCascodaTemperature;
-	sTempResource.mContext = aInstance;
-	sTempResource.mHandler = &handleTemperature;
+	memset(&sSensorResource, 0, sizeof(sSensorResource));
+	sSensorResource.mUriPath = uriCascodaSensor;
+	sSensorResource.mContext = aInstance;
+	sSensorResource.mHandler = &handleSensorData;
 	memset(&sDiscoverResource, 0, sizeof(sDiscoverResource));
 	sDiscoverResource.mUriPath = uriCascodaDiscover;
 	sDiscoverResource.mContext = aInstance;
 	sDiscoverResource.mHandler = &handleDiscover;
-	memset(&sDiscoverResponseResource, 0, sizeof(sDiscoverResponseResource));
-	sDiscoverResponseResource.mUriPath = uriCascodaDiscoverResponse;
-	sDiscoverResponseResource.mContext = aInstance;
-	sDiscoverResponseResource.mHandler = &handleDiscoverResponse;
 
 	stateLength = sizeof(sensordemo_state);
 	error       = otPlatSettingsGet(OT_INSTANCE, sensordemo_key, 0, (uint8_t *)&sensordemo_state, &stateLength);

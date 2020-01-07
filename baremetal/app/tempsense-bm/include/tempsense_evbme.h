@@ -50,6 +50,7 @@
  * \brief Initialise Chili module for temperature sensing app
  *******************************************************************************
  * \param status - EVBME status
+ * \param pDeviceRef - pointer to a CA-821x Device reference struct
  *******************************************************************************
  ******************************************************************************/
 void TEMPSENSE_Initialise(u8_t status, struct ca821x_dev *pDeviceRef);

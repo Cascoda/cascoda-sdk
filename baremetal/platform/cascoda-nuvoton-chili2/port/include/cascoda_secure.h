@@ -31,17 +31,70 @@
 
 #include "cascoda-bm/cascoda_interface.h"
 
+/** Set Use_external_clock flag */
+void CHILI_SetUseExternalClock(u8_t use_ext_clock);
+
+/** Get Use_external_clock flag */
+u8_t CHILI_GetUseExternalClock(void);
+
+/** Set enable_comms_interface flag, used by CHILI_SystemReinit */
+void CHILI_SetEnableCommsInterface(u8_t enable_coms_interface);
+
+/** Get enable_comms_interface flag, used by CHILI_SystemReinit */
+u8_t CHILI_GetEnableCommsInterface(void);
+
+/**
+ * Set current system frequency
+ * @param system_frequency  New system frequency
+ */
+void CHILI_SetSystemFrequency(fsys_mhz system_frequency);
+
+/**
+ * Get current system frequency
+ * @return Current system frequency
+ */
+fsys_mhz CHILI_GetSystemFrequency(void);
+
+/**
+ * Get the 96-bit hardware unique ID.
+ * @param uid_out Out pointer pointing to at least 3 words of memory
+ */
+void CHILI_GetUID(uint32_t *uid_out);
+
+/** Enable SPI Clock. */
 void CHILI_EnableSpiModuleClock();
+
+/** Wait until system is stable after potential usb plug-in */
 void CHILI_WaitForSystemStable();
+
+/** Initialise ADC peripheral */
 void CHILI_InitADC(u32_t reference);
+
+/** Deinitialise ADC peripheral */
 void CHILI_DeinitADC();
+
+/** Initialise GPIO peripheral clock */
 void CHILI_GPIOInitClock();
+
+/** Initialise Timer IRQ priorities */
 void CHILI_ReInitSetTimerPriority();
+
+/** Configure clock for power down */
 void CHILI_PowerDownSelectClock(u8_t use_timer0);
+
+/** Process all of the secure-only power down routines */
 void CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
+
+/** Enable internal temperature sensor */
 void CHILI_EnableTemperatureSensor();
+
+/** Disnable internal temperature sensor */
 void CHILI_DisableTemperatureSensor();
+
+/** Is chili currently asleep? */
 u8_t CHILI_GetAsleep();
+
+/** Set asleep state */
 void CHILI_SetAsleep(u8_t new_asleep);
 
 #endif

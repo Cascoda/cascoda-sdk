@@ -41,7 +41,7 @@ typedef void (*Callback_t)(void);
  * Returns a number which is one more than the value returned in previous
  * invocation of this function. Initial invocation returns 1.
  *
- * @param pxCallback[in] The callback to invoke.
+ * @param[in] pxCallback The callback to invoke.
  *
  * @return A number which is one more than the value returned in previous
  * invocation of this function.

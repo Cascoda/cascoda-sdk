@@ -1,14 +1,29 @@
 # ca821x-posix
 Glue code for linking Cascoda's API code to the ca8210 Linux driver or a ca821x usb dongle
 
-# example
-An example is included. Make sure that at least one of the Hid library or ca821x kernel driver is installed as detailed below. The example programs will be built alongside the library.
+# Sniffer
+An example program for sniffing 802.15.4 traffic on a specific channel is included. It can run on windows or linux and can:
+- Capture to stdout
+- Output to a pcap file
+- Stream directly to wireshark/tshark
+
+Run ./sniffer with no args to print the help page. For instance the ``-w`` argument can be used to automatically boot wireshark and connect. On unix platforms the usage is more flexible and can use command line pipes such as:
+```bash
+# Start sniffer on channel 21, pcap output, pipe to tshark, which is receiving on stdin.
+./sniffer 21 -p | tshark -i -
+```
+
+# serial-adapter
+Serial-adapter is a useful program for interacting with an application running on baremetal. If a baremetal device (such as a Chili2) is running a serial application (such as cliapp-bm), then it can be controlled by running ``serial-adapter``, with no arguments, on a compatible platform.
+
+# spam_test
+A spam_test example is included. Make sure that at least one of the Hid library or ca821x kernel driver is installed as detailed below. The example programs will be built alongside the library.
 
 The example takes a series of device IDs as arguments. These should be unique, and are used as the short addresses. At least 2 devices should be used at a time with this program.
 ```bash
 cd example
 #higher privileges may be needed if your user does not have permission to access devices
-./app 1 2 3
+./spam_test 1 2 3
 ```
 
 ## Kernel Driver
@@ -35,4 +50,4 @@ echo "enable_uart=1" | sudo tee -a /boot/config.txt
 sudo reboot
 # Then add environment variable 
 # (warning, will not persist reboots unless you add to a startup script)
-export CASCODA_UART=/dev/serial0,4000000
+export CASCODA_UART=/dev/serial0,1000000

@@ -55,7 +55,7 @@ struct SecSpec *MCPS_DATA_indication_get_secspec(struct MCPS_DATA_indication_pse
  * variable length portion of the beacon indication.
  *
  * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
- * \param aLength[out] - Length of the output list (Must not be NULL)
+ * \param[out] aLength - Length of the output list (Must not be NULL)
  *
  * \return Pointer to the start of the ShortAddr list (even if length=0)
  *
@@ -70,7 +70,7 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
  * variable length portion of the beacon indication.
  *
  * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
- * \param aLength[out] - Length of the output list (Must not be NULL)
+ * \param[out] aLength - Length of the output list (Must not be NULL)
  *
  * \return Pointer to the start of the ExtAddr list (even if length=0)
  *
@@ -85,7 +85,7 @@ struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *            
  * portion of the beacon indication.
  *
  * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
- * \param aLength[out] - Length of the output list (Must not be NULL)
+ * \param[out] aLength - Length of the output list (Must not be NULL)
  *
  * \return Pointer to the start of the SDU (even if length=0)
  *

@@ -96,8 +96,8 @@ void SENSORIF_I2C_Deinit(void);
 /***************************************************************************/ /**
  * \brief Writes bytes to I2C slave
  * \param slaveaddr - 6-Bit Slave Address
- * \param pdata - Pointer to Data Buffer
- * \param plen - Pointer to Buffer Length (actual length is returned in plen)
+ * \param data - Pointer to Data Buffer
+ * \param len - Pointer to Buffer Length (actual length is returned in plen)
  *******************************************************************************
  * \return Status. 0: success, other: either I2C status or re-mapped
  *******************************************************************************

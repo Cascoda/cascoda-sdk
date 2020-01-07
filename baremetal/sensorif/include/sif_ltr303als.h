@@ -134,8 +134,8 @@ u8_t SIF_LTR303ALS_Configure(u8_t gain, u8_t tint, u8_t tmeas);               /*
 /***************************************************************************/ /**
  * \brief LTR303ALS: Read Light Measurement
  *******************************************************************************
- * \param pch0: pointer to 16-bit result for channel 0 (visible spectrum)
- * \param pch1: pointer to 16-bit result for channel 1 (infrared)
+ * \param ch0: pointer to 16-bit result for channel 0 (visible spectrum)
+ * \param ch1: pointer to 16-bit result for channel 1 (infrared)
  *******************************************************************************
  * \return status
  *******************************************************************************

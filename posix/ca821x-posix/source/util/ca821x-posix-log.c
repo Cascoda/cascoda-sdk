@@ -40,9 +40,11 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 	char *         lev_str;
 	struct timeval tv;
 	char           timeString[40];
+	time_t         secs;
 
 	gettimeofday(&tv, NULL);
-	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
+	secs = tv.tv_sec;
+	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&secs));
 
 	switch (loglevel)
 	{

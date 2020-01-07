@@ -33,6 +33,7 @@
 */
 /* System */
 #include <stdio.h>
+#include <string.h>
 /* Platform */
 #include "Nano100Series.h"
 #include "adc.h"
@@ -94,21 +95,6 @@ struct pinstatus
 };
 
 /******************************************************************************/
-/****** Global Variables                                                 ******/
-/******************************************************************************/
-const struct ModuleSpecialPins BSP_ModuleSpecialPins = {
-    MSP_DEFAULT,
-    .SWITCH      = PIN_SWITCH,
-    .LED_GREEN   = PIN_LED_GREEN,
-    .LED_RED     = PIN_LED_RED,
-    .USB_PRESENT = PIN_USB_PRESENT,
-};
-
-struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
-{
-	return BSP_ModuleSpecialPins;
-}
-/******************************************************************************/
 /****** Static Variables                                                 ******/
 /******************************************************************************/
 static struct pinstatus ModulePinStatus[NUM_MODULEPINS] = {0};
@@ -140,6 +126,17 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
     {PIN_USB_PRESENT, PN_B, 15, P_NA}, /* PB.15:(USB_PRESENT), virtual */
 #endif
 };
+
+struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
+{
+	struct ModuleSpecialPins rval;
+	memset(&rval, P_NA, sizeof(rval));
+	rval.SWITCH      = PIN_SWITCH;
+	rval.LED_GREEN   = PIN_LED_GREEN;
+	rval.LED_RED     = PIN_LED_RED;
+	rval.USB_PRESENT = PIN_USB_PRESENT;
+	return rval;
+}
 
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 {

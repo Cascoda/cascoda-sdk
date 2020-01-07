@@ -63,6 +63,75 @@
 #define CLKCFG_ENHIRC 0x04
 #define CLKCFG_ENHIRC48 0x08
 
+void CHILI_SystemReInit()
+{
+#if defined(USE_USB)
+	static u8_t comms_have_been_enabled = 0;
+#endif /* USE_USB */
+
+	/* switch off comms */
+#if defined(USE_USB)
+	if (!CHILI_GetEnableCommsInterface())
+		USB_Deinitialise();
+#endif /* USE_USB */
+#if defined(USE_UART)
+	if (!CHILI_GetEnableCommsInterface())
+		CHILI_UARTDeinit();
+#endif /* USE_UART */
+
+	/* configure clocks */
+	CHILI_ClockInit(CHILI_GetSystemFrequency(), CHILI_GetEnableCommsInterface());
+
+	/* switch on comms */
+#if defined(USE_USB)
+	/* do not initialise if already active as connection will be closed */
+	if ((CHILI_GetEnableCommsInterface()) && (!comms_have_been_enabled))
+		USB_Initialise();
+#endif /* USE_USB */
+#if defined(USE_UART)
+	/* requires re-initialisation to set correct baudrate */
+	if (CHILI_GetEnableCommsInterface())
+		CHILI_UARTInit();
+#endif /* USE_UART */
+
+	/* initialise timers */
+	CHILI_TimersInit();
+
+	/* finish clock initialisation */
+	/* this has to be done AFTER all other system config changes ! */
+	CHILI_CompleteClockInit(CHILI_GetSystemFrequency(), CHILI_GetEnableCommsInterface());
+
+	/* re-initialise SPI clock rate */
+	SPI_SetBusClock(SPI, FCLK_SPI);
+
+	/* set interrupt priorities */
+	/* 0: highest  timers */
+	/* 1:          downstream dispatch and gpios */
+	/* 2:          upstream   dispatch */
+	/* 3: lowest */
+	CHILI_ReInitSetTimerPriority();
+	NVIC_SetPriority(TMR2_IRQn, 0);
+	NVIC_SetPriority(TMR3_IRQn, 0);
+	NVIC_SetPriority(GPA_IRQn, 1);
+	NVIC_SetPriority(GPB_IRQn, 1);
+	NVIC_SetPriority(GPC_IRQn, 3); //Set to 3 so other interrupts can pre-empt this slow one
+	NVIC_SetPriority(GPD_IRQn, 1);
+	NVIC_SetPriority(GPE_IRQn, 1);
+	NVIC_SetPriority(GPF_IRQn, 1);
+	NVIC_SetPriority(GPG_IRQn, 1);
+	NVIC_SetPriority(GPH_IRQn, 1);
+#if defined(USE_USB)
+	NVIC_SetPriority(USBD_IRQn, 2);
+#endif
+#if defined(USE_UART)
+	NVIC_SetPriority(UART_IRQn, 2);
+#endif
+
+#if defined(USE_USB)
+	comms_have_been_enabled = CHILI_GetEnableCommsInterface();
+#endif
+}
+
 u32_t CHILI_ADCConversion(u32_t channel, u32_t reference)
 {
 	u32_t adcval;

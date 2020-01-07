@@ -235,7 +235,7 @@ void TEMPSENSE_APP_Coordinator_Initialise(struct ca821x_dev *pDeviceRef);
 /***************************************************************************/ /**
  * \brief TEMPSENSE App. Coordinator Start Procedure
  *******************************************************************************
- * \param restart - Nonzero if already started previously
+ * \param pDeviceRef - pointer to a CA-821x Device reference struct
  *******************************************************************************
  ******************************************************************************/
 void TEMPSENSE_APP_Coordinator_Start(struct ca821x_dev *pDeviceRef);
@@ -273,7 +273,10 @@ void TEMPSENSE_APP_Coordinator_ProcessDataCnf(struct MCPS_DATA_confirm_pset *par
 /***************************************************************************/ /**
  * \brief TEMPSENSE App. Coordinator check and display Data Packet
  *******************************************************************************
- * \param buf_ptr - Buffer containing data indication with data to display
+ * \param device - device number
+ * \param edcoord - ED received locally (Coordinator)
+ * \param params - Buffer containing data indication with data to display
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  ******************************************************************************/
 void TEMPSENSE_APP_Coordinator_DisplayData(u8_t                              device,

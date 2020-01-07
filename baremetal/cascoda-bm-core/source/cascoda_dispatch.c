@@ -54,7 +54,7 @@ static struct MDR_CacheItem
 	uint8_t  mMsduHandle;        /**< MSDU Handle for the cached transmission */
 	uint8_t  mIsIndirect : 1;    /**< Flag tracking indirect-ness */
 	uint8_t  mIsCacheActive : 1; /**< Is the cache member currently valid and in use */
-	uint8_t  mCacheType : 1; /**< Cache type \ref enum MDR_Cache (Only reason this is a uint8 is for struct packing) */
+	uint8_t  mCacheType : 1;     /**< Cache type enum MDR_Cache (Only reason this is a uint8 is for struct packing) */
 } MDR_Cache[MDR_CacheSize];
 
 static bool             isPCPSFixActive = false;
@@ -327,6 +327,10 @@ static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage, struct ca821x_d
 	if (aMessage->CommandId == SPI_MCPS_DATA_CONFIRM)
 	{
 		CacheRemoveItem(aMessage->PData.DataCnf.MsduHandle, MDR_CacheTypeMCPS);
+	}
+	else if (aMessage->CommandId == SPI_MCPS_PURGE_CONFIRM && aMessage->PData.PurgeCnf.Status == MAC_SUCCESS)
+	{
+		CacheRemoveItem(aMessage->PData.PurgeCnf.MsduHandle, MDR_CacheTypeMCPS);
 	}
 #if CASCODA_CA_VER == 8211
 	else if (aMessage->CommandId == SPI_PCPS_DATA_CONFIRM)

@@ -27,6 +27,8 @@
 #include "semphr.h"
 #include "task.h"
 
+#include "cbor.h"
+
 #define SuccessOrExit(aCondition) \
 	do                            \
 	{                             \
@@ -41,8 +43,8 @@
 /******************************************************************************/
 const char *APP_NAME = "OT SED";
 
-const char *uriCascodaDiscover    = "ca/di";
-const char *uriCascodaTemperature = "ca/te";
+const char *uriCascodaDiscover = "ca/di";
+const char *uriCascodaSensor   = "ca/se";
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
@@ -191,8 +193,8 @@ static otError sendServerDiscover(void)
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = coapDestinationIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = coapDestinationIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleServerDiscoverResponse, NULL);
@@ -229,6 +231,9 @@ static otError sendSensorData(void)
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature = BSP_GetTemperature();
+	uint8_t       buffer[32];
+	CborError     err;
+	CborEncoder   encoder, mapEncoder;
 
 	//allocate message buffer
 	message = otCoapNewMessage(OT_INSTANCE, NULL);
@@ -241,21 +246,32 @@ static otError sendSensorData(void)
 	//Build CoAP header
 	otCoapMessageInit(message, OT_COAP_TYPE_CONFIRMABLE, OT_COAP_CODE_POST);
 	otCoapMessageGenerateToken(message, 2);
-	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaTemperature));
+	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaSensor));
+	otCoapMessageAppendContentFormatOption(message, OT_COAP_OPTION_CONTENT_FORMAT_CBOR);
 	otCoapMessageSetPayloadMarker(message);
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
-	messageInfo.mPeerAddr    = serverIp;
-	messageInfo.mPeerPort    = OT_DEFAULT_COAP_PORT;
+	messageInfo.mPeerAddr = serverIp;
+	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
-	//Payload
-	SuccessOrExit(error = otMessageAppend(message, &temperature, sizeof(temperature)));
+	//Initialise the CBOR encoder
 
-	//send
+	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
+
+	//Create and populate the CBOR map
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 1));
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "t"));
+	SuccessOrExit(err = cbor_encode_int(&mapEncoder, temperature));
+	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
+
+	size_t length = cbor_encoder_get_buffer_size(&encoder, buffer);
+
+	//Append and send the serialised message
+	SuccessOrExit(error = otMessageAppend(message, buffer, length));
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleSensorConfirm, NULL);
 
 exit:
-	if (error && message)
+	if ((err || error) && message)
 	{
 		//error, we have to free
 		otMessageFree(message);
@@ -354,7 +370,6 @@ int main(void)
 	otThreadSetMasterKey(OT_INSTANCE, &key);
 	otLinkSetChannel(OT_INSTANCE, 22);
 	otThreadSetEnabled(OT_INSTANCE, true);
-	otThreadSetAutoStart(OT_INSTANCE, true);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 

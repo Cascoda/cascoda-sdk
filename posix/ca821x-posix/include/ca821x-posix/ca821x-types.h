@@ -143,7 +143,7 @@ struct ca821x_exchange_base
 	int             io_thread_runflag; //!< flag to shutdown io thread
 	pthread_mutex_t flag_mutex;        //!< mutex for generic flag handling
 	pthread_cond_t  sync_cond;         //!< condition variable for synchronous exchanges
-	pthread_mutex_t sync_mutex;        //!< condition variable for synchronous exchanges
+	pthread_mutex_t sync_mutex;        //!< mutex for synchronous exchanges
 	//In queue = Device to host(us)
 	//Out queue = Host(us) to device
 	pthread_mutex_t      in_queue_mutex, out_queue_mutex;    //!< queue mutexes

@@ -45,6 +45,7 @@
 #include "openthread/random_noncrypto.h"
 #include "openthread/thread.h"
 
+#include "cascoda-bm/cascoda_interface.h"
 #include "ca821x_api.h"
 #include "code_utils.h"
 #include "ieee_802_15_4.h"
@@ -112,6 +113,9 @@ static otError ConvertErrorMacToOt(ca_mac_status aMacError)
 	case MAC_INVALID_HANDLE:
 		error = OT_ERROR_ALREADY;
 		break;
+	case MAC_SYSTEM_ERROR:
+		error = OT_ERROR_FAILED;
+		break;
 	default:
 		ca_log_debg("MAC Error %x unconverted", aMacError);
 		error = OT_ERROR_ABORT;
@@ -129,7 +133,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	//Adaption for security table
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
-		struct M_KeyDescriptor_thread caKeyDesc;
+		struct M_KeyDescriptor_thread caKeyDesc  = {0};
 		otKeyTableEntry *             otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
@@ -190,7 +194,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	//Adaption for security table
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
-		struct M_KeyDescriptor_thread caKeyDesc;
+		struct M_KeyDescriptor_thread caKeyDesc  = {0};
 		const otKeyTableEntry *       otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
@@ -238,12 +242,19 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 
 otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
 
+	// Tx Power to max
 	uint8_t txPow = 8;
 	MLME_SET_request_sync(phyTransmitPower, 0, 1, &txPow, pDeviceRef);
+
+	// Enable poll indications when no data confirm is triggered.
+#if CASCODA_CA_VER == 8211
+	uint8_t pollIndMode = 2;
+	HWME_SET_request_sync(HWME_POLLINDMODE, 1, &pollIndMode, pDeviceRef);
+#endif
 
 	if (setDefaultPib)
 	{
@@ -254,6 +265,12 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 		//LQI values should be derived from receive energy
 		uint8_t LQImode = HWME_LQIMODE_ED;
 		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
+
+#if CASCODA_CA_VER == 8211
+		//Increase the max indirect queue length to 8
+		uint8_t maxInd = 8;
+		HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &maxInd, pDeviceRef);
+#endif
 	}
 
 	return ConvertErrorMacToOt(error);
@@ -261,8 +278,8 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 
 otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 {
-	uint8_t error;
-	otError otErr;
+	ca_mac_status error;
+	otError       otErr;
 
 	error = MLME_START_request_sync(aStartReq->mPanId,
 	                                aStartReq->mLogicalChannel,
@@ -282,7 +299,7 @@ otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 
 otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MLME_SCAN_request(aScanRequest->mScanType,
 	                          aScanRequest->mScanChannelMask,
@@ -295,7 +312,7 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 
 otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 #if CASCODA_CA_VER == 8210
 	uint8_t interval[2] = {0, 0};
@@ -316,7 +333,7 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 
 otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
 	                          *(struct FullAddr *)&aDataRequest->mDst,
@@ -332,7 +349,7 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 
 otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 {
-	uint8_t error;
+	ca_mac_status error;
 
 	error = MCPS_PURGE_request_sync(&aMsduHandle, pDeviceRef);
 
@@ -356,6 +373,10 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
 	memcpy(&(dataInd.mSecurity), params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
 
+#if CASCODA_CA_VER == 8211
+	dataInd.mIsFramePending = params->FramePending;
+#endif
+
 	if (dataInd.mSecurity.mSecurityLevel == 0)
 	{
 		memset(&(dataInd.mSecurity), 0, sizeof(dataInd.mSecurity));
@@ -363,6 +384,27 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 
 	ca_log_debg("MAC Rx Data Indication");
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
+
+	return CA_ERROR_SUCCESS;
+}
+
+static ca_error handlePollIndication(struct MLME_POLL_indication_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	//TODO: Move this off the stack
+	otPollIndication pollInd = {0};
+
+	pollInd.mSrc = *((struct otFullAddr *)&(params->Src));
+	pollInd.mDst = *((struct otFullAddr *)&(params->Dst));
+	pollInd.mLQI = params->LQI;
+	pollInd.mDSN = params->DSN;
+	memcpy(&(pollInd.mSecurity), &(params->Security), sizeof(pollInd.mSecurity));
+
+	if (pollInd.mSecurity.mSecurityLevel == 0)
+	{
+		memset(&(pollInd.mSecurity), 0, sizeof(pollInd.mSecurity));
+	}
+
+	otPlatMlmePollIndication(OT_INSTANCE, &pollInd);
 
 	return CA_ERROR_SUCCESS;
 }
@@ -467,22 +509,14 @@ void PlatformRadioStop(void)
 
 void initIeeeEui64()
 {
-	for (int i = 0; i < 4; i += 1)
-	{
-		uint8_t ranLen = 0;
-		uint8_t random[2];
-		HWME_GET_request_sync(HWME_RANDOMNUM, &ranLen, random, pDeviceRef);
-		assert(ranLen == 2);
-		sIeeeEui64[2 * i]     = random[0];
-		sIeeeEui64[2 * i + 1] = random[1];
-	}
+	PUTLE64(BSP_GetUniqueId(), sIeeeEui64);
 	sIeeeEui64[0] &= ~1; //Unset Group bit
 	sIeeeEui64[0] |= 2;  //Set local bit
 }
 
 static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
-	//	printf( "Woke Up with status %02x\n", params->WakeUpCondition);
+	ca_log_info("Woke Up with status %02x", params->WakeUpCondition);
 	return CA_ERROR_SUCCESS;
 }
 
@@ -496,6 +530,9 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 	pDeviceRef->callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	pDeviceRef->callbacks.MLME_SCAN_confirm             = &handleScanConfirm;
 	pDeviceRef->callbacks.HWME_WAKEUP_indication        = &handleWakeupIndication;
+#if CASCODA_CA_VER == 8211
+	pDeviceRef->callbacks.MLME_POLL_indication = &handlePollIndication;
+#endif
 
 	//Reset the MAC to a default state
 	otPlatMlmeReset(NULL, true);
@@ -542,4 +579,20 @@ bool otPlatRadioIsEnabled(otInstance *aInstance)
 int PlatformIsExpectingIndication()
 {
 	return sIsExpectingIndication;
+}
+
+otError otPlatRadioGetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t *aThreshold)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	OT_UNUSED_VARIABLE(aThreshold);
+
+	return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aThreshold)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	OT_UNUSED_VARIABLE(aThreshold);
+
+	return OT_ERROR_NOT_IMPLEMENTED;
 }

@@ -76,6 +76,7 @@ struct EVBME_COMM_CHECK_request
 	uint8_t mHandle;   //!< Handle identifying this comm check
 	uint8_t mDelay;    //!< Delay before sending responses
 	uint8_t mIndCount; //!< Number of indications to send up
+	uint8_t mIndSize;  //!< Size of the indications to send
 };
 
 /******************************************************************************/
@@ -99,11 +100,21 @@ extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
  * Initialises low level interfaces, resets and initialises CA-8210.
  *******************************************************************************
  * \param aAppName - App name string
+ * \param dev - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return Status of initialisation
  *******************************************************************************
  ******************************************************************************/
 ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *dev);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Returns the app name string.
+ *******************************************************************************
+ * \return app_name
+ *******************************************************************************
+ ******************************************************************************/
+const char *EVBME_GetAppName(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -129,7 +140,8 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
 * \brief Put the system into a state of power-down for a given time
 *******************************************************************************
 * \param mode - Power-Down Mode
-* \param sleeptime_sec - Seconds to sleep for
+* \param sleeptime_ms - milliseconds to sleep for
+* \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
 *******************************************************************************
 * Power-Down Modes
 *

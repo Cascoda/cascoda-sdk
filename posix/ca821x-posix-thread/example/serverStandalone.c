@@ -41,6 +41,8 @@
 #include "openthread/tasklet.h"
 #include "openthread/thread.h"
 
+#include "cbor.h"
+
 #include "ca821x-posix-thread/posix-platform.h"
 
 #define SuccessOrExit(aCondition) \
@@ -53,9 +55,9 @@
 	} while (0)
 
 static int            isRunning;
-static otCoapResource sTempResource;
+static otCoapResource sSensorResource;
 static otCoapResource sDiscoverResource;
-static const char *   sTempUri     = "ca/te";
+static const char *   sSensorUri   = "ca/se";
 static const char *   sDiscoverUri = "ca/di";
 
 void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
@@ -108,8 +110,7 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 		goto exit;
 	}
 
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
-	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	otCoapMessageSetPayloadMarker(responseMessage);
@@ -125,68 +126,79 @@ exit:
 	}
 }
 
-static void handleTemperature(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+static void handleSensorData(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
 	otMessage * responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	uint16_t    offset          = otMessageGetOffset(aMessage);
-	int32_t     temperature     = 0;
-	uint32_t    humidity        = 0;
-	uint32_t    pir_counter     = 0;
-	uint16_t    light_level     = 0;
+	int64_t     temperature;
+	int64_t     humidity;
+	int64_t     pir_counter;
+	int64_t     light_level;
+
+	CborParser parser;
+	CborValue  value;
+	CborValue  t_result;
+	CborValue  h_result;
+	CborValue  c_result;
+	CborValue  l_result;
+
+	unsigned char *temp_key     = "t";
+	unsigned char *humidity_key = "h";
+	unsigned char *counter_key  = "c";
+	unsigned char *light_key    = "l";
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
 		return;
 
-	if (length >= sizeof(temperature))
-	{
-		otMessageRead(aMessage, offset, &temperature, sizeof(temperature));
-		offset += sizeof(temperature);
-		length -= sizeof(temperature);
-	}
-	if (length >= sizeof(humidity))
-	{
-		otMessageRead(aMessage, offset, &humidity, sizeof(humidity));
-		offset += sizeof(humidity);
-		length -= sizeof(humidity);
-	}
-	if (length >= sizeof(pir_counter))
-	{
-		otMessageRead(aMessage, offset, &pir_counter, sizeof(pir_counter));
-		offset += sizeof(pir_counter);
-		length -= sizeof(pir_counter);
-	}
-	if (length >= sizeof(light_level))
-	{
-		otMessageRead(aMessage, offset, &light_level, sizeof(light_level));
-		offset += sizeof(light_level);
-		length -= sizeof(light_level);
-	}
-	if (length)
-	{
-		//Unrecognised message format
-		return;
-	}
+	//Allocate a buffer and store the received serialised CBOR message into it
+	unsigned char *buffer = malloc(length);
+	otMessageRead(aMessage, offset, buffer, length);
 
+	//Initialise the CBOR parser
+	SuccessOrExit(cbor_parser_init(buffer, length, 0, &parser, &value));
+
+	//Extract the values corresponding to the keys from the CBOR map
+	SuccessOrExit(cbor_value_map_find_value(&value, temp_key, &t_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, humidity_key, &h_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, counter_key, &c_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, light_key, &l_result));
+
+	//Retrieve and print the sensor values
 	printf_time("Server received");
 
-	if (temperature)
+	bool first_print = true;
+
+	if (cbor_value_get_type(&t_result) != CborInvalidType)
 	{
-		printf(" temperature %d.%d*C", (temperature / 10), (temperature % 10));
+		SuccessOrExit(cbor_value_get_int64(&t_result, &temperature));
+		printf(" temperature %d.%d*C", (int)(temperature / 10), (int)abs(temperature % 10));
+		first_print = false;
 	}
-	if (humidity)
+	if (cbor_value_get_type(&h_result) != CborInvalidType)
 	{
-		printf(", humidity %d%%", humidity);
+		SuccessOrExit(cbor_value_get_int64(&h_result, &humidity));
+		if (!first_print)
+			printf(",");
+		printf(" humidity %d%%", (int)humidity);
+		first_print = false;
 	}
-	if (pir_counter)
+	if (cbor_value_get_type(&c_result) != CborInvalidType)
 	{
-		printf(", PIR count %u", pir_counter);
+		SuccessOrExit(cbor_value_get_int64(&c_result, &pir_counter));
+		if (!first_print)
+			printf(",");
+		printf(" PIR count %d", (int)pir_counter);
+		first_print = false;
 	}
-	if (light_level)
+	if (cbor_value_get_type(&l_result) != CborInvalidType)
 	{
-		printf(", light level %u", light_level);
+		if (!first_print)
+			printf(",");
+		SuccessOrExit(cbor_value_get_int64(&l_result, &light_level));
+		printf(" light level %d", (int)light_level);
 	}
 
 	printf(" from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
@@ -206,13 +218,14 @@ static void handleTemperature(void *aContext, otMessage *aMessage, const otMessa
 		goto exit;
 	}
 
-	otCoapMessageInit(responseMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
-	otCoapMessageSetMessageId(responseMessage, otCoapMessageGetMessageId(aMessage));
+	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 
 exit:
+	//Free buffer
+	free(buffer);
 	if (error != OT_ERROR_NONE && responseMessage != NULL)
 	{
 		printf_time("Temperature ack failed: Error %d: %s\r\n", error, otThreadErrorToString(error));
@@ -226,17 +239,17 @@ static void registerCoapResources(otInstance *aInstance)
 
 	SuccessOrExit(error = otCoapStart(aInstance, OT_DEFAULT_COAP_PORT));
 
-	memset(&sTempResource, 0, sizeof(sTempResource));
-	sTempResource.mUriPath = sTempUri;
-	sTempResource.mContext = aInstance;
-	sTempResource.mHandler = &handleTemperature;
+	memset(&sSensorResource, 0, sizeof(sSensorResource));
+	sSensorResource.mUriPath = sSensorUri;
+	sSensorResource.mContext = aInstance;
+	sSensorResource.mHandler = &handleSensorData;
 
 	memset(&sDiscoverResource, 0, sizeof(sDiscoverResource));
 	sDiscoverResource.mUriPath = sDiscoverUri;
 	sDiscoverResource.mContext = aInstance;
 	sDiscoverResource.mHandler = &handleDiscover;
 
-	SuccessOrExit(error = otCoapAddResource(aInstance, &sTempResource));
+	SuccessOrExit(error = otCoapAddResource(aInstance, &sSensorResource));
 	SuccessOrExit(error = otCoapAddResource(aInstance, &sDiscoverResource));
 
 exit:
@@ -274,7 +287,6 @@ int main(int argc, char *argv[])
 	otThreadSetMasterKey(OT_INSTANCE, &key);
 	otLinkSetChannel(OT_INSTANCE, 22);
 	otThreadSetEnabled(OT_INSTANCE, true);
-	otThreadSetAutoStart(OT_INSTANCE, true);
 
 	registerCoapResources(OT_INSTANCE);
 

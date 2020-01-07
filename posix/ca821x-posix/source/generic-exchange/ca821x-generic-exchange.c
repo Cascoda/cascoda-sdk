@@ -282,7 +282,7 @@ ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, 
 	ca_error                     error = CA_ERROR_SUCCESS;
 	uint8_t                      buf[(size_t)cmdlen + 2];
 
-	if (cmdlen & SPI_SYN)
+	if (cmdid & SPI_SYN)
 	{
 		error = CA_ERROR_INVALID_ARGS;
 		goto exit;
@@ -293,6 +293,9 @@ ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, 
 	memcpy(buf + 2, payload, cmdlen);
 
 	add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, cmdlen + 2, pDeviceRef);
+
+	if (priv->signal_func)
+	    priv->signal_func(pDeviceRef);
 
 exit:
 	return error;

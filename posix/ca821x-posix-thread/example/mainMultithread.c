@@ -95,19 +95,19 @@ int main(int argc, char *argv[])
 	//Purely for example purposes!
 
 	pthread_mutex_lock(&ot_mutex);
-	otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+	otThreadSetRouterEligible(OT_INSTANCE, false);
 	pthread_mutex_unlock(&ot_mutex);
 
 	while (1)
 	{
 		sleep(30); //30 seconds
 		pthread_mutex_lock(&ot_mutex);
-		otThreadSetRouterRoleEnabled(OT_INSTANCE, false);
+		otThreadSetRouterEligible(OT_INSTANCE, false);
 		pthread_mutex_unlock(&ot_mutex);
 
 		sleep(30); //30 seconds
 		pthread_mutex_lock(&ot_mutex);
-		otThreadSetRouterRoleEnabled(OT_INSTANCE, true);
+		otThreadSetRouterEligible(OT_INSTANCE, true);
 		otThreadBecomeRouter(OT_INSTANCE);
 		pthread_mutex_unlock(&ot_mutex);
 	}

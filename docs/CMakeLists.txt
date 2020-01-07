@@ -1,8 +1,5 @@
-# Global config ---------------------------------------------------------------
-# cmake 3.11 is required in order to use the neat external project syntax
-cmake_minimum_required (VERSION 3.11)
-
 project (cascoda-docs)
+
 configure_file(
 	${PROJECT_SOURCE_DIR}/doxyfile.in
 	${PROJECT_BINARY_DIR}/doxyfile

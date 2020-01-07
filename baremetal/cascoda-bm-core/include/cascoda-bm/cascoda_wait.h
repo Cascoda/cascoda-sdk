@@ -90,6 +90,7 @@ ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContex
  * \param aCommandId - The commandId of the Asynchronous upstream command to be captured
  * \param aCallback  - A function pointer to the callback to be swapped in during the wait
  * \param aTimeoutMs - Timeout in milliseconds to wait for message before giving up
+ * \param aCallbackContext - Provide a pointer to a context, which can be retrieved in the callback using WAIT_GetContext.
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return Status

@@ -63,49 +63,46 @@ int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
 // static function prototypes
-static void     EVBME_COMM_CHECK_request(struct EVBME_COMM_CHECK_request *msg);
-static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
-static int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-static ca_error EVBME_SET_request(uint8_t            Attribute,
-                                  uint8_t            AttributeLength,
-                                  uint8_t *          AttributeValue,
-                                  struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRef);
-static void     EVBME_Disconnect(void);
 static ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
 static void     EVBME_WakeUpRF(void);
 
-/* dummy stub functions if no serial interface is defined */
-void EVBME_Message_DUMMY(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
-{
-	(void)pBuffer;
-	(void)Count;
-	(void)pDeviceRef;
-}
+#if defined(USE_USB) || defined(USE_UART)
+static void     EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer);
+static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+static int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
+static void     EVBME_Disconnect(void);
+static ca_error EVBME_SET_request(uint8_t            Attribute,
+                                  uint8_t            AttributeLength,
+                                  uint8_t *          AttributeValue,
+                                  struct ca821x_dev *pDeviceRef);
 
-void MAC_Message_DUMMY(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
+static void EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer)
 {
-	(void)CommandId;
-	(void)Count;
-	(void)pBuffer;
-}
+	struct EVBME_COMM_CHECK_request *msg = (struct EVBME_COMM_CHECK_request *)(SerialRxBuffer->Data);
 
-static void EVBME_COMM_CHECK_request(struct EVBME_COMM_CHECK_request *msg)
-{
+	if (msg->mIndSize == 0 || SerialRxBuffer->CmdLen == 3)
+		msg->mIndSize = 1;
+
+	uint8_t buf[msg->mIndSize];
+
 	TIME_WaitTicks(msg->mDelay);
+
+	memset(buf, 0, sizeof(buf));
+	buf[0] = msg->mHandle;
 
 	if (!MAC_Message)
 		return;
 
 	for (uint8_t i = 0; i < msg->mIndCount; i++)
 	{
-		MAC_Message(EVBME_COMM_INDICATION, 1, &(msg->mHandle));
+		MAC_Message(EVBME_COMM_INDICATION, msg->mIndSize, buf);
 	}
 }
 
@@ -114,6 +111,7 @@ static void EVBME_COMM_CHECK_request(struct EVBME_COMM_CHECK_request *msg)
  * \brief Dispatch upstream messages for EVBME
  *******************************************************************************
  * \param SerialRxBuffer - Serial message to process
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return  0: Message was not consumed by EVBME (should go downstream)
  *         >0: Message was consumed by EVBME
@@ -148,7 +146,7 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
 		break;
 	case EVBME_COMM_CHECK:
 		ret = 1;
-		EVBME_COMM_CHECK_request((struct EVBME_COMM_CHECK_request *)(SerialRxBuffer->Data));
+		EVBME_COMM_CHECK_request(SerialRxBuffer);
 		break;
 	default:
 		// check if MAC/API straight-through command requires additional action
@@ -165,7 +163,6 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
  *******************************************************************************
  * \param buf - Message to send DownStream
  * \param len - Length of buf
- * \param response - Container for synchronous response
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
@@ -211,6 +208,7 @@ static void EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_de
  * \brief Checks if MAC/API Command from Serial requires Action
  *******************************************************************************
  * \param SerialRxBuffer - Serial message to process
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return  0: Message was not consumed by EVBME (should go downstream)
  *         >0: Message was consumed by EVBME
@@ -276,11 +274,23 @@ static int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct c
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Reset Test Modes and RF when GUI is disconnected
+ *******************************************************************************
+ ******************************************************************************/
+static void EVBME_Disconnect(void)
+{
+	EVBME_HasReset = 1;
+	BSP_ResetRF(50); // reset RF for 50 ms
+} // End of EVBME_Disconnect()
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief EVBME_SET_request according to EVBME Spec
  *******************************************************************************
  * \param Attribute - Attribute Specifier
  * \param AttributeLength - Attribute Length
  * \param AttributeValue - Pointer to Attribute Value
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return EVBME Status
  *******************************************************************************
@@ -331,6 +341,26 @@ static ca_error EVBME_SET_request(uint8_t            Attribute,
 
 	return status;
 } // End of EVBME_SET_request()
+
+#else // defined(USE_USB) || defined(USE_UART)
+
+/** dummy stub function if no serial interface is defined */
+static void EVBME_Message_DUMMY(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
+{
+	(void)pBuffer;
+	(void)Count;
+	(void)pDeviceRef;
+}
+
+/** dummy stub function if no serial interface is defined */
+static void MAC_Message_DUMMY(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
+{
+	(void)CommandId;
+	(void)Count;
+	(void)pBuffer;
+}
+
+#endif // defined(USE_USB) || defined(USE_UART)
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -385,6 +415,7 @@ exit:
  * \brief Reset RF device and check connection to RF
  *******************************************************************************
  * \param ms - Number of milliseconds to hold reset pin low for
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return EVBME Status
  *******************************************************************************
@@ -420,6 +451,7 @@ exit:
  * \brief Reset RF device and check connection to RF when GUI is connected
  *******************************************************************************
  * \param aAppName - App name string
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return EVBME Status
  *******************************************************************************
@@ -445,20 +477,10 @@ static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRe
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Reset Test Modes and RF when GUI is disconnected
- *******************************************************************************
- ******************************************************************************/
-static void EVBME_Disconnect(void)
-{
-	EVBME_HasReset = 1;
-	BSP_ResetRF(50); // reset RF for 50 ms
-} // End of EVBME_Disconnect()
-
-/******************************************************************************/
-/***************************************************************************/ /**
  * \brief Switch External Clock from CAX on or off
  *******************************************************************************
  * \param on_offb - 0: Off 1: On
+ * \param pDeviceRef   Pointer to initialised ca821x_device_ref struct
  * \retval CA_ERROR_SUCCESS for success, CA_ERROR_FAIL for failure
  *******************************************************************************
  ******************************************************************************/
@@ -568,6 +590,7 @@ static ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *pa
  *******************************************************************************
  * \param mode - Power-Down Mode
  * \param timeout_ms - Timeout for the wakeup indication (ms)
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  ******************************************************************************/
 static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
@@ -775,4 +798,9 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	status = EVBME_Connect(aAppName, pDeviceRef); // reset and connect RF
 
 	return status;
+} // End of EVBMEInitialise()
+
+const char *EVBME_GetAppName(void)
+{
+	return app_name;
 } // End of EVBMEInitialise()

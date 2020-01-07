@@ -72,7 +72,7 @@
 	} while (0)
 
 /**
- *  This unconditionally executes @aAction and branches to the local
+ *  This unconditionally executes aAction and branches to the local
  *  label 'exit'.
  *
  *  @note The use of this interface implies neither success nor

@@ -115,9 +115,12 @@ enum mac_addr_mode
 /** Enumeration of different MAC TxOptions */
 enum MAC_TXOPT
 {
-	TXOPT_ACKREQ   = 0x01, //!< Request acknowledgement from receiving node
-	TXOPT_GTS      = 0x02, //!< Use guaranteed time slot (Not supported)
-	TXOPT_INDIRECT = 0x04  //!< Transmit indirectly
+	TXOPT_ACKREQ             = 0x01, //!< Request acknowledgement from receiving node
+	TXOPT_GTS                = 0x02, //!< Use guaranteed time slot (Not supported)
+	TXOPT_INDIRECT           = 0x04, //!< Transmit indirectly
+	TXOPT_NS_THREADNONCE     = 0x80, //!< Nonstandard, use Thread-specific nonce for mode2 frames
+	TXOPT_NS_FPEND           = 0x40, //!< Nonstandard, set the frame pending bit on the outgoing frame
+	TXOPT_NS_SECURE_INDIRECT = 0x20, //!< Nonstandard, only send the indirect message in reply to a secure poll
 };
 
 /**

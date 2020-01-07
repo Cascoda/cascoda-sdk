@@ -256,7 +256,7 @@ uint8_t PHYTestLOLocking(struct ca821x_dev *pDeviceRef);
 /***************************************************************************/ /**
  * \brief PHY Test Mode Exit
  *******************************************************************************
- * \param status - Status to be reported
+ * \param errmsg - Status to be reported
  *******************************************************************************
  ******************************************************************************/
 void PHYTestExit(char *errmsg);
@@ -279,9 +279,16 @@ void PHYTestReset(void);
 /***************************************************************************/ /**
  * \brief Calculate Test Statistics
  *******************************************************************************
- * \param mode - mode: accumulation, initialisation, rollover report, final report
- * \param rollover - rollover for reporting when 1
- * \param final - final calculations for end of test reporting
+ * \param mode
+ * \parblock
+ * mode: accumulation, initialisation, rollover report, final report
+ * rollover - rollover for reporting when 1
+ * final - final calculations for end of test reporting
+ * \endparblock
+ * \param ed - Test Packet energy Detect Value
+ * \param cs - Test Packet carrier sense value
+ * \param fo - Test Packet count of falloffs
+ *
  *******************************************************************************
  ******************************************************************************/
 void PHYTestStatistics(uint8_t mode, uint8_t ed, uint8_t cs, uint8_t fo);
@@ -385,6 +392,7 @@ void PHYTestReportEDReceived(struct TDME_EDDET_indication_pset *params);
  * \brief Report LO Test 3 Result (Locking Test)
  *******************************************************************************
  * \param ntest - Number of Test
+ * \param params - TDME LOTLK confirm buffer
  *******************************************************************************
  ******************************************************************************/
 void PHYTestReportLOLocking(struct TDME_LOTLK_confirm_pset *params, uint8_t ntest);
@@ -404,6 +412,7 @@ void PHYTestCfg(uint8_t val);
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for TDME_TESTMODE_request_sync
  *******************************************************************************
+ * \param testmode - Test mode
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -415,7 +424,7 @@ uint8_t PHY_TESTMODE_request(uint8_t testmode, struct ca821x_dev *pDeviceRef);
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for TDME_SET_request_sync
  *******************************************************************************
- * \param attribute - TDME Attribute
+ * \param evbme_attribute - TDME Attribute
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -427,6 +436,7 @@ uint8_t PHY_SET_request(uint8_t evbme_attribute, struct ca821x_dev *pDeviceRef);
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for TDME_TXPKT_request_sync
  *******************************************************************************
+ * \param msg - TDME TxPktReq MAC Message
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -439,7 +449,8 @@ uint8_t PHY_TXPKT_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef
  * \brief PHY Test Wrapper for TDME_LOTLK_request_sync
  *******************************************************************************
  * \param ch - 802.15.4 Channel to be tested
- * \param rx_txb - rx Mode to be tested when 1, Tx Mode when 0
+ * \param rx_txb - rx Mode to be tested when 1, Tx Mode when 0#
+ * \param ntest - Number of Test
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -451,7 +462,7 @@ uint8_t PHY_LOTLK_request(uint8_t ch, uint8_t rx_txb, uint8_t ntest, struct ca82
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for TDME_RXPKT_indication
  *******************************************************************************
- * \param indication - rxpkt indication buffer
+ * \param params - rxpkt indication buffer
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -463,7 +474,7 @@ int PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for TDME_EDDET_indication
  *******************************************************************************
- * \param indication - eddet indication buffer
+ * \param params - eddet indication buffer
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return Status
@@ -521,7 +532,7 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for MCPS_DATA_indication()
  *******************************************************************************
- * \param data_ind - MCPS data indication buffer
+ * \param params - MCPS data indication buffer
  * \param pDeviceRef - Device Reference
  *******************************************************************************
  * \return Status
@@ -533,7 +544,7 @@ uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struc
 /***************************************************************************/ /**
  * \brief PHY Test Wrapper for MCPS_DATA_confirm()
  *******************************************************************************
- * \param data_cnf - MCPS data confirm buffer
+ * \param params - MCPS data confirm buffer
  * \param pDeviceRef - Device Reference
  *******************************************************************************
  * \return Status

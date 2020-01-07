@@ -61,7 +61,7 @@ static void prvCallback(void);
  * @brief Implements the task which calls the functions exported from the secure
  * side.
  *
- * @param pvParameters[in] Parameters as passed during task creation.
+ * @param[in] pvParameters Parameters as passed during task creation.
  */
 static void prvSecureCallingTask(void *pvParameters);
 /*-----------------------------------------------------------*/

@@ -44,6 +44,7 @@
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_chili_usb.h"
+#include "cascoda_secure.h"
 
 /* define system configuaration mask */
 #define CLKCFG_ENPLL 0x01
@@ -147,17 +148,17 @@ __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 	CLK_EnableModuleClock(EADC_MODULE);
 
 	/* EADC clock source is PCLK->HCLK, divide down to 1 MHz */
-	if (SystemFrequency == FSYS_64MHZ)
+	if (CHILI_GetSystemFrequency() == FSYS_64MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(64));
-	else if (SystemFrequency == FSYS_48MHZ)
+	else if (CHILI_GetSystemFrequency() == FSYS_48MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(48));
-	else if (SystemFrequency == FSYS_32MHZ)
+	else if (CHILI_GetSystemFrequency() == FSYS_32MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(32));
-	else if (SystemFrequency == FSYS_24MHZ)
+	else if (CHILI_GetSystemFrequency() == FSYS_24MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(24));
-	else if (SystemFrequency == FSYS_16MHZ)
+	else if (CHILI_GetSystemFrequency() == FSYS_16MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(16));
-	else if (SystemFrequency == FSYS_12MHZ)
+	else if (CHILI_GetSystemFrequency() == FSYS_12MHZ)
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(12));
 	else /* FSYS_4MHZ */
 		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(4));
@@ -212,7 +213,7 @@ __NONSECURE_ENTRY u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms
 	u8_t mask = 0;
 
 	/* check if PLL required */
-	if (UseExternalClock)
+	if (CHILI_GetUseExternalClock())
 	{
 		if (fsys > FSYS_4MHZ) /* PLL needed to generate fsys from HXT */
 			mask |= CLKCFG_ENPLL;
@@ -235,11 +236,11 @@ __NONSECURE_ENTRY u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms
 	}
 
 	/* check if HXT required */
-	if (UseExternalClock)
+	if (CHILI_GetUseExternalClock())
 		mask |= CLKCFG_ENHXT; /* external clock always requires HXT */
 
 	/* check if HIRC required */
-	if (!UseExternalClock)
+	if (!CHILI_GetUseExternalClock())
 		mask |= CLKCFG_ENHIRC; /* internal clock always requires HIRC for timers etc. */
 
 	/* check if HIRC48 required */
@@ -250,7 +251,7 @@ __NONSECURE_ENTRY u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms
 			mask |= CLKCFG_ENHIRC48;
 #endif
 	}
-	if (!UseExternalClock) /* internal clock */
+	if (!CHILI_GetUseExternalClock()) /* internal clock */
 	{
 #ifdef USE_USB
 		if (enable_comms) /* HIRC48 always used for USB clock */
@@ -495,7 +496,7 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	return (status);
 }
 
-void CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms)
+__NONSECURE_ENTRY void CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms)
 {
 	u8_t clkcfg;
 
@@ -572,7 +573,7 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 
 	/* configure clock selects and dividers for timers 0 and 1 */
 	/* clocks are fixed to HXT (4 MHz) or HIRC (12 MHz) */
-	if (UseExternalClock)
+	if (CHILI_GetUseExternalClock())
 	{
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HXT, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HXT, 0);
@@ -587,7 +588,7 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	TIMER_Open(TIMER1, TIMER_CONTINUOUS_MODE, 1000000);
 
 	/* prescale value has to be set after TIMER_Open() is called! */
-	if (UseExternalClock)
+	if (CHILI_GetUseExternalClock())
 	{
 		/*  4 MHZ Clock: prescaler 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 3);
@@ -923,7 +924,7 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	if (UART_BAUDRATE <= 115200)
 	{
 		// 4 MHz
-		if (UseExternalClock)
+		if (CHILI_GetUseExternalClock())
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_HXT, UART_CLKDIV(1));
 		else
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_HIRC, UART_CLKDIV(3));
@@ -931,7 +932,7 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	else
 	{
 		// 48 MHz
-		if ((SystemFrequency == FSYS_32MHZ) || (SystemFrequency == FSYS_64MHZ))
+		if ((CHILI_GetSystemFrequency() == FSYS_32MHZ) || (CHILI_GetSystemFrequency() == FSYS_64MHZ))
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(2));
 		else
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(1));
@@ -1058,75 +1059,6 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 	printf("\r\n");
 }
 #endif
-
-__NONSECURE_ENTRY void CHILI_SystemReInit()
-{
-#if defined(USE_USB)
-	static u8_t comms_have_been_enabled = 0;
-#endif /* USE_USB */
-
-	/* switch off comms */
-#if defined(USE_USB)
-	if (!EnableCommsInterface)
-		USB_Deinitialise();
-#endif /* USE_USB */
-#if defined(USE_UART)
-	if (!EnableCommsInterface)
-		CHILI_UARTDeinit();
-#endif /* USE_UART */
-
-	/* configure clocks */
-	CHILI_ClockInit(SystemFrequency, EnableCommsInterface);
-
-	/* switch on comms */
-#if defined(USE_USB)
-	/* do not initialise if already active as connection will be closed */
-	if ((EnableCommsInterface) && (!comms_have_been_enabled))
-		USB_Initialise();
-#endif /* USE_USB */
-#if defined(USE_UART)
-	/* requires re-initialisation to set correct baudrate */
-	if (EnableCommsInterface)
-		CHILI_UARTInit();
-#endif /* USE_UART */
-
-	/* initialise timers */
-	CHILI_TimersInit();
-
-	/* finish clock initialisation */
-	/* this has to be done AFTER all other system config changes ! */
-	CHILI_CompleteClockInit(SystemFrequency, EnableCommsInterface);
-
-	/* re-initialise SPI clock rate */
-	SPI_SetBusClock(SPI, FCLK_SPI);
-
-	/* set interrupt priorities */
-	/* 0: highest  timers */
-	/* 1:          downstream dispatch and gpios */
-	/* 2:          upstream   dispatch */
-	/* 3: lowest */
-	CHILI_ReInitSetTimerPriority();
-	NVIC_SetPriority(TMR2_IRQn, 0);
-	NVIC_SetPriority(TMR3_IRQn, 0);
-	NVIC_SetPriority(GPA_IRQn, 1);
-	NVIC_SetPriority(GPB_IRQn, 1);
-	NVIC_SetPriority(GPC_IRQn, 3); //Set to 3 so other interrupts can pre-empt this slow one
-	NVIC_SetPriority(GPD_IRQn, 1);
-	NVIC_SetPriority(GPE_IRQn, 1);
-	NVIC_SetPriority(GPF_IRQn, 1);
-	NVIC_SetPriority(GPG_IRQn, 1);
-	NVIC_SetPriority(GPH_IRQn, 1);
-#if defined(USE_USB)
-	NVIC_SetPriority(USBD_IRQn, 2);
-#endif
-#if defined(USE_UART)
-	NVIC_SetPriority(UART_IRQn, 2);
-#endif
-
-#if defined(USE_USB)
-	comms_have_been_enabled = EnableCommsInterface;
-#endif
-}
 
 __NONSECURE_ENTRY void CHILI_EnableTemperatureSensor()
 {

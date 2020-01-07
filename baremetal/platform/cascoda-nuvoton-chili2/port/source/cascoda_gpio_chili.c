@@ -33,6 +33,7 @@
 */
 /* System */
 #include <stdio.h>
+#include <string.h>
 /* Platform */
 #include "M2351.h"
 #include "eadc.h"
@@ -90,23 +91,6 @@ struct pinstatus
 };
 
 /******************************************************************************/
-/****** Global Variables                                                 ******/
-/******************************************************************************/
-#if (CASCODA_CHILI2_CONFIG == 0)
-const struct ModuleSpecialPins BSP_ModuleSpecialPins = {MSP_DEFAULT};
-#else
-const struct ModuleSpecialPins BSP_ModuleSpecialPins = {
-    MSP_DEFAULT,
-    .USB_PRESENT = PIN_USB_PRESENT,
-};
-#endif
-
-struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
-{
-	return BSP_ModuleSpecialPins;
-}
-
-/******************************************************************************/
 /****** Static Variables                                                 ******/
 /******************************************************************************/
 static struct pinstatus ModulePinStatus[NUM_MODULEPINS] = {0};
@@ -137,6 +121,16 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
     {36, PN_B, 0, 0}, /* PB.0 */
 #endif                /* CASCODA_CHILI2_CONFIG */
 };
+
+struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
+{
+	struct ModuleSpecialPins rval;
+	memset(&rval, P_NA, sizeof(rval));
+#if (CASCODA_CHILI2_CONFIG != 0)
+	rval.USB_PRESENT = PIN_USB_PRESENT;
+#endif
+	return rval;
+}
 
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 {

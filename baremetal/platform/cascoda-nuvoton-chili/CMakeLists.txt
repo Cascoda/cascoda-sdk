@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
 project (cascoda-nuvoton-chili)
 
 # Return if not suitable for system processor

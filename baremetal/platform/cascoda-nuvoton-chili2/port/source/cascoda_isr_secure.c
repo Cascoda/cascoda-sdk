@@ -38,7 +38,7 @@
 
 extern volatile u8_t asleep;
 
-void cascoda_isr_secure_init(void)
+__NONSECURE_ENTRY void cascoda_isr_secure_init(void)
 {
 	//This function is here to kick the linker, do not remove!
 	return;

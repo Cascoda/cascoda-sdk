@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.5)
 project (ca821x-api-lib)
 
 # Set configuration variables -------------------------------------------------

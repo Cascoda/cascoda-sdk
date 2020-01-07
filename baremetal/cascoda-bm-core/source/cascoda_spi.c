@@ -467,9 +467,8 @@ exit:
  * This function waits until a synchronous command response is received over SPI
  *
  * \param cmdid - The command id of the synchronous request
- * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
- * \return  0 or \ref evbme_error_code
+ * \return  0 or evbme_error_code
  *
  */
 static ca_error SPI_SyncWait(uint8_t cmdid)
@@ -540,8 +539,7 @@ exit:
 /**
  * \brief SPI Error Handling
  *
- * \param message - Error Message
- * \param restart - Flag for restarting interface when non-zero
+ * \param errcode - Error Message
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  */

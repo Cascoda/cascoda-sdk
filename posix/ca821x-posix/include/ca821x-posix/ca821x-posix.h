@@ -122,6 +122,7 @@ ca_error ca821x_util_stop_downstream_dispatch_worker();
  * Currently, 0xA8 is used for openthread commands.
  *
  * @param[in]  callback   Function pointer to an user-command-handling callback
+ * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
  *
  * @retval CA_ERROR_SUCCESS Callback successfully registered
  * @retval CA_ERROR_FAIL Could not register callback

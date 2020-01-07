@@ -1,10 +1,8 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
 project (ca821x-posix-thread)
 
-if (NOT CMAKE_HOST_UNIX)
-	message(WARNING "Building Openthread on windows is a challenge. Contributions welcome but it's probably easier to switch to Linux.")
-	message(WARNING "Skipping openthread build due to non-unix build system!")
+if (WIN32)
+	message(WARNING "Openthread not building for windows - platform layer not currently compatible.")
 	return()
 endif()
 
@@ -28,8 +26,6 @@ add_library(ca821x-openthread-posix-plat
 	${PROJECT_SOURCE_DIR}/platform/spi-stubs.c
 	)
 
-add_dependencies(ca821x-openthread-posix-plat openthread-build)
-
 target_link_libraries(ca821x-openthread-posix-plat
 	PUBLIC
 		ca821x-posix
@@ -48,7 +44,7 @@ target_include_directories( ca821x-openthread-posix-plat
 		${PROJECT_BINARY_DIR}/platform/include
 	)
 
-# Add helper interface libraries to simplify the cyclic dependancy between
+# Add helper interface libraries to simplify the cyclic dependency between
 # the platform layer and the openthread core.
 add_library(ca821x-openthread-posix-ftd INTERFACE)
 target_link_libraries(ca821x-openthread-posix-ftd
@@ -97,5 +93,19 @@ target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
 target_link_libraries(ncpapp openthread-ncp-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
-target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd)
+target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd tinycbor-master)
 target_link_libraries(ot-server-eink ca821x-openthread-posix-ftd)
+
+install(
+	TARGETS
+		cliapp
+		cliapp-mtd
+		ncpapp
+		mt-example
+		ot-server-standalone
+		ot-server-eink
+	COMPONENT
+		examples
+	RUNTIME DESTINATION
+		${CMAKE_INSTALL_BINDIR}
+)

@@ -124,6 +124,21 @@ static inline void PUTLE32(uint32_t in, uint8_t *out)
 }
 
 /**
+ * Put a 64-bit value into a little-endian octet array
+ */
+static inline void PUTLE64(uint64_t in, uint8_t *out)
+{
+	out[0] = in & 0xff;
+	out[1] = (in >> 8) & 0xff;
+	out[2] = (in >> 16) & 0xff;
+	out[3] = (in >> 24) & 0xff;
+	out[4] = (in >> 32) & 0xff;
+	out[5] = (in >> 40) & 0xff;
+	out[6] = (in >> 48) & 0xff;
+	out[7] = (in >> 56) & 0xff;
+}
+
+/**
  * Extract a 16-bit value from a big-endian octet array
  */
 static inline uint16_t GETBE16(const uint8_t *in)
@@ -157,6 +172,21 @@ static inline void PUTBE32(uint32_t in, uint8_t *out)
 	out[2] = (in >> 8) & 0xff;
 	out[1] = (in >> 16) & 0xff;
 	out[0] = (in >> 24) & 0xff;
+}
+
+/**
+ * Put a 64-bit value into a little-endian octet array
+ */
+static inline void PUTBE64(uint64_t in, uint8_t *out)
+{
+	out[7] = in & 0xff;
+	out[6] = (in >> 8) & 0xff;
+	out[5] = (in >> 16) & 0xff;
+	out[4] = (in >> 24) & 0xff;
+	out[3] = (in >> 32) & 0xff;
+	out[2] = (in >> 40) & 0xff;
+	out[1] = (in >> 48) & 0xff;
+	out[0] = (in >> 56) & 0xff;
 }
 
 #ifdef __cplusplus

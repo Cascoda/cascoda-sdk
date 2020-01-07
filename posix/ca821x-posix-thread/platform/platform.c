@@ -153,7 +153,7 @@ static const char *getDataDirPath()
 	{
 		//Fall back to system files
 		ddp         = "/usr/local/etc/cascoda/ot";
-		dataPathLen = strlen(ddp) + 4;
+		dataPathLen = strlen(ddp) + 5;
 		//This allocation only occurs once, and is used until program end, so we don't need to bother free-ing
 		dataPath = malloc(dataPathLen);
 		snprintf(dataPath, dataPathLen, "%s%04d", ddp, NODE_ID);

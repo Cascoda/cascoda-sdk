@@ -180,6 +180,7 @@ u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin);
  *******************************************************************************
  * \param portnum  - returned port number
  * \param portbit  - returned port b
+ * \param func - function to set the pin to
  *******************************************************************************
  ******************************************************************************/
 void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t func);

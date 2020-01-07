@@ -85,7 +85,7 @@ static const uint8_t UART_ACK = 0xAA;
 //! Timeout for waiting for ack = 2 seconds
 static const struct timespec ack_timeout = {2, 0};
 //! Timeout for posix select call = 0.5 seconds
-static const struct timespec select_timeout = {0, 5000000000L};
+static const struct timespec select_timeout = {0, 500000000ULL};
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
@@ -123,7 +123,7 @@ static struct timespec time_sub(const struct timespec *t1, const struct timespec
 
 /**
  * Get the amount of time that has passed since the last transmission.
- * @param uart exchange private state
+ * @param priv exchange private state
  * @return the time that has passed since last UART transmission.
  */
 static struct timespec get_time_passed(const struct uart_exchange_priv *priv)
@@ -226,12 +226,19 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		timeout = select_timeout;
 	}
 
-	//Block until activity required, then read potential dummy byte
-	pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
-	read(priv->dummyPipe[0], &dummybyte, 1);
+	if (!priv->offset)
+	{
+		//Block until activity required, then read potential dummy byte
+		int pError   = pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
+		int dummyLen = read(priv->dummyPipe[0], &dummybyte, 1);
+
+		ca_log_debg("pError return value: %d", pError);
+		ca_log_debg("dummyLen: %d", dummyLen);
+	}
 
 	//Read from the device if possible
 	len = read(priv->fd, priv->buf + priv->offset, sizeof(priv->buf) - priv->offset);
+	ca_log_debg("\tdeviceLen: %d", len);
 	if (len < 0)
 	{
 		if (errno == EAGAIN)
@@ -290,6 +297,7 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	{
 		priv->tx_stalled = 0;
 		len              = 0;
+		ca_log_debg("processed ACK");
 	}
 
 	if (len >= 3 && buf[0] == 0xF0)
@@ -318,6 +326,7 @@ static void unblock_read(struct ca821x_dev *pDeviceRef)
 
 	const uint8_t dummybyte = 0;
 	write(priv->dummyPipe[1], &dummybyte, 1);
+	ca_log_debg("Wrote to dummy");
 }
 
 static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
@@ -375,6 +384,7 @@ static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_
 	else
 	{
 		//Wait for ack
+		ca_log_debg("Wrote to UART");
 		priv->tx_stalled = 1;
 		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
 	}

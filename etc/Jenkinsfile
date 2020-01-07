@@ -86,7 +86,7 @@ pipeline {
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8211',
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_LOG_LEVEL=DEBG',
 							steps: [[args: '-j10 -O']]
 						)
 						ctest(
@@ -125,10 +125,18 @@ pipeline {
 		stage('PostBuild') {
 			steps {
 				/* Read the logs for GCC Issues & publish to tool*/
-				recordIssues(tools: [gcc()])
+				/* Break if any new errors are introduced.*/
+				recordIssues(
+					qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false]],
+					tools: [gcc()]
+				)
 
 				/* Read the logs for doxygen Issues & publish to tool*/
-				recordIssues(tools: [doxygen(pattern: '**/doxyerr.txt')])
+				/* Break if any new errors are introduced.*/
+				recordIssues(
+					qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false]],
+					tools: [doxygen(pattern: '**/doxyerr.txt')]
+				)
 
 				/* Publish the html docs to jenkins */
 				publishHTML(

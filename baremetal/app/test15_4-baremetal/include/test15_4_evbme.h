@@ -74,6 +74,7 @@ int TEST15_4_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x
  * \brief EVBME_PHY_TESTMODE_request according to EVBME Spec
  *******************************************************************************
  * \param TestMode - Test Mode
+ * \param pDeviceRef - pointer to a CA-821x Device reference struct
  *******************************************************************************
  * \return EVBME Status
  *******************************************************************************
@@ -106,6 +107,7 @@ void EVBME_PHY_REPORT_request(void);
  *******************************************************************************
  * \param pDeviceAddress - IEEE address of device expected
  * \param AssocShortAddress - Short address for end device
+ * \param Status - EVBME Status
  *******************************************************************************
  * \return -
  *******************************************************************************

@@ -58,7 +58,7 @@ static uint8_t ucROTaskFaultTracker[SHARED_MEMORY_SIZE] __attribute__((aligned(3
  * @brief Implements the task which has Read Only access to the memory region
  * ucSharedMemory.
  *
- * @param pvParameters[in] Parameters as passed during task creation.
+ * @param[in] pvParameters Parameters as passed during task creation.
  */
 static void prvROAccessTask(void *pvParameters);
 
@@ -66,7 +66,7 @@ static void prvROAccessTask(void *pvParameters);
  * @brief Implements the task which has Read Write access to the memory region
  * ucSharedMemory.
  *
- * @param pvParameters[in] Parameters as passed during task creation.
+ * @param[in] pvParameters Parameters as passed during task creation.
  */
 static void prvRWAccessTask(void *pvParameters);
 

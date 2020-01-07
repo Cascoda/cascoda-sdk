@@ -45,6 +45,7 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_hash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_time.h"
@@ -239,14 +240,14 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 u64_t BSP_GetUniqueId(void)
 {
 	u64_t rval = 0;
-	u32_t extra_byte;
+	u32_t UID[3];
 
 	SYS_UnlockReg();
 	FMC_Open();
-	extra_byte = FMC_ReadUID(2);
-	rval       = FMC_ReadUID(0) ^ extra_byte;
-	rval       = rval << 32ULL;
-	rval |= FMC_ReadUID(1) ^ extra_byte;
+	UID[0] = FMC_ReadUID(0);
+	UID[1] = FMC_ReadUID(1);
+	UID[2] = FMC_ReadUID(2);
+	rval   = HASH_fnv1a_64(&UID, sizeof(UID));
 	FMC_Close();
 	SYS_LockReg();
 

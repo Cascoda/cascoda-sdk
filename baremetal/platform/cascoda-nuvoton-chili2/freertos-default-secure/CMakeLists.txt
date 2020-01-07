@@ -1,5 +1,4 @@
 project (freertos-default-secure)
-cmake_minimum_required (VERSION 3.12)
 
 if(${CASCODA_BM_USE_UART})
 	return()

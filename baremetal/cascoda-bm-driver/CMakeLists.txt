@@ -1,5 +1,4 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
 project (cascoda-bm)
 
 # Set configuration variables -------------------------------------------------
@@ -43,6 +42,7 @@ configure_file(
 # Main library config ---------------------------------------------------------
 add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_hash.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_log.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c

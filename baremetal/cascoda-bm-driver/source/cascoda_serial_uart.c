@@ -55,6 +55,7 @@ enum serial_state
 
 #define EVBME_UART_RXRDY (0xAA) /* serial rx_rdy handshake command (both ways) */
 #define SERIAL_TIMEOUT 1000     /* serial rx_rdy timeout in [ms] */
+#define MAX_TIMEOUTS 5          /* number of timeouts before the Chili stops waiting */
 
 /******************************************************************************/
 /****** Global Variables for Serial State                                ******/
@@ -73,11 +74,12 @@ struct SerialUARTBuffer
 /******************************************************************************/
 /****** Global Variables for Serial Message Buffers                      ******/
 /******************************************************************************/
-struct SerialBuffer            SerialRxBuffer;          //!< Global buffer for received serial messages
-static struct SerialUARTBuffer SerialTxBuffer;          //!< Global buffer for transmitted serial messages
-volatile bool                  SerialRxPending = false; //!< Receive Packet is ready
-static volatile bool           SerialTxStalled = false; //!< Transmit waiting for RxRdy
-static u32_t                   SerialTxTimeout = 0;     //!< RxRdy timeout
+struct SerialBuffer            SerialRxBuffer;             //!< Global buffer for received serial messages
+static struct SerialUARTBuffer SerialTxBuffer;             //!< Global buffer for transmitted serial messages
+volatile bool                  SerialRxPending    = false; //!< Receive Packet is ready
+static volatile bool           SerialTxStalled    = false; //!< Transmit waiting for RxRdy
+static u32_t                   SerialTxTimeout    = 0;     //!< RxRdy timeout
+static u8_t                    SerialTimeoutCount = 0;     //!< Number of timeouts
 
 static u8_t SerialCmdId  = 0xFF;
 static u8_t SerialCmdLen = 0;
@@ -180,6 +182,10 @@ u8_t Serial_ReadInterface(void)
 
 u8_t SerialGetCommand(void)
 {
+	if (SerialRxPending)
+	{
+		SerialTimeoutCount = 0;
+	}
 	return SerialRxPending;
 }
 
@@ -213,7 +219,7 @@ void SerialSendRxRdy(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Send RX_RDY Handshake Packet
+ * \brief Receive RX_RDY Handshake Packet
  *******************************************************************************
  * \return 1 if RX_RDY received, 0 if not
  *******************************************************************************
@@ -222,7 +228,8 @@ static u8_t SerialReceivedRxRdy(void)
 {
 	if ((SerialCmdId == EVBME_UART_RXRDY) && (SerialCmdLen == 0))
 	{
-		SerialTxStalled = false;
+		SerialTxStalled    = false;
+		SerialTimeoutCount = 0;
 		return 1;
 	}
 	return 0;
@@ -248,9 +255,15 @@ static void SerialCheckTxTimeout(void)
 {
 	while (SerialTxStalled == true)
 	{
-		if ((TIME_ReadAbsoluteTime() - SerialTxTimeout) > SERIAL_TIMEOUT)
+		if (SerialTimeoutCount >= MAX_TIMEOUTS)
 		{
 			SerialTxStalled = false;
+			break;
+		}
+		else if ((TIME_ReadAbsoluteTime() - SerialTxTimeout) > SERIAL_TIMEOUT)
+		{
+			SerialTxStalled = false;
+			SerialTimeoutCount++;
 			break;
 		}
 	}
@@ -259,6 +272,7 @@ static void SerialCheckTxTimeout(void)
 void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
 {
 	(void)pDeviceRef;
+	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
 	SerialTxBuffer.SerialBuf.CmdId  = 0xA0;
@@ -270,6 +284,7 @@ void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceR
 
 void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
 {
+	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
 	SerialTxBuffer.SerialBuf.CmdId  = CommandId;

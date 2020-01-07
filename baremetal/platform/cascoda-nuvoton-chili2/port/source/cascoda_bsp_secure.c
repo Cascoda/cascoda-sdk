@@ -27,6 +27,7 @@
  */
 
 /* System */
+#include <arm_cmse.h>
 #include <stdio.h>
 /* Platform */
 #include "M2351.h"
@@ -39,6 +40,7 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
+#include "cascoda_secure.h"
 
 /******************************************************************************/
 /****** Global Variables                                                 ******/
@@ -48,24 +50,52 @@ volatile u8_t     UseExternalClock     = 0;
 volatile fsys_mhz SystemFrequency      = DEFAULT_FSYS;
 volatile u8_t     EnableCommsInterface = 1;
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY u64_t BSP_GetUniqueId(void)
+__NONSECURE_ENTRY void CHILI_SetUseExternalClock(u8_t use_ext_clock)
 {
-	u64_t rval = 0;
-	u32_t extra_byte;
+	UseExternalClock = use_ext_clock;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetUseExternalClock(void)
+{
+	return UseExternalClock;
+}
+
+__NONSECURE_ENTRY void CHILI_SetEnableCommsInterface(u8_t enable_coms_interface)
+{
+	EnableCommsInterface = enable_coms_interface;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetEnableCommsInterface(void)
+{
+	return EnableCommsInterface;
+}
+
+__NONSECURE_ENTRY void CHILI_SetSystemFrequency(fsys_mhz system_frequency)
+{
+	SystemFrequency = system_frequency;
+}
+
+__NONSECURE_ENTRY fsys_mhz CHILI_GetSystemFrequency(void)
+{
+	return SystemFrequency;
+}
+
+__NONSECURE_ENTRY void CHILI_GetUID(uint32_t *uid_out)
+{
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
+	// Check that the output memory is actually nonsecure.
+	uid_out = cmse_check_address_range(uid_out, 3*sizeof(uint32_t), CMSE_NONSECURE);
+#endif
+	if (uid_out == NULL)
+		return;
 
 	SYS_UnlockReg();
 	FMC_Open();
-	extra_byte = FMC_ReadUID(2);
-	rval       = FMC_ReadUID(0) ^ extra_byte;
-	rval       = rval << 32ULL;
-	rval |= FMC_ReadUID(1) ^ extra_byte;
+	uid_out[0] = FMC_ReadUID(0);
+	uid_out[1] = FMC_ReadUID(1);
+	uid_out[2] = FMC_ReadUID(2);
 	FMC_Close();
 	SYS_LockReg();
-
-	return rval;
 }
 
 __NONSECURE_ENTRY void CHILI_EnableSpiModuleClock(void)
@@ -164,74 +194,6 @@ __NONSECURE_ENTRY u8_t BSP_IsWatchdogTriggered(void)
 	if (retval)
 		WDTimeout = 0;
 	return retval;
-}
-
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_UseExternalClock(u8_t useExternalClock)
-{
-	if (UseExternalClock == useExternalClock)
-		return;
-	UseExternalClock = useExternalClock;
-
-#ifdef USE_UART
-	CHILI_UARTWaitWhileBusy();
-#endif
-
-	if (useExternalClock)
-	{
-		/* swap then disable */
-		CHILI_SystemReInit();
-		CHILI_EnableIntOscCal();
-	}
-	else
-	{
-		/* disable then swap */
-		CHILI_DisableIntOscCal();
-		CHILI_SystemReInit();
-	}
-}
-
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
-{
-	if (enable_comms)
-	{
-		/* check frequency settings */
-#if defined(USE_USB)
-		if (fsys == FSYS_4MHZ)
-		{
-			ca_log_crit("SystemConfig Error: Minimum clock frequency for USB is 12MHz");
-			return;
-		}
-#endif
-#if defined(USE_UART)
-		if ((fsys == FSYS_4MHZ) && (UART_BAUDRATE > 115200))
-		{
-			ca_log_crit("SystemConfig Error: Minimum clock frequency for UART @%u is 12MHz", UART_BAUDRATE);
-			return;
-		}
-		if ((fsys == FSYS_64MHZ) && (UART_BAUDRATE == 6000000))
-		{
-			ca_log_crit("SystemConfig Error: UART @%u cannot be used at 64 MHz", UART_BAUDRATE);
-			return;
-		}
-#endif
-	}
-
-#ifdef USE_UART
-	CHILI_UARTWaitWhileBusy();
-#endif
-
-	SystemFrequency      = fsys;
-	EnableCommsInterface = enable_comms;
-
-	/* system  initialisation (clocks, timers ..) */
-	CHILI_SystemReInit();
-	cascoda_isr_secure_init();
 }
 
 /*---------------------------------------------------------------------------*

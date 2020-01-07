@@ -312,6 +312,11 @@ otError otPlatSettingsAbandonChange(otInstance *aInstance)
 	return OT_ERROR_NONE;
 }
 
+void otPlatSettingsDeinit(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+}
+
 otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
 {
 	otError  error       = OT_ERROR_NOT_FOUND;
