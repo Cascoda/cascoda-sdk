@@ -178,6 +178,8 @@ int init_generic(struct ca821x_dev *pDeviceRef)
 	int                          error = 0;
 	struct ca821x_exchange_base *base  = pDeviceRef->exchange_context;
 
+	ca_log_debg("Initialising generic part of exchange...");
+
 	error = init_generic_statics();
 	if (error)
 		goto exit;
@@ -195,7 +197,11 @@ int init_generic(struct ca821x_dev *pDeviceRef)
 	base->io_thread_runflag = 1;
 	pthread_mutex_unlock(&base->flag_mutex);
 
+	ca_log_debg("Initialising io thread.");
 	error = pthread_create(&(base->io_thread), PTHREAD_CREATE_JOINABLE, &ca8210_io_worker, pDeviceRef);
+
+	if (error)
+		ca_log_warn("Failed to start io thread!");
 
 exit:
 	return error;
@@ -295,7 +301,7 @@ ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, 
 	add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, cmdlen + 2, pDeviceRef);
 
 	if (priv->signal_func)
-	    priv->signal_func(pDeviceRef);
+		priv->signal_func(pDeviceRef);
 
 exit:
 	return error;

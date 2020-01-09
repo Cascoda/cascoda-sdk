@@ -64,6 +64,8 @@
 #define FRAG_LAST_MASK (1 << 7)
 #define FRAG_FIRST_MASK (1 << 6)
 
+#define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
+
 /**
  * The usb exchange private-data struct representing a single device.
  */
@@ -394,19 +396,30 @@ static ca_error load_dlibs()
 static ca_error load_dlibs()
 {
 	ca_error error = CA_ERROR_SUCCESS;
+	char *hidapi_lib[] = {
+	    "libhidapi-libusb.so", "libhidapi-libusb.so.0", "libhidapi-hidraw.so", "libhidapi-hidraw.so.0"};
+
+	ca_log_debg("Loading hidapi dlibs...");
 
 	//Load the dynamic library
-	s_hid_lib_handle = dlopen("libhidapi-libusb.so", RTLD_NOW);
-	if (s_hid_lib_handle == NULL)
+	for (size_t i = 0; i < ARRAY_LENGTH(hidapi_lib); i++)
 	{
-		s_hid_lib_handle = dlopen("libhidapi-hidraw.so", RTLD_NOW);
+		ca_log_debg("Trying to open dlib %s", hidapi_lib[i]);
+		s_hid_lib_handle = dlopen(hidapi_lib[i], RTLD_NOW);
+		if (s_hid_lib_handle)
+			break;
+		ca_log_debg("Failed.");
 	}
 
 	if (s_hid_lib_handle == NULL)
 	{
+		ca_log_debg("Failed to open dynamic library for hidapi.");
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
+
+	//Clear the dl error, by reading it
+	dlerror();
 
 	dhid_enumerate = dlsym(s_hid_lib_handle, "hid_enumerate");
 	dhid_open_path = dlsym(s_hid_lib_handle, "hid_open_path");
@@ -417,6 +430,7 @@ static ca_error load_dlibs()
 
 	if (dlerror() != NULL)
 	{
+		ca_log_debg("Failed to find required dynamic symbols.");
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
@@ -424,6 +438,7 @@ static ca_error load_dlibs()
 exit:
 	if (error && (s_hid_lib_handle != NULL))
 	{
+		ca_log_debg("Error loading dynamic hidapi.");
 		dlclose(s_hid_lib_handle);
 	}
 	return error;
@@ -582,8 +597,10 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	ca_error                  error = CA_ERROR_SUCCESS;
 	size_t                    len   = 0;
 
+	ca_log_debg("Trying USB Exchange");
 	if (!s_initialised)
 	{
+		ca_log_debg("First time init, initialising statics (such as dynamic lib).");
 		error = init_statics();
 		if (error)
 			return error;
@@ -592,20 +609,32 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	if (pDeviceRef->exchange_context)
 		return CA_ERROR_ALREADY;
 
+	ca_log_debg("USB exchange static parts loaded, initialising device...");
 	pthread_mutex_lock(&devs_mutex);
 	if (s_devcount >= USB_MAX_DEVICES)
 	{
+		ca_log_warn("Aborting device search, maximum usb exchange count reached.");
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
 	pDeviceRef->exchange_context = calloc(1, sizeof(struct usb_exchange_priv));
 	priv                         = pDeviceRef->exchange_context;
-	priv->base.exchange_type     = ca821x_exchange_usb;
-	priv->base.error_callback    = callback;
-	priv->base.write_func        = usb_try_write;
-	priv->base.read_func         = usb_try_read;
-	priv->base.flush_func        = flush_unread_usb;
+
+	if (!priv)
+	{
+		ca_log_warn("Failed to allocate exchange context.");
+		error = CA_ERROR_NO_BUFFER;
+		goto exit;
+	}
+
+	priv->base.exchange_type  = ca821x_exchange_usb;
+	priv->base.error_callback = callback;
+	priv->base.write_func     = usb_try_write;
+	priv->base.read_func      = usb_try_read;
+	priv->base.flush_func     = flush_unread_usb;
+
+	ca_log_debg("USB callbacks loaded into exchange struct.");
 
 	//Iterate through compatible HIDs until one is found that hasn't already
 	//been opened.
@@ -613,6 +642,7 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	hid_cur = get_next_hid(hid_ll);
 	while (dev == NULL && hid_cur != NULL)
 	{
+		ca_log_debg("Attempting to claim usb device %s", hid_cur->path);
 		error = lock_device(hid_cur->serial_number, pDeviceRef);
 		if (error == CA_ERROR_SUCCESS)
 			dev = dhid_open_path(hid_cur->path);
@@ -627,6 +657,7 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	}
 	if (hid_cur == NULL)
 	{ //Device not found
+		ca_log_debg("Failed to find unused usb device.");
 		error = CA_ERROR_NOT_FOUND;
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
