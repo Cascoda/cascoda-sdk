@@ -135,8 +135,8 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_
 	CHILI_SystemReInit();
 
 	/* reset after TIMER0 is re-enabled */
-	CHILI_SetAsleep(0);
 	CHILI_FastForward(sleeptime_ms);
+	CHILI_SetAsleep(0);
 
 	/* read downstream message that has woken up device */
 	if (!use_timer0)

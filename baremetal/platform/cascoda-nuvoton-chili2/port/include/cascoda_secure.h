@@ -97,4 +97,10 @@ u8_t CHILI_GetAsleep();
 /** Set asleep state */
 void CHILI_SetAsleep(u8_t new_asleep);
 
+/** Should the Chili wake up? */
+u8_t CHILI_GetWakeup();
+
+/** Set wake up state */
+void CHILI_SetWakeup(u8_t new_asleep);
+
 #endif

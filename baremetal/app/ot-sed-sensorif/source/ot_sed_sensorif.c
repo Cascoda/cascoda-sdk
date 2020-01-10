@@ -15,7 +15,6 @@
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_time.h"
-#include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 
 #include "openthread/coap.h"
@@ -55,23 +54,13 @@ static uint32_t     appNextSendTime = 5000;
 static volatile uint32_t isr_counter = 0;
 
 /******************************************************************************/
-/****** Minimum time required (in ms) between counter incrementations    ******/
-/******************************************************************************/
-static const uint32_t MIN_TIME           = 500;
-static uint32_t       min_counter_period = 500;
-
-/******************************************************************************/
 /***************************************************************************/ /**
  * \brief ISR triggered by rising edge of GPIO pin.
  *******************************************************************************
  ******************************************************************************/
 static int counter_ISR(void)
 {
-	if (TIME_ReadAbsoluteTime() < min_counter_period)
-		return 0;
-
 	isr_counter++;
-	min_counter_period = TIME_ReadAbsoluteTime() + MIN_TIME;
 	return 0;
 }
 
@@ -111,7 +100,7 @@ static void sleep_if_possible(void)
 			if (idleTimeLeft > 5)
 			{
 				BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
-				//PlatformSleep(idleTimeLeft);
+				PlatformSleep(idleTimeLeft);
 			}
 		}
 	}
@@ -387,7 +376,6 @@ int main(void)
 	// Endless Polling Loop
 	while (1)
 	{
-		cascoda_io_handler(&dev);
 		SensorHandler();
 		SED_Handler(&dev);
 	}

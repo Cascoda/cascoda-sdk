@@ -53,6 +53,7 @@
 #define CLKCFG_ENHIRC48 0x08
 
 volatile u8_t asleep = 0;
+volatile u8_t wakeup = 0;
 static u8_t   lxt_connected;
 
 // Table of registers & their names, used by the hard fault handler
@@ -1175,12 +1176,17 @@ __NONSECURE_ENTRY void CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0
 		CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_ULLPD); /* ULLPD */
 	}
 
-	CLK->PWRCTL |= CLK_PWRCTL_PDEN_Msk; /* Set power down bit */
-	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;  /* Sleep Deep */
+	CHILI_SetWakeup(0);
 
-	__WFI(); /* really enter power down here !!! */
-	__DSB();
-	__ISB();
+	do
+	{
+		CLK->PWRCTL |= CLK_PWRCTL_PDEN_Msk; /* Set power down bit */
+		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;  /* Sleep Deep */
+		__WFI();                            /* really enter power down here !!! */
+
+		__DSB();
+		__ISB();
+	} while (!CHILI_GetWakeup());
 
 	/* re-enable peripheral memory */
 	SYS->SRAMPPCT = 0x00000000;
@@ -1211,6 +1217,16 @@ __NONSECURE_ENTRY void CHILI_SetAsleep(u8_t new_asleep)
 __NONSECURE_ENTRY u8_t CHILI_GetAsleep()
 {
 	return asleep;
+}
+
+__NONSECURE_ENTRY void CHILI_SetWakeup(u8_t new_wakeup)
+{
+	wakeup = new_wakeup;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetWakeup()
+{
+	return wakeup;
 }
 
 /** Wait until system is stable after potential usb plug-in */

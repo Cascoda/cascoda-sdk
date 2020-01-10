@@ -3,9 +3,8 @@ cmake_minimum_required (VERSION 3.11)
 # Helper function to print binary section sizes - Auto-invoked when cascoda_make_binary is used
 macro(cascoda_print_sizes a_target)
 	if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
-		add_custom_target(${a_target}.size ALL
+		add_custom_command(TARGET ${a_target} POST_BUILD
 			COMMAND arm-none-eabi-size -B $<TARGET_FILE:${a_target}>
-			DEPENDS ${a_target}
 			)
 	elseif(CMAKE_C_COMPILER MATCHES armclang)
 		add_link_options(--info=sizes)
@@ -16,16 +15,12 @@ endmacro()
 macro(cascoda_make_binary a_target)
 	set(cascoda_made_binary $<TARGET_FILE_DIR:${a_target}>/${a_target}.bin)
 	if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc AND CMAKE_OBJCOPY)
-		add_custom_target(${a_target}.bin ALL
+		add_custom_command(TARGET ${a_target} POST_BUILD
 			COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${a_target}> ${cascoda_made_binary}
-			DEPENDS ${a_target}
-			BYPRODUCTS ${cascoda_made_binary}
 			)
 	elseif(CMAKE_C_COMPILER MATCHES armclang AND CASCODA_FROMELF)
-		add_custom_target(${a_target}.bin ALL
+		add_custom_command(TARGET ${a_target} POST_BUILD
 			COMMAND ${CASCODA_FROMELF} --bin --output ${cascoda_made_binary} $<TARGET_FILE:${a_target}>
-			DEPENDS ${a_target}
-			BYPRODUCTS ${cascoda_made_binary}
 			)
 	endif()
 	cascoda_print_sizes(${a_target})
@@ -99,18 +94,17 @@ macro(cascoda_tz_secure target_in secure_linkerarg nonsecure_linkerarg)
 			-Wl,--cmse-implib,--out-implib,${IMPORT_LIB}
 			-Wl,${secure_linkerarg}
 	)
-	set_source_files_properties(
-	  ${IMPORT_LIB}
-	  PROPERTIES
-	  EXTERNAL_OBJECT true
-	  GENERATED true
+	# We add a custom NOP command as POST_BUILD so that Ninja doesn't complain about not knowing about the implib
+	add_custom_command(TARGET ${target_in} POST_BUILD
+		COMMAND ":"
+		BYPRODUCTS ${IMPORT_LIB}
 	)
 
 	# Create a new target for the import library. You must link this library with the nonsecure
 	# target that relies on the API provided by this binary.
-	add_library(${target_in}-implib INTERFACE)
+	add_library(${target_in}-implib STATIC IMPORTED GLOBAL)
 	add_dependencies(${target_in}-implib ${target_in})
-	target_link_libraries(${target_in}-implib INTERFACE ${IMPORT_LIB})
+	set_property(TARGET ${target_in}-implib PROPERTY IMPORTED_LOCATION ${IMPORT_LIB})
 
 	# Set the nonsecure linkerarg as interface of the import lib
 	target_link_options(${target_in}-implib INTERFACE -Wl,${nonsecure_linkerarg})

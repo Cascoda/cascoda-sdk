@@ -13,6 +13,6 @@ add_executable(freertos-nonsecure-demo
 )
 
 target_include_directories(freertos-nonsecure-demo PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(freertos-nonsecure-demo freertos-secure-demo-implib freertos)
+target_link_libraries(freertos-nonsecure-demo PRIVATE freertos-secure-demo-implib freertos)
 
 cascoda_make_binary(freertos-nonsecure-demo)

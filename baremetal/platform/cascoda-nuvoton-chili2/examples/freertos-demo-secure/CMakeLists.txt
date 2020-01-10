@@ -24,4 +24,4 @@ cascoda_tz_secure(freertos-secure-demo
 )
 
 # Set the implib to require the include directory as a transitive dependancy
-target_include_directories(freertos-secure-demo-implib BEFORE INTERFACE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(freertos-secure-demo-implib INTERFACE ${PROJECT_SOURCE_DIR}/include)

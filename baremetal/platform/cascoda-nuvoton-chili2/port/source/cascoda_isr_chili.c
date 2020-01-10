@@ -104,6 +104,8 @@ void GPC_IRQHandler(void)
 	{
 		GPIO_CLR_INT_FLAG(ZIG_IRQB_PORT, BITMASK(ZIG_IRQB_PIN));
 
+		CHILI_SetWakeup(1);
+
 		if (CHILI_GetAsleep())
 			return;
 

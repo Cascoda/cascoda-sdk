@@ -2,7 +2,47 @@
 
 pipeline {
 	agent any
+
+	environment {
+	    REPO_DIR = "${JENKINS_HOME}/repos"
+	    OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
+	}
+
 	stages {
+		/** Git mirror stage
+		 *  Mirror the openthread repo, to speed up CI.
+		 */
+		stage('Mirror') {
+			steps {
+				/** Mirror the openthread repo. All locked so we don't get multiple-access errors*/
+				lock('openthread-mirror') {
+					script {
+						/** Make the jenkins/repos folder if it doesn't exist */
+						if (!fileExists("${REPO_DIR}"))
+						{
+							sh(
+								label: 'make repo dir',
+								script: 'mkdir "${REPO_DIR}"'
+							)
+						}
+						/** Clone the openthread repo as a mirror if it exists, otherwise just fetch it */
+						if (fileExists("${OPENTHREAD_REPO}")) {
+							sh(
+								label: 'fetch openthread',
+								script: 'git -C "${OPENTHREAD_REPO}" fetch --all --prune'
+							)
+						}
+						else {
+							sh(
+								label: 'clone openthread',
+								script: 'git -C "${REPO_DIR}" clone https://github.com/Cascoda/openthread.git --mirror'
+							)
+						}
+					}
+				}
+			}
+		}
+
 		/** Build Stage
 		 *  Compile for all major platforms in various configurations & run unit tests
 		 */
@@ -15,7 +55,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-chili2',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -52,7 +92,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-chili',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -73,7 +113,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8210',
+							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 						ctest(
@@ -99,7 +139,7 @@ pipeline {
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_EXCLUDE_DOXYGEN="*/build-posix/* */build-chili/* */build-chili2/* */build-raspberrypi/*"',
+							cmakeArgs: '-DCASCODA_EXCLUDE_DOXYGEN="*/build-posix/* */build-chili/* */build-chili2/* */build-raspberrypi/* */build-ninja-chili2/*"',
 							steps: [[args: 'docs']]
 						)
 					}
@@ -109,10 +149,23 @@ pipeline {
 					steps {
 						/* Build for CA8211 */
 						cmakeBuild(
+							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-raspberrypi',
-							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake',
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
 							steps: [[args: '-j10 -O']]
+						)
+					}
+				}
+
+				stage('Chili2 Ninja') {
+					steps {
+						/* Test the Ninja build for Chili2 CA8211 */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-ninja-chili2',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -GNinja -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							steps: [[args: '']]
 						)
 					}
 				}

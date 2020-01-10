@@ -35,6 +35,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
+#include "cascoda_secure.h"
 
 extern volatile u8_t asleep;
 
@@ -146,6 +147,9 @@ void RTC_IRQHandler(void)
 	{
 		/* Clear RTC alarm interrupt flag */
 		RTC_CLEAR_ALARM_INT_FLAG(RTC);
+
+		CHILI_SetWakeup(1);
+
 		/* rtc can act as watchdog during powerdown */
 		if (asleep)
 			WDTimeout = 1;

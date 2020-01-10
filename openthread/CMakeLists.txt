@@ -23,9 +23,14 @@ else()
 	set(OT_TAG 9c6a1c56639a5a916b418928819ab6ec0594f7f7)
 endif()
 
+# Only set the openthread repo if it is not already set (user can point to mirror)
+if(NOT CASCODA_OPENTHREAD_REPO)
+	set(CASCODA_OPENTHREAD_REPO "https://github.com/Cascoda/openthread.git")
+endif()
+
 FetchContent_Declare(
   openthread
-  GIT_REPOSITORY https://github.com/Cascoda/openthread.git
+  GIT_REPOSITORY ${CASCODA_OPENTHREAD_REPO}
   GIT_TAG        ${OT_TAG}
 )
 

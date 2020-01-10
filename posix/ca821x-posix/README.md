@@ -35,7 +35,11 @@ mount -t debugfs none /sys/kernel/debug
 ```
 
 ## USB
-In order to be able to connect to a dongle, hid-api must be installed. Follow the documentation in usb-exchange/hidapi to install as a shared library. On debian/ubuntu, it can be installed using ```sudo apt install libhidapi-dev``` instead.
+In order to be able to connect to a dongle, hid-api must be installed. On debian/ubuntu, it can be installed using ```sudo apt install libhidapi-dev```. Also, in order to not require sudo, the permissions for cascoda devices should be loosened. This can be done by running the commands:
+```bash
+echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0416", ATTRS{idProduct}=="5020", ACTION=="add", MODE="0666"' | sudo tee /etc/udev/rules.d/99-cascoda.rules > /dev/null
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
 
 ## UART
 UART can be used for any posix serial ports. In order to use UART, the environment variable ``CASCODA_UART`` must be set up with a list of available UART ports that are connected to a supported cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
