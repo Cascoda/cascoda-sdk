@@ -1,59 +1,5 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.11)
-project (ca821x-openthread)
-
-# Main library config ---------------------------------------------------------
-add_library(ca821x-openthread-bm-plat
-	${PROJECT_SOURCE_DIR}/platform/alarm.c
-	${PROJECT_SOURCE_DIR}/platform/entropy.c
-	${PROJECT_SOURCE_DIR}/platform/flash.c
-	${PROJECT_SOURCE_DIR}/platform/logging.c
-	${PROJECT_SOURCE_DIR}/platform/misc.c
-	${PROJECT_SOURCE_DIR}/platform/radio.c
-	${PROJECT_SOURCE_DIR}/platform/serial.c
-	${PROJECT_SOURCE_DIR}/platform/settings.c
-	)
-
-target_link_libraries(ca821x-openthread-bm-plat
-	PUBLIC
-		cascoda-bm
-	PRIVATE
-		m
-		openthread-plat-api
-	)
-
-target_compile_definitions(ca821x-openthread-bm-plat PRIVATE ${OPENTHREAD_CONFIG_DEFINE})
-
-target_include_directories( ca821x-openthread-bm-plat
-	PRIVATE
-		${openthread_SOURCE_DIR}/src/core
-		${openthread_BINARY_DIR}/include
-	PUBLIC
-		${PROJECT_SOURCE_DIR}/platform
-		${openthread_SOURCE_DIR}/include
-		${PROJECT_BINARY_DIR}/include
-		${PROJECT_SOURCE_DIR}/include
-	)
-
-# Add helper interface libraries to simplify the cyclic dependency between
-# the platform layer and the openthread core.
-add_library(ca821x-openthread-bm-ftd INTERFACE)
-target_link_libraries(ca821x-openthread-bm-ftd
-	INTERFACE
-		openthread-ftd
-		ca821x-openthread-bm-plat
-		openthread-ftd
-		ca821x-openthread-bm-plat
-	)
-
-add_library(ca821x-openthread-bm-mtd INTERFACE)
-target_link_libraries(ca821x-openthread-bm-mtd
-	INTERFACE
-		openthread-mtd
-		ca821x-openthread-bm-plat
-		openthread-mtd
-		ca821x-openthread-bm-plat
-	)
+project (ca821x-thread-dev)
 
 # Test app config -------------------------------------------------------------
 add_executable(mtdapp
@@ -61,7 +7,7 @@ add_executable(mtdapp
 	${PROJECT_SOURCE_DIR}/source/thread_dev_api.c
 	)
 target_include_directories(mtdapp
-	PRIVATE ${PROJECT_SOURCE_DIR}/platform
+	PRIVATE ${PROJECT_SOURCE_DIR}/include
 	)
 target_link_libraries(mtdapp ca821x-openthread-bm-mtd cascoda-bm-plat)
 target_compile_definitions(mtdapp PRIVATE APP_NAME="OT MTD")
@@ -73,43 +19,9 @@ if(CASCODA_OPENTHREAD_FTD)
 		${PROJECT_SOURCE_DIR}/source/thread_dev_api.c
 		)
 	target_include_directories(ftdapp
-		PRIVATE ${PROJECT_SOURCE_DIR}/platform
+		PRIVATE ${PROJECT_SOURCE_DIR}/include
 		)
 	target_link_libraries(ftdapp ca821x-openthread-bm-ftd cascoda-bm-plat)
 	target_compile_definitions(ftdapp PRIVATE APP_NAME="OT FTD")
 	cascoda_make_binary(ftdapp)
-
-	add_executable(cliapp-bm
-		${PROJECT_SOURCE_DIR}/source/thread_bm.c
-		${PROJECT_SOURCE_DIR}/source/sensordemo.c
-		)
-	target_include_directories(cliapp-bm
-		PRIVATE ${PROJECT_SOURCE_DIR}/platform
-		)
-	target_link_libraries(cliapp-bm openthread-cli-ftd ca821x-openthread-bm-ftd cascoda-bm-plat tinycbor-master)
-	target_compile_definitions(cliapp-bm PRIVATE APP_NAME="OT CLIAPP" OT_CLI=1)
-	cascoda_make_binary(cliapp-bm)
-
-	add_executable(ncpapp-bm
-		${PROJECT_SOURCE_DIR}/source/thread_bm.c
-		)
-	target_include_directories(ncpapp-bm
-		PRIVATE ${PROJECT_SOURCE_DIR}/platform
-		)
-	target_link_libraries(ncpapp-bm openthread-ncp-ftd ca821x-openthread-bm-ftd cascoda-bm-plat)
-	target_compile_definitions(ncpapp-bm PRIVATE APP_NAME="OT NCPAPP" OT_NCP=1)
-	cascoda_make_binary(ncpapp-bm)
-endif()
-
-#Only build the actuator demo on the chili2
-if(TARGET cascoda-chili2)
-	add_executable(cliapp-actuator-bm
-		${PROJECT_SOURCE_DIR}/source/thread_actuator_bm.c
-		${PROJECT_SOURCE_DIR}/source/actuatordemo.c
-		)
-	target_include_directories(cliapp-actuator-bm
-		PRIVATE ${PROJECT_SOURCE_DIR}/platform
-		)
-	target_link_libraries(cliapp-actuator-bm openthread-cli-ftd ca821x-openthread-bm-ftd cascoda-bm-plat tinycbor-master)
-	cascoda_make_binary(cliapp-actuator-bm)
 endif()

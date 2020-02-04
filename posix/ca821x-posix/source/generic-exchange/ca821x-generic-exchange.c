@@ -64,8 +64,8 @@ static pthread_cond_t dd_cond = PTHREAD_COND_INITIALIZER;
 
 void (*wake_hw_worker)(void);
 
-static int init_generic_statics(void);
-static int deinit_generic_statics(void);
+static void     init_generic_statics(void);
+static ca_error deinit_generic_statics(void);
 
 static int ca821x_run_downstream_dispatch()
 {
@@ -173,18 +173,16 @@ ca_error ca821x_util_stop_downstream_dispatch_worker()
 	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 }
 
-int init_generic(struct ca821x_dev *pDeviceRef)
+ca_error init_generic(struct ca821x_dev *pDeviceRef)
 {
-	int                          error = 0;
+	ca_error                     error = CA_ERROR_SUCCESS;
 	struct ca821x_exchange_base *base  = pDeviceRef->exchange_context;
 
 	ca_log_debg("Initialising generic part of exchange...");
 
-	error = init_generic_statics();
-	if (error)
-		goto exit;
+	init_generic_statics();
 
-	pDeviceRef->ca821x_api_downstream = ca8210_exchange_commands;
+	pDeviceRef->ca821x_api_downstream = ca821x_exchange_commands;
 
 	pthread_mutex_init(&(base->flag_mutex), NULL);
 	pthread_mutex_init(&(base->sync_mutex), NULL);
@@ -198,18 +196,18 @@ int init_generic(struct ca821x_dev *pDeviceRef)
 	pthread_mutex_unlock(&base->flag_mutex);
 
 	ca_log_debg("Initialising io thread.");
-	error = pthread_create(&(base->io_thread), PTHREAD_CREATE_JOINABLE, &ca8210_io_worker, pDeviceRef);
-
-	if (error)
+	if (pthread_create(&(base->io_thread), PTHREAD_CREATE_JOINABLE, &ca821x_io_worker, pDeviceRef))
+	{
+		error = CA_ERROR_FAIL;
 		ca_log_warn("Failed to start io thread!");
+	}
 
-exit:
 	return error;
 }
 
-int deinit_generic(struct ca821x_dev *pDeviceRef)
+ca_error deinit_generic(struct ca821x_dev *pDeviceRef)
 {
-	int                          error = 0;
+	ca_error                     error = CA_ERROR_SUCCESS;
 	struct ca821x_exchange_base *priv  = pDeviceRef->exchange_context;
 
 	pthread_mutex_lock(&priv->flag_mutex);
@@ -229,45 +227,29 @@ int deinit_generic(struct ca821x_dev *pDeviceRef)
 
 	priv->error_callback = NULL;
 
-	deinit_generic_statics();
+	error = deinit_generic_statics();
 
 	return error;
 }
 
-static int init_generic_statics()
+static void init_generic_statics()
 {
-	int rval = 0, error = 0;
-
-	if (generic_initialised++)
-		goto exit;
-
-	//Potential static initialisation
-
-	if (rval != 0)
-	{
-		error = -1;
-		goto exit;
-	}
-
-exit:
-	if (error)
-	{
-		deinit_generic_statics();
-	}
-	return error;
+	generic_initialised++;
 }
 
-static int deinit_generic_statics()
+static ca_error deinit_generic_statics()
 {
+	ca_error error = CA_ERROR_SUCCESS;
+
 	if (!(--generic_initialised))
 		goto exit;
 
-	ca821x_util_stop_downstream_dispatch_worker();
+	error = ca821x_util_stop_downstream_dispatch_worker();
 
 	flush_queue(&downstream_dispatch_queue, &downstream_queue_mutex);
 
 exit:
-	return 0;
+	return error;
 }
 
 ca_error exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef)
@@ -381,7 +363,7 @@ ca_error exchange_handle_error(ca_error error, struct ca821x_dev *pDeviceRef)
 	return CA_ERROR_SUCCESS;
 }
 
-static inline ca_error ca8210_try_read(struct ca821x_dev *pDeviceRef)
+static inline ca_error ca821x_try_read(struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 	uint8_t                      buffer[MAX_BUF_SIZE];
@@ -412,7 +394,7 @@ static inline ca_error ca8210_try_read(struct ca821x_dev *pDeviceRef)
 	return CA_ERROR_NOT_FOUND;
 }
 
-static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
+static inline ca_error ca821x_try_write(struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 	uint8_t                      buffer[MAX_BUF_SIZE];
@@ -441,7 +423,7 @@ static inline ca_error ca8210_try_write(struct ca821x_dev *pDeviceRef)
 	return CA_ERROR_NOT_FOUND;
 }
 
-void *ca8210_io_worker(void *arg)
+void *ca821x_io_worker(void *arg)
 {
 	struct ca821x_dev *          pDeviceRef = arg;
 	struct ca821x_exchange_base *priv       = pDeviceRef->exchange_context;
@@ -453,10 +435,10 @@ void *ca8210_io_worker(void *arg)
 	{
 		pthread_mutex_unlock(&priv->flag_mutex);
 
-		if (ca8210_try_read(pDeviceRef) == CA_ERROR_NOT_FOUND)
+		if (ca821x_try_read(pDeviceRef) == CA_ERROR_NOT_FOUND)
 		{
 			//If no reads left, we can start writing.
-			ca8210_try_write(pDeviceRef);
+			ca821x_try_write(pDeviceRef);
 		}
 
 		pthread_mutex_lock(&priv->flag_mutex);
@@ -466,7 +448,7 @@ void *ca8210_io_worker(void *arg)
 	return 0;
 }
 
-ca_error ca8210_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	const uint8_t                isSynchronous = ((buf[0] & SPI_SYN) && response);
 	struct ca821x_exchange_base *priv          = pDeviceRef->exchange_context;

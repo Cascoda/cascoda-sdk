@@ -1,6 +1,6 @@
 project (freertos-default-secure)
 
-if(${CASCODA_BM_USE_UART})
+if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	return()
 endif()
 

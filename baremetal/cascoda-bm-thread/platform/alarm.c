@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,101 +26,42 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ctype.h>
-#include <inttypes.h>
-#include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
 
-#include "openthread/instance.h"
-#include "openthread/platform/logging.h"
+#include "openthread/platform/alarm-milli.h"
 
-OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
+static ca_tasklet otTasklet;
+
+uint32_t otPlatAlarmMilliGetNow(void)
 {
-	va_list ap;
-	u8_t *  pLevel = "??? ", *pRegion = "??? ";
+	return TIME_ReadAbsoluteTime();
+}
 
-	switch (aLogLevel)
-	{
-	case OT_LOG_LEVEL_NONE:
-		pLevel = "NONE ";
-		break;
+void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
+{
+	TASKLET_Cancel(&otTasklet);
+	TASKLET_ScheduleAbs(&otTasklet, aT0, aT0 + aDt, aInstance);
+}
 
-	case OT_LOG_LEVEL_CRIT:
-		pLevel = "CRIT ";
-		break;
+void otPlatAlarmMilliStop(otInstance *aInstance)
+{
+	TASKLET_Cancel(&otTasklet);
+}
 
-	case OT_LOG_LEVEL_WARN:
-		pLevel = "WARN ";
-		break;
+static ca_error handlePlatAlarmMilliFired(void *aContext)
+{
+	otPlatAlarmMilliFired(aContext);
+	return CA_ERROR_SUCCESS;
+}
 
-	case OT_LOG_LEVEL_INFO:
-		pLevel = "INFO ";
-		break;
-
-	case OT_LOG_LEVEL_DEBG:
-		pLevel = "DEBG ";
-		break;
-	}
-
-	switch (aLogRegion)
-	{
-	case OT_LOG_REGION_API:
-		pRegion = "API  ";
-		break;
-
-	case OT_LOG_REGION_MLE:
-		pRegion = "MLE  ";
-		break;
-
-	case OT_LOG_REGION_ARP:
-		pRegion = "ARP  ";
-		break;
-
-	case OT_LOG_REGION_NET_DATA:
-		pRegion = "NETD ";
-		break;
-
-	case OT_LOG_REGION_IP6:
-		pRegion = "IPV6 ";
-		break;
-
-	case OT_LOG_REGION_ICMP:
-		pRegion = "ICMP ";
-		break;
-
-	case OT_LOG_REGION_MAC:
-		pRegion = "MAC  ";
-		break;
-
-	case OT_LOG_REGION_MEM:
-		pRegion = "MEM  ";
-		break;
-
-	case OT_LOG_REGION_NCP:
-		pRegion = "NCP  ";
-		break;
-
-	case OT_LOG_REGION_MESH_COP:
-		pRegion = "MCOP ";
-		break;
-
-	case OT_LOG_REGION_NET_DIAG:
-		pRegion = "DIAG ";
-		break;
-
-	default:
-		pRegion = "XXXX ";
-		break;
-	}
-	printf("%04dms: %s %s ", TIME_ReadAbsoluteTime(), pLevel, pRegion);
-
-	va_start(ap, aFormat);
-	vprintf(aFormat, ap);
-	va_end(ap);
-	printf("\n");
+void PlatformAlarmInit(void)
+{
+	TASKLET_Init(&otTasklet, &handlePlatAlarmMilliFired);
 }

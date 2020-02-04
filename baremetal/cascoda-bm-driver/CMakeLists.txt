@@ -2,18 +2,20 @@
 project (cascoda-bm)
 
 # Set configuration variables -------------------------------------------------
-option( CASCODA_BM_USE_USB "Enable baremetal USB support" ON)
+cascoda_dropdown(CASCODA_BM_INTERFACE
+	"The primary interface to use for communications with the host"
+	USB UART NONE
+)
+cascoda_mark_important(CASCODA_BM_INTERFACE)
+
 set( CASCODA_BM_USB_HID_BCDUSBVER 0x10,0x01 CACHE STRING "bcd USB version in form 0x12,0x34")
 set( CASCODA_BM_USB_HID_BCDDEVVER 0x00,0x00 CACHE STRING "bcd device version in form 0x12,0x34")
 set( CASCODA_BM_USB_HID_IDVENDOR 0x16,0x04 CACHE STRING "USB Vendor ID in form 0x12,0x34")
 set( CASCODA_BM_USB_HID_IDPRODUCT 0x20,0x50 CACHE STRING "USB Product ID in form 0x12,0x34")
-option( CASCODA_BM_USE_UART "Enable baremetal UART support" OFF)
 
-if(CASCODA_BM_USE_USB)
+
+if(CASCODA_BM_INTERFACE STREQUAL "USB")
 	set(USE_USB ON)
-endif()
-
-if(CASCODA_BM_USE_USB)
 	mark_as_advanced(CLEAR CASCODA_BM_USB_HID_BCDUSBVER)
 	mark_as_advanced(CLEAR CASCODA_BM_USB_HID_BCDDEVVER)
 	mark_as_advanced(CLEAR CASCODA_BM_USB_HID_IDVENDOR)
@@ -25,12 +27,8 @@ else()
 	mark_as_advanced(FORCE CASCODA_BM_USB_HID_IDPRODUCT)
 endif()
 
-if(CASCODA_BM_USE_UART)
+if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	set(USE_UART ON)
-endif()
-
-if(USE_UART AND USE_USB)
-	message(SEND_ERROR "Can only use UART or USB in CASCODA_BM, not both")
 endif()
 
 # Config file generation ------------------------------------------------------
@@ -47,6 +45,7 @@ add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_log.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_tasklet.c
 	)
 
 target_link_libraries(cascoda-bm

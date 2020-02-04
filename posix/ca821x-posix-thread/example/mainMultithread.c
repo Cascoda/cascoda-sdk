@@ -62,7 +62,7 @@ static void *otWorker(void *aContext)
 		posixPlatformGetTimeout(aInstance, &timeout);
 		pthread_mutex_unlock(&ot_mutex);
 
-		posixPlatformSleep(aInstance, &timeout); //Must run immediately after posixPlatformProcessGetTimeout
+		posixPlatformSleep(aInstance, &timeout); //Must run immediately after posixPlatformGetTimeout
 	}
 
 	return NULL;
@@ -78,15 +78,6 @@ int main(int argc, char *argv[])
 	}
 	OT_INSTANCE = otInstanceInitSingle();
 	otCliUartInit(OT_INSTANCE);
-
-	/* Test harness specific config */
-#ifdef TESTHARNESS
-	otSetNetworkName(OT_INSTANCE, "GRL");
-	otLinkSetPanId(OT_INSTANCE, 0xface);
-	uint8_t extPanId[] = {0x00, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00};
-	otSetExtendedPanId(OT_INSTANCE, extPanId);
-	otSetChannel(OT_INSTANCE, 20);
-#endif
 
 	pthread_create(&work_thread, NULL, otWorker, (void *)OT_INSTANCE);
 	//Be sure to aquire the ot_mutex before using openthread API functions from now on

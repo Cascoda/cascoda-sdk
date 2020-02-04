@@ -6,7 +6,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Mark the device as being FTD-capable
-set(CASCODA_OPENTHREAD_FTD ON PARENT_SCOPE)
+set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
 
 # Option for the Raspberry pi USB workaround, with crude autodetection
 if(UNIX

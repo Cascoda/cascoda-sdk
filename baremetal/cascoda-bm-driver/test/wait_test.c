@@ -53,30 +53,11 @@ static void timeout_test(void **state)
 
 	status = WAIT_CallbackSwap(SPI_HWME_WAKEUP_INDICATION, NULL, 10, NULL, &sdev);
 	assert_int_equal(status, CA_ERROR_SPI_WAIT_TIMEOUT);
-
-	status = WAIT_Legacy(SPI_HWME_WAKEUP_INDICATION, 10, dummy, &sdev);
-	assert_int_equal(status, CA_ERROR_SPI_WAIT_TIMEOUT);
 }
 
 static void nullcontext_test(void **state)
 {
 	assert_null(WAIT_GetContext());
-}
-
-static void legacywait_test(void **state)
-{
-	uint8_t bufin[3] = {0x35, 0x1, HWME_WAKEUP_POWERUP}; //HWME_Wakeup
-	uint8_t bufout[3];
-
-	will_return(__wrap_BSP_SPIPopByte, bufin[0]);
-	will_return(__wrap_BSP_SPIPopByte, bufin[1]);
-	will_return(__wrap_BSP_SPIPopByte, bufin[2]);
-
-	SPI_Exchange(NULL, &sdev);
-
-	WAIT_Legacy(SPI_HWME_WAKEUP_INDICATION, 10, bufout, &sdev);
-
-	assert_memory_equal(bufin, bufout, 3);
 }
 
 ca_error wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
@@ -89,7 +70,6 @@ ca_error wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca82
 	//Check that wait functions fail from an awaited callback context
 	assert_int_equal(WAIT_Callback(SPI_MCPS_DATA_INDICATION, 10, magicNumber, &sdev), CA_ERROR_INVALID_STATE);
 	assert_int_equal(WAIT_CallbackSwap(SPI_MCPS_DATA_INDICATION, NULL, 10, magicNumber, &sdev), CA_ERROR_INVALID_STATE);
-	assert_int_equal(WAIT_Legacy(SPI_MCPS_DATA_INDICATION, 10, NULL, &sdev), CA_ERROR_INVALID_STATE);
 
 	return CA_ERROR_SUCCESS;
 }
@@ -142,7 +122,6 @@ ca_error wakeup_callback_nonwaited(struct HWME_WAKEUP_indication_pset *params, s
 	//Check that wait functions fail sensibly from a normal callback context
 	assert_int_equal(WAIT_Callback(SPI_MCPS_DATA_INDICATION, 10, magicNumber, &sdev), CA_ERROR_INVALID_STATE);
 	assert_int_equal(WAIT_CallbackSwap(SPI_MCPS_DATA_INDICATION, NULL, 10, magicNumber, &sdev), CA_ERROR_INVALID_STATE);
-	assert_int_equal(WAIT_Legacy(SPI_MCPS_DATA_INDICATION, 10, NULL, &sdev), CA_ERROR_INVALID_STATE);
 
 	return CA_ERROR_SUCCESS;
 }
@@ -165,7 +144,6 @@ int main(void)
 {
 	const struct CMUnitTest tests[] = {cmocka_unit_test(timeout_test),
 	                                   cmocka_unit_test(nullcontext_test),
-	                                   cmocka_unit_test(legacywait_test),
 	                                   cmocka_unit_test(waitcallback_test),
 	                                   cmocka_unit_test(waitswap_test),
 	                                   cmocka_unit_test(waitincallback_fail_test)};

@@ -54,10 +54,21 @@ add_cmocka_test(dispatch_test
 		cascoda-bm-core
 		cascoda-bm-plat
 	LINK_OPTIONS
-		-Wl,--wrap=BSP_Waiting
+		-Wl,--wrap=BSP_Waiting,--wrap=SPI_Send
+	)
+
+add_cmocka_test(tasklet_test
+	SOURCES
+		${PROJECT_SOURCE_DIR}/tasklet_test.c
+	LINK_LIBRARIES
+		${CMOCKA_SHARED_LIBRARY}
+		cascoda-bm
+		cascoda-bm-core
+		cascoda-bm-plat
 	)
 
 cascoda_put_subdir(time_test test)
 cascoda_put_subdir(spi_test test)
 cascoda_put_subdir(wait_test test)
 cascoda_put_subdir(dispatch_test test)
+cascoda_put_subdir(tasklet_test test)

@@ -64,6 +64,8 @@ extern "C" {
  * a transmission and reception. This function transmits pTxBuffer while
  * populating an appropriate Rx buffer with the received message.
  *
+ * RFIRQ must be disabled when calling.
+ *
  * \param pTxBuffer - Pointer to Transmit Buffer or NULLP
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
@@ -77,6 +79,8 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
  *
  * This function is used by DISPATCH_ToCA821x as the downstream path to interface
  * with the CA-821x.
+ *
+ * RFIRQ must be enabled when calling.
  *
  * \param buf - Message to transmit
  * \param len - Length of message in buf
@@ -94,6 +98,8 @@ ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_
  * Calling this function does not remove the buffer from the queue, so after
  * the buffer has been processed, SPI_DequeueFullBuffer should be used.
  *
+ * RFIRQ must be enabled when calling.
+ *
  * \retval A full SPI Buffer, or NULL if none are available.
  *
  */
@@ -105,6 +111,8 @@ struct MAC_Message *SPI_PeekFullBuf(void);
  * This frees up the buffer for receiving future SPI Messages and also knocks
  * over the queue so that the next message can be processed.
  *
+ * RFIRQ must be enabled when calling.
+ *
  */
 void SPI_DequeueFullBuf(void);
 
@@ -112,6 +120,8 @@ void SPI_DequeueFullBuf(void);
  * \brief Query whether the SPI message FIFO is full or not
  *
  * If it is full, then messages should not be further read from the slave.
+ *
+ * RFIRQ must be enabled when calling.
  *
  * \retval true if FIFO is full, false if there is space for another message
  *
@@ -125,6 +135,8 @@ bool SPI_IsFifoFull(void);
  *
  * This is controlled by the SPI_RX_FIFO_RESV preprocessor macro.
  *
+ * RFIRQ must be disabled when calling.
+ *
  * \retval true if FIFO is almost full, false if there is space for more async messages
  *
  */
@@ -132,6 +144,8 @@ bool SPI_IsFifoAlmostFull(void);
 
 /**
  * \brief Query whether the SPI message FIFO is empty or not
+ *
+ * RFIRQ must be enabled when calling.
  *
  * \retval true if FIFO is empty, false if there are any messages stored
  *
@@ -142,6 +156,8 @@ bool SPI_IsFifoEmpty(void);
  * \brief Query whether the SPI driver is currently locked in a Sync chain.
  *
  * Not for application usage.
+ *
+ * RFIRQ must be disabled when calling.
  *
  * A Sync chain is a method to restrict the incoming messages from the CA-821x
  * on a constrained platform. If this is in action, then it is important that
@@ -162,12 +178,16 @@ bool SPI_IsSyncChainInFlight(void);
  * This prevents any asynchronous messages from being received, making timing and
  * buffers more consistent.
  *
+ * RFIRQ must be enabled when calling.
+ *
  * @param pDeviceRef Pointer to initialised \ref ca821x_dev struct
  */
 void SPI_StartSyncChain(struct ca821x_dev *pDeviceRef);
 
 /**
  * Stop the sync chain after starting with SPI_StartSyncChain.
+ *
+ * RFIRQ must be enabled when calling.
  *
  * @param pDeviceRef Pointer to initialised \ref ca821x_dev struct
  */

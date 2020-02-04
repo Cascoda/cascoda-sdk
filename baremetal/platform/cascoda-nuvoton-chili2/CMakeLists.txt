@@ -34,7 +34,7 @@ cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
 
 # UART Baud config
-if(CASCODA_BM_USE_UART)
+if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL
 		"The hardware UART channel to use for UART comms"
 		0 1 2 4 5
@@ -52,13 +52,16 @@ cascoda_dropdown(CASCODA_CHILI2_DEFAULT_FSYS
 	FSYS_48MHZ FSYS_4MHZ FSYS_12MHZ FSYS_16MHZ FSYS_24MHZ FSYS_32MHZ FSYS_64MHZ
 	)
 if(CASCODA_CHILI2_DEFAULT_FSYS STREQUAL "FSYS_4MHZ")
-	if((CASCODA_BM_USE_UART AND CASCODA_CHILI2_UART_BAUDRATE GREATER 115200) OR (CASCODA_BM_USE_USB))
+	if(((CASCODA_BM_INTERFACE STREQUAL "UART") AND CASCODA_CHILI2_UART_BAUDRATE GREATER 115200) OR (CASCODA_BM_INTERFACE STREQUAL "USB"))
 		message( FATAL_ERROR "Minimum system clock is FSYS_12MHZ for USB comms or UART comms > 115200 baud.")
 	endif()
 endif()
 
 # Mark the device as being FTD-capable
-set(CASCODA_OPENTHREAD_FTD ON PARENT_SCOPE)
+set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
+
+# Set the message buffers pretty high as we have plenty of RAM on chili2
+set(CASCODA_OPENTHREAD_MESSAGE_BUFS 100 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
 
 # Config file generation ------------------------------------------------------
 configure_file(

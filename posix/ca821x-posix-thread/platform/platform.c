@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Modifications copyright (c) 2020, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without

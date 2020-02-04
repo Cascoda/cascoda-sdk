@@ -38,6 +38,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
@@ -632,10 +633,11 @@ static void EVBME_WakeUpRF(void)
 void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 {
 	DISPATCH_FromCA821x(pDeviceRef);
+	TASKLET_Process();
 
 #if defined(USE_USB) || defined(USE_UART)
 	SerialGetCommand();
-	if (SerialRxPending && !SPI_IsFifoAlmostFull())
+	if (SerialRxPending && SPI_IsFifoEmpty())
 	{
 		bool handled = false;
 		if (cascoda_serial_dispatch)

@@ -8,6 +8,7 @@ cascoda_dropdown(CASCODA_LOG_LEVEL
 	"The minimum log level to print messages for (CRIT>WARN>NOTE>INFO>DEBG)"
 	NOTE CRIT WARN INFO DEBG
 	)
+cascoda_mark_important(CASCODA_LOG_LEVEL)
 
 # Config file generation ------------------------------------------------------
 configure_file(
@@ -23,6 +24,7 @@ add_custom_target(git-version ALL
 		-DGITVER_IN="${PROJECT_SOURCE_DIR}/source/ca821x_ver.c.in"
 		-DGITVER_OUT="${GIT_VERSION_FILE}"
 		-P ${PROJECT_SOURCE_DIR}/git-version.cmake
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 
 # Main library config ---------------------------------------------------------

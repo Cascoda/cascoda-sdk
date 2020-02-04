@@ -77,12 +77,24 @@ static void                SPI_Error(ca_error errcode, struct ca821x_dev *pDevic
 
 bool SPI_IsFifoFull()
 {
-	return SPI_FIFO_Full;
+	bool rval;
+
+	BSP_DisableRFIRQ();
+	rval = SPI_FIFO_Full;
+	BSP_EnableRFIRQ();
+
+	return rval;
 }
 
 bool SPI_IsFifoEmpty()
 {
-	return (SPI_FIFO_Start == SPI_FIFO_End) && !SPI_FIFO_Full;
+	bool rval;
+
+	BSP_DisableRFIRQ();
+	rval = (SPI_FIFO_Start == SPI_FIFO_End) && !SPI_FIFO_Full;
+	BSP_EnableRFIRQ();
+
+	return rval;
 }
 
 bool SPI_IsFifoAlmostFull()
@@ -110,15 +122,19 @@ bool SPI_IsSyncChainInFlight()
 
 void SPI_StartSyncChain(struct ca821x_dev *pDeviceRef)
 {
+	BSP_DisableRFIRQ();
 	syncChainActive   = true;
 	syncChainInFlight = true;
+
 	SPI_Exchange((struct MAC_Message *)syncChainMessage, pDeviceRef);
+	BSP_EnableRFIRQ();
 }
 
 void SPI_StopSyncChain(struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message response;
 
+	BSP_DisableRFIRQ();
 	SPI_Wait_Buf            = &response;
 	SPI_Wait_Buf->CommandId = SPI_IDLE;
 
@@ -126,7 +142,6 @@ void SPI_StopSyncChain(struct ca821x_dev *pDeviceRef)
 	syncChainInFlight = false;
 
 	//Kick the CA-821x to spit out the sync command
-	BSP_DisableRFIRQ();
 	SPI_Exchange(NULL, pDeviceRef);
 	BSP_EnableRFIRQ();
 
@@ -143,12 +158,14 @@ static void SPI_IncrementWaterMark()
 
 /**
  *\brief Return an empty async buffer to be filled, or NULL if none available
+ *
+ * RFIRQ must be disabled when calling.
  */
 static struct MAC_Message *SPI_GetFreeBuf()
 {
 	struct MAC_Message *rval = NULL;
 
-	if (!SPI_IsFifoFull())
+	if (!SPI_FIFO_Full)
 	{
 		rval         = SPI_Receive_Buffer + SPI_FIFO_End;
 		SPI_FIFO_End = (SPI_FIFO_End + 1) % SPI_RX_FIFO_SIZE;
@@ -187,6 +204,8 @@ void SPI_DequeueFullBuf()
 
 /**
  *\brief Get a buffer for Rx based on whether command is sync or not.
+ *
+ * RFIRQ must be disabled when calling.
  *
  *\retval pointer to buffer or NULL upon failure
  */
@@ -227,6 +246,8 @@ exit:
 
 /**
  *\brief Wait until the slave is available to exchange SPI Data.
+ *
+ * RFIRQ must be disabled when calling.
  */
 #if CASCODA_CA_VER == 8211
 static ca_error SPI_WaitSlave(void)
@@ -271,6 +292,8 @@ static ca_error SPI_WaitSlave(void)
 
 /**
  *\brief Bulk transfer an SPI chunk of data, filling with IDLE to equalize channel length
+ *
+ * RFIRQ must be disabled when calling.
  */
 static void SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
 {
@@ -318,6 +341,8 @@ static void SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen
  *
  * On the CA-8210, this can time out with NACKs, but NACKs were removed from the
  * CA-8211.
+ *
+ * RFIRQ must be disabled when calling.
  */
 #if CASCODA_CA_VER == 8211
 static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, const struct MAC_Message *pTxBuffer)
@@ -406,7 +431,7 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 
 	/* If the receive fifo is full, and this isn't a sync response,
 	 * then we can't safely do SPI exchange.*/
-	if (SPI_IsFifoFull() && (SPI_Wait_Buf && !pTxBuffer))
+	if (SPI_FIFO_Full && (SPI_Wait_Buf && !pTxBuffer))
 	{
 		ca_log_warn("SPI_Exchange failed - No buffers");
 		return CA_ERROR_NO_BUFFER;
@@ -466,6 +491,8 @@ exit:
  *
  * This function waits until a synchronous command response is received over SPI
  *
+ * RFIRQ must be enabled when calling.
+ *
  * \param cmdid - The command id of the synchronous request
  *
  * \return  0 or evbme_error_code
@@ -490,7 +517,9 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 		TIME_WaitTicks(1);
 	} while ((TIME_ReadAbsoluteTime() - startticks) < SPI_T_TIMEOUT);
 
+	BSP_DisableRFIRQ();
 	SPI_Wait_Buf = NULLP;
+	BSP_EnableRFIRQ();
 
 	return status;
 }
@@ -516,14 +545,14 @@ ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_
 
 	Status = SPI_Exchange((const struct MAC_Message *)buf, pDeviceRef); // tx packet
 
-	BSP_EnableRFIRQ();
-
 	if (Status)
 	{
 		if (sync)
 			SPI_Wait_Buf = NULL;
+		BSP_EnableRFIRQ();
 		goto exit;
 	}
+	BSP_EnableRFIRQ();
 
 	if (sync)
 	{

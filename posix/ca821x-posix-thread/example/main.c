@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -58,15 +58,6 @@ int main(int argc, char *argv[])
 
 	isRunning = 1;
 	signal(SIGINT, quit);
-
-	/* Test harness specific config */
-#ifdef TESTHARNESS
-	otSetNetworkName(OT_INSTANCE, "GRL");
-	otLinkSetPanId(OT_INSTANCE, 0xface);
-	uint8_t extPanId[] = {0x00, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00};
-	otSetExtendedPanId(OT_INSTANCE, extPanId);
-	otSetChannel(OT_INSTANCE, 20);
-#endif
 
 	while (isRunning)
 	{

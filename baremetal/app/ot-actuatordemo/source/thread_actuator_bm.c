@@ -89,8 +89,6 @@ int main(void)
 	{
 		handle_actuatordemo(&dev);
 		cascoda_io_handler(&dev);
-		PlatformAlarmProcess(OT_INSTANCE);
-		cascoda_io_handler(&dev);
 		otTaskletsProcess(OT_INSTANCE);
 	}
 }

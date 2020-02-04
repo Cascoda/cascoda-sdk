@@ -18,11 +18,7 @@ The Cascoda SDK makes full use of CMake as a build system, to enable advanced co
 ### Compilers
 The Cascoda SDK can be built natively for Linux using any preferred native compiler.
 
-For Cross-Compiling to baremetal, we have fully implemented the ARM GCC compilers for use. They can be downloaded [here.](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) The code can be built in other embedded compilers, and full integration in the CMake suite is coming soon. Currently the OpenThread library can only be built from a Linux system (Windows Subsystem for Linux also works). For building openthread, certain extra packages must be installed:
-
-```Bash
-sudo apt install automake libtool lsb-release libhidapi-dev -y
-```
+For Cross-Compiling to baremetal, we have fully implemented the ARM GCC compilers for use. They can be downloaded [here.](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) The code can be built in other embedded compilers, and full integration in the CMake suite is coming soon.
 
 ### Instructions
 To build the Cascoda SDK, follow the instructions below (written for Linux):

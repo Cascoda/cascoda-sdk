@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -533,6 +533,8 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 #if CASCODA_CA_VER == 8211
 	pDeviceRef->callbacks.MLME_POLL_indication = &handlePollIndication;
 #endif
+	//Initialise the alarm subsystem too
+	PlatformAlarmInit();
 
 	//Reset the MAC to a default state
 	otPlatMlmeReset(NULL, true);

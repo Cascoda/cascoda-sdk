@@ -1,7 +1,7 @@
 project (freertos-demo)
 cmake_minimum_required (VERSION 3.12)
 
-if(${CASCODA_BM_USE_UART})
+if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	return()
 endif()
 

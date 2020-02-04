@@ -56,53 +56,12 @@ struct ca821x_dev *CA_DEVICE;
 static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
-static uint32_t     appNextSendTime = 5000;
 
 /******************************************************************************/
 /****** FreeRTOS-related globals                                         ******/
 /******************************************************************************/
 TaskHandle_t      CommsTaskHandle;
 SemaphoreHandle_t CommsMutexHandle;
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Checks current device status and goes to sleep if nothing is happening
- *******************************************************************************
- ******************************************************************************/
-// For now, the application will not use a dedicated power down mode when sleeping.
-// Therefore, this function is redundant.
-static void SleepTask(void)
-{
-	//Application check
-	uint32_t appTimeLeft = appNextSendTime - TIME_ReadAbsoluteTime();
-
-	// If there is no work to do...
-	if (!otTaskletsArePending(OT_INSTANCE))
-	{
-		otLinkModeConfig linkMode = otThreadGetLinkMode(OT_INSTANCE);
-
-		// Sleep until the next alarm if...
-		if (linkMode.mDeviceType == 0                                     // device is Minimal Thread Device
-		    && linkMode.mRxOnWhenIdle == 0                                // receiver is off when idling
-		    && otThreadGetDeviceRole(OT_INSTANCE) == OT_DEVICE_ROLE_CHILD // device is not a router
-		    && !otLinkIsInTransmitState(OT_INSTANCE)                      // MAC is not currently transmitting
-		    && !PlatformIsExpectingIndication())                          // MAC is not about to send an indication
-		{
-			uint32_t idleTimeLeft = PlatformGetAlarmMilliTimeout();
-			if (idleTimeLeft > appTimeLeft)
-				idleTimeLeft = appTimeLeft;
-
-			if (idleTimeLeft > 5)
-			{
-				struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
-				BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
-				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
-				PlatformSleep(idleTimeLeft);
-				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
-			}
-		}
-	}
-}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -324,7 +283,6 @@ static void CommsTask(void *unused)
 	{
 		xSemaphoreTake(CommsMutexHandle, portMAX_DELAY);
 
-		PlatformAlarmProcess(OT_INSTANCE);
 		cascoda_io_handler(CA_DEVICE);
 		otTaskletsProcess(OT_INSTANCE);
 

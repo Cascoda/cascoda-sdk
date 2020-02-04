@@ -28,6 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Cascoda posix exchange for communicating with ca821x via uart.
+ */
 
 #ifndef UART_EXCHANGE_H
 #define UART_EXCHANGE_H
@@ -57,6 +61,8 @@ enum uart_exchange_errors
  * Initialise the uart exchange, with no callback for errors (program will
  * crash in the case of an error.
  *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ *
  * @warning It is recommended to use the uart_exchange_init_withandler function
  * instead, so that any errors can be handled by your application.
  *
@@ -70,7 +76,7 @@ ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef);
 /**
  * Initialise the uart exchange, using the supplied errorhandling callback to
  * report any errors back to the application, which can react as required
- * (i.e. crash gracefully or attempt to reset the ca8210)
+ * (i.e. crash gracefully or attempt to reset the ca821x)
  *
  * @param[in]  callback   Function pointer to an error-handling callback
  * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
@@ -86,12 +92,13 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
  * Deinitialise the uart exchange, so that it can be reinitialised by another
  * process, or reopened later.
  *
+ *@param pDeviceRef Pointer to initialised ca821x_device_ref struct
  */
 void uart_exchange_deinit(struct ca821x_dev *pDeviceRef);
 
 /**
- * Send a hard reset to the ca8210. This should not be necessary, but is provided
- * in case the ca8210 becomes unresponsive to spi.
+ * Send a hard reset to the ca821x. This should not be necessary, but is provided
+ * in case the ca821x becomes unresponsive to spi.
  *
  * @param[in]  resettime   The length of time (in ms) to hold the reset pin
  *                         active for. 1ms is usually a suitable value for this.

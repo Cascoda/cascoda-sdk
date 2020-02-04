@@ -14,6 +14,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "ca821x_api.h"
 
@@ -46,7 +47,17 @@ otInstance *OT_INSTANCE;
 static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
-static uint32_t     appNextSendTime = 5000;
+static ca_tasklet   dataRequestTasklet;
+static ca_tasklet   sensorTasklet;
+
+enum
+{
+	SENSORDATA_PERIOD    = 10000,
+	SENSOR_POLL_DELAY    = 250,
+	DISCOVERY_PERIOD     = 30000,
+	DISCOVERY_POLL_DELAY = 2000,
+	INITIAL_DELAY        = 5000
+};
 
 /******************************************************************************/
 /****** Counter variable of how many times GPIO ISR executed             ******/
@@ -82,25 +93,23 @@ static void set_up_GPIO_input(u8_t mpin)
  ******************************************************************************/
 static void sleep_if_possible(void)
 {
-	//Application check
-	uint32_t appTimeLeft = appNextSendTime - TIME_ReadAbsoluteTime();
-
 	if (!otTaskletsArePending(OT_INSTANCE))
 	{
-		otLinkModeConfig linkMode = otThreadGetLinkMode(OT_INSTANCE);
+		otLinkModeConfig linkMode   = otThreadGetLinkMode(OT_INSTANCE);
+		otDeviceRole     deviceRole = otThreadGetDeviceRole(OT_INSTANCE);
 
-		if (linkMode.mDeviceType == 0 && linkMode.mRxOnWhenIdle == 0 &&
-		    otThreadGetDeviceRole(OT_INSTANCE) == OT_DEVICE_ROLE_CHILD && !otLinkIsInTransmitState(OT_INSTANCE) &&
+		if (linkMode.mDeviceType == 0 && linkMode.mRxOnWhenIdle == 0 && !otLinkIsInTransmitState(OT_INSTANCE) &&
+		    (deviceRole == OT_DEVICE_ROLE_CHILD || deviceRole == OT_DEVICE_ROLE_DETACHED) &&
 		    !PlatformIsExpectingIndication())
 		{
-			uint32_t idleTimeLeft = PlatformGetAlarmMilliTimeout();
-			if (idleTimeLeft > appTimeLeft)
-				idleTimeLeft = appTimeLeft;
+			uint32_t taskletTimeLeft = 600000;
 
-			if (idleTimeLeft > 5)
+			TASKLET_GetTimeToNext(&taskletTimeLeft);
+
+			if (taskletTimeLeft > 100)
 			{
 				BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
-				PlatformSleep(idleTimeLeft);
+				PlatformSleep(taskletTimeLeft);
 			}
 		}
 	}
@@ -137,7 +146,6 @@ static void SED_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 static void SED_Handler(struct ca821x_dev *pDeviceRef)
 {
-	PlatformAlarmProcess(OT_INSTANCE);
 	cascoda_io_handler(pDeviceRef);
 	sleep_if_possible();
 	otTaskletsProcess(OT_INSTANCE);
@@ -312,21 +320,29 @@ exit:
 	return error;
 }
 
-void SensorHandler(void)
+ca_error PollHandler(void *aContext)
 {
-	if (TIME_ReadAbsoluteTime() < appNextSendTime)
-		return;
+	otLinkSendDataRequest(OT_INSTANCE);
+	return CA_ERROR_SUCCESS;
+}
+
+ca_error SensorHandler(void *aContext)
+{
+	(void)aContext;
 
 	if (isConnected)
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 10000;
 		sendSensorData();
+		TASKLET_ScheduleDelta(&sensorTasklet, SENSORDATA_PERIOD, NULL);
+		TASKLET_ScheduleDelta(&dataRequestTasklet, SENSOR_POLL_DELAY, NULL);
 	}
 	else
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 30000;
 		sendServerDiscover();
+		TASKLET_ScheduleDelta(&sensorTasklet, DISCOVERY_PERIOD, NULL);
+		TASKLET_ScheduleDelta(&dataRequestTasklet, DISCOVERY_POLL_DELAY, NULL);
 	}
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -343,7 +359,10 @@ void SensorHandler(void)
 int main(void)
 {
 	u8_t              StartupStatus;
+	otError           otErr = OT_ERROR_NONE;
 	struct ca821x_dev dev;
+	otExtAddress      extAddress;
+
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
@@ -356,27 +375,44 @@ int main(void)
 
 	OT_INSTANCE = otInstanceInitSingle();
 
-	/* Setup Thread stack with hard coded demo parameters */
+	/* Setup Thread stack to be SED with given poll period */
 	otLinkModeConfig linkMode = {0};
-	otMasterKey key = {0xca, 0x5c, 0x0d, 0xa5, 0x01, 0x07, 0xca, 0x5c, 0x0d, 0xaa, 0xca, 0xfe, 0xbe, 0xef, 0xde, 0xad};
-	otLinkSetPollPeriod(OT_INSTANCE, 5000);
-	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0xc0da);
+	otLinkSetPollPeriod(OT_INSTANCE, 20000);
 	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 22);
-	otThreadSetEnabled(OT_INSTANCE, true);
 
+	// Print credentials as helper
+	otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &extAddress);
+	printf("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(OT_INSTANCE));
+	for (int i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
+	printf("\n");
+
+	// Try to join network
+	do
+	{
+		otIp6SetEnabled(OT_INSTANCE, true);
+		otErr = PlatformTryJoin(&dev, OT_INSTANCE);
+		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
+			break;
+
+		otIp6SetEnabled(OT_INSTANCE, false);
+		PlatformSleep(30000);
+	} while (1);
+
+	otThreadSetEnabled(OT_INSTANCE, true);
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 
 	// Sets up GPIO module pin 31 (PB.5) as an input for the interrupt.
 	set_up_GPIO_input(31);
 
+	TASKLET_Init(&dataRequestTasklet, &PollHandler);
+	TASKLET_Init(&sensorTasklet, &SensorHandler);
+
+	TASKLET_ScheduleDelta(&sensorTasklet, INITIAL_DELAY, NULL);
+
 	// Endless Polling Loop
 	while (1)
 	{
-		SensorHandler();
 		SED_Handler(&dev);
 	}
 }

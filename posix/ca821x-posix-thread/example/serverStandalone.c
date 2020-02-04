@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "openthread/cli.h"
 #include "openthread/coap.h"
 #include "openthread/instance.h"
 #include "openthread/link.h"
@@ -59,15 +60,6 @@ static otCoapResource sSensorResource;
 static otCoapResource sDiscoverResource;
 static const char *   sSensorUri   = "ca/se";
 static const char *   sDiscoverUri = "ca/di";
-
-void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
-{
-	(void)aBuf;
-	(void)aBufLength;
-}
-void otPlatUartSendDone(void)
-{
-}
 
 void printf_time(const char *format, ...)
 {
@@ -219,7 +211,6 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 	}
 
 	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_ACKNOWLEDGMENT, OT_COAP_CODE_VALID);
-	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 
@@ -276,20 +267,13 @@ int main(int argc, char *argv[])
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
+	otCliUartInit(OT_INSTANCE);
 
 	isRunning = 1;
 	signal(SIGINT, quit);
 
-	/* Hardcoded demo-specific config */
-	otMasterKey key = {0xca, 0x5c, 0x0d, 0xa5, 0x01, 0x07, 0xca, 0x5c, 0x0d, 0xaa, 0xca, 0xfe, 0xbe, 0xef, 0xde, 0xad};
 	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0xc0da);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 22);
-	otThreadSetEnabled(OT_INSTANCE, true);
-
 	registerCoapResources(OT_INSTANCE);
-
 	printf_time("Initialisation complete.\r\n");
 
 	while (isRunning)

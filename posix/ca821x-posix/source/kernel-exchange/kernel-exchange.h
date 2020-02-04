@@ -28,6 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Cascoda posix exchange for communicating with ca821x via kernel driver.
+ */
 
 #ifndef KERNEL_EXCHANGE_H
 #define KERNEL_EXCHANGE_H
@@ -48,6 +52,8 @@
 /**
  * Initialise the kernel exchange, with no callback for errors (program will
  * crash in the case of an error.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
  *
  * @warning It is recommended to use the kernel_exchange_init_withandler function
  * instead, so that any errors can be handled by your application.
@@ -74,6 +80,8 @@ ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct c
 /**
  * Deinitialise the kernel exchange, so that it can be reinitialised by another
  * process, or reopened later.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
  *
  */
 void kernel_exchange_deinit(struct ca821x_dev *pDeviceRef);

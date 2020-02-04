@@ -38,13 +38,8 @@ if(UNIX)
 	add_subdirectory(posix/ca821x-posix-thread)
 endif()
 
-# Baremetal platform
-add_subdirectory(baremetal/cascoda-bm-core)
-add_subdirectory(baremetal/cascoda-bm-driver)
-add_subdirectory(baremetal/sensorif)
-add_subdirectory(baremetal/platform/cascoda-nuvoton-chili)
-add_subdirectory(baremetal/platform/cascoda-nuvoton-chili2)
-add_subdirectory(baremetal/platform/cascoda-dummy-posix)
+# Baremetal
+add_subdirectory(baremetal)
 
 # Openthread
 add_subdirectory(openthread)
@@ -57,19 +52,6 @@ add_subdirectory(third-party/QR-Code-generator EXCLUDE_FROM_ALL)
 add_subdirectory(third-party/hidapi EXCLUDE_FROM_ALL)
 # tinycbor-master, used for CBOR encoding and decoding
 add_subdirectory(third-party/tinycbor-master EXCLUDE_FROM_ALL)
-
-# Baremetal Applications (If a suitable platform layer was configured)
-if(TARGET cascoda-bm-plat)
-	add_subdirectory(baremetal/app/ot-baremetal)
-	add_subdirectory(baremetal/app/tempsense-bm)
-	add_subdirectory(baremetal/app/test15_4-baremetal)
-	add_subdirectory(baremetal/app/sensorif-bm)
-	add_subdirectory(baremetal/app/eink-bm)
-	add_subdirectory(baremetal/app/ot-sed-sensorif)
-	add_subdirectory(baremetal/app/ot-sed-standalone)
-	add_subdirectory(baremetal/app/ot-sed-freertos)
-	add_subdirectory(baremetal/app/ot-sed-eink)
-endif()
 
 # Doxygen
 add_subdirectory(docs)

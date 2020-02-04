@@ -39,22 +39,6 @@ u8_t               HandleMac; // 0 means Mac indications and confirms passed thr
 u8_t xmalloc_buf[256];
 u8_t buf1 = 0;
 u8_t buf2 = 0;
-int  putchar(int OutChar);
-
-#if (0)
-int otCliOutput(const char *aBuf, uint16_t aBufLength, void *aContext)
-{
-	//EVBME_Message( (u8_t)aBufLength, (u8_t *)aBuf );
-
-	u8_t i;
-
-	for (i = 0; i < aBufLength; i++)
-	{
-		putchar(aBuf[i]);
-	}
-	return 0;
-}
-#endif
 
 /******************************************************************************/
 /******************************************************************************/

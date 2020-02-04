@@ -71,7 +71,7 @@ pipeline {
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=ON',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=UART',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -79,7 +79,7 @@ pipeline {
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_USE_USB=OFF -DCASCODA_BM_USE_UART=OFF',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=NONE',
 							steps: [[args: '-j10 -O']]
 						)
 					}

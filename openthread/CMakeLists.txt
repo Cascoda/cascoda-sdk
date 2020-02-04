@@ -3,6 +3,7 @@ project (ca821x-openthread)
 
 # Set configuration variables -------------------------------------------------
 set(CASCODA_OPENTHREAD_DEV OFF CACHE BOOL "Whether to use the latest development build of openthread, or the known stable version.")
+set(CASCODA_OPENTHREAD_MESSAGE_BUFS 44 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
 
 if(${CASCODA_CA_VER} EQUAL 8210)
 	MESSAGE( WARNING "CA-${CASCODA_CA_VER} is not fully supported for thread, please upgrade")
@@ -20,7 +21,7 @@ include(FetchContent)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG 9c6a1c56639a5a916b418928819ab6ec0594f7f7)
+	set(OT_TAG 8bec327fae9334bb6863b8477289711a3364b90f)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
@@ -47,6 +48,7 @@ list(APPEND OT_PLATFORM_DEFINES
 	"OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1"
 	"OPENTHREAD_CONFIG_COAP_API_ENABLE=1"
 	"OPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1"
+	"OPENTHREAD_CONFIG_NUM_MESSAGE_BUFFERS=${CASCODA_OPENTHREAD_MESSAGE_BUFS}"
 )
 if(CASCODA_OPENTHREAD_FTD)
 	list(APPEND OT_PLATFORM_DEFINES
@@ -59,6 +61,7 @@ if(CASCODA_OPENTHREAD_FTD)
 		"OPENTHREAD_CONFIG_NCP_UART_ENABLE=1"
 		"OPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1"
 		"OPENTHREAD_CONFIG_MAC_FILTER_ENABLE=1"
+		"OPENTHREAD_CONFIG_UDP_FORWARD_ENABLE=1"
 	)
 endif()
 
@@ -83,10 +86,10 @@ target_include_directories(mbedcrypto
 		${openthread_SOURCE_DIR}/third_party/mbedtls
 )
 
-target_link_libraries(openthread-cli-ftd PUBLIC openthread-ftd)
-target_link_libraries(openthread-cli-mtd PUBLIC openthread-mtd)
-target_link_libraries(openthread-ncp-ftd PUBLIC openthread-ftd)
-target_link_libraries(openthread-ncp-mtd PUBLIC openthread-mtd)
+target_link_libraries(openthread-cli-ftd PUBLIC openthread-ftd-obj)
+target_link_libraries(openthread-cli-mtd PUBLIC openthread-mtd-obj)
+target_link_libraries(openthread-ncp-ftd PUBLIC openthread-ftd-obj)
+target_link_libraries(openthread-ncp-mtd PUBLIC openthread-mtd-obj)
 target_link_libraries(mbedcrypto INTERFACE openthread-plat-api)
 
 if(TARGET mbedcrypto-plat)

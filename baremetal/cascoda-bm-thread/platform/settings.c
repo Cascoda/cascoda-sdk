@@ -44,6 +44,7 @@
 
 #include "code_utils.h"
 #include "flash.h"
+#include "platform.h"
 
 enum
 {
@@ -438,6 +439,11 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 
 void otPlatSettingsWipe(otInstance *aInstance)
 {
+	//Wipe the settings, caching the joiner credential, which persists.
+	const char *cred = PlatformGetJoinerCredential(aInstance);
+
 	initSettings(sSettingsBaseAddress, (uint32_t)(kSettingsInUse));
 	otPlatSettingsInit(aInstance);
+
+	otPlatSettingsSet(aInstance, joiner_credential_key, cred, strlen(cred));
 }

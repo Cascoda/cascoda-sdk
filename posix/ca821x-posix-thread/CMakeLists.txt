@@ -6,6 +6,9 @@ if (WIN32)
 	return()
 endif()
 
+# Set the message buffers pretty high as we generally have plenty of RAM on posix
+set(CASCODA_OPENTHREAD_MESSAGE_BUFS 200 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
+
 # Get required packages -------------------------------------------------------
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -33,8 +36,6 @@ target_link_libraries(ca821x-openthread-posix-plat
 		m
 		openthread-plat-api
 	)
-
-target_compile_definitions(ca821x-openthread-posix-plat PRIVATE ${OPENTHREAD_CONFIG_DEFINE})
 
 target_include_directories( ca821x-openthread-posix-plat
 	PRIVATE
@@ -93,7 +94,7 @@ target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
 target_link_libraries(ncpapp openthread-ncp-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
-target_link_libraries(ot-server-standalone ca821x-openthread-posix-ftd tinycbor-master)
+target_link_libraries(ot-server-standalone openthread-cli-ftd ca821x-openthread-posix-ftd tinycbor-master)
 target_link_libraries(ot-server-eink ca821x-openthread-posix-ftd)
 
 install(

@@ -12,6 +12,7 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
@@ -41,7 +42,17 @@ otInstance *OT_INSTANCE;
 static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
-static uint32_t     appNextSendTime = 5000;
+static ca_tasklet   dataRequestTasklet;
+static ca_tasklet   sensorTasklet;
+
+enum
+{
+	SENSORDATA_PERIOD    = 5000,
+	SENSOR_POLL_DELAY    = 250,
+	DISCOVERY_PERIOD     = 30000,
+	DISCOVERY_POLL_DELAY = 2000,
+	INITIAL_DELAY        = 5000
+};
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -50,9 +61,6 @@ static uint32_t     appNextSendTime = 5000;
  ******************************************************************************/
 static void sleep_if_possible(void)
 {
-	//Application check
-	uint32_t appTimeLeft = appNextSendTime - TIME_ReadAbsoluteTime();
-
 	if (!otTaskletsArePending(OT_INSTANCE))
 	{
 		otLinkModeConfig linkMode = otThreadGetLinkMode(OT_INSTANCE);
@@ -61,16 +69,16 @@ static void sleep_if_possible(void)
 		    otThreadGetDeviceRole(OT_INSTANCE) == OT_DEVICE_ROLE_CHILD && !otLinkIsInTransmitState(OT_INSTANCE) &&
 		    !PlatformIsExpectingIndication())
 		{
-			uint32_t idleTimeLeft = PlatformGetAlarmMilliTimeout();
-			if (idleTimeLeft > appTimeLeft)
-				idleTimeLeft = appTimeLeft;
+			uint32_t taskletTimeLeft = 600000;
 
-			if (idleTimeLeft > 5)
+			TASKLET_GetTimeToNext(&taskletTimeLeft);
+
+			if (taskletTimeLeft > 100)
 			{
 				struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
 				BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
 				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
-				PlatformSleep(idleTimeLeft);
+				PlatformSleep(taskletTimeLeft);
 				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 			}
 		}
@@ -111,7 +119,6 @@ static void NANO120_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 static void SED_Handler(struct ca821x_dev *pDeviceRef)
 {
-	PlatformAlarmProcess(OT_INSTANCE);
 	cascoda_io_handler(pDeviceRef);
 	sleep_if_possible();
 	otTaskletsProcess(OT_INSTANCE);
@@ -268,21 +275,29 @@ exit:
 	return error;
 }
 
-void SensorHandler(void)
+ca_error PollHandler(void *aContext)
 {
-	if (TIME_ReadAbsoluteTime() < appNextSendTime)
-		return;
+	otLinkSendDataRequest(OT_INSTANCE);
+	return CA_ERROR_SUCCESS;
+}
+
+ca_error SensorHandler(void *aContext)
+{
+	(void)aContext;
 
 	if (isConnected)
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 10000;
 		sendSensorData();
+		TASKLET_ScheduleDelta(&sensorTasklet, SENSORDATA_PERIOD, NULL);
+		TASKLET_ScheduleDelta(&dataRequestTasklet, SENSOR_POLL_DELAY, NULL);
 	}
 	else
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 30000;
 		sendServerDiscover();
+		TASKLET_ScheduleDelta(&sensorTasklet, DISCOVERY_PERIOD, NULL);
+		TASKLET_ScheduleDelta(&dataRequestTasklet, DISCOVERY_POLL_DELAY, NULL);
 	}
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -326,11 +341,15 @@ int main(void)
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 
+	TASKLET_Init(&dataRequestTasklet, &PollHandler);
+	TASKLET_Init(&sensorTasklet, &SensorHandler);
+
+	TASKLET_ScheduleDelta(&sensorTasklet, INITIAL_DELAY, NULL);
+
 	// Endless Polling Loop
 	while (1)
 	{
 		cascoda_io_handler(&dev);
-		SensorHandler();
 		SED_Handler(&dev);
 	}
 }

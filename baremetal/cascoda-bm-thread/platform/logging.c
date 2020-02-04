@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Modifications copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,39 +27,101 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "openthread/platform/entropy.h"
+#include <ctype.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
-#include "ca821x_api.h"
-#include "code_utils.h"
-#include "hwme_tdme.h"
-#include "platform.h"
 
-otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
+#include "openthread/instance.h"
+#include "openthread/platform/logging.h"
+
+OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
-	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
-	otError            error      = OT_ERROR_NONE;
-	uint8_t            result[2];
-	uint8_t            len;
-	uint16_t           curLen = 0;
+	va_list ap;
+	u8_t *  pLevel = "??? ", *pRegion = "??? ";
 
-	otEXPECT_ACTION(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
-
-	while (curLen < aOutputLength)
+	switch (aLogLevel)
 	{
-		HWME_GET_request_sync(HWME_RANDOMNUM, &len, result, pDeviceRef);
-		otEXPECT_ACTION(len == 2, error = OT_ERROR_ABORT);
+	case OT_LOG_LEVEL_NONE:
+		pLevel = "NONE ";
+		break;
 
-		if (curLen == aOutputLength - 1)
-		{
-			aOutput[curLen++] = result[0];
-		}
-		else
-		{
-			aOutput[curLen++] = result[0];
-			aOutput[curLen++] = result[1];
-		}
+	case OT_LOG_LEVEL_CRIT:
+		pLevel = "CRIT ";
+		break;
+
+	case OT_LOG_LEVEL_WARN:
+		pLevel = "WARN ";
+		break;
+
+	case OT_LOG_LEVEL_INFO:
+		pLevel = "INFO ";
+		break;
+
+	case OT_LOG_LEVEL_DEBG:
+		pLevel = "DEBG ";
+		break;
 	}
 
-exit:
-	return error;
+	switch (aLogRegion)
+	{
+	case OT_LOG_REGION_API:
+		pRegion = "API  ";
+		break;
+
+	case OT_LOG_REGION_MLE:
+		pRegion = "MLE  ";
+		break;
+
+	case OT_LOG_REGION_ARP:
+		pRegion = "ARP  ";
+		break;
+
+	case OT_LOG_REGION_NET_DATA:
+		pRegion = "NETD ";
+		break;
+
+	case OT_LOG_REGION_IP6:
+		pRegion = "IPV6 ";
+		break;
+
+	case OT_LOG_REGION_ICMP:
+		pRegion = "ICMP ";
+		break;
+
+	case OT_LOG_REGION_MAC:
+		pRegion = "MAC  ";
+		break;
+
+	case OT_LOG_REGION_MEM:
+		pRegion = "MEM  ";
+		break;
+
+	case OT_LOG_REGION_NCP:
+		pRegion = "NCP  ";
+		break;
+
+	case OT_LOG_REGION_MESH_COP:
+		pRegion = "MCOP ";
+		break;
+
+	case OT_LOG_REGION_NET_DIAG:
+		pRegion = "DIAG ";
+		break;
+
+	default:
+		pRegion = "XXXX ";
+		break;
+	}
+	printf("%04dms: %s %s ", TIME_ReadAbsoluteTime(), pLevel, pRegion);
+
+	va_start(ap, aFormat);
+	vprintf(aFormat, ap);
+	va_end(ap);
+	printf("\n");
 }

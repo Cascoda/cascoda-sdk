@@ -117,23 +117,6 @@ ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
  */
 void *WAIT_GetContext(void);
 
-/**
- * \brief Legacy function for waiting - not recommended to use for any new purpose
- *
- * This function registers a callback which copies the command buffer into the
- * waiting buffer. Any old callback is swapped out then back in again while this
- * happens. This is to implement the legacy ca821x_wait_for_command function,
- * and isn't recommended for any real application.
- *
- * \deprecated Unsupported, inefficient & encourages bad design
- *
- * \return Status
- * \retval CA_ERROR_SUCCESS Success
- * \retval CA_ERROR_INVALID_STATE System in invalid state - did you try and use from a callback?
- * \retval CA_ERROR_SPI_WAIT_TIMEOUT Timed out waiting for message
- */
-ca_error WAIT_Legacy(uint8_t cmdid, int timeout_ms, uint8_t *buf, struct ca821x_dev *pDeviceRef);
-
 #ifdef __cplusplus
 }
 #endif

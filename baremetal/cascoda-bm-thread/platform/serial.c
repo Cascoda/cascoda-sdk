@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,59 +26,50 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _DEFAULT_SOURCE 1
-
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "cascoda-bm/cascoda_time.h"
+#include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
 
-#include "openthread/platform/alarm-milli.h"
+#include "openthread/platform/uart.h"
 
-static bool  s_IsRunning = false;
-static u32_t s_Expires;
+#include "platform.h"
 
-uint32_t otPlatAlarmMilliGetNow(void)
+otError otPlatUartEnable(void)
 {
-	return TIME_ReadAbsoluteTime();
+	return OT_ERROR_NONE;
 }
 
-void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
+otError otPlatUartDisable(void)
 {
-	s_Expires   = aT0 + aDt;
-	s_IsRunning = true;
+	return OT_ERROR_NONE;
 }
 
-void otPlatAlarmMilliStop(otInstance *aInstance)
+otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 {
-	s_IsRunning = false;
-}
-
-void PlatformAlarmProcess(otInstance *aInstance)
-{
-	if (s_IsRunning)
+	while (aBufLength > 0)
 	{
-		int32_t remaining = (int32_t)(s_Expires - otPlatAlarmMilliGetNow());
+		uint8_t frameLen = (aBufLength > 254) ? 254 : (uint8_t)aBufLength;
 
-		if (remaining <= 0)
-		{
-			s_IsRunning = false;
-			otPlatAlarmMilliFired(aInstance);
-		}
+		MAC_Message((uint8_t)OT_SERIAL_UPLINK, frameLen, aBuf);
+
+		aBufLength -= frameLen;
+		aBuf += frameLen;
 	}
+	otPlatUartSendDone();
+	return OT_ERROR_NONE;
 }
 
-uint32_t PlatformGetAlarmMilliTimeout()
+otError otPlatUartFlush(void)
 {
-	int32_t remaining;
+	return OT_ERROR_NOT_IMPLEMENTED;
+}
 
-	if (s_IsRunning == false)
-	{
-		return 0;
-	}
-	remaining = s_Expires - otPlatAlarmMilliGetNow();
-	return (remaining < 0) ? 0 : remaining;
+otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength)
+{
+	otPlatUartReceived(aBuf, aBufLength);
+	return OT_ERROR_NONE;
 }

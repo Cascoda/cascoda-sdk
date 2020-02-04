@@ -53,11 +53,6 @@
 
 #if CASCODA_CA_VER != 8210
 
-/**
- * Static assert macro
- */
-#define STATIC_ASSERT(COND, MSG) typedef char static_assertion_##MSG[(COND) ? 1 : -1]
-
 #if _WIN32
 #define DEFAULT_PIPE "\\\\.\\pipe\\cascoda_"
 #else
@@ -94,8 +89,8 @@ typedef struct pcaprec_hdr_s
 	uint32_t orig_len; ///< actual length of packet
 } pcaprec_hdr_t;
 
-STATIC_ASSERT(sizeof(pcap_hdr_t) == 24, pcap_hdr_t_not_packed);
-STATIC_ASSERT(sizeof(pcaprec_hdr_t) == 16, pcaprec_hdr_t_not_packed);
+ca_static_assert(sizeof(pcap_hdr_t) == 24);    //pcap_hdr_t_not_packed
+ca_static_assert(sizeof(pcaprec_hdr_t) == 16); //pcaprec_hdr_t_not_packed
 
 /**
  * Output mode for formatting printed data

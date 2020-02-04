@@ -1,11 +1,36 @@
-/******************************************************************************/
-/******************************************************************************/
-/****** Cascoda Ltd. 2019                                                ******/
-/******************************************************************************/
-/******************************************************************************/
-/****** Openthread standalone SED w/ basic CoAP server discovery & reporting **/
-/******************************************************************************/
-/******************************************************************************/
+/*
+ *  Copyright (c) 2019, Cascoda Ltd.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @file
+ *  CLI sensor demo capable of acting as either a sensor or a server.
+ *
+ *  Uses cbor data structures inside CoAP messages.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +38,7 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
@@ -29,12 +55,12 @@
 #include "cbor.h"
 
 // General
-const char *uriCascodaDiscover            = "ca/di";
-const char *uriCascodaSensorDiscoverQuery = "t=sen";
-const char *uriCascodaSensor              = "ca/se";
+static const char *uriCascodaDiscover            = "ca/di";
+static const char *uriCascodaSensorDiscoverQuery = "t=sen";
+static const char *uriCascodaSensor              = "ca/se";
 
-otInstance *          OT_INSTANCE;
-static const uint16_t sensordemo_key = 0xCA5C;
+static otCliCommand sCliCommands[3];
+static ca_tasklet   join_tasklet;
 
 enum sensordemo_state
 {
@@ -47,7 +73,8 @@ enum sensordemo_state
 static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
-static uint32_t     appNextSendTime = 5000;
+static ca_tasklet   sensorTasklet;
+static uint8_t      autostartEnabled = 0;
 
 // Server
 static otCoapResource sSensorResource;
@@ -207,22 +234,25 @@ exit:
 	return error;
 }
 
-/** Send sensor data if the time is right */
-static void sensordemo_handler(void)
+/**
+ * Send sensor data or discover depending on app state.
+ * @param aContext Context pointer (not actually used)
+ * @return CA_ERROR_SUCCESS
+ */
+static ca_error sensordemo_handler(void *aContext)
 {
-	if (TIME_ReadAbsoluteTime() < appNextSendTime)
-		return;
-
 	if (isConnected)
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 10000;
+		TASKLET_ScheduleDelta(&sensorTasklet, 10000, aContext);
 		sendSensorData();
 	}
 	else
 	{
-		appNextSendTime = TIME_ReadAbsoluteTime() + 30000;
+		TASKLET_ScheduleDelta(&sensorTasklet, 30000, aContext);
 		sendServerDiscover();
 	}
+
+	return CA_ERROR_SUCCESS;
 }
 
 /** Server: Handle a sensor data message by printing it */
@@ -413,19 +443,26 @@ static void unbind_server_resources()
 	otCoapRemoveResource(OT_INSTANCE, &sDiscoverResource);
 }
 
-/** Add sensor coap resources to the coap stack */
+/** Add sensor coap resources to the coap stack, schedule sensor task */
 static void bind_sensor_resources()
 {
 	otCoapAddResource(OT_INSTANCE, &sDiscoverResponseResource);
+	TASKLET_ScheduleDelta(&sensorTasklet, 5000, NULL);
 }
 
-/** Remove sensor coap resources to the coap stack */
+/** Remove sensor coap resources to the coap stack, deschedule sensor task */
 static void unbind_sensor_resources()
 {
+	TASKLET_Cancel(&sensorTasklet);
 	otCoapRemoveResource(OT_INSTANCE, &sDiscoverResponseResource);
 }
 
-void handle_cli_sensordemo(int argc, char *argv[])
+static void sensordemo_error(void)
+{
+	otCliOutputFormat("Parse error, usage: sensordemo [sensor|server|stop]\n");
+}
+
+static void handle_cli_sensordemo(int argc, char *argv[])
 {
 	enum sensordemo_state prevState = sensordemo_state;
 
@@ -444,9 +481,13 @@ void handle_cli_sensordemo(int argc, char *argv[])
 			otCliOutputFormat("stopped\n");
 			break;
 		}
+		return;
 	}
 	if (argc != 1)
+	{
+		sensordemo_error();
 		return;
+	}
 
 	if (strcmp(argv[0], "sensor") == 0)
 	{
@@ -467,8 +508,93 @@ void handle_cli_sensordemo(int argc, char *argv[])
 		unbind_server_resources();
 		unbind_sensor_resources();
 	}
+	else
+	{
+		sensordemo_error();
+	}
 	if (prevState != sensordemo_state)
 		otPlatSettingsSet(OT_INSTANCE, sensordemo_key, (uint8_t *)&sensordemo_state, sizeof(sensordemo_state));
+}
+
+static void autostart_error(void)
+{
+	otCliOutputFormat("Parse error, usage: autostart [enable|disable]\n");
+}
+
+static void handle_cli_autostart(int argc, char *argv[])
+{
+	uint8_t prevState = autostartEnabled;
+
+	if (argc == 0)
+	{
+		if (autostartEnabled)
+			otCliOutputFormat("enabled\n");
+		else
+			otCliOutputFormat("disabled\n");
+
+		return;
+	}
+	if (argc != 1)
+	{
+		autostart_error();
+		return;
+	}
+
+	if (strcmp(argv[0], "enable") == 0)
+	{
+		autostartEnabled = 1;
+	}
+	else if (strcmp(argv[0], "disable") == 0)
+	{
+		autostartEnabled = 0;
+	}
+	else
+	{
+		autostart_error();
+	}
+	if (prevState != autostartEnabled)
+		otPlatSettingsSet(OT_INSTANCE, autostart_key, &autostartEnabled, sizeof(autostartEnabled));
+}
+
+static void join_error(void)
+{
+	otCliOutputFormat("Parse error, usage: join [info]\n");
+}
+
+static ca_error handle_join(void *aContext)
+{
+	otError error = PlatformTryJoin(PlatformGetDeviceRef(), OT_INSTANCE);
+
+	if (error)
+		otCliOutputFormat("Join Fail, error: %s\n", otThreadErrorToString(error));
+	else
+		otCliOutputFormat("Join Success!\n");
+
+	return CA_ERROR_SUCCESS;
+}
+
+static void handle_cli_join(int argc, char *argv[])
+{
+	if (argc == 0)
+	{
+		//Schedule the join to happen now
+		TASKLET_ScheduleDelta(&join_tasklet, 0, NULL);
+	}
+	else if (argc == 1 && (strcmp(argv[0], "info") == 0))
+	{
+		otExtAddress extAddress;
+		otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &extAddress);
+		otCliOutputFormat("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(OT_INSTANCE));
+		otCliOutputBytes(extAddress.m8, sizeof(extAddress));
+		otCliOutputFormat("\n");
+		otCliOutputFormat("CLI command: commissioner joiner add ");
+		otCliOutputBytes(extAddress.m8, sizeof(extAddress));
+		otCliOutputFormat(" %s\n", PlatformGetJoinerCredential(OT_INSTANCE));
+	}
+	else
+	{
+		join_error();
+	}
 }
 
 ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
@@ -476,6 +602,18 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 	otError  error = OT_ERROR_NONE;
 	uint16_t stateLength;
 	OT_INSTANCE = aInstance;
+
+	//CLI Commands
+	sCliCommands[0].mCommand = handle_cli_sensordemo;
+	sCliCommands[0].mName    = "sensordemo";
+	sCliCommands[1].mCommand = handle_cli_autostart;
+	sCliCommands[1].mName    = "autostart";
+	sCliCommands[2].mCommand = handle_cli_join;
+	sCliCommands[2].mName    = "join";
+	otCliSetUserCommands(sCliCommands, 3);
+
+	TASKLET_Init(&join_tasklet, handle_join);
+	TASKLET_Init(&sensorTasklet, sensordemo_handler);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 
@@ -495,6 +633,13 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 		sensordemo_state = SENSORDEMO_STOPPED;
 	}
 
+	stateLength = sizeof(autostartEnabled);
+	error       = otPlatSettingsGet(OT_INSTANCE, autostart_key, 0, &autostartEnabled, &stateLength);
+	if (error != OT_ERROR_NONE)
+	{
+		autostartEnabled = 0;
+	}
+
 	if (sensordemo_state == SENSORDEMO_SERVER)
 	{
 		bind_server_resources();
@@ -505,22 +650,17 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 		bind_sensor_resources();
 	}
 
-	return CA_ERROR_SUCCESS;
-}
-
-ca_error handle_sensordemo(struct ca821x_dev *pDeviceRef)
-{
-	switch (sensordemo_state)
+	if (autostartEnabled)
 	{
-	case SENSORDEMO_SENSOR:
-		sensordemo_handler();
-		break;
-	case SENSORDEMO_SERVER:
-		break;
-	case SENSORDEMO_STOPPED:
-	default:
-		break;
+		if (otIp6SetEnabled(aInstance, true) == OT_ERROR_NONE)
+		{
+			// Only try to start Thread if we could bring up the interface
+			if (otThreadSetEnabled(aInstance, true) != OT_ERROR_NONE)
+			{
+				// Bring the interface down if Thread failed to start
+				otIp6SetEnabled(aInstance, false);
+			}
+		}
 	}
-
 	return CA_ERROR_SUCCESS;
 }

@@ -17,6 +17,7 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
+#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 // Insert Application-Specific Includes here
@@ -58,9 +59,11 @@ void sleep_if_possible()
 		    otThreadGetDeviceRole(OT_INSTANCE) == OT_DEVICE_ROLE_CHILD && !otLinkIsInTransmitState(OT_INSTANCE) &&
 		    !PlatformIsExpectingIndication())
 		{
-			uint32_t idleTimeLeft = PlatformGetAlarmMilliTimeout();
+			uint32_t idleTimeLeft = 600000;
 
-			if (idleTimeLeft > 5)
+			TASKLET_GetTimeToNext(&idleTimeLeft);
+
+			if (idleTimeLeft > 100)
 			{
 				struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
 				BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
@@ -123,7 +126,6 @@ void NANO120_Handler(struct ca821x_dev *pDeviceRef)
 
 	if (HandleMac)
 	{
-		PlatformAlarmProcess(OT_INSTANCE);
 		cascoda_io_handler(pDeviceRef);
 		sleep_if_possible();
 		otTaskletsProcess(OT_INSTANCE);

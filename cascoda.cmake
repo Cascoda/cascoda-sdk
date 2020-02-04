@@ -110,3 +110,12 @@ macro(cascoda_tz_secure target_in secure_linkerarg nonsecure_linkerarg)
 	target_link_options(${target_in}-implib INTERFACE -Wl,${nonsecure_linkerarg})
 	unset(IMPORT_LIB)
 endmacro()
+
+# Helper function to print information about the configuration at build time.
+# This is implemented to help catch common mistakes using the SDK, like building
+# with the incorrect interface. The actual printing is implemented in git-version.cmake,
+# which is run at every build.
+set(CASCODA_IMPORTANT_VARS "" CACHE INTERNAL "")
+function(cascoda_mark_important important_var)
+	set(CASCODA_IMPORTANT_VARS ${CASCODA_IMPORTANT_VARS} "${important_var}" CACHE INTERNAL "")
+endfunction()

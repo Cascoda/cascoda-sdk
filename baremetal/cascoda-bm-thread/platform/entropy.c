@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,50 +26,39 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_serial.h"
+#include "openthread/platform/entropy.h"
 #include "cascoda-bm/cascoda_types.h"
-
-#include "openthread/platform/uart.h"
-
+#include "ca821x_api.h"
+#include "code_utils.h"
+#include "hwme_tdme.h"
 #include "platform.h"
 
-otError otPlatUartEnable(void)
+otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
 {
-	return OT_ERROR_NONE;
-}
+	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
+	otError            error      = OT_ERROR_NONE;
+	uint8_t            result[2];
+	uint8_t            len;
+	uint16_t           curLen = 0;
 
-otError otPlatUartDisable(void)
-{
-	return OT_ERROR_NONE;
-}
+	otEXPECT_ACTION(aOutput != NULL, error = OT_ERROR_INVALID_ARGS);
 
-otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
-{
-	while (aBufLength > 0)
+	while (curLen < aOutputLength)
 	{
-		uint8_t frameLen = (aBufLength > 254) ? 254 : (uint8_t)aBufLength;
+		HWME_GET_request_sync(HWME_RANDOMNUM, &len, result, pDeviceRef);
+		otEXPECT_ACTION(len == 2, error = OT_ERROR_ABORT);
 
-		MAC_Message((uint8_t)OT_SERIAL_UPLINK, frameLen, aBuf);
-
-		aBufLength -= frameLen;
-		aBuf += frameLen;
+		if (curLen == aOutputLength - 1)
+		{
+			aOutput[curLen++] = result[0];
+		}
+		else
+		{
+			aOutput[curLen++] = result[0];
+			aOutput[curLen++] = result[1];
+		}
 	}
-	otPlatUartSendDone();
-	return OT_ERROR_NONE;
-}
 
-otError otPlatUartFlush(void)
-{
-	return OT_ERROR_NOT_IMPLEMENTED;
-}
-
-otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength)
-{
-	otPlatUartReceived(aBuf, aBufLength);
-	return OT_ERROR_NONE;
+exit:
+	return error;
 }

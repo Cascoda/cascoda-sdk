@@ -279,10 +279,11 @@ static ca_error PreCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDeviceR
 }
 
 /** Checks to run after sending a message to the CA821x */
-static ca_error PostCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDeviceRef)
+static ca_error PostCheckToCA821x(const uint8_t *buf, const uint8_t *rspbuf, struct ca821x_dev *pDeviceRef)
 {
 	ca_error            Status = CA_ERROR_SUCCESS;
 	struct MAC_Message *msg    = (struct MAC_Message *)buf;
+	struct MAC_Message *rsp    = (struct MAC_Message *)rspbuf;
 
 	if (msg->CommandId == SPI_MCPS_DATA_REQUEST)
 	{
@@ -312,9 +313,12 @@ static ca_error PostCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDevice
 	{
 		ApplyPCPSPostFix(pDeviceRef);
 	}
-#else
-	(void)pDeviceRef;
 #endif
+
+	if (rsp && rsp->CommandId == SPI_MCPS_PURGE_CONFIRM && rsp->PData.PurgeCnf.Status == MAC_SUCCESS)
+	{
+		CacheRemoveItem(rsp->PData.PurgeCnf.MsduHandle, MDR_CacheTypeMCPS);
+	}
 
 	return Status;
 }
@@ -328,14 +332,10 @@ static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage, struct ca821x_d
 	{
 		CacheRemoveItem(aMessage->PData.DataCnf.MsduHandle, MDR_CacheTypeMCPS);
 	}
-	else if (aMessage->CommandId == SPI_MCPS_PURGE_CONFIRM && aMessage->PData.PurgeCnf.Status == MAC_SUCCESS)
-	{
-		CacheRemoveItem(aMessage->PData.PurgeCnf.MsduHandle, MDR_CacheTypeMCPS);
-	}
 #if CASCODA_CA_VER == 8211
 	else if (aMessage->CommandId == SPI_PCPS_DATA_CONFIRM)
 	{
-		CacheRemoveItem(aMessage->PData.DataCnf.MsduHandle, MDR_CacheTypePCPS);
+		CacheRemoveItem(aMessage->PData.PhyDataCnf.PsduHandle, MDR_CacheTypePCPS);
 	}
 #endif
 	else if (aMessage->CommandId == SPI_MLME_RESET_REQUEST)
@@ -395,7 +395,7 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 	if (!Status)
 		Status = SPI_Send(buf, len, response, pDeviceRef);
 	if (!Status)
-		Status = PostCheckToCA821x(buf, pDeviceRef);
+		Status = PostCheckToCA821x(buf, response, pDeviceRef);
 
 	return Status;
 }

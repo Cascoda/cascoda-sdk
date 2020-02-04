@@ -4,10 +4,14 @@ Example applications for the CA-821x baremetal drivers. These link with the casc
 ## eink-bm
 Simple non-connected demo for the Chili2 which displays an image on a connected epaper display
 
-## ot-baremetal
-Baremetal interface of the OpenThread Thread network stack. 
+## ot-actuatordemo
+A simple demo that demonstrates the control of several actuators (running cliapp-actuator-bm), by a central controller (also running cliapp-actuator-bm). This demo provides a CLI for interaction (serial-adapter).
 
-Includes thread-bm, which is used to make cliapp-bm and ncpapp-bm, pure openthread demos with commandline / network coprocessor interfaces.
+## ot-sensordemo
+A simple demo, similar to ot-actuatordemo, that demonstrates control of several sensors. Exists in ../cascoda-bm-thread as part of cliapp-bm.
+
+## ot-baremetal
+Extremely simplistic demo of openthread, using cascoda EVBME commands for very basic control of the Thread stack for testing.
 
 ## ot-sed-eink
 A scalable demo for connecting 1000s of nodes to a Thread network using ephemeral connectivity. Each node periodically receives an update from a central server (ot-server-eink on posix) which will cause it to update the image displayed on its attached epaper display.

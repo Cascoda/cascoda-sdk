@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief Queue manipulation for ca821x-posix data exchange
- */
 /*
  * Copyright (c) 2016, Cascoda
  * All rights reserved.
@@ -31,6 +27,10 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
+ * @file
+ * @brief Queue manipulation for ca821x-posix data exchange
  */
 
 #include <string.h>

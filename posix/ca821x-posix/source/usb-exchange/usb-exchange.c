@@ -275,14 +275,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	assert_usb_exchange(pDeviceRef);
 	usb_apply_raspi_workaround(pDeviceRef);
 
-	if (peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
-	{ //Use a nonblocking read if we are waiting to send messages
-		delay = 0;
-	}
-	else
-	{
-		delay = POLL_DELAY;
-	}
+	delay = POLL_DELAY;
 
 	//Read from the device if possible
 	offset = 0;

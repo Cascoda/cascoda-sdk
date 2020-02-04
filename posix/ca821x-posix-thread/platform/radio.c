@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2016, Nest Labs, Inc.
+ *  Modifications copyright (c) 2020, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -361,6 +362,11 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 	                          (struct SecSpec *)&(aDataRequest->mSecurity),
 	                          pDeviceRef);
 
+	ca_log_debg("MCPS Data req - Error %d, Ind: %d, MH: %02x",
+	            error,
+	            aDataRequest->mTxOptions & OT_MAC_TX_OPTION_INDIRECT,
+	            aDataRequest->mMsduHandle);
+
 	return ConvertErrorMacToOt(error);
 }
 
@@ -369,6 +375,8 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 	ca_mac_status error;
 
 	error = MCPS_PURGE_request_sync(&aMsduHandle, pDeviceRef);
+
+	ca_log_debg("MCPS Purge req - Error %d, MH: %02x", error, aMsduHandle);
 
 	return ConvertErrorMacToOt(error);
 }

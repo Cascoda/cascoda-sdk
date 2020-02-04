@@ -57,6 +57,16 @@ typedef enum ca_error
 	CA_ERROR_SPI_SEND_EXCHANGE_FAIL = 0xA3, ///< SPI Message failed to send
 } ca_error;
 
+/** Static assert code */
+#if __STDC_VERSION__ >= 201112L || __cplusplus >= 201103L || __cpp_static_assert >= 200410
+#define ca_static_assert(x) static_assert(x, #x)
+#elif !defined(__cplusplus) && defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 406) && \
+    (__STDC_VERSION__ > 199901L)
+#define ca_static_assert(x) _Static_assert(x, #x)
+#else
+#define ca_static_assert(x) typedef char static_assertion[(x) ? 1 : -1]
+#endif
+
 #ifdef __cplusplus
 }
 #endif
