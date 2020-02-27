@@ -16,7 +16,7 @@ corrupted data. If you have used a `load` command, you may need to change the
 port that OpenOCD runs on, as detailed below.
 
 Instead, we recommend flashing your binaries using [the Nuvoton ICP Programming
-Tool](https://www.nuvoton.com/hq/support/tool-and-software/development-tool-hardware/programmer/?__locale=en)
+Tool](https://www.nuvoton.com/tool-and-software/software-development-tool/programmer/)
 before starting the GDB server.
 
 ## How to start the GDB server ##
