@@ -44,6 +44,7 @@
 #include "ca821x_endian.h"
 #include "ca821x_error.h"
 #include "ca821x_log.h"
+#include "evbme_messages.h"
 #include "mac_messages.h"
 
 #ifdef __cplusplus

@@ -73,7 +73,7 @@ static struct MAC_Message *SPI_GetFreeBuf();
 static struct MAC_Message *getBuf(uint8_t cmdid);
 static ca_error            SPI_WaitSlave(void);
 static void                SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen);
-static void                SPI_Error(ca_error errcode, struct ca821x_dev *pDeviceRef);
+static void                SPI_Error(ca_error errcode);
 
 bool SPI_IsFifoFull()
 {
@@ -561,18 +561,17 @@ ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_
 
 exit:
 	if (Status)
-		SPI_Error(Status, pDeviceRef);
+		SPI_Error(Status);
 	return Status;
 }
 
 /**
  * \brief SPI Error Handling
  *
- * \param errcode - Error Message
- * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
+ * \param errcode - Error code
  *
  */
-static void SPI_Error(ca_error errcode, struct ca821x_dev *pDeviceRef)
+static void SPI_Error(ca_error errcode)
 {
 	BSP_SetRFSSBHigh();
 	ca_log_crit("SPI: Error code %02x", errcode);

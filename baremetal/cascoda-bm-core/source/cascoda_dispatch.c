@@ -57,9 +57,10 @@ static struct MDR_CacheItem
 	uint8_t  mCacheType : 1;     /**< Cache type enum MDR_Cache (Only reason this is a uint8 is for struct packing) */
 } MDR_Cache[MDR_CacheSize];
 
-static bool             isPCPSFixActive = false;
-static uint8_t          isPCPSRxOn      = 0;
-static volatile uint8_t isReadPending   = 0;
+static bool             isPCPSFixActive       = false;
+static uint8_t          isPCPSRxOn            = 0;
+static volatile uint8_t isReadPending         = 0;
+static bool             isCacheFlushFixActive = false;
 
 static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef);
 
@@ -166,7 +167,12 @@ static ca_error CacheDecay(void)
 	uint32_t        curTime  = TIME_ReadAbsoluteTime();
 	uint32_t        delta    = curTime - prevTime;
 
+	//No reason to check cache as no time has passed
 	if (delta == 0)
+		return CA_ERROR_SUCCESS;
+
+	//No reason to check cache because it is currently being flushed
+	if (isCacheFlushFixActive)
 		return CA_ERROR_SUCCESS;
 
 	for (size_t i = 0; i < MDR_CacheSize; i++)
@@ -187,20 +193,19 @@ static ca_error CacheDecay(void)
 /** Freeze the CA821x, flush the cache, reinitialise memory */
 static void ApplyCacheFlushFix(struct ca821x_dev *pDeviceRef)
 {
-	static bool isRecovering = false;
-	uint8_t     len, rxOnOld, rxOnNew = 0;
+	uint8_t len, rxOnOld, rxOnNew = 0;
 
-	if (isRecovering)
+	if (isCacheFlushFixActive)
 		return;
 
-	isRecovering = true;
+	isCacheFlushFixActive = true;
 	MLME_GET_request_sync(macRxOnWhenIdle, 0, &len, &rxOnOld, pDeviceRef);
 	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxOnNew, pDeviceRef);
 	WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 15, NULL, pDeviceRef);
 	CachePurge(true, pDeviceRef);
 	MLME_RESET_request_sync(0, pDeviceRef);
 	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxOnOld, pDeviceRef);
-	isRecovering = false;
+	isCacheFlushFixActive = false;
 
 	CacheDecay();
 }
@@ -320,11 +325,16 @@ static ca_error PostCheckToCA821x(const uint8_t *buf, const uint8_t *rspbuf, str
 		CacheRemoveItem(rsp->PData.PurgeCnf.MsduHandle, MDR_CacheTypeMCPS);
 	}
 
+	if (rsp && rsp->CommandId == SPI_MLME_RESET_CONFIRM && rsp->PData.Status == MAC_SUCCESS)
+	{
+		CachePurge(false, pDeviceRef);
+	}
+
 	return Status;
 }
 
 /** Checks to run after receiving command from CA821x, but before dispatching */
-static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef)
+static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 
@@ -338,10 +348,6 @@ static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage, struct ca821x_d
 		CacheRemoveItem(aMessage->PData.PhyDataCnf.PsduHandle, MDR_CacheTypePCPS);
 	}
 #endif
-	else if (aMessage->CommandId == SPI_MLME_RESET_REQUEST)
-	{
-		CachePurge(false, pDeviceRef);
-	}
 
 	return error;
 }
@@ -390,6 +396,9 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 {
 	ca_error Status = CA_ERROR_SUCCESS;
 
+	if (response)
+		response[0] = SPI_IDLE;
+
 	if (!Status)
 		Status = PreCheckToCA821x(buf, pDeviceRef);
 	if (!Status)
@@ -411,7 +420,7 @@ ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)
 	isDispatching = true;
 	while ((RxMessage = SPI_PeekFullBuf()) != NULL)
 	{
-		PreCheckFromCA821x(RxMessage, pDeviceRef);
+		PreCheckFromCA821x(RxMessage);
 		DispatchFromCa821x(RxMessage, pDeviceRef);
 		SPI_DequeueFullBuf();
 	}

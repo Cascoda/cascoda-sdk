@@ -93,24 +93,16 @@ static void set_up_GPIO_input(u8_t mpin)
  ******************************************************************************/
 static void sleep_if_possible(void)
 {
-	if (!otTaskletsArePending(OT_INSTANCE))
+	if (PlatformCanSleep(OT_INSTANCE))
 	{
-		otLinkModeConfig linkMode   = otThreadGetLinkMode(OT_INSTANCE);
-		otDeviceRole     deviceRole = otThreadGetDeviceRole(OT_INSTANCE);
+		uint32_t taskletTimeLeft = 600000;
 
-		if (linkMode.mDeviceType == 0 && linkMode.mRxOnWhenIdle == 0 && !otLinkIsInTransmitState(OT_INSTANCE) &&
-		    (deviceRole == OT_DEVICE_ROLE_CHILD || deviceRole == OT_DEVICE_ROLE_DETACHED) &&
-		    !PlatformIsExpectingIndication())
+		TASKLET_GetTimeToNext(&taskletTimeLeft);
+
+		if (taskletTimeLeft > 100)
 		{
-			uint32_t taskletTimeLeft = 600000;
-
-			TASKLET_GetTimeToNext(&taskletTimeLeft);
-
-			if (taskletTimeLeft > 100)
-			{
-				BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
-				PlatformSleep(taskletTimeLeft);
-			}
+			BSP_ModuleSetGPIOPin(ledPin, LED_OFF);
+			PlatformSleep(taskletTimeLeft);
 		}
 	}
 }

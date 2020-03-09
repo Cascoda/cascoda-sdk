@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "ca821x-posix/ca821x-posix.h"
+#include "evbme_messages.h"
 
 #ifdef OPENTHREAD_TARGET_LINUX
 #include <sys/prctl.h>
@@ -184,7 +185,7 @@ ca_error handle_user_command(const uint8_t *buf, size_t len, struct ca821x_dev *
 {
 	ca_error error = CA_ERROR_NOT_HANDLED;
 
-	if (buf[0] == 0xA0)
+	if (buf[0] == EVBME_MESSAGE_INDICATION)
 	{
 		struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
 		fprintf(stderr, "Rx: %.*s\r\n", (int)(len - 2), buf + 2);

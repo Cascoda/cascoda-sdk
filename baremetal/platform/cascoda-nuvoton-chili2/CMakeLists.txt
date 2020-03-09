@@ -33,6 +33,7 @@ cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
 # Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
 
+cascoda_mark_important("CASCODA_CHILI_FLASH_PAGES")
 # UART Baud config
 if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL
@@ -122,18 +123,28 @@ target_include_directories( cascoda-chili2
 
 # Add linker file dependency
 add_library(cascoda-chili2-ldfile INTERFACE)
+add_library(cascoda-chili2-ldfile-ldrom INTERFACE)
 
 if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
 	target_link_options(cascoda-chili2-ldfile
 		INTERFACE
 			"-T${PROJECT_SOURCE_DIR}/m2351BN.ld"
 		)
+	target_link_options(cascoda-chili2-ldfile-ldrom
+		INTERFACE
+			"-T${PROJECT_SOURCE_DIR}/m2351BN_LDROM.ld"
+		)
 elseif(CMAKE_C_COMPILER MATCHES armclang)
 	target_link_options(cascoda-chili2-ldfile
 		INTERFACE
 			"-Wl,--ro-base=0x00000000,--entry=0x00000000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
 		)
+	target_link_options(cascoda-chili2-ldfile-ldrom
+		INTERFACE
+			"-Wl,--ro-base=0x00100000,--entry=0x00100000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
+		)
 endif()
+
 
 # Export the chili2 platform as cascoda-bm-plat
 # A target that links to cascoda-bm-plat expects everything to work automagically, so we include
@@ -178,3 +189,23 @@ target_include_directories(cascoda-bm-plat-nonsecure
 	)
 
 target_link_libraries(cascoda-bm-plat-nonsecure INTERFACE nuvoton-vendor-m2351-nonsecure)
+
+# Variables for configuring memory usage using the cascoda_configure_memory CMake function
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+	set(CASCODA_STARTUP_ASM ${CMAKE_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili2/vendor/M2351Library/Device/Nuvoton/M2351/Source/GCC/startup_M2351.S CACHE INTERNAL "")
+	set(CASCODA_STACK_SIZE Stack_Size CACHE INTERNAL "")
+	set(CASCODA_HEAP_SIZE Heap_Size CACHE INTERNAL "")
+elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+	set(CASCODA_STARTUP_ASM ${CMAKE_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili2/vendor/M2351Library/Device/Nuvoton/M2351/Source/GCC/startup_M2351.s CACHE INTERNAL "")
+	set(CASCODA_STACK_SIZE Stack_Size CACHE INTERNAL "")
+	set(CASCODA_HEAP_SIZE Heap_Size CACHE INTERNAL "")
+endif()
+
+if(CASCODA_BM_USE_USB)
+	add_executable(ldrom_hid
+		${PROJECT_SOURCE_DIR}/LDROM/ldrom_hid.c
+		${PROJECT_SOURCE_DIR}/LDROM/hid_transfer.c
+	)
+	target_link_libraries(ldrom_hid cascoda-chili2 cascoda-chili2-ldfile-ldrom)
+	cascoda_make_binary(ldrom_hid)
+endif()

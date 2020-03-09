@@ -61,26 +61,19 @@ enum
  ******************************************************************************/
 static void sleep_if_possible(void)
 {
-	if (!otTaskletsArePending(OT_INSTANCE))
+	if (PlatformCanSleep(OT_INSTANCE))
 	{
-		otLinkModeConfig linkMode = otThreadGetLinkMode(OT_INSTANCE);
+		uint32_t taskletTimeLeft = 600000;
 
-		if (linkMode.mDeviceType == 0 && linkMode.mRxOnWhenIdle == 0 &&
-		    otThreadGetDeviceRole(OT_INSTANCE) == OT_DEVICE_ROLE_CHILD && !otLinkIsInTransmitState(OT_INSTANCE) &&
-		    !PlatformIsExpectingIndication())
+		TASKLET_GetTimeToNext(&taskletTimeLeft);
+
+		if (taskletTimeLeft > 100)
 		{
-			uint32_t taskletTimeLeft = 600000;
-
-			TASKLET_GetTimeToNext(&taskletTimeLeft);
-
-			if (taskletTimeLeft > 100)
-			{
-				struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
-				BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
-				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
-				PlatformSleep(taskletTimeLeft);
-				BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
-			}
+			struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
+			BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
+			BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
+			PlatformSleep(taskletTimeLeft);
+			BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 		}
 	}
 }

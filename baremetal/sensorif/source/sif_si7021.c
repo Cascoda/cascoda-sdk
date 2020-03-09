@@ -102,7 +102,7 @@ u8_t SIF_SI7021_ReadTemperature(void)
 	 *   = (176 * tread)/65536 - 46.85		error: 0.3 'C max.
 	 *   = (176 * tread - 3070362)/65536	error: none
 	 */
-	tconv = (176 * (u32_t)tread - 3070362) / 65536;
+	tconv = (176 * (i32_t)tread - 3070362) / 65536;
 
 	return (LS0_BYTE(tconv));
 }

@@ -33,6 +33,7 @@
 #ifndef CASCODA_USBHID_H
 #define CASCODA_USBHID_H
 
+#include "cascoda-bm/cascoda-bm-config.h"
 #include "cascoda-bm/cascoda_usb.h"
 
 #ifdef __cplusplus

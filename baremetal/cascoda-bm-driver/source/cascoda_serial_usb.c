@@ -36,6 +36,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "evbme_messages.h"
 
 #if defined(USE_USB)
 

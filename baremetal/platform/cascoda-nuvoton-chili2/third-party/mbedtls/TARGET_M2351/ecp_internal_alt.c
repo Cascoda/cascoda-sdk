@@ -497,7 +497,7 @@ NU_STATIC int internal_run_eccop(const mbedtls_ecp_group *grp,
 
     /* Check supported maximum key bits */
     if (grp->pbits > NU_ECC_MAXKEYBITS) {
-        return MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED;
+        return MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE;
     }
 
     int ret;
@@ -646,7 +646,7 @@ NU_STATIC int internal_run_eccop(const mbedtls_ecp_group *grp,
     CRPT_dyn->ECC_CTL = (grp->pbits << CRPT_ECC_CTL_CURVEM_Pos) | eccop | CRPT_ECC_CTL_FSEL_Msk | CRPT_ECC_CTL_START_Msk;
     ecc_done = crypto_ecc_wait();
 
-    MBEDTLS_MPI_CHK(ecc_done ? 0 : MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED);
+    MBEDTLS_MPI_CHK(ecc_done ? 0 : MBEDTLS_ERR_ECP_HW_ACCEL_FAILED);
 
     /* (X1, Y1) hold the normalized result. */
     MBEDTLS_MPI_CHK(internal_mpi_read_eccreg(&R->X, (uint32_t *) CRPT_dyn->ECC_X1, NU_ECC_BIGNUM_MAXWORD));
@@ -687,7 +687,7 @@ NU_STATIC int internal_run_modop(mbedtls_mpi *r,
 
     /* Check supported maximum key bits */
     if (pbits > NU_ECC_MAXKEYBITS) {
-        return MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED;
+        return MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE;
     }
 
     /* Check MODOP operations are legal */
@@ -739,7 +739,7 @@ NU_STATIC int internal_run_modop(mbedtls_mpi *r,
     CRPT_dyn->ECC_CTL = (pbits << CRPT_ECC_CTL_CURVEM_Pos) | (ECCOP_MODULE | modop) | CRPT_ECC_CTL_FSEL_Msk | CRPT_ECC_CTL_START_Msk;
     ecc_done = crypto_ecc_wait();
 
-    MBEDTLS_MPI_CHK(ecc_done ? 0 : MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED);
+    MBEDTLS_MPI_CHK(ecc_done ? 0 : MBEDTLS_ERR_ECP_HW_ACCEL_FAILED);
 
     /* X1 holds the result. */
     MBEDTLS_MPI_CHK(internal_mpi_read_eccreg(r, (uint32_t *) CRPT_dyn->ECC_X1, NU_ECC_BIGNUM_MAXWORD));

@@ -8,7 +8,7 @@ get_filename_component(GIT_WORKDIR ${GITVER_IN} DIRECTORY)
 
 if(GIT_FOUND)
 	execute_process(
-		COMMAND ${GIT_EXECUTABLE} describe --dirty --always --tags
+		COMMAND ${GIT_EXECUTABLE} describe --dirty --always --long
 		OUTPUT_VARIABLE CASCODA_GIT_VER
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		WORKING_DIRECTORY ${GIT_WORKDIR}

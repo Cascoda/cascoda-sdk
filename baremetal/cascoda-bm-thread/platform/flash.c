@@ -119,7 +119,7 @@ otError utilsFlashStatusWait(uint32_t aTimeout)
  *          It is expected the same as aSize.
  *          0 indicates that something wrong happens when writing.
  */
-uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
+uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize)
 {
 	uint32_t buffer[FLASH_BUFSIZE];
 	uint32_t sizeLeft = aSize;
@@ -132,7 +132,7 @@ uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
 			byteLen = FLASH_BUFSIZE * 4;
 
 		//Copy into buffer
-		memset(buffer, 0, FLASH_BUFSIZE * 4);
+		memset(buffer, 0xFF, FLASH_BUFSIZE * 4);
 		memcpy(buffer, aData, byteLen);
 
 		//Move to flash

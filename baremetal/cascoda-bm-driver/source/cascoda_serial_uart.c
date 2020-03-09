@@ -275,7 +275,7 @@ void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceR
 	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
-	SerialTxBuffer.SerialBuf.CmdId  = 0xA0;
+	SerialTxBuffer.SerialBuf.CmdId  = EVBME_MESSAGE_INDICATION;
 	SerialTxBuffer.SerialBuf.CmdLen = Count;
 	memcpy(SerialTxBuffer.SerialBuf.Data, pBuffer, Count);
 	BSP_SerialWriteAll(&SerialTxBuffer.SofPkt, Count + 3);

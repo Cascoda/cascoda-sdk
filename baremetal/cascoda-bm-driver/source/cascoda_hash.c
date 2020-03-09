@@ -39,7 +39,7 @@ static const uint64_t basis64 = 14695981039346656037ULL;
 
 uint32_t HASH_fnv1a_32(const void *data_in, size_t num_bytes)
 {
-	uint32_t hash = basis32;
+	uint32_t       hash = basis32;
 	const uint8_t *data = data_in;
 
 	for (size_t i = 0; i < num_bytes; i++)
@@ -51,7 +51,7 @@ uint32_t HASH_fnv1a_32(const void *data_in, size_t num_bytes)
 
 uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes)
 {
-	uint64_t hash = basis64;
+	uint64_t       hash = basis64;
 	const uint8_t *data = data_in;
 
 	for (size_t i = 0; i < num_bytes; i++)

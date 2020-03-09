@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "ca821x-posix/ca821x-posix.h"
+#include "evbme_messages.h"
 
 /* Colour codes for printf */
 #ifndef NO_COLOR
@@ -124,7 +125,7 @@ ca_error handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *p
 {
 	struct inst_priv *priv = pDeviceRef->context;
 
-	if (buf[0] == 0xA0)
+	if (buf[0] == EVBME_MESSAGE_INDICATION)
 	{
 		if (strstr((char *)(buf + 2), "dispatching on SPI") != NULL)
 		{

@@ -218,7 +218,7 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 	return CA_ERROR_NOT_HANDLED;
 }
 
-void BSP_SystemReset()
+void BSP_SystemReset(sysreset_mode resetMode)
 {
 }
 

@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-/****** Enums system core clock frequency [MHz] ******/
+/****** Enum system core clock frequency [MHz] ******/
 typedef enum fsys_mhz
 {
 	FSYS_4MHZ  = 0,
@@ -52,7 +52,7 @@ typedef enum fsys_mhz
 	FSYS_64MHZ = 6
 } fsys_mhz;
 
-/****** Enums for wakeup condition after reset ******/
+/****** Enum for wakeup condition after reset ******/
 typedef enum wakeup_reason
 {
 	WAKEUP_POWERON        = 0, ///< power-on
@@ -63,37 +63,49 @@ typedef enum wakeup_reason
 	WAKEUP_RTCALARM       = 5, ///< RTC Alarm
 } wakeup_reason;
 
-/****** Enums for module pin handling                                 ******/
-typedef enum module_pin_dir /* Pin Type */
+/****** Enum for system reset mode ******/
+typedef enum sysreset_mode
 {
-	MODULE_PIN_DIR_IN  = 0, /* input */
-	MODULE_PIN_DIR_OUT = 1  /* output */
+	SYSRESET_APROM = 0, //!< Systemreset normally, into application flash
+	SYSRESET_DFU   = 1, //!< System reset into Device Firmware Update mode
+} sysreset_mode;
+
+/****** Enums for module pin handling                                 ******/
+/** Pin Type */
+typedef enum module_pin_dir
+{
+	MODULE_PIN_DIR_IN  = 0, //!< input
+	MODULE_PIN_DIR_OUT = 1  //!< output
 } module_pin_dir;
 
-typedef enum module_pin_pullup /* Pin Pull-Up */
+/** Pin Pull-Up */
+typedef enum module_pin_pullup
 {
-	MODULE_PIN_PULLUP_OFF = 0, /* pull-up off */
-	MODULE_PIN_PULLUP_ON  = 1  /* pull-up on */
+	MODULE_PIN_PULLUP_OFF = 0, //!< pull-up off
+	MODULE_PIN_PULLUP_ON  = 1  //!< pull-up on
 } module_pin_pullup;
 
-typedef enum module_pin_debounce /* Pin Debounce */
+/** Pin Debounce */
+typedef enum module_pin_debounce
 {
-	MODULE_PIN_DEBOUNCE_OFF = 0, /* debounce off */
-	MODULE_PIN_DEBOUNCE_ON  = 1  /* debounce on */
+	MODULE_PIN_DEBOUNCE_OFF = 0, //!< debounce off
+	MODULE_PIN_DEBOUNCE_ON  = 1  //!< debounce on
 } module_pin_debounce;
 
-typedef enum module_pin_type /* Pin is LED? */
+/** Pin is LED? */
+typedef enum module_pin_type
 {
-	MODULE_PIN_TYPE_GENERIC = 0, /* pin not attached to LED */
-	MODULE_PIN_TYPE_LED     = 1  /* pin is attached to LED */
+	MODULE_PIN_TYPE_GENERIC = 0, //!< pin not attached to LED
+	MODULE_PIN_TYPE_LED     = 1  //!< pin is attached to LED
 } module_pin_type;
 
-typedef enum module_pin_irq /* Pin Interrupt */
+/** Pin Interrupt */
+typedef enum module_pin_irq
 {
-	MODULE_PIN_IRQ_OFF  = 0, /* irq off */
-	MODULE_PIN_IRQ_FALL = 1, /* irq falling edge */
-	MODULE_PIN_IRQ_RISE = 2, /* irq rising  edge */
-	MODULE_PIN_IRQ_BOTH = 3  /* irq both edges */
+	MODULE_PIN_IRQ_OFF  = 0, //!< irq off
+	MODULE_PIN_IRQ_FALL = 1, //!< irq falling edge
+	MODULE_PIN_IRQ_RISE = 2, //!< irq rising  edge
+	MODULE_PIN_IRQ_BOTH = 3  //!< irq both edges
 } module_pin_irq;
 
 enum module_pin_not_available
@@ -315,9 +327,9 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val);
 
 /**
  * \brief Reset the CPU using a soft-reset.
- *
+ * \param resetMode The mode of reset to use
  */
-void BSP_SystemReset();
+void BSP_SystemReset(sysreset_mode resetMode);
 
 /**
  * \brief Get a 64-bit ID that is unique to this device

@@ -1,0 +1,181 @@
+name: BuildAndDeploy
+
+on: [push]
+
+jobs:
+  # Build artifacts for windows
+  windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: cascoda-sdk
+
+    - name: configure windows sdk
+      run: |
+        cmake.exe -S ${{ github.workspace }}\cascoda-sdk -B ${{ github.workspace }}\build-win -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles"
+
+    - name: build windows-sdk
+      run: |
+        mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
+        mkdir ${{ github.workspace }}\release
+        cd ${{ github.workspace }}\build-win\bin
+        Copy-Item -Path sniffer.exe,serial-adapter.exe,usb_test.exe -Destination ${{ github.workspace }}\release
+
+    - name: Upload windows-sdk
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Windows-SDK
+        path: ${{ github.workspace }}\release
+
+  # Build artifacts for the chili2
+  chili2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: cascoda-sdk
+
+    - name: cache compiler
+      id: cache-compiler
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-gcc-arm
+      with:
+        path: ${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major
+        key: gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux
+
+    - name: download compiler
+      if: steps.cache-compiler.outputs.cache-hit != 'true'
+      run: |
+        wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/RC2.1/gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
+        tar xjf gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
+
+    - name: enable compiler
+      run: |
+        echo "::add-path::${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin"
+
+    - name: configure Chili2D-USB
+      run: |
+        arm-none-eabi-gcc --version
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB
+
+    - name: build Chili2D-USB
+      run: |
+        make -C ${{ github.workspace }}/build-chili2 -j4
+        find ${{ github.workspace }}/build-chili2/bin -type f ! -name '*.bin' -delete
+
+    - name: Upload Chili2D-USB
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Chili2D-USB
+        path: ${{ github.workspace }}/build-chili2/bin
+
+    - name: configure Chili2S-UART0-1Mbaud
+      run: |
+        arm-none-eabi-gcc --version
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_UART_BAUDRATE=1000000 -DCASCODA_CHILI2_UART_CHANNEL=0 -DCASCODA_CHILI2_CONFIG_STRING=ONE_SIDED
+
+    - name: build Chili2S-UART0-1Mbaud
+      run: |
+        make -C ${{ github.workspace }}/build-chili2 -j4
+        find ${{ github.workspace }}/build-chili2/bin -type f ! -name '*.bin' -delete
+
+    - name: Upload Chili2S-UART0-1Mbaud
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Chili2S-UART0-1Mbaud
+        path: ${{ github.workspace }}/build-chili2/bin
+
+  # If we're on master, make a release
+  makerelease:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    needs: [windows, chili2]
+
+    # Checkout the code, and fetch all tags (for version)
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: cascoda-sdk
+    - run: |
+        cd cascoda-sdk
+        git fetch --tags
+
+    # Figure out what we're going to call the release, and the release body
+    - name: Release info
+      id: releaseinfo
+      run: |
+        cd cascoda-sdk
+        echo ::set-output name=version::$(git describe --dirty --always --long | sed -E 's/-g[0-9a-f]+//g')
+        echo ::set-output name=title::$(git show -s --format=%B | head -n1)
+
+        msg=$(git show -s --format=%B)
+        #escape special chars
+        msg="${msg//'%'/'%25'}"
+        msg="${msg//$'\n'/'%0A'}"
+        msg="${msg//$'\r'/'%0D'}"
+        echo ::set-output name=msg::$msg
+
+    # Create a release to publish to
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.releaseinfo.outputs.version }}
+        release_name: ${{ steps.releaseinfo.outputs.title }}
+        body: ${{ steps.releaseinfo.outputs.msg }}
+
+    # Download all of the previously uploaded artifacts
+    - uses: actions/download-artifact@v1
+      with:
+        name: Chili2D-USB
+    - uses: actions/download-artifact@v1
+      with:
+        name: Chili2S-UART0-1Mbaud
+    - uses: actions/download-artifact@v1
+      with:
+        name: Windows-SDK
+
+    # Zip them back up
+    - name: Zip the release assets
+      run: |
+        zip -r Chili2D-USB.zip Chili2D-USB
+        zip -r Chili2S-UART0-1Mbaud.zip Chili2S-UART0-1Mbaud
+        zip -r Windows-SDK.zip Windows-SDK
+
+    # Release the artifacts to the just-created release
+    - name: Release Chili USB
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./Chili2D-USB.zip
+        asset_name: Chili2D-USB.zip
+        asset_content_type: application/zip
+    - name: Release Chili UART
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./Chili2S-UART0-1Mbaud.zip
+        asset_name: Chili2S-UART0-1Mbaud.zip
+        asset_content_type: application/zip
+    - name: Release Windows
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./Windows-SDK.zip
+        asset_name: Windows-SDK.zip
+        asset_content_type: application/zip

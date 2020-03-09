@@ -54,6 +54,9 @@ elseif(CMAKE_C_COMPILER MATCHES armclang)
 	)
 endif()
 
+add_library(nuvoton-vendor-m2351-mkrom STATIC IMPORTED)
+set_target_properties(nuvoton-vendor-m2351-mkrom PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/libmkrom.a")
+
 add_library(nuvoton-vendor-m2351 OBJECT
 	${VENDOR_SOURCES}
 	${VENDOR_SECURE_SOURCES}
@@ -95,3 +98,8 @@ target_include_directories(nuvoton-vendor-m2351-nonsecure
 		${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/inc
 		${PROJECT_SOURCE_DIR}/M2351Library/CMSIS/Include
 	)
+
+target_link_libraries(nuvoton-vendor-m2351 PUBLIC nuvoton-vendor-m2351-mkrom)
+target_link_libraries(nuvoton-vendor-m2351-secure INTERFACE nuvoton-vendor-m2351-mkrom)
+target_link_libraries(nuvoton-vendor-m2351-nonsecure INTERFACE nuvoton-vendor-m2351-mkrom)
+

@@ -102,7 +102,7 @@ otError utilsFlashStatusWait(uint32_t aTimeout);
  *          It is expected the same as aSize, and may be less than aSize.
  *          0 indicates that something wrong happens when writing.
  */
-uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize);
+uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize);
 
 /**
  * Read flash.

@@ -187,3 +187,14 @@ __NONSECURE_ENTRY void BSP_ClearDataFlash(void)
 	FMC_Close();
 	SYS_LockReg();
 }
+
+__NONSECURE_ENTRY void CHILI_SetLDROMBoot(void)
+{
+	SYS_UnlockReg();
+	FMC_Open();
+	FMC_ENABLE_AP_UPDATE();
+	FMC_SetVectorPageAddr(FMC_LDROM_BASE);
+	FMC_DISABLE_AP_UPDATE();
+	FMC_Close();
+	SYS_LockReg();
+}

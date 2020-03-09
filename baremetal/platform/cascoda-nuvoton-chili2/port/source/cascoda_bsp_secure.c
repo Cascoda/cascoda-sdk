@@ -84,7 +84,7 @@ __NONSECURE_ENTRY void CHILI_GetUID(uint32_t *uid_out)
 {
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
 	// Check that the output memory is actually nonsecure.
-	uid_out = cmse_check_address_range(uid_out, 3*sizeof(uint32_t), CMSE_NONSECURE);
+	uid_out = cmse_check_address_range(uid_out, 3 * sizeof(uint32_t), CMSE_NONSECURE);
 #endif
 	if (uid_out == NULL)
 		return;

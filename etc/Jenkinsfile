@@ -6,6 +6,7 @@ pipeline {
 	environment {
 	    REPO_DIR = "${JENKINS_HOME}/repos"
 	    OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
+	    IOTIVITY_REPO = "${REPO_DIR}/iotivity-lite.git"
 	}
 
 	stages {
@@ -25,6 +26,7 @@ pipeline {
 								script: 'mkdir "${REPO_DIR}"'
 							)
 						}
+
 						/** Clone the openthread repo as a mirror if it exists, otherwise just fetch it */
 						if (fileExists("${OPENTHREAD_REPO}")) {
 							sh(
@@ -36,6 +38,20 @@ pipeline {
 							sh(
 								label: 'clone openthread',
 								script: 'git -C "${REPO_DIR}" clone https://github.com/Cascoda/openthread.git --mirror'
+							)
+						}
+
+						/** Clone the iotivity repo as a mirror if it exists, otherwise just fetch it */
+						if (fileExists("${IOTIVITY_REPO}")) {
+							sh(
+								label: 'fetch iotivity',
+								script: 'git -C "${IOTIVITY_REPO}" fetch --all --prune'
+							)
+						}
+						else {
+							sh(
+								label: 'clone iotivity',
+								script: 'git -C "${REPO_DIR}" clone https://github.com/iotivity/iotivity-lite.git --mirror'
 							)
 						}
 					}
@@ -55,7 +71,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-chili2',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -82,6 +98,14 @@ pipeline {
 							cmakeArgs: '-DCASCODA_BM_INTERFACE=NONE',
 							steps: [[args: '-j10 -O']]
 						)
+
+						/* Build with Iotivity enabled */
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON',
+							steps: [[args: '-j10 -O']]
+						)
 					}
 				}
 
@@ -92,7 +116,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-chili',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -113,7 +137,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 						ctest(
@@ -152,7 +176,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-raspberrypi',
-							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
 							steps: [[args: '-j10 -O']]
 						)
 					}
@@ -164,7 +188,7 @@ pipeline {
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-ninja-chili2',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -GNinja -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}"',
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -GNinja -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
 							steps: [[args: '']]
 						)
 					}

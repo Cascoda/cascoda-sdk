@@ -72,7 +72,7 @@ if(CASCODA_OPENTHREAD_FTD)
 	target_include_directories(ncpapp-bm
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
 		)
-	target_link_libraries(ncpapp-bm openthread-ncp-ftd ca821x-openthread-bm-ftd cascoda-bm-plat)
+	target_link_libraries(ncpapp-bm ca821x-openthread-bm-ftd openthread-ncp-ftd cascoda-bm-plat)
 	target_compile_definitions(ncpapp-bm PRIVATE APP_NAME="OT NCPAPP" OT_NCP=1)
 	cascoda_make_binary(ncpapp-bm)
 endif()

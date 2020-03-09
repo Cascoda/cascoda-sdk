@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <termios.h>
@@ -202,7 +203,6 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	uint8_t *                  som       = priv->buf;
 	uint8_t *                  cmdid     = priv->buf + 1;
 	uint8_t *                  cmdlen    = priv->buf + 2;
-	uint8_t                    dummybyte = 0;
 
 	assert_uart_exchange(pDeviceRef);
 
@@ -228,17 +228,14 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 
 	if (!priv->offset)
 	{
+		uint8_t dummybyte = 0;
 		//Block until activity required, then read potential dummy byte
-		int pError   = pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
-		int dummyLen = read(priv->dummyPipe[0], &dummybyte, 1);
-
-		ca_log_debg("pError return value: %d", pError);
-		ca_log_debg("dummyLen: %d", dummyLen);
+		pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
+		read(priv->dummyPipe[0], &dummybyte, 1);
 	}
 
 	//Read from the device if possible
 	len = read(priv->fd, priv->buf + priv->offset, sizeof(priv->buf) - priv->offset);
-	ca_log_debg("\tdeviceLen: %d", len);
 	if (len < 0)
 	{
 		if (errno == EAGAIN)
@@ -326,7 +323,6 @@ static void unblock_read(struct ca821x_dev *pDeviceRef)
 
 	const uint8_t dummybyte = 0;
 	write(priv->dummyPipe[1], &dummybyte, 1);
-	ca_log_debg("Wrote to dummy");
 }
 
 static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
@@ -619,19 +615,26 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 	while (uartdev)
 	{
 		priv->fd = open(uartdev->device, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
-		if (priv->fd < 0)
-			continue;
 
-		if (setup_port(priv->fd, uartdev->baud) != CA_ERROR_SUCCESS)
+		if (priv->fd < 0)
+		{
+			ca_log_debg("Failed to open device %s", uartdev->device);
+		}
+		else if (ioctl(priv->fd, TIOCEXCL))
+		{
+			ca_log_warn("Failed to lock device %s", uartdev->device);
+		}
+		else if (setup_port(priv->fd, uartdev->baud) != CA_ERROR_SUCCESS)
 		{
 			ca_log_crit("Failed setup for device %s", uartdev->device);
-			close(priv->fd);
-			priv->fd = -1;
 		}
 		else
 		{
 			break;
 		}
+
+		close(priv->fd);
+		priv->fd = -1;
 
 		uartdev = uartdev->next;
 	}

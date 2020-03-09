@@ -39,26 +39,6 @@
 extern "C" {
 #endif
 
-/** EVBME message id codes */
-enum evbme_msg_id_code
-{
-	EVBME_SET_REQUEST         = 0x5F,
-	EVBME_GUI_CONNECTED       = 0x81,
-	EVBME_GUI_DISCONNECTED    = 0x82,
-	EVBME_MESSAGE_INDICATION  = 0xA0,
-	EVBME_COMM_CHECK          = 0xA1,
-	EVBME_COMM_INDICATION     = 0xA2,
-	EVBME_TERMINAL_INDICATION = 0xFE,
-};
-
-/** EVBME attribute ids */
-enum evbme_attribute
-{
-	EVBME_RESETRF  = 0x00,
-	EVBME_CFGPINS  = 0x01,
-	EVBME_WAKEUPRF = 0x02
-};
-
 /** Definitions for Powerdown Modes */
 enum powerdown_mode
 {
@@ -68,15 +48,6 @@ enum powerdown_mode
 	PDM_POWERDOWN = 3, //!< No CAX Retention, PIB has to be re-initialised
 	PDM_POWEROFF  = 4, //!< No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
 	PDM_DPD       = 5  //!< No CAX Retention or MCU Retention (Data saved in NVM)
-};
-
-/** Structure of the EVBME_COMM_CHECK message that can be used to test comms by host. */
-struct EVBME_COMM_CHECK_request
-{
-	uint8_t mHandle;   //!< Handle identifying this comm check
-	uint8_t mDelay;    //!< Delay before sending responses
-	uint8_t mIndCount; //!< Number of indications to send up
-	uint8_t mIndSize;  //!< Size of the indications to send
 };
 
 /******************************************************************************/

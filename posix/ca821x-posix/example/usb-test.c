@@ -15,6 +15,7 @@
 #endif // _WIN32
 
 #include "ca821x-posix/ca821x-posix.h"
+#include "evbme_messages.h"
 
 struct ca821x_dev sDeviceRef;
 uint32_t          numberOfMessagesSent;
@@ -103,29 +104,31 @@ static void getEndTime()
 
 ca_error handleUserCallback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	if (buf[0] == 0xA0)
+	struct EVBME_Message *rxEvbme = (struct EVBME_Message *)buf;
+
+	if (rxEvbme->mCmdId == EVBME_MESSAGE_INDICATION)
 	{
-		if (strstr((char *)(buf + 2), "dispatching on SPI") != NULL)
+		if (strstr(rxEvbme->EVBME.MESSAGE_INDICATION.mMessage, "dispatching on SPI") != NULL)
 		{
 			return CA_ERROR_SUCCESS;
 		}
 
-		fprintf(stderr, "IN: %.*s\r\n", (int)(len - 2), buf + 2);
+		fprintf(stderr, "IN: %.*s\r\n", rxEvbme->mLen, rxEvbme->EVBME.MESSAGE_INDICATION.mMessage);
 		return CA_ERROR_SUCCESS;
 	}
-	else if (buf[0] == 0xA2)
+	else if (rxEvbme->mCmdId == EVBME_COMM_INDICATION)
 	{
-		uint8_t handle = buf[2];
-		uint8_t handlesDifference;
+		struct EVBME_COMM_INDICATION *commInd = (struct EVBME_COMM_INDICATION *)buf + 2;
+		uint8_t                       handlesDifference;
 
-		if (previousHandle != handle)
+		if (previousHandle != commInd->mHandle)
 		{
 			count             = 0;
-			handlesDifference = handle - previousHandle;
+			handlesDifference = commInd->mHandle - previousHandle;
 
 			position += handlesDifference;
 
-			previousHandle = handle;
+			previousHandle = commInd->mHandle;
 		}
 		if (count == 0)
 		{
@@ -303,15 +306,6 @@ static void resultsAnalysis()
 		       standardDeviation);
 	}
 }
-
-struct EVBME_COMM_CHECK_request
-{
-	uint8_t mHandle;   //!< Handle identifying this comm check
-	uint8_t mDelay;    //!< Delay before sending responses
-	uint8_t mIndCount; //!< Number of indications to send up
-	uint8_t mIndSize;  //!< Size of the indications to send
-	uint8_t mPayload[100];
-};
 
 static void displayResults(uint32_t expectedIndications, struct EVBME_COMM_CHECK_request *CommCheckReq)
 {

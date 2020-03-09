@@ -56,8 +56,9 @@ enum
 
 enum
 {
+	// Should this not be sizeof(settingsBlock)?
 	kSettingsFlagSize      = 4,
-	kSettingsBlockDataSize = 255,
+	kSettingsBlockDataSize = 511,
 
 	kSettingsInSwap = 0xbe5cc5ef,
 	kSettingsInUse  = 0xbe5cc5ee,
@@ -135,58 +136,90 @@ static uint32_t swapSettingsBlock(otInstance *aInstance)
 
 	while (swapAddress < (oldBase + usedSize))
 	{
-		OT_TOOL_PACKED_BEGIN
-		struct addSettingsBlock
-		{
-			struct settingsBlock block;
-			uint8_t              data[kSettingsBlockDataSize];
-		} OT_TOOL_PACKED_END addBlock;
+		struct settingsBlock new_block;
 		bool                 valid = true;
 
-		utilsFlashRead(swapAddress, (uint8_t *)(&addBlock.block), sizeof(struct settingsBlock));
+		// Get just the settings block, put it in the addSettingsBlock structure
+		utilsFlashRead(swapAddress, (uint8_t *)(&new_block), sizeof(struct settingsBlock));
 		swapAddress += sizeof(struct settingsBlock);
 
-		if (!(addBlock.block.flag & kBlockAddCompleteFlag) && (addBlock.block.flag & kBlockDeleteFlag))
+		// If the block is complete and not deleted
+		if (!(new_block.flag & kBlockAddCompleteFlag) && (new_block.flag & kBlockDeleteFlag))
 		{
-			uint32_t address = swapAddress + getAlignLength(addBlock.block.length);
+			// Address points to the end of the current file
+			uint32_t address = swapAddress + getAlignLength(new_block.length);
 
 			while (address < (oldBase + usedSize))
 			{
 				struct settingsBlock block;
 
+				// Read the settings at address
 				utilsFlashRead(address, (uint8_t *)(&block), sizeof(block));
 
+				// Block is complete and not set to be deleted and is index0 and the correct key
 				if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag) &&
-				    !(block.flag & kBlockIndex0Flag) && (block.key == addBlock.block.key))
+				    !(block.flag & kBlockIndex0Flag) && (block.key == new_block.key))
 				{
+					// The block is invalid - go to the next one
 					valid = false;
 					break;
 				}
 
+				// The block is valid - continue
 				address += (getAlignLength(block.length) + sizeof(struct settingsBlock));
 			}
 
 			if (valid)
 			{
-				utilsFlashRead(swapAddress, addBlock.data, getAlignLength(addBlock.block.length));
-				utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize,
-				                (uint8_t *)(&addBlock),
-				                getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock));
-				sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(addBlock.block.length));
+				const int kCopyBufferSize = 256;
+				uint8_t   copy_buffer[kCopyBufferSize];
+				// swapAddress points to just after the settingsBlock of the setting to be copied,
+				// but we want to copy the settingsBlock as well. Therefore, we reference from
+				// the start of the settings block
+				uint32_t start_address       = swapAddress - sizeof(struct settingsBlock);
+				uint16_t bytes_copied_so_far = 0;
+				// Copy the settings block. Flash data may be corrupted if power is lost past this point!
+				utilsFlashWrite(
+				    sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&new_block), sizeof(struct settingsBlock));
+
+				bytes_copied_so_far += sizeof(struct settingsBlock);
+
+				// Stop when the number of written bytes is equal to the length of the block at SwapAddress;
+				while (bytes_copied_so_far < getAlignLength(new_block.length))
+				{
+					// read many bytes from swapAddress
+					uint16_t remaining_bytes =
+					    (getAlignLength(new_block.length) - bytes_copied_so_far + sizeof(struct settingsBlock));
+					uint16_t amount_to_copy = (kCopyBufferSize > remaining_bytes) ? remaining_bytes : kCopyBufferSize;
+
+					// copy the setting block and the data
+					utilsFlashRead(start_address + bytes_copied_so_far, copy_buffer, amount_to_copy);
+
+					// write many bytes to sSettingsBaseAddress
+					utilsFlashWrite(
+					    sSettingsBaseAddress + sSettingsUsedSize + bytes_copied_so_far, copy_buffer, amount_to_copy);
+
+					bytes_copied_so_far += amount_to_copy;
+				}
+				// Finished writing - update the settings used size
+				sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(new_block.length));
 			}
 		}
-		else if (addBlock.block.flag == 0xff)
+		// flag == 0xff => this block is not in use, so you are at the end!
+		else if (new_block.flag == 0xff)
 		{
 			break;
 		}
 
-		swapAddress += getAlignLength(addBlock.block.length);
+		// Get the address of the next block to potentially swap and loop
+		swapAddress += getAlignLength(new_block.length);
 	}
 
 	setSettingsFlag(sSettingsBaseAddress, (uint32_t)(kSettingsInUse));
 	setSettingsFlag(oldBase, (uint32_t)(kSettingsNotUse));
 
 exit:
+	// Returns the amount of space left
 	return settingsSize - sSettingsUsedSize;
 }
 
@@ -196,49 +229,41 @@ static otError addSetting(otInstance *   aInstance,
                           const uint8_t *aValue,
                           uint16_t       aValueLength)
 {
-	otError error = OT_ERROR_NONE;
-	OT_TOOL_PACKED_BEGIN
-	struct addSettingsBlock
-	{
-		struct settingsBlock block;
-		uint8_t              data[kSettingsBlockDataSize];
-	} OT_TOOL_PACKED_END addBlock;
-	struct FlashInfo     flash_info = BSP_GetFlashInfo();
-	uint32_t             settingsSize =
+	otError              error = OT_ERROR_NONE;
+	struct settingsBlock block;
+
+	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	uint32_t         settingsSize =
 	    flash_info.numPages > 1 ? flash_info.pageSize * flash_info.numPages / 2 : flash_info.pageSize;
 
-	addBlock.block.flag = 0xff;
-	addBlock.block.key  = aKey;
+	block.flag = 0xff;
+	block.key  = aKey;
 
+	//If this is the zeroth element, set the flag that it is!
 	if (aIndex0)
 	{
-		addBlock.block.flag &= (~kBlockIndex0Flag);
+		block.flag &= (~kBlockIndex0Flag);
 	}
 
-	addBlock.block.flag &= (~kBlockAddBeginFlag);
-	addBlock.block.length = aValueLength;
+	//Mark this block as in progress and set the length
+	block.flag &= (~kBlockAddBeginFlag);
+	block.length = aValueLength;
 
-	if ((sSettingsUsedSize + getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock)) >= settingsSize)
+	// Is there room for the new block?
+	if ((sSettingsUsedSize + getAlignLength(block.length) + sizeof(struct settingsBlock)) >= settingsSize)
 	{
-		otEXPECT_ACTION(swapSettingsBlock(aInstance) >=
-		                    (getAlignLength(addBlock.block.length) + sizeof(struct settingsBlock)),
+		// There is no room - get a new block free of deleted entries.
+		otEXPECT_ACTION(swapSettingsBlock(aInstance) >= (getAlignLength(block.length) + sizeof(struct settingsBlock)),
 		                error = OT_ERROR_NO_BUFS);
 	}
 
-	utilsFlashWrite(
-	    sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block), sizeof(struct settingsBlock));
+	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
 
-	memset(addBlock.data, 0xff, kSettingsBlockDataSize);
-	memcpy(addBlock.data, aValue, addBlock.block.length);
+	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock), aValue, block.length);
 
-	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock),
-	                (uint8_t *)(addBlock.data),
-	                getAlignLength(addBlock.block.length));
-
-	addBlock.block.flag &= (~kBlockAddCompleteFlag);
-	utilsFlashWrite(
-	    sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&addBlock.block), sizeof(struct settingsBlock));
-	sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(addBlock.block.length));
+	block.flag &= (~kBlockAddCompleteFlag);
+	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
+	sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(block.length));
 
 exit:
 	return error;
@@ -379,6 +404,7 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
 
 otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
+	//Add a setting, setting Index0 flag as we want this to overwrite all others.
 	return addSetting(aInstance, aKey, true, aValue, aValueLength);
 }
 
@@ -387,6 +413,7 @@ otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 	uint16_t length;
 	bool     index0;
 
+	//Set index0 flag if we don't have any other elements with same key
 	index0 = (otPlatSettingsGet(aInstance, aKey, 0, NULL, &length) == OT_ERROR_NOT_FOUND ? true : false);
 	return addSetting(aInstance, aKey, index0, aValue, aValueLength);
 }
@@ -405,15 +432,19 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 
 		utilsFlashRead(address, (uint8_t *)(&block), sizeof(block));
 
+		//If the key matches
 		if (block.key == aKey)
 		{
+			//If this block is marked as 0, set the index tracker to 0
 			if (!(block.flag & kBlockIndex0Flag))
 			{
 				index = 0;
 			}
 
+			//If this block is both completed and not deleted, investigate
 			if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag))
 			{
+				//If this device is the index we are looking for, or we have provided -1 as the index arg, delete it
 				if (aIndex == index || aIndex == -1)
 				{
 					error = OT_ERROR_NONE;
@@ -421,6 +452,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 					utilsFlashWrite(address, (uint8_t *)(&block), sizeof(block));
 				}
 
+				//If the index is 1, and we wanted to delete 0, set the old 1 to the new 0 with the zero flag!
 				if (index == 1 && aIndex == 0)
 				{
 					block.flag &= (~kBlockIndex0Flag);
@@ -431,6 +463,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 			}
 		}
 
+		//Iterate to the next block
 		address += (getAlignLength(block.length) + sizeof(struct settingsBlock));
 	}
 

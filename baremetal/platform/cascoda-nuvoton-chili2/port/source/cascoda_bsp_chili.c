@@ -334,7 +334,7 @@ i32_t BSP_GetTemperature(void)
 	/* => T ['C]    = (0.72 - N*3.3/4096)/1.82e-3 */
 	/* => T ['C/10] = (0.72 - N*3.3/4096)/1.82e-4 */
 	/*              = (894066 - N*1000)/226 */
-	tempval = (894066 - adcval * 1000) / 226;
+	tempval = (894066 - (i32_t)adcval * 1000) / 226;
 
 	return tempval;
 }
@@ -467,8 +467,13 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_SystemReset()
+void BSP_SystemReset(sysreset_mode resetMode)
 {
+	if (resetMode == SYSRESET_DFU)
+	{
+		CHILI_SetLDROMBoot();
+	}
+
 	NVIC_SystemReset();
 }
 

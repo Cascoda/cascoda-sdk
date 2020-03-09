@@ -41,6 +41,7 @@ endif()
 # Baremetal
 add_subdirectory(baremetal)
 
+
 # Openthread
 add_subdirectory(openthread)
 

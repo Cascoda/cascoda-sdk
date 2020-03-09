@@ -42,6 +42,7 @@
 #include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_wait.h"
 #include "ca821x_api.h"
+#include "evbme_messages.h"
 #include "mac_messages.h"
 
 /******************************************************************************/
@@ -74,21 +75,18 @@ static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struc
 static void     EVBME_WakeUpRF(void);
 
 #if defined(USE_USB) || defined(USE_UART)
-static void     EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer);
+static void     EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf);
 static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 static int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 static void     EVBME_Disconnect(void);
-static ca_error EVBME_SET_request(uint8_t            Attribute,
-                                  uint8_t            AttributeLength,
-                                  uint8_t *          AttributeValue,
-                                  struct ca821x_dev *pDeviceRef);
+static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef);
 
-static void EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer)
+static void EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf)
 {
-	struct EVBME_COMM_CHECK_request *msg = (struct EVBME_COMM_CHECK_request *)(SerialRxBuffer->Data);
+	struct EVBME_COMM_CHECK_request *msg = &rxBuf->EVBME.COMM_CHECK_request;
 
-	if (msg->mIndSize == 0 || SerialRxBuffer->CmdLen == 3)
+	if (msg->mIndSize == 0 || rxBuf->mLen == 3)
 		msg->mIndSize = 1;
 
 	uint8_t buf[msg->mIndSize];
@@ -107,6 +105,32 @@ static void EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer)
 	}
 }
 
+/**
+ * Handle dfu command at chili layer. Return invalid status for anything that isn't reboot.
+ * @param rxMsg The received EVBME message
+ */
+static void EVBME_DFU_cmd(struct EVBME_Message *rxMsg)
+{
+	struct EVBME_DFU_cmd *dfuCmd = &rxMsg->EVBME.DFU_cmd;
+
+	if (dfuCmd->mDfuSubCmdId == DFU_REBOOT)
+	{
+		if (dfuCmd->mSubCmd.reboot_cmd.rebootMode)
+			BSP_SystemReset(SYSRESET_DFU);
+		else
+			BSP_SystemReset(SYSRESET_APROM);
+	}
+	else
+	{
+		struct EVBME_DFU_cmd dfuStat;
+
+		dfuStat.mDfuSubCmdId              = DFU_STATUS;
+		dfuStat.mSubCmd.status_cmd.status = CA_ERROR_INVALID_STATE;
+
+		MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuStat);
+	}
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Dispatch upstream messages for EVBME
@@ -120,15 +144,15 @@ static void EVBME_COMM_CHECK_request(struct SerialBuffer *SerialRxBuffer)
  ******************************************************************************/
 static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	ca_error status;
-	int      ret = 0;
+	ca_error              status;
+	int                   ret     = 0;
+	struct EVBME_Message *rxEvbme = (struct EVBME_Message *)SerialRxBuffer;
 
-	switch (SerialRxBuffer->CmdId)
+	switch (rxEvbme->mCmdId)
 	{
 	case EVBME_SET_REQUEST:
-		ret = 1;
-		status =
-		    EVBME_SET_request(SerialRxBuffer->Data[0], SerialRxBuffer->Data[1], SerialRxBuffer->Data + 2, pDeviceRef);
+		ret    = 1;
+		status = EVBME_SET_request(&rxEvbme->EVBME.SET_request, pDeviceRef);
 		if (status == CA_ERROR_INVALID)
 			ca_log_warn("EVBME_SET INVALID ATTRIBUTE");
 		else if (status == CA_ERROR_UNKNOWN)
@@ -147,7 +171,11 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
 		break;
 	case EVBME_COMM_CHECK:
 		ret = 1;
-		EVBME_COMM_CHECK_request(SerialRxBuffer);
+		EVBME_COMM_CHECK_request(rxEvbme);
+		break;
+	case EVBME_DFU_CMD:
+		ret = 1;
+		EVBME_DFU_cmd(rxEvbme);
 		break;
 	default:
 		// check if MAC/API straight-through command requires additional action
@@ -296,36 +324,33 @@ static void EVBME_Disconnect(void)
  * \return EVBME Status
  *******************************************************************************
  ******************************************************************************/
-static ca_error EVBME_SET_request(uint8_t            Attribute,
-                                  uint8_t            AttributeLength,
-                                  uint8_t *          AttributeValue,
-                                  struct ca821x_dev *pDeviceRef)
+static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef)
 {
 	ca_error status;
 
 	/* branch for EVBME-SET Attributes */
-	switch (Attribute)
+	switch (req->mAttributeId)
 	{
 	case EVBME_RESETRF:
-		if (AttributeLength != 1)
+		if (req->mAttributeLen != 1)
 		{
 			status = CA_ERROR_INVALID;
 		}
 		else
 		{
-			status         = EVBME_ResetRF(AttributeValue[0], pDeviceRef);
-			EVBME_HasReset = AttributeValue[0];
+			status         = EVBME_ResetRF(req->mAttribute[0], pDeviceRef);
+			EVBME_HasReset = req->mAttribute[0];
 		}
 		break;
 
 	case EVBME_CFGPINS:
-		if ((AttributeLength != 1) || (AttributeValue[0] > 0x03))
+		if ((req->mAttributeLen != 1) || (req->mAttribute[0] > 0x03))
 		{
 			status = CA_ERROR_INVALID;
 		}
 		else
 		{
-			EVBME_UseMAC = AttributeValue[0];
+			EVBME_UseMAC = req->mAttribute[0];
 			status       = CA_ERROR_SUCCESS;
 		}
 		break;

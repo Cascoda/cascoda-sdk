@@ -58,6 +58,8 @@ static const uint16_t autostart_key = 0xCA51;
 static const uint16_t sensordemo_key = 0xCA5C;
 /** Flash settings key for actuatordemo mode */
 static const uint16_t actuatordemo_key = 0xCA5D;
+/** Flash settings key used for storing OCF data */
+static const uint16_t OC_SETTINGS_KEY = 0xe107;
 
 /**
  * Following Initialisation, this can be used to obtain the pDeviceRef that
@@ -119,6 +121,14 @@ void PlatformAlarmInit(void);
  * @retval OT_ERROR_NONE upon success
  */
 otError PlatformSleep(uint32_t aSleepTime);
+
+/**
+ * Check whether the platform is able to sleep.
+ *
+ * @param aInstance The OpenThread instance
+ * @return true if platform can sleep, false if busy.
+ */
+bool PlatformCanSleep(otInstance *aInstance);
 
 /**
  * Handle received serial data

@@ -36,6 +36,7 @@
 #include "openthread/platform/settings.h"
 #include "openthread/random_crypto.h"
 #include "openthread/tasklet.h"
+#include "openthread/thread.h"
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
@@ -56,7 +57,7 @@ bool SleepEnabled = 1;
 void otPlatReset(otInstance *aInstance)
 {
 	PlatformRadioStop();
-	BSP_SystemReset();
+	BSP_SystemReset(SYSRESET_APROM);
 }
 
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
@@ -87,6 +88,27 @@ otError PlatformSleep(uint32_t aSleepTime)
 	MLME_SET_request_sync(macDSN, 0, 1, dsn, pDeviceRef);
 
 	return OT_ERROR_NONE;
+}
+
+bool PlatformCanSleep(otInstance *aInstance)
+{
+	otLinkModeConfig linkMode   = otThreadGetLinkMode(aInstance);
+	otDeviceRole     deviceRole = otThreadGetDeviceRole(aInstance);
+
+	if (otTaskletsArePending(OT_INSTANCE))
+		return false;
+	if (linkMode.mDeviceType != 0)
+		return false;
+	if (linkMode.mRxOnWhenIdle != 0)
+		return false;
+	if (otLinkIsInTransmitState(aInstance))
+		return false;
+	if (!(deviceRole == OT_DEVICE_ROLE_CHILD || deviceRole == OT_DEVICE_ROLE_DETACHED))
+		return false;
+	if (PlatformIsExpectingIndication())
+		return false;
+
+	return true;
 }
 
 struct join_status
@@ -170,3 +192,29 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 
 	return join_status.error;
 }
+
+#ifdef __MINGW32__
+//Mingw doesn't work with 'weak' attribute for some reason, so we provide copies of what openthread already defines weakly.
+uint32_t otPlatRadioGetSupportedChannelMask(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	return 0xffff << 11;
+}
+
+uint32_t otPlatRadioGetPreferredChannelMask(otInstance *aInstance)
+{
+	return otPlatRadioGetSupportedChannelMask(aInstance);
+}
+
+const char *otPlatRadioGetVersionString(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	return otGetVersionString();
+}
+
+otRadioState otPlatRadioGetState(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	return OT_RADIO_STATE_INVALID;
+}
+#endif

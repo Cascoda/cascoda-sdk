@@ -40,6 +40,11 @@
 #include "openthread/instance.h"
 #include "openthread/platform/logging.h"
 
+#ifdef __MINGW32__
+#undef OT_TOOL_WEAK
+#define OT_TOOL_WEAK
+#endif
+
 OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
 	va_list ap;

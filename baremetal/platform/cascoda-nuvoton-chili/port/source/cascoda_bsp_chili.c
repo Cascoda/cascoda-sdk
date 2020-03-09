@@ -299,7 +299,7 @@ i32_t BSP_GetTemperature(void)
 	/* => T ['C]    = (0.74 - N*1.8/4096)/1.73e-3 */
 	/* => T ['C/10] = (0.74 - N*1.8/4096)/1.73e-4 */
 	/*              = (671561 - N*400)/157 */
-	tempval = (671561 - (adcval * 400)) / 157;
+	tempval = (671561 - ((i32_t)adcval * 400)) / 157;
 
 	return tempval;
 }
@@ -559,8 +559,9 @@ void BSP_UseExternalClock(u8_t useExternalClock)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_SystemReset()
+void BSP_SystemReset(sysreset_mode resetMode)
 {
+	(void)resetMode;
 	NVIC_SystemReset();
 }
 

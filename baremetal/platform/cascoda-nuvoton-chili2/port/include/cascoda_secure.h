@@ -103,4 +103,7 @@ u8_t CHILI_GetWakeup();
 /** Set wake up state */
 void CHILI_SetWakeup(u8_t new_asleep);
 
+/** Configure the chili to boot from LDROM next time */
+void CHILI_SetLDROMBoot(void);
+
 #endif

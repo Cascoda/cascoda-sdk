@@ -10,3 +10,5 @@ add_library(cascoda-bm-core
 target_link_libraries(cascoda-bm-core ca821x-api)
 
 target_include_directories(cascoda-bm-core PUBLIC ${PROJECT_SOURCE_DIR}/include)
+
+cascoda_use_warnings(cascoda-bm-core)
