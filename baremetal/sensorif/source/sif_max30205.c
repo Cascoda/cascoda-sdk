@@ -33,8 +33,9 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "sif_max30205.h"
 
@@ -135,7 +136,7 @@ u16_t SIF_MAX30205_ReadTemperature(void)
 
 	/* wait for conversion time */
 	if (SIF_MAX30205_MODE == SIF_MAX30205_MODE_TCONV_WAIT)
-		TIME_WaitTicks(SIF_MAX30205_TCONV_MAX_TEMP);
+		WAIT_ms(SIF_MAX30205_TCONV_MAX_TEMP);
 
 	if (SIF_MAX30205_MODE == SIF_MAX30205_MODE_POLL_ONE_SHOT)
 	{

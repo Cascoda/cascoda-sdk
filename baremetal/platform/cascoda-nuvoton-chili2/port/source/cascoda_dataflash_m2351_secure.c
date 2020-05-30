@@ -198,3 +198,17 @@ __NONSECURE_ENTRY void CHILI_SetLDROMBoot(void)
 	FMC_Close();
 	SYS_LockReg();
 }
+
+__NONSECURE_ENTRY void CHILI_EnableTRNGClk(void)
+{
+	SYS_UnlockReg();
+	CLK_EnableModuleClock(TRNG_MODULE);
+	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void CHILI_DisableTRNGClk(void)
+{
+	SYS_UnlockReg();
+	CLK_DisableModuleClock(TRNG_MODULE);
+	SYS_LockReg();
+}

@@ -30,20 +30,19 @@
  */
 
 #include <stdio.h>
-#include <sys/time.h>
 #include <time.h>
 
 #include "ca821x_log.h"
 
 void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 {
-	char *         lev_str;
-	struct timeval tv;
-	char           timeString[40];
-	time_t         secs;
+	char *          lev_str;
+	struct timespec ts;
+	char            timeString[40];
+	long            secs;
 
-	gettimeofday(&tv, NULL);
-	secs = tv.tv_sec;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	secs = ts.tv_sec;
 	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&secs));
 
 	switch (loglevel)
@@ -68,7 +67,7 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 		break;
 	}
 
-	fprintf(stderr, "%s.%03d %s ", timeString, tv.tv_usec / 1000, lev_str);
+	fprintf(stderr, "%s.%03d %s ", timeString, ts.tv_nsec / 1000000, lev_str);
 	vfprintf(stderr, format, argp);
 	fprintf(stderr, "\r\n");
 }

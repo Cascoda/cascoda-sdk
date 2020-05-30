@@ -61,28 +61,6 @@ struct ca821x_dev;
 /****** External function pointers                                       ******/
 /******************************************************************************/
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Function pointer for downstream api interface.
- *******************************************************************************
- * This function pointer is called by all api functions when it comes to
- * transmitting constructed commands to the transceiver. The user must implement
- * their own downstream exchange function conforming to this prototype and
- * assign that function to this pointer.
- *******************************************************************************
- * \param buf - The buffer containing the command to send downstream
- * \param len - The length of the command in octets
- * \param response - The buffer to populate with a received synchronous
- *                    response
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
- *******************************************************************************
- * \return CA_ERROR_SUCCESS for success, anything else for failure
- ******************************************************************************/
-typedef ca_error (*ca821x_api_downstream_t)(const uint8_t *    buf,
-                                            size_t             len,
-                                            uint8_t *          response,
-                                            struct ca821x_dev *pDeviceRef);
-
 /***************************************************************************/ /**
  * \brief API user callbacks structure
  *
@@ -142,12 +120,6 @@ struct ca821x_dev
 	 * Context for free use by the exchange (internal to the cascoda stack)
 	 */
 	void *exchange_context;
-
-	/**
-	 * Function for the api to use to send messages to CA821x. This is set
-	 * internally by the exchange, and should not be modified by the application.
-	 */
-	ca821x_api_downstream_t ca821x_api_downstream;
 
 	/** Callback routines registered by the user, to be called by the api for upstream commands */
 	struct ca821x_api_callbacks callbacks;
@@ -736,10 +708,22 @@ uint8_t ca821x_get_sync_response_id(uint8_t cmdid);
  ******************************************************************************/
 const char *ca821x_get_version(void);
 
+/***************************************************************************/ /**
+ * \brief Function to get the version string without the compile date
+ *******************************************************************************
+ * This includes the git version only.
+ * Example: "v0.1-43-g0f4564d-dirty"
+ * representing 43 commits past version v0.1, with git hash 0f4564d, but dirty
+ * (with changes).
+ *******************************************************************************
+ * \retval  A pointer to the version string
+ ******************************************************************************/
+const char *ca821x_get_version_nodate(void);
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Call the relevant callback routine if populated or the
- *        generic_dispatch for a received command.
+ *        generic_dispatch for a received command. Internal function.
  *******************************************************************************
  * \param *buf - Receive buffer
  * \param len - Length of command in octets
@@ -751,6 +735,24 @@ const char *ca821x_get_version(void);
  *******************************************************************************
  ******************************************************************************/
 ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Function for downstream api interface. Internal function.
+ *******************************************************************************
+ * This function is called by all api functions when it comes to transmitting
+ * constructed commands to the ca821x. The cascoda baremetal or posix  libraries
+ * implement this for their respective platform.
+ *******************************************************************************
+ * \param buf - The buffer containing the command to send downstream
+ * \param len - The length of the command in octets
+ * \param response - The buffer to populate with a received synchronous
+ *                    response
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return CA_ERROR_SUCCESS for success, anything else for failure
+ ******************************************************************************/
+ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
 
 #ifdef __cplusplus
 }

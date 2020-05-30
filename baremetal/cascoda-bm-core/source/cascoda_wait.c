@@ -34,9 +34,9 @@
 
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_interface_core.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "mac_messages.h"
 
 static union ca821x_api_callback sTargetCallback;
@@ -149,4 +149,9 @@ void *WAIT_GetContext(void)
 		return NULL;
 	else
 		return sCallbackContext;
+}
+
+void WAIT_ms(u32_t ticks)
+{
+	BSP_WaitTicks(ticks);
 }

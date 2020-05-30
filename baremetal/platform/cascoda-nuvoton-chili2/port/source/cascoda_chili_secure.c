@@ -52,6 +52,12 @@
 #define CLKCFG_ENHIRC 0x04
 #define CLKCFG_ENHIRC48 0x08
 
+#ifndef CUSTOM_PARTITION_H //Should be defined in custom partition file for nonsecure part
+#error Custom partition_M2351.h not properly configured. This error exists to catch a common \
+       misconfiguration problem - make sure the custom partition_M2351.h is being correctly \
+       included. This should define the CUSTOM_PARTITION_H preprocessor macro.
+#endif
+
 volatile u8_t asleep = 0;
 volatile u8_t wakeup = 0;
 static u8_t   lxt_connected;
@@ -532,9 +538,6 @@ __NONSECURE_ENTRY void CHILI_EnableIntOscCal(void)
 		/* trim HIRC using LXT */
 		SYS->TCTL12M = 0x00F1;
 		/* enable HIRC-trim interrupt */
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-		TZ_NVIC_EnableIRQ_NS(CKFAIL_IRQn);
-#endif
 		NVIC_EnableIRQ(CKFAIL_IRQn);
 		SYS->TIEN12M = (SYS_TIEN12M_TFAILIEN_Msk | SYS_TIEN12M_CLKEIEN_Msk);
 	}
@@ -546,9 +549,6 @@ __NONSECURE_ENTRY void CHILI_EnableIntOscCal(void)
 		/* trim HIRC48 using LXT */
 		SYS->TCTL48M = 0x00F1;
 		/* enable HIRC48-trim interrupt */
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-		TZ_NVIC_EnableIRQ_NS(CKFAIL_IRQn);
-#endif
 		NVIC_EnableIRQ(CKFAIL_IRQn);
 		SYS->TIEN48M = (SYS_TIEN48M_TFAILIEN_Msk | SYS_TIEN48M_CLKEIEN_Msk);
 	}
@@ -610,9 +610,6 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	/* 1uSec units, counts microseconds */
 	TIMER_SET_CMP_VALUE(TIMER1, 0xFFFFFF);
 
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-	TZ_NVIC_EnableIRQ_NS(TMR0_IRQn);
-#endif
 	NVIC_EnableIRQ(TMR0_IRQn);
 	TIMER_EnableInt(TIMER0);
 	TIMER_Start(TIMER0);
@@ -647,15 +644,15 @@ __attribute__((optimize("O0")))
 __NONSECURE_ENTRY uint32_t
                   ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 {
-	extern void SCU_IRQHandler();
-	uint32_t *  sp;
-	uint32_t    i;
-	uint32_t    inst, addr, taddr, tdata;
-	int32_t     secure;
-	uint32_t    rm, rn, rt, imm5, imm8;
-	int32_t     eFlag;
-	uint8_t     idx, bit;
-	int32_t     s;
+	extern void        SCU_IRQHandler();
+	volatile uint32_t *sp;
+	volatile uint32_t  i;
+	volatile uint32_t  inst, addr, taddr, tdata;
+	volatile int32_t   secure;
+	volatile uint32_t  rm, rn, rt, imm5, imm8;
+	volatile int32_t   eFlag;
+	volatile uint8_t   idx, bit;
+	volatile int32_t   s;
 
 	/* Check the used stack */
 	secure = (lr & 0x40ul) ? 1 : 0;
@@ -945,11 +942,12 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	SYS_ResetModule(UART_RST);
 	UART_SetLineConfig(UART, UART_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
 	UART_Open(UART, UART_BAUDRATE);
-	UART_EnableInt(UART, UART_INTEN_RDAIEN_Msk);
+	UART_EnableInt(UART, UART_INTEN_RDAIEN_Msk); //TODO: This is probably one of the reasons UART doesn't work on tz
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 	TZ_NVIC_EnableIRQ_NS(UART_IRQn);
-#endif
+#else
 	NVIC_EnableIRQ(UART_IRQn);
+#endif
 
 	CHILI_ModuleSetMFP(UART_TXD_PNUM, UART_TXD_PIN, PMFP_UART);
 	CHILI_ModuleSetMFP(UART_RXD_PNUM, UART_RXD_PIN, PMFP_UART);
@@ -960,7 +958,11 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 
 __NONSECURE_ENTRY void CHILI_UARTDeinit(void)
 {
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+	TZ_NVIC_DisableIRQ_NS(UART_IRQn);
+#else
 	NVIC_DisableIRQ(UART_IRQn);
+#endif
 	UART_DisableInt(UART, UART_INTEN_RDAIEN_Msk);
 	CLK_DisableModuleClock(UART_MODULE);
 	UART_Close(UART);
@@ -978,7 +980,7 @@ __NONSECURE_ENTRY void CHILI_UARTDeinit(void)
  * \brief Initialises DMA access for UART
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY static void CHILI_UARTDMAInitialise(void)
+static void CHILI_UARTDMAInitialise(void)
 {
 	CLK_EnableModuleClock(PDMA0_MODULE);
 
@@ -996,9 +998,6 @@ __NONSECURE_ENTRY static void CHILI_UARTDMAInitialise(void)
 	PDMA0->DSCT[UART_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 	PDMA0->DSCT[UART_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-	TZ_NVIC_EnableIRQ_NS(PDMA0_IRQn);
-#endif
 	NVIC_EnableIRQ(PDMA0_IRQn);
 }
 
@@ -1133,9 +1132,6 @@ __NONSECURE_ENTRY void CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0
 			TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
 		}
 
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-		TZ_NVIC_EnableIRQ_NS(TMR0_IRQn);
-#endif
 		NVIC_EnableIRQ(TMR0_IRQn);
 		TIMER_EnableInt(TIMER0);
 		TIMER_EnableWakeup(TIMER0);

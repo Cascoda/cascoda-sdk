@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2015-2016 Nuvoton
+ * Modifications Copyright (c) 2020 Cascoda Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,11 +147,10 @@ static void __nvt_aes_crypt(mbedtls_aes_context *ctx,
 		ca_log_warn("Invalid buffer for AES - must be word-aligned in 0x20000000-0x2FFFFFFF region.");
 	}
 
-	/* Acquire ownership of AES H/W */
-	crypto_aes_acquire();
-
 	/* Init crypto module */
 	crypto_init();
+	/* Acquire ownership of AES H/W */
+	crypto_aes_acquire();
 	/* Enable AES interrupt */
 	AES_ENABLE_INT(CRPT_dyn);
 
@@ -477,5 +477,9 @@ int mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
 #endif /* MBEDTLS_CIPHER_MODE_CTR */
 
 #endif /* MBEDTLS_AES_ALT */
+
+void targetm2351_aes_register(void)
+{
+}
 
 #endif /* MBEDTLS_AES_C */

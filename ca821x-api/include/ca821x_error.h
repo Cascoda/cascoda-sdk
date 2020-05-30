@@ -29,6 +29,8 @@
 #ifndef CA821X_API_INCLUDE_CA821X_ERROR_H_
 #define CA821X_API_INCLUDE_CA821X_ERROR_H_
 
+#include "ca821x_toolchain.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

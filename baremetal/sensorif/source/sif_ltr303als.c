@@ -22,8 +22,9 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "sif_ltr303als.h"
 
@@ -113,7 +114,7 @@ u8_t SIF_LTR303ALS_Initialise(void)
 	/* check startup time after power-up */
 	tnow = TIME_ReadAbsoluteTime();
 	if (tnow < SIF_LTR303ALS_TSTUP_POWERUP_MS)
-		TIME_WaitTicks(SIF_LTR303ALS_TSTUP_POWERUP_MS - tnow);
+		WAIT_ms(SIF_LTR303ALS_TSTUP_POWERUP_MS - tnow);
 
 	/* check part id and manufacturer id to see if correct device is connected */
 	if ((status = SIF_LTR303ALS_read_register(REG_LTR303ALS_PART_ID, &dbyte)))
@@ -184,7 +185,7 @@ u8_t SIF_LTR303ALS_ReadLight(u16_t *pch0, u16_t *pch1)
 			return (status);
 	}
 
-	TIME_WaitTicks(10);
+	WAIT_ms(10);
 
 	/* check status */
 	/* wait for new data */

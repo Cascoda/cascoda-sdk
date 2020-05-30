@@ -5,7 +5,11 @@ This guide contains descriptions of how to achieve common tasks when working
 on a TrustZone binary. Some familiarity with the CMake build system is
 assumed, but it includes descriptions of what the build system is actually
 instructed to do. Therefore, this guide should also be useful if you are not
-using CMake.
+using CMake. The guide is split into 3 sections:
+
+- [TrustZone Overview](#trustzone-overview)
+- [Configuring TrustZone in the Cascoda SDK](#configuring-trustzone-in-the-cascoda-sdk)
+- [Common Pitfalls](#common-pitfalls)
 
 ## TrustZone Overview ##
 
@@ -13,9 +17,8 @@ using CMake.
 
 The purpose of TrustZone is to separate secure (trusted) code and data from
 non-secure (untrusted) code. This is accomplished by hardware within the Arm
-core, which makes the separation very robust. The benefit is to ensure the
-security of trusted code and data by forbidding untrusted code from reading
-or modifying it.
+core, which makes the separation very robust. The benefit is forbidding untrusted
+code from reading, modifying or freely executing secure code and data.
 
 TrustZone also allows the secure firmware developer to mark MCU peripherals
 as trusted or untrusted. Thus, trusted hardware can only be accessed from
@@ -41,9 +44,9 @@ cannot talk to the secure world except through non-secure callable functions
 defined in secure code.
 
 These binaries must be flashed separately, at different addresses. This
-preserves the separation between trusted and untrusted code, in that
-untrusted software is entirely separate from the secure binary, and knows as
-little as possible about it.
+preserves the separation between trusted and untrusted code. Untrusted 
+software is entirely separate from the secure binary, and only knows about
+a specifically defined 'non-secure callable' subset of API functions.
 
 The start address of non-secure firmware must be known by:
 
@@ -58,26 +61,29 @@ to position the non-secure code at the correct place in flash
 
 ### Communicating between worlds ###
 
-By default, the secure binary has access to the entire system, while the
-non-secure program only has access to the parts deemed non-secure by the
-secure bootloader.
+The secure binary has access to the entire system, while the non-secure 
+program only has access to the parts deemed non-secure by the secure 
+bootloader.
 
 The secure binary can choose to provide an API to non-secure code through
-entry or non-secure callable functions. This allows non-secure code to
-access secure resources in a way that is safe, without breaking the security
-guarantees set in place by the secure software developer.
+non-secure callable functions (also known as entry functions). This allows
+non-secure code to access secure resources in a way that is safe, without 
+breaking the security guarantees set in place by the secure software developer.
 
-Secure code can access non-secure code through callbacks. The secure code
-defines a non-secure callable (NSC) function that takes a function pointer
-argument. The secure world can then call the callback (a non-secure function)
-in the body of the NSC function, which lets the secure binary access the
-non-secure world.
+Secure code can access non-secure code through function pointers(callbacks). The 
+secure world can call the callback (a non-secure function) using the ``BLXNS``
+instruction, which is practically used in C code by marking the function pointer
+with the ``cmse_nonsecure_call`` attribute. Function pointers must be used
+because the nonsecure binary is linked with the symbols from the secure binary,
+but the opposite does not occur.
 
-Here is an example that demonstrates this concept:
+Here is a trivial example that demonstrates this concept in secure code:
 
 The secure binary defines a NSC function called `call_the_callback`. Its
-argument `callback` is a pointer to a function that takes an integer argument
-and returns an integer. The secure code uses `callback` to do some work.
+argument `callback` is a function pointer. The nonsecure code can call the
+``call_the_callback`` function with a function pointer to nonsecure code.
+The secure code is able to safely call `callback` while in a secure state,
+without compromising the secure-nonsecure barrier.
 
 ```
 // in secure.h
@@ -88,28 +94,18 @@ and returns an integer. The secure code uses `callback` to do some work.
 typedef int (*nonsecure_callback_t)(int) __attribute__((cmse_nonsecure_call));
 
 void call_the_callback(int (*callback)(int));
-void do_secure_stuff_with(int);
+int do_secure_stuff_with(int);
+int secure_get_int(void);
 
-// in secure.c
-__attribute__((cmse_nonsecure_entry)) void call_the_callback(int (*callback)(int))
+__attribute__((cmse_nonsecure_entry)) int call_the_callback(int (*callback)(int))
 {
-	int result = ((nonsecure_callback_t) cmse_nsfptr_create(callback)) (5);
-    // Use the result for some secure work that the non-secure
-    // binary must not know about
-    do_secure_stuff_with(result);
+    int rval = secure_get_int();
+    rval = ((nonsecure_callback_t) cmse_nsfptr_create(callback)) (rval);
+    // Use the result for some secure work
+    rval = do_secure_stuff_with(rval);
+    return rval;
 }
 
-
-int function_for_secure(int i)
-{
-    return (i+1);
-}
-
-int main()
-{
-	call_the_callback(function_for_secure);
-    return 0;
-}
 ```
 
 The non-secure binary defines `function_for_secure`, the callback for the
@@ -120,20 +116,23 @@ secure binary, which is then passed to the secure code within `main`.
 
 int function_for_secure(int i)
 {
+    //This function is nonsecure, so cannot access any secure
+    //state, even though it is called from secure code.
     return (i+1);
 }
 
 void main()
 {
-	call_the_callback(function_for_secure);
+	int rval = call_the_callback(&function_for_secure);
+	printf("rval: %d\n", rval);
 }
 ```
 
 ### Implementation detail: Secure Gateway Veneers ###
 
 Changing between the secure and non-secure worlds is potentially dangerous.
-If it is not done carefully, untrusted software may gain access to the entire
-system.
+If it is not designed carefully, untrusted software may gain access to the
+entire system.
 
 To mitigate this problem, TrustZone chips allow the developer to define
 non-secure callable regions. These regions are the only place where
@@ -160,9 +159,9 @@ using a debugger to step through non-secure callable functions.
 ### Cascoda and TrustZone ##
 
 Cascoda defines a number of TrustZone targets. The most important one is
-`freertos-default-secure`: this is a secure binary that contains FreeRTOS
+`chili2-default-secure`: this is a secure binary that contains FreeRTOS
 secure code, as well as the Cascoda BSP. This secure binary is what powers
-most of the TrustZone demos. You may use it as a reference for developing
+the Cascoda SDK TrustZone examples. You may use it as a reference if developing
 your own secure binaries that use the CA821x and provide extra functionality.
 
 The non-secure callable API is defined through the use of the
@@ -170,7 +169,7 @@ The non-secure callable API is defined through the use of the
 function as non-secure callable, which generates a SG veneer and places it in
 the non-secure callable region.
 
-The macro is used by invoking it just before the function definition:
+The macro is used immediately before the function definition:
 
 ```
 __NONSECURE_ENTRY void BSP_PowerDown(
@@ -192,28 +191,36 @@ You can find further examples in the Chili 2 version of
 
 ## Configuring TrustZone in the Cascoda SDK ##
 
+### Enabling TrustZone ###
+
+To enable trustzone in the Cascoda SDK, simply change the CMake cache variable
+``CASCODA_CHILI2_TRUSTZONE`` from ``OFF`` to ``ON``. This will cause
+the secure binary `chili2-default-secure` to be built, and correctly configure
+all of the example applications to build as nonsecure mode binaries.
+
 ### Changing the address space partition (ROM and RAM) ###
 
 The allocation of secure and non-secure memory and flash is decided in the
-`partition_M2351.h` file. The Cascoda SDK contains several such files: one for
-each secure binary, and a default one for non-TrustZone targets. You will
-usually need to modify the partition file of the secure binary you are using,
-which lives in the same folder as the source code of the secure binary. For
-instance the partition file of the default FreeRTOS secure binary (the
-`freertos-default-secure` target) can be found at
-`baremetal\platform\cascoda-nuvoton-chili2\freertos-default-secure\include\partition_M2351.h`.
+`partition_M2351.h` file. The Cascoda SDK contains two such files: one for
+the secure binary, and a default one for non-TrustZone targets. You may need to 
+modify the partition file of the secure binary you are using if different secure
+characteristics are required. The partition file of the default secure binary (the
+`chili2-default-secure` target) can be found at
+`baremetal\platform\cascoda-nuvoton-chili2\port\include_tz\partition_M2351.h`.
 
 To change the allocation of ROM and RAM, you will need to modify
 `SCU_SECURE_SRAM_SIZE` and `FMC_SECURE_ROM_SIZE` within the
 `partition_M2351.h` belonging to the secure binary you are using.
 
 You must also modify the linker scripts (for instance, `secure.ld` and
-`nonsecure.ld` within `freertos-default-secure`) by changing the `FLASH`,
+`nonsecure.ld` within `chili2-default-secure`) by changing the `FLASH`,
 `RAM` and `__top_veneer_table` to be consistent with the settings in
 `partition_M2351.h`. Failing to do so will usually result in hard faults (for
 instance, if the CPU is running non-secure code when it reaches the point of
 inconsistency) or reading all zeroes from the stack and possibly executing
-null instructions (if the CPU is in the secure mode).
+null instructions (if the CPU is in the secure mode). Cascoda aims to make these
+configurable using the build tool in a future SDK release - please contact us if you
+have a need for this.
 
 ### Configuring peripherals as secure or non-secure ###
 
@@ -225,17 +232,16 @@ represents non-secure peripherals.
 For instance, changing bit 24 of `SCU_INIT_PNSSET0_VAL` to 0 would make the
 `PDMA1` peripheral accessible only to code running in secure mode.
 
-Several peripherals on the M2351 can only run in secure mode. They are `SYS`,
+Several peripherals on the M2351 can only be accessed in secure mode. They are `SYS`,
 `CLK`, `NMI`, `PDMA0`, `RTC`, `FMC`, `SCU`, `WDT` and `TMR01`.
 
 ### Adding non-secure callable functions ###
 
-The best place to put application-specific non-secure callable functions is
-within the secure binary. The `freertos-secure-demo` target is an example of
-how to do just that: the secure binary contains the functions defined in
-`nsc_functions.c`. These functions are marked as non-secure callable thanks
-to the FreeRTOS macro `secureportNON_SECURE_CALLABLE`, which maps to
-`__NONSECURE_ENTRY`.
+If application-specific non-secure callable functions are required then they must be
+added to the secure binary. Currently the only way to do this is to modify the Cascoda
+SDK ``chili2-default-secure`` binary, but Cascoda plans to enable a method of
+injecting additional behaviour from a parent application. The `__NONSECURE_ENTRY`
+macro should be used to mark a function as non-secure callable.
 
 ## Common pitfalls ##
 
@@ -267,7 +273,7 @@ Write Ignore).
 
 ![Extract from the M2351 datasheet, showing its TrustZone memory map. The
 addresses of each memory region show that bit 28 differentiates secure areas
-from non-secure ones.](memory-map.png "Memory map of the M2351")
+from non-secure ones.](img/tz/memory-map.png "Memory map of the M2351")
 
 For instance, at one point in development, the CPU started hardfaulting
 within the secure binary while configuring some peripherals. The debugger
@@ -300,3 +306,10 @@ passed to the function using a register.
 
 For returning large data, you need to add a pointer argument to which the return
 data is copied.
+
+### GCC has a compiler bug for nonsecure callable functions in combination with -Os
+
+Do not use the -Os optimisation flag for the secure binary, or the compiler will generate
+incorrect code. This workaround is handled by the cascoda SDK and there is also a
+runtime trap to catch incorrect behaviour. We will update this readme with more information
+as we file the bug with the GCC maintainers.

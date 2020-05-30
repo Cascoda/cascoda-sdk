@@ -39,8 +39,9 @@
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
@@ -96,10 +97,10 @@ int main(void)
 	TEST15_4_Initialise(&dev);
 	EINK_Initialise(&lut_full_update);
 	EINK_ClearDisplay();
-	TIME_WaitTicks(500);
+	WAIT_ms(500);
 	EINK_Display(cascoda_img_2in9);
-	TIME_WaitTicks(1000);
-	TIME_WaitTicks(1000);
+	WAIT_ms(1000);
+	WAIT_ms(1000);
 	EINK_DeepSleep();
 
 	/* Endless Polling Loop */

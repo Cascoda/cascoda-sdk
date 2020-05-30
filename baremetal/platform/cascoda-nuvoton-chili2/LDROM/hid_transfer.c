@@ -29,9 +29,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cascoda-util/cascoda_hash.h"
 #include "NuMicro.h"
 
-#include "cascoda-bm/cascoda_hash.h"
 #include "cascoda-bm/cascoda_usb.h"
 #include "cascoda-bm/cascoda_usbhid.h"
 

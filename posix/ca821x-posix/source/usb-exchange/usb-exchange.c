@@ -45,6 +45,7 @@
 
 #include "hidapi/hidapi.h"
 #include "ca821x-generic-exchange.h"
+#include "ca821x-posix-util-internal.h"
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
 #include "usb-exchange.h"
@@ -240,15 +241,7 @@ void usb_apply_raspi_workaround(struct ca821x_dev *pDeviceRef)
 	if (clock_gettime(CLOCK_REALTIME, &curTime))
 		return;
 
-	curTime.tv_sec -= priv->prev_send.tv_sec;
-	curTime.tv_nsec -= priv->prev_send.tv_nsec;
-
-	// Normalize the struct in case the subtraction made negative nsec
-	if (curTime.tv_nsec < 0)
-	{
-		curTime.tv_nsec += 1000000000;
-		curTime.tv_sec -= 1;
-	}
+	curTime = time_sub(&curTime, &priv->prev_send);
 
 	// Not enough time has passed, no need to send packet
 	if (curTime.tv_sec < 1)

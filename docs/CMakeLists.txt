@@ -17,8 +17,8 @@ endif()
 
 # Add docs target
 add_custom_target(docs
-	COMMAND Doxygen::doxygen ${CMAKE_BINARY_DIR}/docs/doxyfile
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/etc/img ${PROJECT_BINARY_DIR}/docs/html/etc/img
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	COMMAND Doxygen::doxygen ${CASCODA_BINARY_DIR}/docs/doxyfile
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CASCODA_SOURCE_DIR}/etc/img ${PROJECT_BINARY_DIR}/docs/html/etc/img
+	WORKING_DIRECTORY ${CASCODA_BINARY_DIR}
 	)
 

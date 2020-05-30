@@ -33,6 +33,8 @@
 */
 /* System */
 #include <stdio.h>
+
+#include "cascoda-util/cascoda_hash.h"
 /* Platform */
 #include "M2351.h"
 #include "eadc.h"
@@ -46,15 +48,15 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_hash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_secure.h"
+#include "crypto-misc.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
@@ -186,9 +188,6 @@ void BSP_DisableRFIRQ()
 void BSP_EnableRFIRQ()
 {
 	/* note that this is re-enabling all GPIO C ports */
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-	TZ_NVIC_EnableIRQ_NS(ZIG_IRQB_IRQn);
-#endif
 	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
 	__ASM volatile("" : : : "memory");
 }
@@ -214,20 +213,10 @@ void BSP_SetRFSSBLow(void)
  *---------------------------------------------------------------------------*/
 void BSP_EnableSerialIRQ(void)
 {
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#if defined(USE_USB)
-	TZ_NVIC_EnableIRQ_NS(USBD_IRQn);
-	NVIC_EnableIRQ(USBD_IRQn);
-#elif defined(USE_UART)
-	TZ_NVIC_EnableIRQ_NS(UART_IRQn);
-	NVIC_EnableIRQ(UART_IRQn);
-#endif
-#else
 #if defined(USE_USB)
 	NVIC_EnableIRQ(USBD_IRQn);
 #elif defined(USE_UART)
 	NVIC_EnableIRQ(UART_IRQn);
-#endif
 #endif
 	__ASM volatile("" : : : "memory");
 }
@@ -309,6 +298,14 @@ u64_t BSP_GetUniqueId(void)
 	rval = HASH_fnv1a_64(&UID, sizeof(UID));
 
 	return rval;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+const char *BSP_GetPlatString(void)
+{
+	return "Chili2";
 }
 
 /*---------------------------------------------------------------------------*
@@ -494,6 +491,9 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchRead
 	/* system  initialisation (clocks, timers ..) */
 	CHILI_SystemReInit();
 	cascoda_isr_chili_init();
+	targetm2351_ecp_register();
+	targetm2351_aes_register();
+	targetm2351_hwpoll_register();
 
 	/* configure HXT to external clock input */
 	CHILI_SetClockExternalCFGXT1(1);
@@ -612,4 +612,12 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 	/* system  initialisation (clocks, timers ..) */
 	CHILI_SystemReInit();
 	cascoda_isr_secure_init();
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+bool BSP_IsInsideInterrupt(void)
+{
+	return SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk;
 }

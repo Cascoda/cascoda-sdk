@@ -36,8 +36,9 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "qrcodegen.h"
 #include "sif_eink.h"
 
@@ -156,7 +157,7 @@ static void EINK_WaitUntilIdle(void)
 	BSP_ModuleSenseGPIOPin(EINK_BUSY_PIN, &BUSY_value);
 	while (BUSY_value == 1)
 	{
-		TIME_WaitTicks(2);
+		WAIT_ms(2);
 		BSP_ModuleSenseGPIOPin(EINK_BUSY_PIN, &BUSY_value);
 	}
 }
@@ -184,11 +185,11 @@ static void EINK_TurnOnDisplay(void)
 static void EINK_Reset(void)
 {
 	BSP_ModuleSetGPIOPin(EINK_RST_PIN, 1);
-	TIME_WaitTicks(2);
+	WAIT_ms(2);
 	BSP_ModuleSetGPIOPin(EINK_RST_PIN, 0);
-	TIME_WaitTicks(2);
+	WAIT_ms(2);
 	BSP_ModuleSetGPIOPin(EINK_RST_PIN, 1);
-	TIME_WaitTicks(2);
+	WAIT_ms(2);
 }
 
 /******************************************************************************/
@@ -347,11 +348,11 @@ void EINK_ClearDisplay(void)
 void EINK_StrongClearDisplay(void)
 {
 	EINK_ClearDisplay();
-	TIME_WaitTicks(500);
+	WAIT_ms(500);
 	EINK_ClearDisplay();
-	TIME_WaitTicks(500);
+	WAIT_ms(500);
 	EINK_ClearDisplay();
-	TIME_WaitTicks(500);
+	WAIT_ms(500);
 }
 
 void EINK_DeepSleep(void)

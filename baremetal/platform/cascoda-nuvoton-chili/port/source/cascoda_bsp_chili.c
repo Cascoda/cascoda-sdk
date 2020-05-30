@@ -33,6 +33,8 @@
 */
 /* System */
 #include <stdio.h>
+
+#include "cascoda-util/cascoda_hash.h"
 /* Platform */
 #include "Nano100Series.h"
 #include "adc.h"
@@ -45,11 +47,10 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_hash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
@@ -234,9 +235,6 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 
 #endif /* USE_UART */
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 u64_t BSP_GetUniqueId(void)
 {
 	u64_t rval = 0;
@@ -252,6 +250,14 @@ u64_t BSP_GetUniqueId(void)
 	SYS_LockReg();
 
 	return rval;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+const char *BSP_GetPlatString(void)
+{
+	return "Chili";
 }
 
 /*---------------------------------------------------------------------------*
@@ -714,4 +720,12 @@ u8_t BSP_IsUSBPresent(void)
  *---------------------------------------------------------------------------*/
 void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 {
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+bool BSP_IsInsideInterrupt(void)
+{
+	return SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk;
 }

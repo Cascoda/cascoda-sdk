@@ -1,0 +1,5 @@
+add_subdirectory(ot-eink-server)
+add_subdirectory(ot-sensordemo-server)
+add_subdirectory(serial-adapter)
+add_subdirectory(sniffer)
+add_subdirectory(tests)

@@ -41,6 +41,13 @@ extern "C" {
 #endif
 
 /**
+ * Wait for a given number of milliseconds.
+ *
+ * \param ticks The number of milliseconds to wait.
+ */
+void WAIT_ms(uint32_t ticks);
+
+/**
  * \brief Wait for an asynchronous callback to be triggered
  *
  * This is a helper function which blocks until a specific SPI indication/confirm

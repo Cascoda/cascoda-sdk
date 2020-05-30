@@ -104,6 +104,15 @@ static inline uint32_t GETLE32(const uint8_t *in)
 }
 
 /**
+ * Extract a 64-bit value from a little-endian octet array
+ */
+static inline uint64_t GETLE64(const uint8_t *in)
+{
+	return (((uint64_t)in[7] << 56) + ((uint64_t)in[6] << 48) + ((uint64_t)in[5] << 40) + ((uint64_t)in[4] << 32) +
+	        ((uint64_t)in[3] << 24) + ((uint64_t)in[2] << 16) + ((uint64_t)in[1] << 8) + (uint64_t)in[0]);
+}
+
+/**
  * Put a 16-bit value into a little-endian octet array
  */
 static inline void PUTLE16(uint16_t in, uint8_t *out)
@@ -161,6 +170,15 @@ static inline void PUTBE16(uint16_t in, uint8_t *out)
 static inline uint32_t GETBE32(const uint8_t *in)
 {
 	return (((uint32_t)in[0] << 24) + ((uint32_t)in[1] << 16) + ((uint32_t)in[2] << 8) + (uint32_t)in[3]);
+}
+
+/**
+ * Extract a 64-bit value from a big-endian octet array
+ */
+static inline uint64_t GETBE64(const uint8_t *in)
+{
+	return (((uint64_t)in[0] << 56) + ((uint64_t)in[1] << 48) + ((uint64_t)in[2] << 40) + ((uint64_t)in[3] << 32) +
+	        ((uint64_t)in[4] << 24) + ((uint64_t)in[5] << 16) + ((uint64_t)in[6] << 8) + (uint64_t)in[7]);
 }
 
 /**

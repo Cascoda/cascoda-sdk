@@ -714,6 +714,11 @@ ca_error verify_command(const uint8_t *buf, size_t len, uint8_t *response, struc
 	return 0;
 }
 
+ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+{
+	return verify_command(buf, len, response, pDeviceRef);
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Prints the result of an API function call
@@ -765,7 +770,6 @@ int api_functions_test(void)
 	printf(ANSI_COLOR_CYAN "Testing API functions...\n" ANSI_COLOR_RESET);
 	/* TODO: check return */
 	ca821x_api_init(&test_dev);
-	test_dev.ca821x_api_downstream = verify_command;
 	/* Call each API downstream, check constructed packet */
 	full_address.AddressMode = MAC_MODE_LONG_ADDR;
 	full_address.PANId[0]    = 0x5C;
@@ -1231,7 +1235,7 @@ void call_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 int api_callbacks_test(void)
 {
 	struct ca821x_dev   test_dev;
-	struct MAC_Message  msgbuf;
+	struct MAC_Message  msgbuf = {};
 	struct test_context tcontext;
 	printf(ANSI_COLOR_CYAN "Testing callbacks...\n" ANSI_COLOR_RESET);
 	memset(&tcontext, 0, sizeof(tcontext));

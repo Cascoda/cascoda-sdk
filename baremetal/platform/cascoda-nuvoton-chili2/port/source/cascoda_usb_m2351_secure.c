@@ -63,7 +63,11 @@ __NONSECURE_ENTRY void USB_Deinitialise(void)
 	SYS_UnlockReg();
 	USBD_DISABLE_USB();
 	CLK_DisableModuleClock(USBD_MODULE);
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+	TZ_NVIC_DisableIRQ_NS(USBD_IRQn);
+#else
 	NVIC_DisableIRQ(USBD_IRQn);
+#endif
 	SYS->USBPHY &= ~SYS_USBPHY_OTGPHYEN_Msk;
 	SYS_LockReg();
 }

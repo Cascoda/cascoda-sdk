@@ -126,4 +126,12 @@ if(${OT_BUILTIN_MBEDTLS})
 		PUBLIC
 			MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\"
 	)
+	if(CASCODA_BUILD_LWIP)
+		target_compile_definitions(mbedcrypto
+			PUBLIC
+				MBEDTLS_OID_C
+				MBEDTLS_X509_USE_C
+				MBEDTLS_X509_CRT_PARSE_C
+		)
+	endif()
 endif()

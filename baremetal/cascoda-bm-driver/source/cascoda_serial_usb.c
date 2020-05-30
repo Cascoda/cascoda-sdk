@@ -150,9 +150,8 @@ u8_t SerialGetCommand(void)
 	}
 } // End of SerialGetCommand()
 
-void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
+void EVBME_Message_USB(char *pBuffer, size_t Count)
 {
-	(void)pDeviceRef;
 	SerialUSBSend(Serial_Stdout, (u8_t *)pBuffer, Count);
 } // End of EVBME_Message()
 

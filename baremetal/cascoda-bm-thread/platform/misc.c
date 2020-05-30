@@ -40,6 +40,7 @@
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "platform.h"
 
@@ -191,6 +192,68 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 	ca_log_info("Join complete with error %s", otThreadErrorToString(join_status.error));
 
 	return join_status.error;
+}
+
+otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs)
+{
+	otExtAddress extAddress;
+
+	otLinkGetFactoryAssignedIeeeEui64(aInstance, &extAddress);
+	printf("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(aInstance));
+	for (int i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
+	printf("\n");
+
+#if defined(USE_USB)
+	if (BSP_IsUSBPresent() && !otDatasetIsCommissioned(aInstance))
+	{
+		uint32_t starttime = TIME_ReadAbsoluteTime();
+
+		while (TIME_ReadAbsoluteTime() - starttime < aMaxWaitMs)
+		{
+			cascoda_io_handler(pDeviceRef);
+		}
+	}
+#endif
+}
+
+ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, uint8_t *aOutBuf)
+{
+	ca_error       error = CA_ERROR_SUCCESS;
+	otExtAddress   extAddress;
+	uint8_t        maxLen  = *aOutBufLen;
+	size_t         attrlen = 0;
+	const uint8_t *attr    = NULL;
+
+	switch (aAttrib)
+	{
+	case EVBME_OT_EUI64:
+		otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &extAddress);
+		attr    = extAddress.m8;
+		attrlen = sizeof(extAddress);
+		break;
+	case EVBME_OT_JOINCRED:
+		attr    = PlatformGetJoinerCredential(OT_INSTANCE);
+		attrlen = strlen(attr) + 1;
+		break;
+	default:
+		error = CA_ERROR_UNKNOWN;
+		break;
+	}
+
+	if (attrlen > maxLen)
+		error = CA_ERROR_NO_BUFFER;
+
+	if (attr && !error)
+	{
+		memcpy(aOutBuf, attr, attrlen);
+		*aOutBufLen = attrlen;
+	}
+	else
+	{
+		*aOutBufLen = 0;
+	}
+
+	return error;
 }
 
 #ifdef __MINGW32__

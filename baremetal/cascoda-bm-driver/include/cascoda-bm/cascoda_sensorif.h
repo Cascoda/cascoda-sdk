@@ -25,9 +25,10 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * sensor/actuator I2C interface functions
-*/
+/**
+ * @file
+ * @brief  sensor/actuator I2C interface functions
+ */
 
 #ifndef CASCODA_SENSORIF_H
 #define CASCODA_SENSORIF_H

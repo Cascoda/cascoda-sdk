@@ -36,11 +36,12 @@
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_os.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_tasklet.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_tasklet.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "evbme_messages.h"
 #include "mac_messages.h"
@@ -55,7 +56,7 @@ static const char *app_name;    //!< String describing initialised app
 static u8_t        CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz clock
 
 /** Function pointer for sending ASCII reporting messages upstream */
-void (*EVBME_Message)(char *message, size_t len, struct ca821x_dev *pDeviceRef);
+void (*EVBME_Message)(char *message, size_t len);
 /** Function pointer for sending API commands upstream. */
 void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
 /** Function pointer for reinitialising the app upon a restart **/
@@ -80,6 +81,7 @@ static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struc
 static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 static int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 static void     EVBME_Disconnect(void);
+static ca_error EVBME_GET_request(struct EVBME_GET_request *req);
 static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef);
 
 static void EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf)
@@ -91,7 +93,7 @@ static void EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf)
 
 	uint8_t buf[msg->mIndSize];
 
-	TIME_WaitTicks(msg->mDelay);
+	WAIT_ms(msg->mDelay);
 
 	memset(buf, 0, sizeof(buf));
 	buf[0] = msg->mHandle;
@@ -144,19 +146,18 @@ static void EVBME_DFU_cmd(struct EVBME_Message *rxMsg)
  ******************************************************************************/
 static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	ca_error              status;
 	int                   ret     = 0;
 	struct EVBME_Message *rxEvbme = (struct EVBME_Message *)SerialRxBuffer;
 
 	switch (rxEvbme->mCmdId)
 	{
+	case EVBME_GET_REQUEST:
+		ret = 1;
+		EVBME_GET_request(&rxEvbme->EVBME.GET_request);
+		break;
 	case EVBME_SET_REQUEST:
-		ret    = 1;
-		status = EVBME_SET_request(&rxEvbme->EVBME.SET_request, pDeviceRef);
-		if (status == CA_ERROR_INVALID)
-			ca_log_warn("EVBME_SET INVALID ATTRIBUTE");
-		else if (status == CA_ERROR_UNKNOWN)
-			ca_log_warn("EVBME_SET UNKNOWN ATTRIBUTE");
+		ret = 1;
+		EVBME_SET_request(&rxEvbme->EVBME.SET_request, pDeviceRef);
 		break;
 	case EVBME_GUI_CONNECTED:
 		ret = 1;
@@ -310,23 +311,107 @@ static void EVBME_Disconnect(void)
 {
 	EVBME_HasReset = 1;
 	BSP_ResetRF(50); // reset RF for 50 ms
-} // End of EVBME_Disconnect()
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief EVBME_GET_request according to EVBME Spec
+ *******************************************************************************
+ * \param req The Evbme get request received
+ *******************************************************************************
+ * \return Status
+ *******************************************************************************
+ ******************************************************************************/
+static ca_error EVBME_GET_request(struct EVBME_GET_request *req)
+{
+	ca_error                  status = CA_ERROR_SUCCESS;
+	uint8_t                   internalbuf[30]; //Only used to size the VLA at end of below struct.
+	struct EVBME_GET_confirm *getInd     = (struct EVBME_GET_confirm *)internalbuf;
+	size_t                    maxAttrLen = sizeof(internalbuf) - sizeof(struct EVBME_GET_confirm);
+
+	switch (req->mAttributeId)
+	{
+	case EVBME_VERSTRING:
+	{
+		const char *verString = ca821x_get_version_nodate();
+		size_t      verLen    = strlen(verString) + 1;
+		uint8_t     attrlen   = verLen > maxAttrLen ? maxAttrLen : verLen;
+
+		getInd->mAttributeLen = attrlen;
+		memcpy(getInd->mAttribute, verString, getInd->mAttributeLen);
+		getInd->mAttribute[attrlen - 1] = '\0';
+		break;
+	}
+	case EVBME_PLATSTRING:
+	{
+		const char *devString = BSP_GetPlatString();
+		size_t      devLen    = strlen(devString) + 1;
+		uint8_t     attrlen   = devLen > maxAttrLen ? maxAttrLen : devLen;
+
+		getInd->mAttributeLen = attrlen;
+		memcpy(getInd->mAttribute, devString, getInd->mAttributeLen);
+		getInd->mAttribute[attrlen - 1] = '\0';
+		break;
+	}
+	case EVBME_APPSTRING:
+	{
+		size_t  appLen  = strlen(app_name) + 1;
+		uint8_t attrlen = appLen > maxAttrLen ? maxAttrLen : appLen;
+
+		getInd->mAttributeLen = attrlen;
+		memcpy(getInd->mAttribute, app_name, getInd->mAttributeLen);
+		getInd->mAttribute[attrlen - 1] = '\0';
+		break;
+	}
+	case EVBME_SERIALNO:
+	{
+		uint64_t serialNo = BSP_GetUniqueId();
+
+		getInd->mAttributeLen = sizeof(serialNo);
+		PUTLE64(serialNo, getInd->mAttribute);
+		break;
+	}
+	case EVBME_OT_EUI64:
+	case EVBME_OT_JOINCRED:
+		getInd->mAttributeLen = maxAttrLen;
+		status                = EVBME_GET_OT_Attrib(req->mAttributeId, &(getInd->mAttributeLen), getInd->mAttribute);
+		break;
+	default:
+		status = CA_ERROR_UNKNOWN;
+		break;
+	}
+
+	//Set status and ID before sending indication response
+	getInd->mStatus      = status;
+	getInd->mAttributeId = req->mAttributeId;
+
+	if (status == CA_ERROR_SUCCESS)
+	{
+		MAC_Message(EVBME_GET_CONFIRM, getInd->mAttributeLen + sizeof(*getInd), internalbuf);
+	}
+	else
+	{
+		getInd->mAttributeLen = 0;
+		MAC_Message(EVBME_GET_CONFIRM, sizeof(*getInd), internalbuf);
+	}
+
+	return status;
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief EVBME_SET_request according to EVBME Spec
  *******************************************************************************
- * \param Attribute - Attribute Specifier
- * \param AttributeLength - Attribute Length
- * \param AttributeValue - Pointer to Attribute Value
+ * \param req - The EVBME set request received
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
- * \return EVBME Status
+ * \return Status
  *******************************************************************************
  ******************************************************************************/
 static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef)
 {
-	ca_error status;
+	struct EVBME_SET_confirm setConfirm;
+	ca_error                 status;
 
 	/* branch for EVBME-SET Attributes */
 	switch (req->mAttributeId)
@@ -365,17 +450,20 @@ static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_d
 		break;
 	}
 
+	//Send the confirm
+	setConfirm.mStatus = status;
+	MAC_Message(EVBME_SET_CONFIRM, sizeof(setConfirm), (uint8_t *)&setConfirm);
+
 	return status;
-} // End of EVBME_SET_request()
+}
 
 #else // defined(USE_USB) || defined(USE_UART)
 
 /** dummy stub function if no serial interface is defined */
-static void EVBME_Message_DUMMY(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
+static void EVBME_Message_DUMMY(char *pBuffer, size_t Count)
 {
 	(void)pBuffer;
 	(void)Count;
-	(void)pDeviceRef;
 }
 
 /** dummy stub function if no serial interface is defined */
@@ -657,6 +745,7 @@ static void EVBME_WakeUpRF(void)
 
 void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 {
+	CA_OS_LockAPI();
 	DISPATCH_FromCA821x(pDeviceRef);
 	TASKLET_Process();
 
@@ -685,6 +774,8 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 		SerialRxPending = false;
 	}
 #endif /* USE_UART || USE_USB */
+	CA_OS_UnlockAPI();
+	CA_OS_Yield();
 }
 
 void DISPATCH_NotHandled(struct MAC_Message *msg)
@@ -741,7 +832,7 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 	else if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
 		BSP_PowerDown(sleeptime_ms, 0, 0, pDeviceRef);
 	else if (mode == PDM_ALLON)
-		TIME_WaitTicks(sleeptime_ms);
+		WAIT_ms(sleeptime_ms);
 	else
 		BSP_PowerDown(sleeptime_ms, 1, 0, pDeviceRef);
 
@@ -806,11 +897,11 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 
 	SPI_Initialise();
 
+	CA_OS_Init();
+
 	EVBME_HasReset = 1; // initialise/reset PIBs on higher layers
 
 	// function pointer assignments
-	pDeviceRef->ca821x_api_downstream = &DISPATCH_ToCA821x;
-
 #if defined(USE_USB)
 	EVBME_Message = EVBME_Message_USB;
 	MAC_Message   = MAC_Message_USB;
@@ -825,9 +916,17 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	status = EVBME_Connect(aAppName, pDeviceRef); // reset and connect RF
 
 	return status;
-} // End of EVBMEInitialise()
+}
 
 const char *EVBME_GetAppName(void)
 {
 	return app_name;
-} // End of EVBMEInitialise()
+}
+
+CA_TOOL_WEAK ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, uint8_t *aOutBuf)
+{
+	(void)aAttrib;
+	(void)aOutBufLen;
+	(void)aOutBuf;
+	return CA_ERROR_UNKNOWN;
+}

@@ -11,9 +11,6 @@ if(TARGET cascoda-bm-plat)
 	return()
 endif()
 
-# define the 'interface' library that makes up the bm platform.
-add_library(cascoda-bm-plat INTERFACE)
-
 # Set configuration variables -------------------------------------------------
 cascoda_dropdown(CASCODA_CHILI_REV
 	"The revision of the chili hardware being used 1.x (1.2 is green, 1.3 is red)"
@@ -66,15 +63,15 @@ target_include_directories( cascoda-chili
 	)
 
 # Export the chili platform as cascoda-bm-plat
-target_link_libraries(cascoda-bm-plat INTERFACE cascoda-chili)
+add_library(cascoda-bm-plat ALIAS cascoda-chili)
 
 # Variables for configuring memory usage using the cascoda_configure_memory CMake function
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-	set(CASCODA_STARTUP_ASM ${CMAKE_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili/vendor/Nano100Library/Device/Nuvoton/Nano100Series/Source/GCC/startup_Nano100Series.S CACHE INTERNAL "")
+	set(CASCODA_STARTUP_ASM ${CASCODA_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili/vendor/Nano100Library/Device/Nuvoton/Nano100Series/Source/GCC/startup_Nano100Series.S CACHE INTERNAL "")
 	set(CASCODA_STACK_SIZE __STACK_SIZE CACHE INTERNAL "")
 	set(CASCODA_HEAP_SIZE __HEAP_SIZE CACHE INTERNAL "")
 elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-	set(CASCODA_STARTUP_ASM ${CMAKE_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili/vendor/Nano100Library/Device/Nuvoton/Nano100Series/Source/ARM/startup_Nano100Series.s CACHE INTERNAL "")
+	set(CASCODA_STARTUP_ASM ${CASCODA_SOURCE_DIR}/baremetal/platform/cascoda-nuvoton-chili/vendor/Nano100Library/Device/Nuvoton/Nano100Series/Source/ARM/startup_Nano100Series.s CACHE INTERNAL "")
 	set(CASCODA_STACK_SIZE Stack_Size CACHE INTERNAL "")
 	set(CASCODA_HEAP_SIZE Heap_Size CACHE INTERNAL "")
 endif()

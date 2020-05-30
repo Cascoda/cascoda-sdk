@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2017-2018 Nuvoton
+ * Modifications Copyright (c) 2020 Cascoda Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +18,11 @@
 #include <limits.h>
 #include <stdint.h>
 
-#include "M2351.h"
+#include "cascoda-bm/cascoda_os.h"
 #include "ca821x_log.h"
 #include "cascoda_chili.h"
+
+#include "M2351.h"
 #include "crypto-misc.h"
 #include "nu_bitutil.h"
 
@@ -36,21 +39,22 @@ static uint16_t crypto_init_counter = 0U;
 static volatile uint16_t crypto_aes_done;
 /* Track if ECC H/W operation is done */
 static volatile uint16_t crypto_ecc_done;
-/* Track SHA status */
-static volatile uint8_t crypto_sha_semaphore;
-static uint8_t          ecc_counter = 0;
+static uint8_t           ecc_counter = 0;
+
+static ca_mutex aes_mutex = NULL;
+static ca_mutex ecc_mutex = NULL;
 
 static void crypto_submodule_prestart(volatile uint16_t *submodule_done);
 static bool crypto_submodule_wait(volatile uint16_t *submodule_done);
 
 static void core_util_critical_section_enter(void)
 {
-	//Single threaded use only
+	CA_OS_SchedulerSuspend();
 }
 
 static void core_util_critical_section_exit(void)
 {
-	//Single threaded use only
+	CA_OS_SchedulerResume();
 }
 
 /* As crypto init counter changes from 0 to 1:
@@ -65,6 +69,7 @@ void crypto_init(void)
 	{
 		core_util_critical_section_exit();
 		ca_log_crit("Crypto clock enable counter would overflow (> USHRT_MAX)");
+		return;
 	}
 	crypto_init_counter++;
 	if (crypto_init_counter == 1)
@@ -74,12 +79,16 @@ void crypto_init(void)
 
 		NVIC_EnableIRQ(CRPT_IRQn);
 	}
+	if (!aes_mutex)
+		aes_mutex = CA_OS_MutexInit();
+	if (!ecc_mutex)
+		ecc_mutex = CA_OS_MutexInit();
 	core_util_critical_section_exit();
 }
 
 /* As crypto init counter changes from 1 to 0:
  *
- * 1. Disable crypto interrupt 
+ * 1. Disable crypto interrupt
  * 2. Disable crypto clock
  */
 void crypto_uninit(void)
@@ -89,6 +98,7 @@ void crypto_uninit(void)
 	{
 		core_util_critical_section_exit();
 		ca_log_crit("Crypto clock enable counter would underflow (< 0)");
+		return;
 	}
 	crypto_init_counter--;
 	if (crypto_init_counter == 0)
@@ -123,24 +133,58 @@ void crypto_zeroize32(uint32_t *v, size_t n)
 
 void crypto_aes_acquire(void)
 {
-	//Single thread only for now
+	CA_OS_MutexLock(&aes_mutex);
 }
 
 void crypto_aes_release(void)
 {
-	//Single thread only for now
+	CA_OS_MutexUnlock(&aes_mutex);
 }
 
-int crypto_ecc_acquire(void)
+void crypto_ecc_acquire(void)
 {
-	//Single thread only for now
-	return ecc_counter++;
+	CA_OS_MutexLock(&ecc_mutex);
 }
 
-int crypto_ecc_release(void)
+void crypto_ecc_release(void)
 {
-	//Single thread only for now
-	return --ecc_counter;
+	CA_OS_MutexUnlock(&ecc_mutex);
+}
+
+int crypto_ecc_init(void)
+{
+	uint8_t rval;
+
+	core_util_critical_section_enter();
+	rval = ecc_counter++;
+
+	if (rval == 0)
+	{
+		crypto_init();
+		/* Enable ECC interrupt */
+		ECC_ENABLE_INT(CRPT_dyn);
+	}
+	core_util_critical_section_exit();
+
+	return rval;
+}
+
+int crypto_ecc_deinit(void)
+{
+	uint8_t rval;
+
+	core_util_critical_section_enter();
+	rval = --ecc_counter;
+
+	if (rval == 0)
+	{
+		/* Disable ECC interrupt */
+		ECC_DISABLE_INT(CRPT_dyn);
+		crypto_uninit();
+	}
+	core_util_critical_section_exit();
+
+	return rval;
 }
 
 void crypto_aes_prestart(void)
@@ -169,7 +213,13 @@ bool crypto_dma_buff_compat(const void *buff, size_t buff_size, size_t size_alig
 
 	return (((buff_ & 0x03) == 0) &&                      /* Word-aligned buffer base address */
 	        ((buff_size & (size_aligned_to - 1)) == 0) && /* Crypto submodule dependent buffer size alignment */
+#if defined(NVIC_INIT_ITNS2_VAL) && (NVIC_INIT_ITNS2_VAL & (1 << 7))
+	        //Crypto nonsecure
+	        (((buff_ >> 28) == 0x3) && (buff_size <= (0x40000000 - buff_)))); /* 0x30000000-0x3FFFFFFF */
+#else
+	        //Crypto secure
 	        (((buff_ >> 28) == 0x2) && (buff_size <= (0x30000000 - buff_)))); /* 0x20000000-0x2FFFFFFF */
+#endif
 }
 
 /* Overlap cases
@@ -241,7 +291,7 @@ static bool crypto_submodule_wait(volatile uint16_t *submodule_done)
 }
 
 /* Crypto interrupt handler
- * 
+ *
  * There's inconsistency in cryptography related naming, Crpt or Crypto. For example,
  * cryptography IRQ handler could be CRPT_IRQHandler or CRYPTO_IRQHandler. To override
  * default cryptography IRQ handler, see device/startup_{CHIP}.c for its correct name

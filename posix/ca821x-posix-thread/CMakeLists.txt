@@ -66,45 +66,27 @@ target_link_libraries(ca821x-openthread-posix-mtd
 	)
 
 # Test app config -------------------------------------------------------------
-add_executable(cliapp
+add_executable(ot-cli-posix-ftd
 	${PROJECT_SOURCE_DIR}/example/main.c
 	)
 
-add_executable(cliapp-mtd
+add_executable(ot-cli-posix-mtd
 	${PROJECT_SOURCE_DIR}/example/main.c
 	)
 
-add_executable(ncpapp
+add_executable(ot-ncp-posix
 	${PROJECT_SOURCE_DIR}/example/ncpapp.c
 	)
 
-add_executable(mt-example
-	${PROJECT_SOURCE_DIR}/example/mainMultithread.c
-	)
-
-add_executable(ot-server-standalone
-	${PROJECT_SOURCE_DIR}/example/serverStandalone.c
-	)
-
-add_executable(ot-server-eink
-	${PROJECT_SOURCE_DIR}/example/serverEink.c
-	)
-
-target_link_libraries(cliapp openthread-cli-ftd ca821x-openthread-posix-ftd)
-target_link_libraries(cliapp-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
-target_link_libraries(ncpapp openthread-ncp-ftd ca821x-openthread-posix-ftd)
-target_link_libraries(mt-example openthread-cli-ftd ca821x-openthread-posix-ftd Threads::Threads)
-target_link_libraries(ot-server-standalone openthread-cli-ftd ca821x-openthread-posix-ftd tinycbor-master)
-target_link_libraries(ot-server-eink ca821x-openthread-posix-ftd)
+target_link_libraries(ot-cli-posix-ftd openthread-cli-ftd ca821x-openthread-posix-ftd)
+target_link_libraries(ot-cli-posix-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
+target_link_libraries(ot-ncp-posix openthread-ncp-ftd ca821x-openthread-posix-ftd)
 
 install(
 	TARGETS
-		cliapp
-		cliapp-mtd
-		ncpapp
-		mt-example
-		ot-server-standalone
-		ot-server-eink
+		ot-cli-posix-ftd
+		ot-cli-posix-mtd
+		ot-ncp-posix
 	COMPONENT
 		examples
 	RUNTIME DESTINATION

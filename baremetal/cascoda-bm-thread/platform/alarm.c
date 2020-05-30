@@ -31,9 +31,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cascoda-bm/cascoda_tasklet.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_tasklet.h"
+#include "cascoda-util/cascoda_time.h"
 
 #include "openthread/platform/alarm-milli.h"
 

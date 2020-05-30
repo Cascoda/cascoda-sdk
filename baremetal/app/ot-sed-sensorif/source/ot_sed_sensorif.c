@@ -14,8 +14,9 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_tasklet.h"
-#include "cascoda-bm/cascoda_time.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_tasklet.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
 #include "openthread/coap.h"
@@ -35,9 +36,10 @@
 /******************************************************************************/
 static const char *APP_NAME = "SENSORIF SED";
 
-static const char *  uriCascodaDiscover = "ca/di";
-static const char *  uriCascodaSensor   = "ca/se";
-static const uint8_t ledPin             = 34;
+static const char *  uriCascodaDiscover            = "ca/di";
+static const char *  uriCascodaSensorDiscoverQuery = "t=sen";
+static const char *  uriCascodaSensor              = "ca/se";
+static const uint8_t ledPin                        = 34;
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
@@ -202,6 +204,7 @@ static otError sendServerDiscover(void)
 	otCoapMessageInit(message, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
 	otCoapMessageGenerateToken(message, 2);
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
+	SuccessOrExit(error = otCoapMessageAppendUriQueryOption(message, uriCascodaSensorDiscoverQuery));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr = coapDestinationIp;
@@ -353,7 +356,6 @@ int main(void)
 	u8_t              StartupStatus;
 	otError           otErr = OT_ERROR_NONE;
 	struct ca821x_dev dev;
-	otExtAddress      extAddress;
 
 	ca821x_api_init(&dev);
 
@@ -373,11 +375,8 @@ int main(void)
 	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
 
-	// Print credentials as helper
-	otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &extAddress);
-	printf("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(OT_INSTANCE));
-	for (int i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
-	printf("\n");
+	// Print the joiner credentials, delaying for up to 5 seconds
+	PlatformPrintJoinerCredentials(&dev, OT_INSTANCE, 5000);
 
 	// Try to join network
 	do

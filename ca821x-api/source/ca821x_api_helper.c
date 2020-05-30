@@ -28,25 +28,25 @@
 
 #include <ca821x_api_helper.h>
 
-struct SecSpec *MCPS_DATA_indication_get_secspec(struct MCPS_DATA_indication_pset *aPset)
+struct SecSpec *MCPS_DATA_indication_get_secspec(const struct MCPS_DATA_indication_pset *aPset)
 {
 	return (struct SecSpec *)(aPset->Msdu + aPset->MsduLength);
 }
 
-static uint8_t *MLME_BEACON_NOTIFY_get_pendaddrspec(struct MLME_BEACON_NOTIFY_indication_pset *aPset)
+static uint8_t *MLME_BEACON_NOTIFY_get_pendaddrspec(const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	if (aPset->PanDescriptor.Security.SecurityLevel == 0)
 	{
-		return &(aPset->PanDescriptor.Security.KeyIdMode);
+		return (uint8_t *)&(aPset->PanDescriptor.Security.KeyIdMode);
 	}
 	else
 	{
-		return &(aPset->PanDescriptor.Security.KeyIndex) + 1;
+		return (uint8_t *)&(aPset->PanDescriptor.Security.KeyIndex) + 1;
 	}
 }
 
-struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                  aLength,
-                                                               struct MLME_BEACON_NOTIFY_indication_pset *aPset)
+struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                        aLength,
+                                                               const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	uint8_t *wrkPtr = MLME_BEACON_NOTIFY_get_pendaddrspec(aPset);
 
@@ -58,8 +58,8 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
 	return (struct ShortAddr *)wrkPtr;
 }
 
-struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                  aLength,
-                                                           struct MLME_BEACON_NOTIFY_indication_pset *aPset)
+struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                        aLength,
+                                                           const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	uint8_t           pas    = *MLME_BEACON_NOTIFY_get_pendaddrspec(aPset);
 	uint8_t           shLen  = 0;
@@ -74,7 +74,7 @@ struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *            
 	return (struct ExtAddr *)shList;
 }
 
-uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, struct MLME_BEACON_NOTIFY_indication_pset *aPset)
+uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	uint8_t         exLen  = 0;
 	struct ExtAddr *exList = NULL;
@@ -91,7 +91,7 @@ uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, struct MLME_BEA
 	return rval;
 }
 
-struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, struct MLME_SCAN_confirm_pset *aPset)
+struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, const struct MLME_SCAN_confirm_pset *aPset)
 {
 	struct PanDescriptor *rval = NULL;
 
@@ -117,12 +117,12 @@ exit:
 	return rval;
 }
 
-struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(struct M_KeyTableEntryFixed *aKte)
+struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(const struct M_KeyTableEntryFixed *aKte)
 {
 	return (struct M_KeyIdLookupDesc *)(aKte->Key + 16);
 }
 
-struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(struct M_KeyTableEntryFixed *aKte)
+struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(const struct M_KeyTableEntryFixed *aKte)
 {
 	struct M_KeyIdLookupDesc *working;
 
@@ -132,7 +132,7 @@ struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(struct M_KeyTableEntryF
 	return (struct M_KeyDeviceDesc *)working;
 }
 
-struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(struct M_KeyTableEntryFixed *aKte)
+struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(const struct M_KeyTableEntryFixed *aKte)
 {
 	struct M_KeyDeviceDesc *working;
 

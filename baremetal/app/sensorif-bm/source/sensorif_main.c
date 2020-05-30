@@ -38,8 +38,8 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */

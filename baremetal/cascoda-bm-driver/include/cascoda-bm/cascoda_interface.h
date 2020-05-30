@@ -25,6 +25,10 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * @brief  Platform abstraction layer definition for baremetal
+ */
 
 #ifndef CASCODA_INTERFACE_H
 #define CASCODA_INTERFACE_H
@@ -335,6 +339,12 @@ void BSP_SystemReset(sysreset_mode resetMode);
  * \brief Get a 64-bit ID that is unique to this device
  */
 u64_t BSP_GetUniqueId(void);
+
+/**
+ * \brief Get a string that describes this device
+ * \return A string that describes this device (e.g. "Chili2")
+ */
+const char *BSP_GetPlatString(void);
 
 /**
  * \brief Get Microchip MCP73831 Charge Status

@@ -32,8 +32,8 @@
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_interface_core.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "mac_messages.h"
 
@@ -407,6 +407,11 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 		Status = PostCheckToCA821x(buf, response, pDeviceRef);
 
 	return Status;
+}
+
+ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+{
+	return DISPATCH_ToCA821x(buf, len, response, pDeviceRef);
 }
 
 ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)

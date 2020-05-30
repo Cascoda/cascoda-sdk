@@ -40,8 +40,8 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
 const struct FlashInfo BSP_FlashInfo = {0};
@@ -222,6 +222,11 @@ void BSP_SystemReset(sysreset_mode resetMode)
 {
 }
 
+bool BSP_IsInsideInterrupt(void)
+{
+	return false;
+}
+
 void BSP_Waiting(void)
 {
 }
@@ -229,6 +234,11 @@ void BSP_Waiting(void)
 u64_t BSP_GetUniqueId(void)
 {
 	return 0;
+}
+
+const char *BSP_GetPlatString(void)
+{
+	return "Dummy";
 }
 
 u8_t BSP_GetChargeStat(void)

@@ -35,8 +35,8 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 
 #if defined(USE_UART)
 
@@ -269,9 +269,8 @@ static void SerialCheckTxTimeout(void)
 	}
 }
 
-void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef)
+void EVBME_Message_UART(char *pBuffer, size_t Count)
 {
-	(void)pDeviceRef;
 	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;

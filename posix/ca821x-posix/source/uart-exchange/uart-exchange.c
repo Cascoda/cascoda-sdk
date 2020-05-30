@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include "ca821x-generic-exchange.h"
+#include "ca821x-posix-util-internal.h"
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
 #include "uart-exchange.h"
@@ -100,29 +101,6 @@ static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 }
 
 /**
- * Subtract one timespec from another.
- * @param t1 timespec 1
- * @param t2 timespec 2
- * @return The difference between t1 and t2
- */
-static struct timespec time_sub(const struct timespec *t1, const struct timespec *t2)
-{
-	struct timespec curTime = {t1->tv_sec, t1->tv_nsec};
-	//Get time difference
-	curTime.tv_sec -= t2->tv_sec;
-	curTime.tv_nsec -= t2->tv_nsec;
-
-	// Normalize the struct in case the subtraction made negative nsec
-	if (curTime.tv_nsec < 0)
-	{
-		curTime.tv_nsec += 1000000000L;
-		curTime.tv_sec -= 1;
-	}
-
-	return curTime;
-}
-
-/**
  * Get the amount of time that has passed since the last transmission.
  * @param priv exchange private state
  * @return the time that has passed since last UART transmission.
@@ -139,30 +117,6 @@ static struct timespec get_time_passed(const struct uart_exchange_priv *priv)
 		memset(&curTime, 0, sizeof(curTime));
 	}
 	return curTime;
-}
-
-/**
- * Compare two timespec structures
- *
- * @param t1 first timespec
- * @param t2 second timespec
- * @return 0 if equal, 1 if t1 > t2, -1 if t1 < t2
- */
-static int time_cmp(const struct timespec *t1, const struct timespec *t2)
-{
-	if (t1->tv_sec == t2->tv_sec && t1->tv_nsec == t2->tv_nsec)
-		return 0;
-
-	if (t1->tv_sec < t2->tv_sec)
-		return -1;
-	if (t1->tv_sec > t2->tv_sec)
-		return 1;
-	if (t1->tv_nsec < t2->tv_nsec)
-		return -1;
-	if (t1->tv_nsec > t2->tv_nsec)
-		return 1;
-
-	return 0;
 }
 
 /**
@@ -199,10 +153,10 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	struct timespec            timeout;
 	int                        nfds;
 	ssize_t                    len;
-	int                        error     = 0;
-	uint8_t *                  som       = priv->buf;
-	uint8_t *                  cmdid     = priv->buf + 1;
-	uint8_t *                  cmdlen    = priv->buf + 2;
+	int                        error  = 0;
+	uint8_t *                  som    = priv->buf;
+	uint8_t *                  cmdid  = priv->buf + 1;
+	uint8_t *                  cmdlen = priv->buf + 2;
 
 	assert_uart_exchange(pDeviceRef);
 
@@ -238,12 +192,14 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	len = read(priv->fd, priv->buf + priv->offset, sizeof(priv->buf) - priv->offset);
 	if (len < 0)
 	{
-		if (errno == EAGAIN)
+		int cur_errno = errno;
+		if (cur_errno == EAGAIN)
 		{
 			len = 0;
 		}
 		else
 		{
+			ca_log_warn("UART read error 0x%02x", cur_errno);
 			error = -uart_exchange_err_uart;
 			goto exit;
 		}
@@ -501,6 +457,7 @@ static speed_t get_baud_code(int baudrate)
 		return B115200;
 	case 230400:
 		return B230400;
+#ifdef B460800
 	case 460800:
 		return B460800;
 	case 500000:
@@ -525,6 +482,7 @@ static speed_t get_baud_code(int baudrate)
 		return B3500000;
 	case 4000000:
 		return B4000000;
+#endif
 	default:
 		return (speed_t)-1;
 	}
@@ -558,8 +516,8 @@ static ca_error setup_port(int fd, int baudrate)
 	port.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	port.c_oflag &= ~OPOST;
 
-	/* fetch bytes as they become available */
-	port.c_cc[VMIN]  = 1;
+	/* fetch bytes as they become available, waiting 1/10th of a second for new bytes */
+	port.c_cc[VMIN]  = 0;
 	port.c_cc[VTIME] = 1;
 
 	if (tcsetattr(fd, TCSANOW, &port) != 0)
@@ -614,7 +572,7 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 	uartdev = s_uart_device_head;
 	while (uartdev)
 	{
-		priv->fd = open(uartdev->device, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
+		priv->fd = open(uartdev->device, O_RDWR | O_NOCTTY | O_SYNC);
 
 		if (priv->fd < 0)
 		{

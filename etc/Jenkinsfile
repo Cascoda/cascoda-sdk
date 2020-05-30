@@ -83,11 +83,19 @@ pipeline {
 							steps: [[args: '-j10 -O']]
 						)
 
+						/* Build with TrustZone*/
+						cmakeBuild(
+							installation: 'InSearchPath',
+							buildDir: 'build-chili2',
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON',
+							steps: [[args: '-j10 -O']]
+						)
+
 						/* Build with UART instead of USB */
 						cmakeBuild(
 							installation: 'InSearchPath',
 							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=UART',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_TRUSTZONE=OFF',
 							steps: [[args: '-j10 -O']]
 						)
 
@@ -137,7 +145,7 @@ pipeline {
 							cleanBuild: true,
 							installation: 'InSearchPath',
 							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
+							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}" -DCASCODA_BUILD_DUMMY=ON',
 							steps: [[args: '-j10 -O']]
 						)
 						ctest(

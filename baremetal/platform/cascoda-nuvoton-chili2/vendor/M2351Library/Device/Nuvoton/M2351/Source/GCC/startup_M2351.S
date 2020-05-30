@@ -27,7 +27,7 @@ __StackTop:
     .section .heap
     .align  3
 #ifndef Heap_Size
-    .equ    Heap_Size, 0x00000100
+    .equ    Heap_Size, 0x00000800
 #endif
 
     .global __HeapBase
@@ -170,18 +170,6 @@ __Vectors:
     .size   __Vectors, . - __Vectors
 
 
-    /* Reset_Handler is placed in its own text subsection so that it can be placed
-     * at a hard-coded position in memory. Normally this would be achieved through
-     * -ffunction-sections, but this flag does not work on assembly files.
-     *
-     * Reset_Handler must always be in a known place in memory in order to work around
-     * a bug within the TrustZone secure boot process. Due to the bug, the device can
-     * only boot successfully while it is being debugged. Booting without stepping through
-     * the first transition between secure code and non-secure code results in a hard fault.
-     * This is because the vector table holds an incorrect address for the reset  handler,
-     * unless the program is being debugged when the non-secure vector table is being set up.
-     */
-    .section .text.Reset_Handler
     .thumb
     .thumb_func
     .align  2

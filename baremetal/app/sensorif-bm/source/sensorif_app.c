@@ -37,8 +37,8 @@
 
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "sensorif_app.h"
 #if SENSORIF_TEST_SI7021
 #include "sif_si7021.h"

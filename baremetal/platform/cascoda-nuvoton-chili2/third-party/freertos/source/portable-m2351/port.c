@@ -48,6 +48,10 @@
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
+//Force linking of cascoda freertos abstraction
+void  CA_OS_freertos_bind(void);
+void *linkertrick_CA_OS_freertos_bind = &CA_OS_freertos_bind;
+
 /**
  * The FreeRTOS Cortex M33 port can be configured to run on the Secure Side only
  * i.e. the processor boots as secure and never jumps to the non-secure side.
@@ -183,7 +187,7 @@
  */
 #define portINITIAL_XPSR					( 0x01000000 )
 
-#if( configRUN_FREERTOS_SECURE_ONLY == 1 )
+#if( (configRUN_FREERTOS_SECURE_ONLY == 1) || (configENABLE_TRUSTZONE == 0))
 	/**
 	 * @brief Initial EXC_RETURN value.
 	 *
@@ -896,4 +900,26 @@ void vPortEndScheduler( void ) /* PRIVILEGED_FUNCTION */
 		}
 	}
 #endif /* configENABLE_MPU */
+/*-----------------------------------------------------------*/
+BaseType_t xPortIsInsideInterrupt( void )
+{
+uint32_t ulCurrentInterrupt;
+BaseType_t xReturn;
+
+	/* Obtain the number of the currently executing interrupt. Interrupt Program
+	 * Status Register (IPSR) holds the exception number of the currently-executing
+	 * exception or zero for Thread mode.*/
+	__asm volatile( "mrs %0, ipsr" : "=r"( ulCurrentInterrupt ) :: "memory" );
+
+	if( ulCurrentInterrupt == 0 )
+	{
+		xReturn = pdFALSE;
+	}
+	else
+	{
+		xReturn = pdTRUE;
+	}
+
+	return xReturn;
+}
 /*-----------------------------------------------------------*/

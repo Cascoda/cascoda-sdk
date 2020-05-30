@@ -25,7 +25,7 @@ void BSP_WaitUs(u32_t us);
 
 /**
  * \brief This function will be called repeatedly when the Baremetal drivers
- * are blocking & waiting (eg. TIME_WaitTicks or WAIT_Callback), in case the
+ * are blocking & waiting (eg. WAIT_ms or WAIT_Callback), in case the
  * BSP needs to do any system maintenance or wants to reduce power consumption.
  *
  */
@@ -139,5 +139,11 @@ u8_t BSP_SPIPushByte(u8_t OutByte);
  *
  */
 u8_t BSP_SPIPopByte(u8_t *InByte);
+
+/**
+ * \brief Is the code running in an interrupt context?
+ * @return true if in interrupt context
+ */
+bool BSP_IsInsideInterrupt(void);
 
 #endif // CASCODA_INTERFACE_CORE_H

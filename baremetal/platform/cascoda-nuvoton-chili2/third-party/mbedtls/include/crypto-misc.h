@@ -18,8 +18,8 @@
 #define MBED_CRYPTO_MISC_H
 
 #include <stdbool.h>
-#include "partition_M2351.h"
 #include "M2351.h"
+#include "partition_M2351.h"
 
 /* The pointer to the correct (secure or non-secure) CRPT module is determined at link-time. This declaration
  * is how the symbol gets passed along to MBEDTLS. The alternative to this is moving MBEDTLS higher up
@@ -27,6 +27,8 @@
  * binaries into the library.
  */
 extern CRPT_T *CRPT_dyn;
+
+#define MBEDTLS_CONFIG_HW_SUPPORT
 
 /* Policy for configuring secure attribute of CRYPTO/CRPT module:
  *
@@ -38,15 +40,15 @@ extern CRPT_T *CRPT_dyn;
  * 4. On non-secure target, if TRNG or mbedtls H/W support is enabled, CRYPTO/CRPT must configure to non-secure.
  */
 #if DEVICE_TRNG || defined(MBEDTLS_CONFIG_HW_SUPPORT)
-    #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-        #if defined(SCU_INIT_PNSSET1_VAL) && (SCU_INIT_PNSSET1_VAL & (1 << 18))
-            #error("CRYPTO/CRPT must configure to secure for secure target which supports TRNG or mbedtls H/W")
-        #endif
-    #else
-        #if (! defined(SCU_INIT_PNSSET1_VAL)) || (! (SCU_INIT_PNSSET1_VAL & (1 << 18)))
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#if defined(SCU_INIT_PNSSET1_VAL) && (SCU_INIT_PNSSET1_VAL & (1 << 18))
+#error("CRYPTO/CRPT must configure to secure for secure target which supports TRNG or mbedtls H/W")
+#endif
+#else
+#if (!defined(SCU_INIT_PNSSET1_VAL)) || (!(SCU_INIT_PNSSET1_VAL & (1 << 18)))
 //            #error("CRYPTO/CRPT must configure to non-secure for non-secure target which supports TRNG or mbedtls H/W")
-        #endif
-    #endif
+#endif
+#endif
 #endif
 
 #if DEVICE_TRNG || defined(MBEDTLS_CONFIG_HW_SUPPORT)
@@ -58,8 +60,13 @@ extern "C" {
 /* Get Crypto module base dependent on security state */
 __STATIC_INLINE CRPT_T *CRYPTO_MODBASE(void)
 {
-    return CRPT_dyn;
+	return CRPT_dyn;
 }
+
+/** Platform calls these to force linker to include mbedtls plat objects */
+void targetm2351_aes_register(void);
+void targetm2351_ecp_register(void);
+void targetm2351_hwpoll_register(void);
 
 /* Init/Uninit crypto module */
 void crypto_init(void);
@@ -76,26 +83,20 @@ void crypto_zeroize32(uint32_t *v, size_t n);
  *
  * \note            "acquire"/"release" must be paired.
  *
- * \note            Recursive "acquire" is allowed because the underlying synchronization
- *                  primitive mutex supports it.
+ * \note            Recursive "acquire" is not allowed because the underlying synchronization
+ *                  primitive mutex does not support it.
  */
 void crypto_aes_acquire(void);
 void crypto_aes_release(void);
-void crypto_des_acquire(void);
-void crypto_des_release(void);
-int crypto_ecc_acquire(void);
-int crypto_ecc_release(void);
+void crypto_ecc_acquire(void);
+void crypto_ecc_release(void);
 
-/* Acquire/release ownership of crypto sub-module
- *
- * \return          false if crytpo sub-module is held by another thread or
- *                  another mbedtls context.
- *                  true if successful
- *
- * \note            Successful "try_acquire" and "release" must be paired.
+/**
+ * Recursive counter for ecc initialisation
+ * @return
  */
-bool crypto_sha_try_acquire(void);
-void crypto_sha_release(void);
+int crypto_ecc_init(void);
+int crypto_ecc_deinit(void);
 
 /* Flow control between crypto/xxx start and crypto/xxx ISR
  *
@@ -116,11 +117,8 @@ void crypto_prng_prestart(void);
 bool crypto_prng_wait(void);
 void crypto_aes_prestart(void);
 bool crypto_aes_wait(void);
-void crypto_des_prestart(void);
-bool crypto_des_wait(void);
 void crypto_ecc_prestart(void);
 bool crypto_ecc_wait(void);
-
 
 /* Check if buffer can be used for crypto DMA. It has the following requirements:
  * (1) Word-aligned buffer base address
@@ -136,6 +134,6 @@ bool crypto_dma_buffs_overlap(const void *in_buff, size_t in_buff_size, const vo
 }
 #endif
 
-#endif  /* #if DEVICE_TRNG || defined(MBEDTLS_CONFIG_HW_SUPPORT) */
+#endif /* #if DEVICE_TRNG || defined(MBEDTLS_CONFIG_HW_SUPPORT) */
 
 #endif

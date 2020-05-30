@@ -46,8 +46,8 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
@@ -62,6 +62,12 @@
 #define CLKCFG_ENHXT 0x02
 #define CLKCFG_ENHIRC 0x04
 #define CLKCFG_ENHIRC48 0x08
+
+#ifndef CUSTOM_PARTITION_H //Should be defined in custom partition file for nonsecure part
+#error Custom partition_M2351.h not properly configured. This error exists to catch a common \
+       misconfiguration problem - make sure the custom partition_M2351.h is being correctly \
+       included. This should define the CUSTOM_PARTITION_H preprocessor macro.
+#endif
 
 void CHILI_SystemReInit()
 {
@@ -342,8 +348,14 @@ void CHILI_GPIOEnableInterrupts(void)
 {
 	/* RFIRQ */
 	GPIO_EnableInt(ZIG_IRQB_PORT, ZIG_IRQB_PIN, GPIO_INT_FALLING);
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-	TZ_NVIC_EnableIRQ_NS(ZIG_IRQB_IRQn);
-#endif
 	NVIC_EnableIRQ(ZIG_IRQB_IRQn);
+}
+
+CA_TOOL_WEAK int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
+{
+	(void)n32In_R0;
+	(void)n32In_R1;
+	(void)pn32Out_R0;
+
+	return 0;
 }

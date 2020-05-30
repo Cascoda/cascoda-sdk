@@ -179,11 +179,19 @@ enum mac_cmd_frame_id
 	CMD_GTS_REQ            = 9
 };
 
+/** Association status (see 802.15.4-2006 Table 83) */
+enum mac_association_status
+{
+	ASSOC_STATUS_SUCCESS       = 0x00,
+	ASSOC_STATUS_AT_CAPACITY   = 0x01,
+	ASSOC_STATUS_ACCESS_DENIED = 0x02,
+};
+
 /** Reason for disassociation (see 802.15.4-2006 7.3.3.2) */
 enum mac_disassociate_reason
 {
-	DISASSOC_REASON_EVICT, //!< The coordinator wishes the device to leave the PAN
-	DISASSOC_REASON_LEAVE  //!< The device wishes to leave the PAN
+	DISASSOC_REASON_EVICT = 1, //!< The coordinator wishes the device to leave the PAN
+	DISASSOC_REASON_LEAVE = 2  //!< The device wishes to leave the PAN
 };
 
 /** PHY/MAC PIB Attribute Enumerations */

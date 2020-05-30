@@ -17,8 +17,8 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_tasklet.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_tasklet.h"
 #include "ca821x_api.h"
 // Insert Application-Specific Includes here
 #include "ot_api_headers.h"

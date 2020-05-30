@@ -11,9 +11,10 @@ if(TARGET cascoda-bm-plat)
 	return()
 endif()
 
-# define the 'interface' library that makes up the bm platform.
-add_library(cascoda-bm-plat INTERFACE)
-
+option( CASCODA_BUILD_DUMMY "Build the dummy baremetal layer for posix" OFF)
+if(NOT CASCODA_BUILD_DUMMY)
+	return()
+endif()
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy
@@ -26,11 +27,5 @@ target_link_libraries(cascoda-dummy
 		cascoda-bm
 	)
 
-target_include_directories(cascoda-dummy
-	PUBLIC
-		${PROJECT_SOURCE_DIR}/port/include
-		${PROJECT_BINARY_DIR}/port/include
-	)
-
 # Export the chili2 platform as cascoda-bm-plat
-target_link_libraries(cascoda-bm-plat INTERFACE cascoda-dummy)
+add_library(cascoda-bm-plat ALIAS cascoda-dummy)

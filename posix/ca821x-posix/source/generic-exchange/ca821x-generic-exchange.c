@@ -38,6 +38,7 @@
 
 #include "ca821x-posix/ca821x-posix.h"
 #include "ca821x-generic-exchange.h"
+#include "ca821x-posix-evbme-internal.h"
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
 
@@ -81,6 +82,11 @@ static int ca821x_run_downstream_dispatch()
 	{
 		priv = pDeviceRef->exchange_context;
 		rval = ca821x_downstream_dispatch(buffer, len, pDeviceRef);
+
+		if (rval != CA_ERROR_SUCCESS)
+		{
+			rval = ca821x_evbme_dispatch(buffer, len, pDeviceRef);
+		}
 
 		if (rval != CA_ERROR_SUCCESS && priv->user_callback)
 		{
@@ -181,8 +187,6 @@ ca_error init_generic(struct ca821x_dev *pDeviceRef)
 	ca_log_debg("Initialising generic part of exchange...");
 
 	init_generic_statics();
-
-	pDeviceRef->ca821x_api_downstream = ca821x_exchange_commands;
 
 	pthread_mutex_init(&(base->flag_mutex), NULL);
 	pthread_mutex_init(&(base->sync_mutex), NULL);
@@ -509,4 +513,9 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 		pthread_mutex_unlock(&(priv->sync_mutex));
 
 	return CA_ERROR_SUCCESS;
+}
+
+ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+{
+	return ca821x_exchange_commands(buf, len, response, pDeviceRef);
 }

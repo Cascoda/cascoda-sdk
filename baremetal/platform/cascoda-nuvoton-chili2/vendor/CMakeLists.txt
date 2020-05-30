@@ -69,37 +69,32 @@ target_include_directories(nuvoton-vendor-m2351
 		${PROJECT_SOURCE_DIR}/M2351Library/CMSIS/Include
 	)
 
-add_library(nuvoton-vendor-m2351-secure INTERFACE)
-
-target_sources(nuvoton-vendor-m2351-secure INTERFACE
+add_library(nuvoton-vendor-m2351-secure OBJECT
 	${VENDOR_SOURCES}
 	${VENDOR_SECURE_SOURCES}
 )
 
 target_include_directories(nuvoton-vendor-m2351-secure
-	INTERFACE
+	PUBLIC
 		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Include
 		${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/inc
 		${PROJECT_SOURCE_DIR}/M2351Library/CMSIS/Include
 	)
 
-target_compile_options(nuvoton-vendor-m2351-secure INTERFACE -mcmse)
-target_link_options(nuvoton-vendor-m2351-secure INTERFACE -mcmse)
+cascoda_tz_build(nuvoton-vendor-m2351-secure)
 
-add_library(nuvoton-vendor-m2351-nonsecure INTERFACE)
-
-target_sources(nuvoton-vendor-m2351-nonsecure INTERFACE
+add_library(nuvoton-vendor-m2351-nonsecure OBJECT
 	${VENDOR_SOURCES}
 )
 
 target_include_directories(nuvoton-vendor-m2351-nonsecure
-	INTERFACE
+	PUBLIC
 		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Include
 		${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/inc
 		${PROJECT_SOURCE_DIR}/M2351Library/CMSIS/Include
 	)
 
 target_link_libraries(nuvoton-vendor-m2351 PUBLIC nuvoton-vendor-m2351-mkrom)
-target_link_libraries(nuvoton-vendor-m2351-secure INTERFACE nuvoton-vendor-m2351-mkrom)
-target_link_libraries(nuvoton-vendor-m2351-nonsecure INTERFACE nuvoton-vendor-m2351-mkrom)
+target_link_libraries(nuvoton-vendor-m2351-secure PUBLIC nuvoton-vendor-m2351-mkrom)
+target_link_libraries(nuvoton-vendor-m2351-nonsecure PUBLIC nuvoton-vendor-m2351-mkrom)
 

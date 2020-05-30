@@ -33,8 +33,9 @@
 /* Cascoda */
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "sif_si7021.h"
 
@@ -68,7 +69,7 @@ u8_t SIF_SI7021_ReadTemperature(void)
 
 	/* wait for conversion time */
 	if (SIF_SI7021_MODE == SIF_SI7021_MODE_TCONV_WAIT)
-		TIME_WaitTicks(SIF_SI7021_TCONV_MAX_TEMP);
+		WAIT_ms(SIF_SI7021_TCONV_MAX_TEMP);
 
 	/* read data */
 	tstart = TIME_ReadAbsoluteTime();
@@ -137,7 +138,7 @@ u8_t SIF_SI7021_ReadHumidity(void)
 
 	/* wait for conversion time */
 	if (SIF_SI7021_MODE == SIF_SI7021_MODE_TCONV_WAIT)
-		TIME_WaitTicks(SIF_SI7021_TCONV_MAX_HUM);
+		WAIT_ms(SIF_SI7021_TCONV_MAX_HUM);
 
 	/* read data */
 	tstart = TIME_ReadAbsoluteTime();
@@ -192,7 +193,7 @@ void SIF_SI7021_Reset(void)
 	{
 		ca_log_warn("SIF_SI7021_Reset() Error: bytes written: %02X", num);
 	}
-	TIME_WaitTicks(20);
+	WAIT_ms(20);
 }
 
 u8_t SIF_SI7021_ReadID(void)

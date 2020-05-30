@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief  EvaBoard Management Entity (EVBME) Definitions/Declarations
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -29,6 +25,11 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * @brief  EvaBoard Management Entity (EVBME) Definitions/Declarations
+ */
+
 #include "cascoda-bm/cascoda_bm.h"
 #include "ca821x_api.h"
 
@@ -56,7 +57,7 @@ enum powerdown_mode
 extern u8_t EVBME_HasReset;
 extern u8_t EVBME_UseMAC;
 
-extern void (*EVBME_Message)(char *message, size_t len, struct ca821x_dev *pDeviceRef);
+extern void (*EVBME_Message)(char *message, size_t len);
 extern void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
 extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 
@@ -146,6 +147,23 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
  *******************************************************************************
  ******************************************************************************/
 void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Get an openthread-specific EVBME attribute.
+ *******************************************************************************
+ * Only valid when openthread is being used, otherwise will return CA_ERROR_UNKNOWN.
+ *
+ * @param aAttrib The attribute to get
+ * @param[in,out] aOutBufLen out:The length of the attribute data in octets, in: the maximum length of the attribute value in octets
+ * @param[out] aOutBuf The buffer to fill with attribute data
+ *
+ * @returns Status of the command
+ * @retval CA_ERROR_SUCCESS The output buffer is filled with the attribute data
+ * @retval CA_ERROR_UNKNOWN The attribute was not recognised for this system
+ * @retval CA_ERROR_NO_BUFFER The output buffer isn't big enough to store the attribute
+ ******************************************************************************/
+ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, uint8_t *aOutBuf);
 
 #ifdef __cplusplus
 }

@@ -34,8 +34,9 @@
 
 #include "cascoda-bm/cascoda_interface_core.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "mac_messages.h"
 
@@ -514,7 +515,7 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 			status = CA_ERROR_SUCCESS;
 			break;
 		}
-		TIME_WaitTicks(1);
+		WAIT_ms(1);
 	} while ((TIME_ReadAbsoluteTime() - startticks) < SPI_T_TIMEOUT);
 
 	BSP_DisableRFIRQ();

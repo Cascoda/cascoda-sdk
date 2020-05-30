@@ -40,12 +40,10 @@ configure_file(
 # Main library config ---------------------------------------------------------
 add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
-	${PROJECT_SOURCE_DIR}/source/cascoda_hash.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
-	${PROJECT_SOURCE_DIR}/source/cascoda_log.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_os.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
-	${PROJECT_SOURCE_DIR}/source/cascoda_tasklet.c
 	)
 
 target_link_libraries(cascoda-bm
@@ -62,5 +60,3 @@ target_include_directories( cascoda-bm
 
 cascoda_use_warnings(cascoda-bm)
 
-# Add tests -------------------------------------------------------------------
-add_subdirectory(test)

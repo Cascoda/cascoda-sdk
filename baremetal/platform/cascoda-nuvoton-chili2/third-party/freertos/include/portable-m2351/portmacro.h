@@ -103,6 +103,8 @@ typedef unsigned long										UBaseType_t;
 /**
  * @brief Extern declarations.
  */
+extern BaseType_t xPortIsInsideInterrupt( void );
+
 extern void vPortYield( void ) /* PRIVILEGED_FUNCTION */;
 
 extern void vPortEnterCritical( void ) /* PRIVILEGED_FUNCTION */;

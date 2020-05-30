@@ -29,16 +29,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <time.h>
+
 #include "ca821x-posix/ca821x-posix.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x-generic-exchange.h"
+#include "ca821x-posix-util-internal.h"
 #include "kernel-exchange.h"
 #include "uart-exchange.h"
 #include "usb-exchange.h"
 
+/** Static start time of program */
+static struct timespec sStartTime = {0, 0};
+
+uint32_t TIME_ReadAbsoluteTime(void)
+{
+	struct timespec curTime = {0, 0};
+	uint32_t        time_ms;
+
+	clock_gettime(CLOCK_MONOTONIC, &curTime);
+	curTime = time_sub(&curTime, &sStartTime);
+
+	time_ms = (int32_t)(curTime.tv_sec * 1000);
+	time_ms += (int32_t)(curTime.tv_nsec / 1000000);
+
+	return time_ms;
+}
+
+static void initTime(void)
+{
+	if (sStartTime.tv_sec == 0 && sStartTime.tv_nsec == 0)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &sStartTime);
+	}
+}
+
 ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler)
 {
 	int error = 0;
-	error     = ca821x_api_init(pDeviceRef);
+
+	initTime();
+	error = ca821x_api_init(pDeviceRef);
 	if (error)
 		goto exit;
 #ifdef _WIN32
@@ -115,4 +146,38 @@ ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef)
 	}
 
 	return error;
+}
+
+struct timespec time_sub(const struct timespec *t1, const struct timespec *t2)
+{
+	struct timespec curTime = {t1->tv_sec, t1->tv_nsec};
+	//Get time difference
+	curTime.tv_sec -= t2->tv_sec;
+	curTime.tv_nsec -= t2->tv_nsec;
+
+	// Normalize the struct in case the subtraction made negative nsec
+	if (curTime.tv_nsec < 0)
+	{
+		curTime.tv_nsec += 1000000000L;
+		curTime.tv_sec -= 1;
+	}
+
+	return curTime;
+}
+
+int time_cmp(const struct timespec *t1, const struct timespec *t2)
+{
+	if (t1->tv_sec == t2->tv_sec && t1->tv_nsec == t2->tv_nsec)
+		return 0;
+
+	if (t1->tv_sec < t2->tv_sec)
+		return -1;
+	if (t1->tv_sec > t2->tv_sec)
+		return 1;
+	if (t1->tv_nsec < t2->tv_nsec)
+		return -1;
+	if (t1->tv_nsec > t2->tv_nsec)
+		return 1;
+
+	return 0;
 }

@@ -154,6 +154,20 @@ otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength);
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
 
 /**
+ * Helper function to print the Thread Joiner credentials (for instance, upon boot).
+ *
+ * This function prints the Thread Joiner credentials using printf. It also handles leaving the
+ * interface active in the case of USB, where going to sleep will kill the USB interface and prevent
+ * the information from being read. This function will not print the credentials if the device is
+ * already commissioned.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param aInstance The openthread instance
+ * @param aMaxWaitMs The maximum time to stay awake to allow credentials to be read (USB only). Only required for devices that sleep.
+ */
+otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs);
+
+/**
  * Helper function to get the joiner credential of this device.
  *
  * @param aInstance The openthread instance

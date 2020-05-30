@@ -38,9 +38,9 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_tasklet.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_tasklet.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
 #include "openthread/cli.h"
@@ -367,18 +367,17 @@ exit:
 /** Server: Handle a discover message by printing it and sending response */
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
-	otInstance *OT_INSTANCE     = aContext;
+	otError             error           = OT_ERROR_NONE;
+	otMessage *         responseMessage = NULL;
+	otInstance *        OT_INSTANCE     = aContext;
+	const otCoapOption *option;
+	char                uri_query[6];
+	bool                valid_query = false;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
 	// Find the URI Query
-	const otCoapOption *option;
-	char                uri_query[6];
-	bool                valid_query = false;
-
 	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
 	{
 		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength <= 6)

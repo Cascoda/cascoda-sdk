@@ -38,7 +38,9 @@ static int fd[2];
 
 void selfpipe_init(void)
 {
-	pipe2(fd, O_NONBLOCK);
+	pipe(fd);
+	fcntl(fd[0], F_SETFL, O_NONBLOCK);
+	fcntl(fd[1], F_SETFL, O_NONBLOCK);
 }
 
 void selfpipe_push(void)

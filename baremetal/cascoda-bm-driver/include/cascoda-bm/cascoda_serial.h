@@ -25,6 +25,10 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * @brief  Function definitions for communicating with a host using UART/USB
+ */
 
 #ifndef CASCODA_SERIAL_H
 #define CASCODA_SERIAL_H
@@ -112,10 +116,9 @@ void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
  *******************************************************************************
  * \param pBuffer - Pointer to Character Buffer
  * \param Count - Number of Characters
- * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
+void EVBME_Message_USB(char *pBuffer, size_t Count);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -123,10 +126,9 @@ void EVBME_Message_USB(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRe
  *******************************************************************************
  * \param pBuffer - Pointer to Character Buffer
  * \param Count - Number of Characters
- * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void EVBME_Message_UART(char *pBuffer, size_t Count, struct ca821x_dev *pDeviceRef);
+void EVBME_Message_UART(char *pBuffer, size_t Count);
 #if defined(USE_UART)
 void SerialSendRxRdy(void);
 void SerialReadComplete(void);

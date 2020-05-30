@@ -45,7 +45,11 @@ extern "C" {
 /** EVBME Command IDs */
 enum evbme_command_ids
 {
-	EVBME_SET_REQUEST        = 0x5F, //!< M->S Set an EVBME parameter
+	EVBME_GET_CONFIRM = 0x5C, //!< M<-S Response containing EVBME parameter data (sync resp)
+	EVBME_GET_REQUEST = 0x5D, //!< M->S Get an EVBME parameter (sync req)
+	EVBME_SET_CONFIRM = 0x5E, //!< M<-S Response including status for EVBME set (sync resp)
+	EVBME_SET_REQUEST = 0x5F, //!< M->S Set an EVBME parameter (sync req)
+
 	EVBME_GUI_CONNECTED      = 0x81, //!< M->S Notification from host that connection is established
 	EVBME_GUI_DISCONNECTED   = 0x82, //!< M->S Notification from host that connection is about to be terminated
 	EVBME_MESSAGE_INDICATION = 0xA0, //!< M<-S Text message to be printed by host
@@ -56,12 +60,19 @@ enum evbme_command_ids
 	EVBME_RXRDY = 0xAA, //!< M<>S RXRDY signal, used for interfaces without built in flow control like raw UART
 };
 
-/** EVBME attribute ids for use with EVBME_SET_REQUEST*/
+/** EVBME attribute ids for use with EVBME_SET_REQUEST and EVBME_GET_REQUEST*/
 enum evbme_attribute
 {
-	EVBME_RESETRF  = 0x00,
-	EVBME_CFGPINS  = 0x01,
-	EVBME_WAKEUPRF = 0x02
+	EVBME_RESETRF  = 0x00, //!< ResetRF - Write only
+	EVBME_CFGPINS  = 0x01, //!< CfgPins - Write only
+	EVBME_WAKEUPRF = 0x02, //!< Wakeup CA8211 - Write only
+
+	EVBME_VERSTRING   = 0x80, //!< Version string - Read only
+	EVBME_PLATSTRING  = 0x81, //!< Platform string - Read only
+	EVBME_APPSTRING   = 0x82, //!< Application string - Read only
+	EVBME_SERIALNO    = 0x83, //!< SerialNo 64 bit - Read only
+	EVBME_OT_EUI64    = 0x84, //!< Openthread EUI64 for commissioning - Read only
+	EVBME_OT_JOINCRED = 0x85, //!< Openthread joining credential for commissioning - Read only
 };
 
 /**
@@ -77,11 +88,20 @@ enum evbme_dfu_cmdid
 };
 
 /**
+ * Reboot mode
+ */
+enum evbme_dfu_rebootmode
+{
+	EVBME_DFU_REBOOT_APROM = 0, //!< Reboot into application
+	EVBME_DFU_REBOOT_DFU   = 1, //!< Reboot into Device Firmware Upgrade mode
+};
+
+/**
  * Reboot command to boot into DFU or APROM
  */
 struct evbme_dfu_reboot_cmd
 {
-	uint8_t rebootMode; //!< 0=APROM, 1=DFU
+	uint8_t rebootMode; //!< 0=APROM, 1=DFU - see evbme_dfu_rebootmode
 };
 
 /**
@@ -132,6 +152,36 @@ union evbme_dfu_sub_cmd
 	struct evbme_dfu_status_cmd status_cmd;
 };
 
+/**
+ * EVBME Get data confirm structure
+ */
+struct EVBME_GET_confirm
+{
+	uint8_t mStatus;
+	uint8_t mAttributeId;
+	uint8_t mAttributeLen;
+	uint8_t mAttribute[];
+};
+
+/**
+ * EVBME Get data request structure
+ */
+struct EVBME_GET_request
+{
+	uint8_t mAttributeId;
+};
+
+/**
+ * EVBME Set data confirm structure
+ */
+struct EVBME_SET_confirm
+{
+	uint8_t mStatus;
+};
+
+/**
+ * EVBME Set data request structure
+ */
 struct EVBME_SET_request
 {
 	uint8_t mAttributeId;
@@ -139,28 +189,34 @@ struct EVBME_SET_request
 	uint8_t mAttribute[];
 };
 
-struct EVBME_MESSAGE_INDICATION
+/**
+ * EVBME Message indication structure
+ */
+struct EVBME_MESSAGE_indication
 {
-	char mMessage[254];
+	char mMessage[1]; //Flexible length, but need at least one member
 };
 
 /** Structure of the EVBME_COMM_CHECK message that can be used to test comms by host. */
 struct EVBME_COMM_CHECK_request
 {
-	uint8_t mHandle;       //!< Handle identifying this comm check
-	uint8_t mDelay;        //!< Delay before sending responses
-	uint8_t mIndCount;     //!< Number of indications to send up
-	uint8_t mIndSize;      //!< Size of the indications to send
-	uint8_t mPayload[100]; //!< Redundant payload to stress the interface
+	uint8_t mHandle;    //!< Handle identifying this comm check
+	uint8_t mDelay;     //!< Delay before sending responses
+	uint8_t mIndCount;  //!< Number of indications to send up
+	uint8_t mIndSize;   //!< Size of the indications to send
+	uint8_t mPayload[]; //!< Redundant payload to stress the interface
 };
 
 /** Structure of the EVBME_COMM_INDICATION message that is used in response to EVBME_COMM_CHECK_request. */
-struct EVBME_COMM_INDICATION
+struct EVBME_COMM_indication
 {
 	uint8_t mHandle;    //!< Handle identifying this comm check
 	uint8_t mPayload[]; //!< Additional data to stress comm link as specified by mIndSize in EVBME_COMM_CHECK_request
 };
 
+/**
+ * EVBME DFU command holder, contains various sub-dfu commands from evbme_dfu_sub_cmd
+ */
 struct EVBME_DFU_cmd
 {
 	uint8_t                 mDfuSubCmdId; //!< DFU sub command ID evbme_dfu_cmdid
@@ -176,10 +232,13 @@ struct EVBME_Message
 	uint8_t mLen;   //!< Length of the EVBME command data
 	union
 	{
+		struct EVBME_GET_confirm        GET_confirm;
+		struct EVBME_GET_request        GET_request;
+		struct EVBME_SET_confirm        SET_confirm;
 		struct EVBME_SET_request        SET_request;
-		struct EVBME_MESSAGE_INDICATION MESSAGE_INDICATION;
+		struct EVBME_MESSAGE_indication MESSAGE_indication;
 		struct EVBME_COMM_CHECK_request COMM_CHECK_request;
-		struct EVBME_COMM_INDICATION    COMM_INDICATION;
+		struct EVBME_COMM_indication    COMM_indication;
 		struct EVBME_DFU_cmd            DFU_cmd;
 		uint8_t                         data[254]; //!< To access as raw data
 	} EVBME;

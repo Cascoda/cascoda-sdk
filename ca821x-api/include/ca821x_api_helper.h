@@ -46,7 +46,7 @@ extern "C" {
  * \return Pointer to the SecSpec
  *
  */
-struct SecSpec *MCPS_DATA_indication_get_secspec(struct MCPS_DATA_indication_pset *aPset);
+struct SecSpec *MCPS_DATA_indication_get_secspec(const struct MCPS_DATA_indication_pset *aPset);
 
 /**
  * \brief Get the short addresses in the beacon address list
@@ -60,8 +60,8 @@ struct SecSpec *MCPS_DATA_indication_get_secspec(struct MCPS_DATA_indication_pse
  * \return Pointer to the start of the ShortAddr list (even if length=0)
  *
  */
-struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                  aLength,
-                                                               struct MLME_BEACON_NOTIFY_indication_pset *aPset);
+struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                        aLength,
+                                                               const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**
  * \brief Get the ext addresses in the beacon address list
@@ -75,8 +75,8 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
  * \return Pointer to the start of the ExtAddr list (even if length=0)
  *
  */
-struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                  aLength,
-                                                           struct MLME_BEACON_NOTIFY_indication_pset *aPset);
+struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                        aLength,
+                                                           const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**
  * \brief Get the SDU from a beacon notify indication
@@ -90,7 +90,8 @@ struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *            
  * \return Pointer to the start of the SDU (even if length=0)
  *
  */
-uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, struct MLME_BEACON_NOTIFY_indication_pset *aPset);
+uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *                                        aLength,
+                                               const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**
  * \brief Get an indexed pandescriptor from an MLME-SCAN-confirm of a passive or active scan
@@ -104,7 +105,7 @@ uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, struct MLME_BEA
  * \return Pointer to the pandescriptor at that index (or NULL if out of range/invalid scan type)
  *
  */
-struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, struct MLME_SCAN_confirm_pset *aPset);
+struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, const struct MLME_SCAN_confirm_pset *aPset);
 
 /**
  * \brief Get a pointer to the start of the Key ID Lookup Descriptor list
@@ -121,7 +122,7 @@ struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, struct
  * \return Pointer to the start of the KeyIdLookupDescriptor list (even if length=0)
  *
  */
-struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(struct M_KeyTableEntryFixed *aKte);
+struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(const struct M_KeyTableEntryFixed *aKte);
 
 /**
  * \brief Get a pointer to the start of the Key Device Descriptor list
@@ -138,7 +139,7 @@ struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(struct M_KeyTableEn
  * \return Pointer to the start of the KeyDeviceDescriptor list (even if length=0)
  *
  */
-struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(struct M_KeyTableEntryFixed *aKte);
+struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(const struct M_KeyTableEntryFixed *aKte);
 
 /**
  * \brief Get a pointer to the start of the Key Usage Descriptor list
@@ -155,7 +156,7 @@ struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(struct M_KeyTableEntryF
  * \return Pointer to the start of the KeyUsageDescriptor list (even if length=0)
  *
  */
-struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(struct M_KeyTableEntryFixed *aKte);
+struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(const struct M_KeyTableEntryFixed *aKte);
 
 #ifdef __cplusplus
 }

@@ -106,4 +106,10 @@ void CHILI_SetWakeup(u8_t new_asleep);
 /** Configure the chili to boot from LDROM next time */
 void CHILI_SetLDROMBoot(void);
 
+/** Enable the TRNG Module Clock */
+void CHILI_EnableTRNGClk(void);
+
+/** Disable the TRNG Module Clock */
+void CHILI_DisableTRNGClk(void);
+
 #endif

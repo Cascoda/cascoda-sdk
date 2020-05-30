@@ -47,8 +47,8 @@
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 #include "cascoda_chili_gpio.h"
@@ -253,58 +253,34 @@ ca_error BSP_ModuleRegisterGPIOInput(struct gpio_input_args *args)
 			GPIO_EnableInt(port, ModulePinList[index].portbit, GPIO_INT_FALLING);
 		if (ModulePinList[index].portnum == PN_A)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPA_IRQn);
-#endif
 			NVIC_EnableIRQ(GPA_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_B)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPB_IRQn);
-#endif
 			NVIC_EnableIRQ(GPB_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_C)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPC_IRQn);
-#endif
 			NVIC_EnableIRQ(GPC_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_D)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPD_IRQn);
-#endif
 			NVIC_EnableIRQ(GPD_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_E)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPE_IRQn);
-#endif
 			NVIC_EnableIRQ(GPE_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_F)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPF_IRQn);
-#endif
 			NVIC_EnableIRQ(GPF_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_G)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPG_IRQn);
-#endif
 			NVIC_EnableIRQ(GPG_IRQn);
 		}
 		else if (ModulePinList[index].portnum == PN_H)
 		{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-			TZ_NVIC_EnableIRQ_NS(GPH_IRQn);
-#endif
 			NVIC_EnableIRQ(GPH_IRQn);
 		}
 	}

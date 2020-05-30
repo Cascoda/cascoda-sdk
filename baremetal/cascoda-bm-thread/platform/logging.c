@@ -34,8 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cascoda-bm/cascoda_time.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_time.h"
 
 #include "openthread/instance.h"
 #include "openthread/platform/logging.h"

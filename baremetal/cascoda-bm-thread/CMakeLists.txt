@@ -25,7 +25,6 @@ target_link_libraries(ca821x-openthread-bm-plat
 target_include_directories(ca821x-openthread-bm-plat
 	PRIVATE
 		${openthread_SOURCE_DIR}/src/core
-		${openthread_BINARY_DIR}/include
 		${PROJECT_SOURCE_DIR}/platform
 	PUBLIC
 		${openthread_SOURCE_DIR}/include
@@ -55,24 +54,24 @@ target_link_libraries(ca821x-openthread-bm-mtd
 
 # Test app config -------------------------------------------------------------
 if(CASCODA_OPENTHREAD_FTD)
-	add_executable(cliapp-bm
+	add_executable(ot-cli
 		${PROJECT_SOURCE_DIR}/example/thread_bm.c
 		${PROJECT_SOURCE_DIR}/example/sensordemo.c
 		)
-	target_include_directories(cliapp-bm
+	target_include_directories(ot-cli
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
 		)
-	target_link_libraries(cliapp-bm openthread-cli-ftd ca821x-openthread-bm-ftd cascoda-bm-plat tinycbor-master)
-	target_compile_definitions(cliapp-bm PRIVATE APP_NAME="OT CLIAPP" OT_CLI=1)
-	cascoda_make_binary(cliapp-bm)
+	target_link_libraries(ot-cli openthread-cli-ftd ca821x-openthread-bm-ftd tinycbor-master)
+	target_compile_definitions(ot-cli PRIVATE APP_NAME="OT CLI" OT_CLI=1)
+	cascoda_make_binary(ot-cli)
 
-	add_executable(ncpapp-bm
+	add_executable(ot-ncp
 		${PROJECT_SOURCE_DIR}/example/thread_bm.c
 		)
-	target_include_directories(ncpapp-bm
+	target_include_directories(ot-ncp
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
 		)
-	target_link_libraries(ncpapp-bm ca821x-openthread-bm-ftd openthread-ncp-ftd cascoda-bm-plat)
-	target_compile_definitions(ncpapp-bm PRIVATE APP_NAME="OT NCPAPP" OT_NCP=1)
-	cascoda_make_binary(ncpapp-bm)
+	target_link_libraries(ot-ncp ca821x-openthread-bm-ftd openthread-ncp-ftd)
+	target_compile_definitions(ot-ncp PRIVATE APP_NAME="OT NCP" OT_NCP=1)
+	cascoda_make_binary(ot-ncp)
 endif()
