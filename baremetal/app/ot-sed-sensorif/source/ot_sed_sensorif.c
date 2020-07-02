@@ -381,12 +381,10 @@ int main(void)
 	// Try to join network
 	do
 	{
-		otIp6SetEnabled(OT_INSTANCE, true);
 		otErr = PlatformTryJoin(&dev, OT_INSTANCE);
 		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
 			break;
 
-		otIp6SetEnabled(OT_INSTANCE, false);
 		PlatformSleep(30000);
 	} while (1);
 

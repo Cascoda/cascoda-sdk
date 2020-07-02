@@ -73,7 +73,7 @@ void WAIT_ms(uint32_t ticks);
  * \retval CA_ERROR_SPI_WAIT_TIMEOUT Timed out waiting for message
  *
  */
-ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef);
+ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Wait for an asynchronous callback to be triggered, with a given callback swapped in
@@ -108,7 +108,7 @@ ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContex
  */
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
-                           int                     aTimeoutMs,
+                           uint32_t                aTimeoutMs,
                            void *                  aCallbackContext,
                            struct ca821x_dev *     pDeviceRef);
 

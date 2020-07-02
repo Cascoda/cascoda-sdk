@@ -130,7 +130,19 @@ void EVBME_Message_USB(char *pBuffer, size_t Count);
  ******************************************************************************/
 void EVBME_Message_UART(char *pBuffer, size_t Count);
 #if defined(USE_UART)
+/**
+ * Send an EVBME_RXRDY message to signal receive success
+ */
 void SerialSendRxRdy(void);
+
+/**
+ * Send an EVBME_RXFAIL message to signal receive fail
+ */
+void SerialSendRxFail(void);
+
+/**
+ * For an asynchronous (DMA) read, call this when the DMA transfer is complete.
+ */
 void SerialReadComplete(void);
 #endif
 

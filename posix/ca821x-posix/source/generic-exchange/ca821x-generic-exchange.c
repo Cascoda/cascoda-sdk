@@ -150,7 +150,7 @@ ca_error ca821x_util_start_downstream_dispatch_worker()
 	dd_run_flag = 1;
 	pthread_mutex_unlock(&s_flag_mutex);
 
-	rval = pthread_create(&dd_thread, PTHREAD_CREATE_JOINABLE, &ca821x_downstream_dispatch_worker, NULL);
+	rval = pthread_create(&dd_thread, NULL, &ca821x_downstream_dispatch_worker, NULL);
 
 	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 }
@@ -193,14 +193,13 @@ ca_error init_generic(struct ca821x_dev *pDeviceRef)
 	pthread_mutex_init(&(base->in_queue_mutex), NULL);
 	pthread_mutex_init(&(base->out_queue_mutex), NULL);
 	pthread_cond_init(&(base->sync_cond), NULL);
-	pthread_cond_init(&(base->restore_cond), NULL);
 
 	pthread_mutex_lock(&base->flag_mutex);
 	base->io_thread_runflag = 1;
 	pthread_mutex_unlock(&base->flag_mutex);
 
 	ca_log_debg("Initialising io thread.");
-	if (pthread_create(&(base->io_thread), PTHREAD_CREATE_JOINABLE, &ca821x_io_worker, pDeviceRef))
+	if (pthread_create(&(base->io_thread), NULL, &ca821x_io_worker, pDeviceRef))
 	{
 		error = CA_ERROR_FAIL;
 		ca_log_warn("Failed to start io thread!");
@@ -293,76 +292,19 @@ exit:
 	return error;
 }
 
-static void *ca821x_recovery_worker(void *arg)
-{
-	struct ca821x_dev *          pDeviceRef = arg;
-	struct ca821x_exchange_base *priv       = pDeviceRef->exchange_context;
-
-	pthread_mutex_lock(&priv->flag_mutex);
-	priv->rescue_thread = pthread_self();
-	pthread_mutex_unlock(&priv->flag_mutex);
-
-	if (priv->error_callback)
-	{
-		priv->error_callback(priv->error, pDeviceRef);
-	}
-	else
-	{
-		abort();
-	}
-
-	pthread_mutex_lock(&priv->flag_mutex);
-	priv->restoreflag = 0;
-	pthread_cond_broadcast(&priv->restore_cond);
-	pthread_mutex_unlock(&priv->flag_mutex);
-
-	//Swap contents restore buffers back into queues:
-	flush_queue(&priv->out_buffer_queue, &priv->out_queue_mutex);
-
-	flush_queue(&priv->in_buffer_queue, &priv->in_queue_mutex);
-
-	//Signal the sync queue just in case there is something waiting
-	pthread_mutex_lock(&(priv->in_queue_mutex));
-	pthread_cond_signal(&priv->sync_cond);
-	pthread_mutex_unlock(&(priv->in_queue_mutex));
-
-	return NULL;
-}
-
 ca_error exchange_handle_error(ca_error error, struct ca821x_dev *pDeviceRef)
 {
 	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
-	int                          rval = 0;
 
-	priv->error = error;
+	ca_log_crit("Cascoda exchange failed with error %s", ca_error_str(error));
 
-	//Swap contents of queues into restore buffers:
-	reseat_queue(
-	    &priv->out_buffer_queue, &priv->restore_out_buffer_queue, &priv->out_queue_mutex, &priv->out_queue_mutex);
-
-	reseat_queue(&priv->in_buffer_queue, &priv->restore_in_buffer_queue, &priv->in_queue_mutex, &priv->in_queue_mutex);
-
-	pthread_mutex_lock(&priv->flag_mutex);
-	if (priv->restoreflag)
-		abort(); //Failed during recovery - give up
+	if (priv->error_callback)
+		priv->error_callback(error, pDeviceRef);
 	else
-		priv->restoreflag = 1;
-	pthread_mutex_unlock(&priv->flag_mutex);
-
-	if ((rval = pthread_mutex_trylock(&priv->sync_mutex)) == 0)
 	{
-		//No sync command, release
-		pthread_mutex_unlock(&priv->sync_mutex);
+		ca_log_crit("No error callback, aborting");
+		abort(); //No error callback, crash
 	}
-	else if (rval == EBUSY)
-	{
-		uint8_t buffer[] = {0};
-		//Push a fake response to unblock sync waiter
-		add_to_waiting_queue(
-		    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, 0, pDeviceRef);
-	}
-
-	pthread_create(&priv->rescue_thread, NULL, &ca821x_recovery_worker, pDeviceRef);
 
 	return CA_ERROR_SUCCESS;
 }
@@ -457,8 +399,7 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 	const uint8_t                isSynchronous = ((buf[0] & SPI_SYN) && response);
 	struct ca821x_exchange_base *priv          = pDeviceRef->exchange_context;
 	struct ca821x_dev *          ref_out;
-	size_t                       success    = 0;
-	uint8_t                      is_rescuer = 0;
+	size_t                       success = 0;
 
 	if (!generic_initialised)
 		return CA_ERROR_INVALID_STATE;
@@ -466,31 +407,11 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 	//Get sync responses from the in queue
 	//Send messages by adding them to the out queue
 
-	//If in error state, wait until restored
-	pthread_mutex_lock(&priv->flag_mutex);
-	if (priv->restoreflag && pthread_equal(priv->rescue_thread, pthread_self()))
-	{
-		is_rescuer = 1;
-	}
-	while (priv->restoreflag && !is_rescuer)
-	{
-		pthread_cond_wait(&priv->restore_cond, &priv->flag_mutex);
-	}
-	pthread_mutex_unlock(&priv->flag_mutex);
-
-	if (isSynchronous && !is_rescuer)
+	if (isSynchronous)
 		pthread_mutex_lock(&(priv->sync_mutex));
 
 	while (success == 0) //Retry loop
 	{
-		//If in error state, wait until restored
-		pthread_mutex_lock(&priv->flag_mutex);
-		while (priv->restoreflag && !is_rescuer)
-		{
-			pthread_cond_wait(&priv->restore_cond, &priv->flag_mutex);
-		}
-		pthread_mutex_unlock(&priv->flag_mutex);
-
 		add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, len, pDeviceRef);
 
 		if (priv->signal_func)
@@ -509,8 +430,7 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 	}
 
 	assert(ref_out == pDeviceRef);
-	if (!is_rescuer)
-		pthread_mutex_unlock(&(priv->sync_mutex));
+	pthread_mutex_unlock(&(priv->sync_mutex));
 
 	return CA_ERROR_SUCCESS;
 }

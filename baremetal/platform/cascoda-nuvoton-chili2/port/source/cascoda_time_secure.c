@@ -20,7 +20,7 @@ __NONSECURE_ENTRY u32_t BSP_ReadAbsoluteTime(void)
 	return AbsoluteTicks;
 } // End of BSP_ReadAbsoluteTime()
 
-__NONSECURE_ENTRY void CHILI_1msTick(void)
+void CHILI_1msTick(void)
 {
 	AbsoluteTicks++;
 } // End of CHILI_1msTick()

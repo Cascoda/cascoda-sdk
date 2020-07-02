@@ -9,7 +9,7 @@ add_executable(ot-eink-server
 	${PROJECT_SOURCE_DIR}/serverEink.c
 	)
 
-target_link_libraries(ot-eink-server ca821x-openthread-posix-ftd)
+target_link_libraries(ot-eink-server ca821x-openthread-posix-ftd openthread-cli-ftd)
 
 install(
 	TARGETS

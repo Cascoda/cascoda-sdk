@@ -57,7 +57,8 @@ enum evbme_command_ids
 	EVBME_COMM_INDICATION    = 0xA2, //!< M<-S Communication check indication from slave to master as requested
 	EVBME_DFU_CMD            = 0xA3, //!< M<>S DFU Commands for Device Firmware Upgrade in system
 
-	EVBME_RXRDY = 0xAA, //!< M<>S RXRDY signal, used for interfaces without built in flow control like raw UART
+	EVBME_RXRDY  = 0xAA, //!< M<>S RXRDY signal, used for interfaces without built in flow control like raw UART
+	EVBME_RXFAIL = 0xAB, //!< M<>S RXFAIL signal, used for interfaces without built in flow control like raw UART
 };
 
 /** EVBME attribute ids for use with EVBME_SET_REQUEST and EVBME_GET_REQUEST*/

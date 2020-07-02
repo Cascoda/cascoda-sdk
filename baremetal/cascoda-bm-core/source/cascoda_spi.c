@@ -40,7 +40,7 @@
 #include "ca821x_api.h"
 #include "mac_messages.h"
 
-#define MAX(x, y) (x > y ? x : y)
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 /******************************************************************************/
 /****** Global Variables for SPI Message Buffers                         ******/
@@ -575,7 +575,7 @@ exit:
 static void SPI_Error(ca_error errcode)
 {
 	BSP_SetRFSSBHigh();
-	ca_log_crit("SPI: Error code %02x", errcode);
+	ca_log_crit("SPI Error %s", ca_error_str(errcode));
 }
 
 void SPI_Initialise(void)

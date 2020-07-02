@@ -100,6 +100,9 @@ void CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize)
 	/* This needs to be fast, so BSP functions have been flattened out to direct register writes */
 	/* UART_RX_DMA_CHANNEL fixed to 0 */
 
+	/* Clear PDMA transfer done interrupt flag */
+	PDMA_CLR_TD_FLAG(PDMA0, (1 << UART_RX_DMA_CH));
+
 	/* Set request source; set basic mode. */
 	// PDMA_SetTransferMode(PDMA0, UART_RX_DMA_CH, PDMA_UART_RX, FALSE, 0);
 #if (UART_RX_DMA_CH < 4)
@@ -140,8 +143,8 @@ void CHILI_UARTFIFOIRQHandler(void)
 	/* line status - clear */
 	if (UART->INTSTS & UART_INTSTS_HWRLSIF_Msk)
 		UART->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk);
-	/* receive data available */
-	while (UART->INTSTS & UART_INTSTS_RDAINT_Msk) Serial_ReadInterface();
+	/* receive data available  & not switched to DMA*/
+	while ((UART->INTSTS & UART_INTSTS_RDAINT_Msk) && (UART->INTEN & UART_INTEN_RDAIEN_Msk)) Serial_ReadInterface();
 }
 
 void CHILI_UARTDMAIRQHandler(void)
@@ -167,6 +170,15 @@ void CHILI_UARTDMAIRQHandler(void)
 		/* finish serial access */
 		SerialReadComplete();
 	}
+}
+
+void CHILI_UARTDMAReadCancel(void)
+{
+	PDMA_CLR_TD_FLAG(PDMA0, (1 << UART_RX_DMA_CH));
+	/* Disable UART Rx PDMA function and enable UART Rx interrupt */
+	UART->INTEN &= ~UART_INTEN_RXPDMAEN_Msk;
+	UART->INTEN |= UART_INTEN_RDAIEN_Msk;
+	PDMA_DisableInt(PDMA0, UART_RX_DMA_CH, PDMA_INT_TRANS_DONE);
 }
 
 void CHILI_UARTWaitWhileBusy(void)

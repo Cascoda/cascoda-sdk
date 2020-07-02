@@ -232,7 +232,7 @@ void BSP_SerialWriteAll(u8_t *pBuffer, u32_t BufferSize);
  * \brief Read Character(s) from Serial
  *
  * \param pBuffer - Pointer to Data Buffer
- * \param BufferSize - Max. Characters to Read
+ * \param BufferSize - Max. Characters to Read, 0 to cancel read.
  *
  * \return Number of Characters placed in Buffer
  *
@@ -255,7 +255,7 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_
  * \brief Initialise the system for a given ca821x_dev
  *
  */
-void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchReadCallback);
+void BSP_Initialise(struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Enable or disable the usage of the external clock from the CA821x
@@ -526,7 +526,7 @@ void BSP_RTCConvertSecondsToDateAndTime(i64_t seconds, struct RTCDateAndTime *da
  * \return Unix time seconds
  *
  */
-i64_t BSP_RTCConvertDateAndTimeToSeconds(struct RTCDateAndTime dateandtime);
+i64_t BSP_RTCConvertDateAndTimeToSeconds(const struct RTCDateAndTime *dateandtime);
 
 /**
  * \brief Registers RTC IRQ function callback

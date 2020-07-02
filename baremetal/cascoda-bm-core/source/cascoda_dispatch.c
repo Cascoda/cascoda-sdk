@@ -364,7 +364,7 @@ static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *
 	}
 	else if (ret != CA_ERROR_SUCCESS)
 	{
-		ca_log_crit("Err %d dispatching on SPI %02x!", ret, aMessage->CommandId);
+		ca_log_crit("Err %s dispatching on SPI %02x!", ca_error_str(ret), aMessage->CommandId);
 	}
 }
 

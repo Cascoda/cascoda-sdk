@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "openthread/cli.h"
 #include "openthread/coap.h"
 #include "openthread/instance.h"
 #include "openthread/link.h"
@@ -70,15 +71,6 @@ struct connected_device
 static time_t                  TIMEOUT_S                                     = 600;
 static int                     free_device_idx                               = 0;
 static struct connected_device connected_devices[MAX_CONNECTED_DEVICES_LIST] = {};
-
-void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
-{
-	(void)aBuf;
-	(void)aBufLength;
-}
-void otPlatUartSendDone(void)
-{
-}
 
 void printf_time(const char *format, ...)
 {
@@ -317,18 +309,12 @@ int main(int argc, char *argv[])
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
+	otCliUartInit(OT_INSTANCE);
 
 	isRunning = 1;
 	signal(SIGINT, quit);
 
-	/* Hardcoded demo-specific config */
-	otMasterKey key = {0xa8, 0xcd, 0xb0, 0x47, 0x74, 0xf3, 0xec, 0x1f, 0xc8, 0xbf, 0x8f, 0xce, 0xbe, 0x51, 0x91, 0x7f};
 	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0x359b);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 23);
-	otThreadSetEnabled(OT_INSTANCE, true);
-
 	registerCoapResources(OT_INSTANCE);
 
 	printf_time("Initialisation complete.\r\n");

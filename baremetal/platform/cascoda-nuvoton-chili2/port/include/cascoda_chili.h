@@ -263,6 +263,11 @@ u32_t CHILI_UARTFIFORead(u8_t *pBuffer, u32_t BufferSize);
  ******************************************************************************/
 void CHILI_UARTDMASetupRead(u8_t *pBuffer, u32_t BufferSize);
 
+/**
+ * Cancel a configured DMA Read. Can be used if a DMA transaction times out.
+ */
+void CHILI_UARTDMAReadCancel(void);
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Interrupt Handler for UART FIFO

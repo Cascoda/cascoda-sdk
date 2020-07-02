@@ -175,7 +175,7 @@ wakeup_reason BSP_GetWakeupReason(void)
 	return WAKEUP_POWERON;
 }
 
-void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchRead)
+void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 {
 }
 

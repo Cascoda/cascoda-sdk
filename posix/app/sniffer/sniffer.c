@@ -532,7 +532,7 @@ static void printTime(FILE *out)
 {
 	struct timespec ts;
 	char            timeString[40];
-	long            secs;
+	time_t          secs;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	secs = ts.tv_sec;

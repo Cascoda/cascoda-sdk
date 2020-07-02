@@ -37,7 +37,7 @@
 #include "ca821x_api.h"
 #include "test15_4_phy_tests.h"
 
-#define M1P5(x) (x + (x >> 1)) /* multiply by 1.5 */
+#define M1P5(x) ((x) + ((x) >> 1)) /* multiply by 1.5 */
 
 /******************************************************************************/
 /****** Global Variables used commonly                                   ******/
@@ -298,8 +298,6 @@ void PHYTestReceivePacketPER(struct ca821x_dev *pDeviceRef)
 	{
 		missed_last = 0; /* last packet received */
 	}
-
-	missed_packet = 0;
 
 	if (PHY_TESTRES.PACKET_COUNT >= PHY_TESTPAR.NUMBEROFPKTS)
 	{

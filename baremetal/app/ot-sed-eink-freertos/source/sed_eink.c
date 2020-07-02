@@ -385,7 +385,9 @@ static void CommsTask(void *unused)
 
 void initialise_communications()
 {
-	u8_t StartupStatus;
+	u8_t             StartupStatus;
+	otLinkModeConfig linkMode = {0};
+
 	ca821x_api_init(&sDeviceRef);
 
 	// Initialisation of Chip and EVBME
@@ -393,29 +395,29 @@ void initialise_communications()
 
 	// Insert Application-Specific Initialisation Routines here
 	App_Initialise(StartupStatus, &sDeviceRef);
-
 	PlatformRadioInitWithDev(&sDeviceRef);
-
 	OT_INSTANCE = otInstanceInitSingle();
 
-	/* Setup Thread stack with hard coded demo parameters */
-	otLinkModeConfig linkMode    = {0};
+	// Print the joiner credentials, delaying for up to 5 seconds
+	PlatformPrintJoinerCredentials(&sDeviceRef, OT_INSTANCE, 5000);
+	// Try to join network
+	do
+	{
+		otError otErr = PlatformTryJoin(&sDeviceRef, OT_INSTANCE);
+		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
+			break;
+
+		PlatformSleep(30000);
+	} while (1);
+
 	linkMode.mRxOnWhenIdle       = true;
 	linkMode.mSecureDataRequests = true;
-
-	otMasterKey key = {0xa8, 0xcd, 0xb0, 0x47, 0x74, 0xf3, 0xec, 0x1f, 0xc8, 0xbf, 0x8f, 0xce, 0xbe, 0x51, 0x91, 0x7f};
 	otLinkSetPollPeriod(OT_INSTANCE, 5000);
-	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0x359b);
-	// Child times out after 5 seconds
 	otThreadSetChildTimeout(OT_INSTANCE, 5);
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 23);
+
 	otThreadSetEnabled(OT_INSTANCE, true);
-
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
-
 	otTaskletsProcess(OT_INSTANCE);
 }
 

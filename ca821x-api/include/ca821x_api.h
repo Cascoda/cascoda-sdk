@@ -132,6 +132,16 @@ struct ca821x_dev
 
 	//MAC Workarounds for V1.1 and MPW silicon (V0.x)
 	uint8_t MAC_MPW; /**< Flag to enable workarounds for ca8210 v0.x */
+
+#if CASCODA_MAC_BLACKLIST != 0
+	/** An array of addresses. Messages from any of these addresses
+     * will be filtered out. Works with short and extended addresses,
+     * and addresses with AddressMode == MAC_MODE_NO_ADDR are not in
+     * use. The PanID field is ignored.
+     */
+	struct MacAddr blacklist[CASCODA_MAC_BLACKLIST];
+
+#endif
 };
 
 /******************************************************************************/

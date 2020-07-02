@@ -232,7 +232,7 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	return status;
 }
 
-__NONSECURE_ENTRY ca_error SENSORIF_SPI_Write(u8_t out_data)
+ca_error SENSORIF_SPI_Write(u8_t out_data)
 {
 	if (!SPI_GET_TX_FIFO_FULL_FLAG(SENSORIF_SPIIF))
 	{

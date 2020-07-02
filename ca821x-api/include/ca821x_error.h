@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019, Cascoda Ltd.
+ *  Copyright (c) 2020, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,13 @@ typedef enum ca_error
 	CA_ERROR_SPI_SCAN_IN_PROGRESS   = 0xA2, ///< CA-821x is scanning and cannot be used
 	CA_ERROR_SPI_SEND_EXCHANGE_FAIL = 0xA3, ///< SPI Message failed to send
 } ca_error;
+
+/**
+ * Return a string representation of a ca_error.
+ * @param aError The ca_error code to be converted
+ * @return A const pointer to a string representation of the ca_error
+ */
+const char *ca_error_str(ca_error aError);
 
 /** Static assert code */
 #if __STDC_VERSION__ >= 201112L || __cplusplus >= 201103L || __cpp_static_assert >= 200410

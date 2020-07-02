@@ -35,6 +35,14 @@ add_cmocka_test(endian_test
 		ca821x-api
 	)
 
+add_cmocka_test(blacklist_test
+	SOURCES
+		${PROJECT_SOURCE_DIR}/blacklist_test.c
+	LINK_LIBRARIES
+		${CMOCKA_SHARED_LIBRARY}
+		ca821x-api
+	)
+
 cascoda_put_subdir(ca821x-api-test test)
 cascoda_put_subdir(helper_test test)
 cascoda_put_subdir(endian_test test)

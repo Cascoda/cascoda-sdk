@@ -53,7 +53,7 @@ extern "C" {
  * \brief Error callback
  *
  * Optional callback for the application layer
- * to handle any chip errors which would otherwise
+ * to handle any exchange errors which would otherwise
  * cause a crash.
  * 
  * \returns Cascoda error code
@@ -179,14 +179,6 @@ struct ca821x_exchange_base
 	struct buffer_queue *in_buffer_queue, *out_buffer_queue; //!< queues
 
 	struct EVBME_callbacks evbme_callbacks; //!< EVBME Callback struct
-
-	//Error handling
-	ca_error             error;         //!< Error code
-	int                  restoreflag;   //!< is currently recovering from error
-	pthread_t            rescue_thread; //!< recovery thread
-	pthread_cond_t       restore_cond;  //!< restoration condition variable
-	struct buffer_queue *restore_in_buffer_queue,
-	    *restore_out_buffer_queue; //!< working queues to properly restore comms
 };
 
 /** Single index in a singly-linked list of data buffers */

@@ -72,7 +72,7 @@ static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRe
 static ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef);
+static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, u32_t timeout_ms, struct ca821x_dev *pDeviceRef);
 static void     EVBME_WakeUpRF(void);
 
 #if defined(USE_USB) || defined(USE_UART)
@@ -707,7 +707,7 @@ static ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *pa
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  ******************************************************************************/
-static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, int timeout_ms, struct ca821x_dev *pDeviceRef)
+static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, u32_t timeout_ms, struct ca821x_dev *pDeviceRef)
 {
 	ca_error status = CA_ERROR_SUCCESS;
 
@@ -893,7 +893,7 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 	setbuf(stdout, NULL);
 #endif
 
-	BSP_Initialise(pDeviceRef, DISPATCH_ReadCA821x); // initialise chip
+	BSP_Initialise(pDeviceRef); // initialise chip
 
 	SPI_Initialise();
 

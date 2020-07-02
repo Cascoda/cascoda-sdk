@@ -58,9 +58,9 @@
        included. This should define the CUSTOM_PARTITION_H preprocessor macro.
 #endif
 
-volatile u8_t asleep = 0;
-volatile u8_t wakeup = 0;
-static u8_t   lxt_connected;
+static volatile u8_t asleep = 0;
+static volatile u8_t wakeup = 0;
+static u8_t          lxt_connected;
 
 // Table of registers & their names, used by the hard fault handler
 typedef struct
@@ -215,7 +215,7 @@ __NONSECURE_ENTRY void CHILI_SetClockExternalCFGXT1(u8_t clk_external)
 	SYS_LockReg();
 }
 
-__NONSECURE_ENTRY u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
+u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
 {
 	u8_t mask = 0;
 
@@ -1205,16 +1205,6 @@ __NONSECURE_ENTRY void CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0
 	GPIO_SET_DEBOUNCE_TIME(PH, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 }
 
-__NONSECURE_ENTRY void CHILI_SetAsleep(u8_t new_asleep)
-{
-	asleep = new_asleep;
-}
-
-__NONSECURE_ENTRY u8_t CHILI_GetAsleep()
-{
-	return asleep;
-}
-
 __NONSECURE_ENTRY void CHILI_SetWakeup(u8_t new_wakeup)
 {
 	wakeup = new_wakeup;
@@ -1223,6 +1213,16 @@ __NONSECURE_ENTRY void CHILI_SetWakeup(u8_t new_wakeup)
 __NONSECURE_ENTRY u8_t CHILI_GetWakeup()
 {
 	return wakeup;
+}
+
+__NONSECURE_ENTRY void CHILI_SetAsleep(u8_t new_asleep)
+{
+	asleep = new_asleep;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetAsleep()
+{
+	return asleep;
 }
 
 /** Wait until system is stable after potential usb plug-in */
@@ -1251,4 +1251,18 @@ __NONSECURE_ENTRY void BSP_WaitUs(u32_t us)
 		if (t1 > t2)
 			t2 += 1000;
 	} while (t2 - t1 < us);
+}
+
+__NONSECURE_ENTRY void CHILI_EnableTRNGClk(void)
+{
+	SYS_UnlockReg();
+	CLK_EnableModuleClock(TRNG_MODULE);
+	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void CHILI_DisableTRNGClk(void)
+{
+	SYS_UnlockReg();
+	CLK_DisableModuleClock(TRNG_MODULE);
+	SYS_LockReg();
 }

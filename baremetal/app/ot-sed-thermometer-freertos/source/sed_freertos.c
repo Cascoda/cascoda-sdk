@@ -69,6 +69,7 @@ SemaphoreHandle_t CommsMutexHandle;
  */
 static void App_Initialise(ca_error status)
 {
+	otLinkModeConfig         linkMode     = {0};
 	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
 	/* register LED_G */
 	BSP_ModuleRegisterGPIOOutput(special_pins.LED_GREEN, MODULE_PIN_TYPE_LED);
@@ -84,16 +85,20 @@ static void App_Initialise(ca_error status)
 	BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
 	BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
 
-	/* Setup Thread stack with hard coded demo parameters */
-	otLinkModeConfig linkMode = {0};
-	otMasterKey key = {0xca, 0x5c, 0x0d, 0xa5, 0x01, 0x07, 0xca, 0x5c, 0x0d, 0xaa, 0xca, 0xfe, 0xbe, 0xef, 0xde, 0xad};
-	otLinkSetPollPeriod(OT_INSTANCE, 5000);
-	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0xc0da);
+	// Print the joiner credentials, delaying for up to 5 seconds
+	PlatformPrintJoinerCredentials(&sDeviceRef, OT_INSTANCE, 5000);
+	// Try to join network
+	do
+	{
+		otError otErr = PlatformTryJoin(&sDeviceRef, OT_INSTANCE);
+		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
+			break;
+
+		PlatformSleep(30000);
+	} while (1);
+
 	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 22);
 	otThreadSetEnabled(OT_INSTANCE, true);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);

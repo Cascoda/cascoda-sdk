@@ -770,7 +770,7 @@ static otError sendKeepAlive(void)
 
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleKeepAliveResponse, NULL);
-	ca_log_info("Sent keep alive, error: %d\r\n", error);
+	ca_log_info("Sent keep alive, error: %s\r\n", otThreadErrorToString(error));
 	previousKeepAliveAcknowledged = false;
 
 exit:

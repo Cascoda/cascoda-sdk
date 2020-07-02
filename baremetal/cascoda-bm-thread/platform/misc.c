@@ -26,6 +26,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <string.h>
 
 #include "openthread/dataset.h"
@@ -165,10 +166,42 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance)
 	return joiner_credential;
 }
 
+/**
+ * DEVELOPMENT ONLY function to inject credentials into a baremetal platform at build time.
+ * @param aInstance Openthread instance
+ * @return ca_error
+ * @retval CA_ERROR_SUCCESS Successfully injected credentials
+ * @retval CA_ERROR_NOT_FOUND Credentials were not configured for injection
+ */
+static otError PlatformInjectCreds(otInstance *aInstance)
+{
+#ifdef INJECT_CREDS
+	otMasterKey key = {INJECT_MASTERKEY};
+
+	assert(otLinkSetPanId(aInstance, INJECT_PANID) == OT_ERROR_NONE);
+	assert(otLinkSetChannel(aInstance, INJECT_CHANNEL) == OT_ERROR_NONE);
+	assert(otThreadSetMasterKey(aInstance, &key) == OT_ERROR_NONE);
+
+	ca_log_warn("Injecting openthread credentials! Not for production use!");
+
+	return CA_ERROR_SUCCESS;
+#else
+	(void)aInstance;
+	return CA_ERROR_NOT_FOUND;
+#endif
+}
+
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 {
 	struct join_status join_status = {0, 0};
 	const char *       aPskd;
+
+	otIp6SetEnabled(OT_INSTANCE, true);
+
+	if (PlatformInjectCreds(aInstance) == CA_ERROR_SUCCESS)
+	{
+		return OT_ERROR_ALREADY;
+	}
 
 	if (otDatasetIsCommissioned(aInstance))
 	{
@@ -187,6 +220,9 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 		cascoda_io_handler(pDeviceRef);
 		otTaskletsProcess(OT_INSTANCE);
 	}
+
+	if (join_status.error)
+		otIp6SetEnabled(OT_INSTANCE, false);
 
 	//Report status
 	ca_log_info("Join complete with error %s", otThreadErrorToString(join_status.error));

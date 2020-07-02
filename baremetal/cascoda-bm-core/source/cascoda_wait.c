@@ -67,12 +67,12 @@ static ca_error WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRe
 }
 
 static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
-                                     int                        aTimeoutMs,
+                                     uint32_t                   aTimeoutMs,
                                      void *                     aCallbackContext,
                                      struct ca821x_dev *        pDeviceRef)
 {
 	ca_error status    = CA_ERROR_SUCCESS;
-	int      startTime = TIME_ReadAbsoluteTime();
+	uint32_t startTime = TIME_ReadAbsoluteTime();
 
 	//Strictly not re-entrant
 	if (sWaiting)
@@ -86,7 +86,7 @@ static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
 	sWaitCalled                       = false;
 	sCallbackContext                  = aCallbackContext;
 
-	for (int timepassed = 0; timepassed < aTimeoutMs; timepassed = TIME_ReadAbsoluteTime() - startTime)
+	for (uint32_t timepassed = 0; timepassed < aTimeoutMs; timepassed = TIME_ReadAbsoluteTime() - startTime)
 	{
 		status = DISPATCH_FromCA821x(pDeviceRef);
 		if (sWaitCalled || status == CA_ERROR_INVALID_STATE)
@@ -103,7 +103,7 @@ static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
 	return status;
 }
 
-ca_error WAIT_Callback(uint8_t aCommandId, int aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef)
+ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef)
 {
 	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
 	ca_error                   status      = CA_ERROR_FAIL;
@@ -121,7 +121,7 @@ exit:
 
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
-                           int                     aTimeoutMs,
+                           uint32_t                aTimeoutMs,
                            void *                  aCallbackContext,
                            struct ca821x_dev *     pDeviceRef)
 {

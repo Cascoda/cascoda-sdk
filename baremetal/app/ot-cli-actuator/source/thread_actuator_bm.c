@@ -66,16 +66,6 @@ int main(void)
 	PlatformRadioInitWithDev(&dev);
 	OT_INSTANCE = otInstanceInitSingle();
 
-	/* Setup Thread stack with hard coded demo parameters */
-	otLinkModeConfig linkMode = {true, true, true, true};
-	otMasterKey key = {0xca, 0x5c, 0x0d, 0xa5, 0x01, 0x07, 0xca, 0x5c, 0x0d, 0xaa, 0xca, 0xfe, 0xbe, 0xef, 0xde, 0xad};
-	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0xc0da);
-	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 22);
-	otThreadSetEnabled(OT_INSTANCE, true);
-
 	otCliUartInit(OT_INSTANCE);
 
 	sCliCommand.mCommand = handle_cli_actuatordemo;

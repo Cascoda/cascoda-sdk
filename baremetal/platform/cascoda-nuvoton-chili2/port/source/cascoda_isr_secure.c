@@ -37,8 +37,6 @@
 #include "cascoda_chili_gpio.h"
 #include "cascoda_secure.h"
 
-extern volatile u8_t asleep;
-
 __NONSECURE_ENTRY void cascoda_isr_secure_init(void)
 {
 	//This function is here to kick the linker, do not remove!
@@ -151,7 +149,7 @@ void RTC_IRQHandler(void)
 		CHILI_SetWakeup(1);
 
 		/* rtc can act as watchdog during powerdown */
-		if (asleep)
+		if (CHILI_GetAsleep())
 			WDTimeout = 1;
 		else
 			CHILI_RTCIRQHandler();
@@ -168,7 +166,7 @@ void TMR0_IRQHandler(void)
 	/* clear all timer interrupt status bits */
 	TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
 
-	if (!asleep)
+	if (!CHILI_GetAsleep())
 		CHILI_1msTick(); /* timer0 for system ticks */
 }
 

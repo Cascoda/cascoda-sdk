@@ -210,7 +210,7 @@ static u8_t CHILI_RTCIsRunning(void)
 	return 0;
 }
 
-__NONSECURE_ENTRY void CHILI_RTCIRQHandler(void)
+void CHILI_RTCIRQHandler(void)
 {
 	/* call callback if registered */
 	if (ModuleRTCCallback)
@@ -311,7 +311,7 @@ __NONSECURE_ENTRY ca_error BSP_RTCSetAlarmSeconds(u32_t seconds)
  * \brief Disables RTC Alarm
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY void BSP_RTCDisableAlarm(void)
+void BSP_RTCDisableAlarm(void)
 {
 	RTC_DisableInt(RTC_INTEN_ALMIEN_Msk);
 }
@@ -354,7 +354,7 @@ ca_error BSP_RTCSetDateAndTime(struct RTCDateAndTime dateandtime)
  * \param dateandtime - pointer to RTCDateAndTime structure
  *******************************************************************************
  ******************************************************************************/
-void BSP_RTCGetDateAndTime(struct RTCDateAndTime *dateandtime)
+__NONSECURE_ENTRY void BSP_RTCGetDateAndTime(struct RTCDateAndTime *dateandtime)
 {
 	S_RTC_TIME_DATA_T dt;
 
@@ -397,17 +397,17 @@ __NONSECURE_ENTRY void BSP_RTCConvertSecondsToDateAndTime(i64_t seconds, struct 
  * \return Unix time seconds
  *******************************************************************************
  ******************************************************************************/
-i64_t BSP_RTCConvertDateAndTimeToSeconds(struct RTCDateAndTime dateandtime)
+__NONSECURE_ENTRY i64_t BSP_RTCConvertDateAndTimeToSeconds(const struct RTCDateAndTime *dateandtime)
 {
 	S_RTC_TIME_DATA_T dt;
 
 	dt.u32TimeScale = RTC_CLOCK_24;
-	dt.u32Year      = dateandtime.year;
-	dt.u32Month     = dateandtime.month;
-	dt.u32Day       = dateandtime.day;
-	dt.u32Hour      = dateandtime.hour;
-	dt.u32Minute    = dateandtime.min;
-	dt.u32Second    = dateandtime.sec;
+	dt.u32Year      = dateandtime->year;
+	dt.u32Month     = dateandtime->month;
+	dt.u32Day       = dateandtime->day;
+	dt.u32Hour      = dateandtime->hour;
+	dt.u32Minute    = dateandtime->min;
+	dt.u32Second    = dateandtime->sec;
 
 	return (CHILI_RTCConvertDateAndTimeToSeconds(&dt));
 }

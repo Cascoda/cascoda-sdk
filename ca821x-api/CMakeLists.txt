@@ -10,6 +10,8 @@ cascoda_dropdown(CASCODA_LOG_LEVEL
 	)
 cascoda_mark_important(CASCODA_LOG_LEVEL)
 
+set(CASCODA_MAC_BLACKLIST 0 CACHE STRING "The number of MAC-level blacklist entries. Setting this to 0 disables the blacklist feature.")
+
 # Config file generation ------------------------------------------------------
 configure_file(
 	"${PROJECT_SOURCE_DIR}/include/ca821x_config.h.in"
@@ -31,6 +33,7 @@ add_custom_target(git-version ALL
 add_library(ca821x-api
 	${PROJECT_SOURCE_DIR}/source/ca821x_api.c
 	${PROJECT_SOURCE_DIR}/source/ca821x_api_helper.c
+	${PROJECT_SOURCE_DIR}/source/ca821x_error.c
 	${GIT_VERSION_FILE}
 	)
 add_dependencies(ca821x-api git-version)
@@ -40,6 +43,13 @@ target_include_directories(ca821x-api
 		${PROJECT_BINARY_DIR}/include
 	)
 cascoda_use_warnings(ca821x-api)
+
+# Link with the correct platform layer
+if((UNIX OR MINGW) AND (NOT CASCODA_BUILD_DUMMY))
+	target_link_libraries(ca821x-api PUBLIC ca821x-posix)
+else()
+	target_link_libraries(ca821x-api PUBLIC cascoda-bm)
+endif()
 
 # Test15-4 library ------------------------------------------------------------
 add_library(test15-4-api

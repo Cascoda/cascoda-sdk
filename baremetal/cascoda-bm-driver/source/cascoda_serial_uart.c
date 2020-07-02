@@ -30,6 +30,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
@@ -53,16 +54,16 @@ enum serial_state
 
 #define SERIAL_SOM (0xDE)
 
-#define EVBME_UART_RXRDY (0xAA) /* serial rx_rdy handshake command (both ways) */
-#define SERIAL_TIMEOUT 1000     /* serial rx_rdy timeout in [ms] */
-#define MAX_TIMEOUTS 5          /* number of timeouts before the Chili stops waiting */
+#define SERIAL_TIMEOUT 1000 /* serial rx_rdy timeout in [ms] */
+#define MAX_TIMEOUTS 5      /* number of rx_rdy timeouts before the Chili stops waiting */
+#define RX_TIMEOUT 200      /* serial rx timeout in [ms] */
 
 /******************************************************************************/
 /****** Global Variables for Serial State                                ******/
 /******************************************************************************/
-static u8_t       SerialCount;                      //!< Number of bytes read so far
-static u8_t       SerialRemainder;                  //!< Number of bytes left to receive
-enum serial_state SerialIfState = SERIAL_INBETWEEN; //!< State of serial reading state machine
+static u8_t                SerialCount;                      //!< Number of bytes read so far
+static volatile u8_t       SerialRemainder;                  //!< Number of bytes left to receive
+volatile enum serial_state SerialRxState = SERIAL_INBETWEEN; //!< State of serial receive state machine
 
 /* combine Serial Buffer and Framing for UART transfers */
 struct SerialUARTBuffer
@@ -78,6 +79,8 @@ struct SerialBuffer            SerialRxBuffer;             //!< Global buffer fo
 static struct SerialUARTBuffer SerialTxBuffer;             //!< Global buffer for transmitted serial messages
 volatile bool                  SerialRxPending    = false; //!< Receive Packet is ready
 static volatile bool           SerialTxStalled    = false; //!< Transmit waiting for RxRdy
+static volatile bool           SerialTxResendReq  = false; //!< Transmit resend required
+static volatile u32_t          SerialRxTimeout    = 0;     //!< Rx timeout
 static u32_t                   SerialTxTimeout    = 0;     //!< RxRdy timeout
 static u8_t                    SerialTimeoutCount = 0;     //!< Number of timeouts
 
@@ -87,8 +90,11 @@ static u8_t SerialCmdLen = 0;
 /* Local Functions */
 static u8_t SerialFindStart(void);
 static u8_t SerialReceivedRxRdy(void);
+static u8_t SerialReceivedRxFail(void);
+static void SerialResend(void);
 static void SerialSetTxTimeout(void);
 static void SerialCheckTxTimeout(void);
+static void SerialCheckRxTimeout(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -117,28 +123,29 @@ u8_t Serial_ReadInterface(void)
 
 	while (1)
 	{
-		switch (SerialIfState)
+		switch (SerialRxState)
 		{
 		case SERIAL_INBETWEEN:
 			if (SerialFindStart())
 			{
-				SerialIfState = SERIAL_CMDID;
+				SerialRxState   = SERIAL_CMDID;
+				SerialRxTimeout = TIME_ReadAbsoluteTime();
 				continue;
 			}
 			return 0;
 		case SERIAL_CMDID:
 			if ((Count = BSP_SerialRead(&SerialCmdId, 1)) != 0)
 			{
-				SerialIfState = SERIAL_CMDLEN;
+				SerialRxState = SERIAL_CMDLEN;
 				continue;
 			}
 			return 0;
 		case SERIAL_CMDLEN:
 			if ((Count = BSP_SerialRead(&SerialCmdLen, 1)) != 0)
 			{
-				if (SerialReceivedRxRdy())
+				if (SerialReceivedRxRdy() || SerialReceivedRxFail())
 				{
-					SerialIfState = SERIAL_INBETWEEN;
+					SerialRxState = SERIAL_INBETWEEN;
 					return 1;
 				}
 				else
@@ -149,13 +156,13 @@ u8_t Serial_ReadInterface(void)
 					SerialCount           = 0;
 					if (SerialRemainder == 0)
 					{
-						SerialIfState   = SERIAL_INBETWEEN; // exit if 0 API packet length !!
+						SerialRxState   = SERIAL_INBETWEEN; // exit if 0 API packet length !!
 						SerialRxPending = true;
 						return 1;
 					}
 					else
 					{
-						SerialIfState = SERIAL_DATA;
+						SerialRxState = SERIAL_DATA;
 						continue;
 					}
 				}
@@ -168,7 +175,7 @@ u8_t Serial_ReadInterface(void)
 				SerialRemainder -= Count;
 				if (SerialRemainder == 0)
 				{
-					SerialIfState   = SERIAL_INBETWEEN;
+					SerialRxState   = SERIAL_INBETWEEN;
 					SerialRemainder = 0;
 					SerialCount     = 0;
 					SerialRxPending = true;
@@ -182,6 +189,11 @@ u8_t Serial_ReadInterface(void)
 
 u8_t SerialGetCommand(void)
 {
+	SerialCheckRxTimeout();
+	if (SerialTxResendReq)
+	{
+		SerialResend();
+	}
 	if (SerialRxPending)
 	{
 		SerialTimeoutCount = 0;
@@ -196,24 +208,29 @@ u8_t SerialGetCommand(void)
  ******************************************************************************/
 void SerialReadComplete(void)
 {
-	SerialIfState   = SERIAL_INBETWEEN;
+	SerialRxState   = SERIAL_INBETWEEN;
 	SerialRemainder = 0;
 	SerialCount     = 0;
 	SerialRxPending = true;
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Send RX_RDY Handshake Packet
- *******************************************************************************
- ******************************************************************************/
-void SerialSendRxRdy(void)
+void SerialSendRxRdy()
 {
 	uint8_t buf[3];
 
-	buf[0] = SERIAL_SOM;       /* start-of-packet delimiter */
-	buf[1] = EVBME_UART_RXRDY; /* CmdId  = EVBME_UART_RXRDY */
-	buf[2] = 0x00;             /* CmdLen = 0 */
+	buf[0] = SERIAL_SOM;  /* start-of-packet delimiter */
+	buf[1] = EVBME_RXRDY; /* CmdId  = EVBME_RXRDY */
+	buf[2] = 0x00;        /* CmdLen = 0 */
+	BSP_SerialWriteAll(buf, 3);
+}
+
+void SerialSendRxFail()
+{
+	uint8_t buf[3];
+
+	buf[0] = SERIAL_SOM;   /* start-of-packet delimiter */
+	buf[1] = EVBME_RXFAIL; /* CmdId  = EVBME_RXFAIL */
+	buf[2] = 0x00;         /* CmdLen = 0 */
 	BSP_SerialWriteAll(buf, 3);
 }
 
@@ -226,13 +243,41 @@ void SerialSendRxRdy(void)
  ******************************************************************************/
 static u8_t SerialReceivedRxRdy(void)
 {
-	if ((SerialCmdId == EVBME_UART_RXRDY) && (SerialCmdLen == 0))
+	if ((SerialCmdId == EVBME_RXRDY) && (SerialCmdLen == 0))
 	{
 		SerialTxStalled    = false;
 		SerialTimeoutCount = 0;
 		return 1;
 	}
 	return 0;
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Receive RX_FAIL Handshake Packet
+ *******************************************************************************
+ * \return 1 if RX_FAIL received, 0 if not
+ *******************************************************************************
+ ******************************************************************************/
+static u8_t SerialReceivedRxFail(void)
+{
+	if ((SerialCmdId == EVBME_RXFAIL) && (SerialCmdLen == 0))
+	{
+		SerialTxResendReq  = true;
+		SerialTimeoutCount = 0;
+		return 1;
+	}
+	return 0;
+}
+
+/**
+ * Resend a nack-ed transmission
+ */
+static void SerialResend(void)
+{
+	SerialTxResendReq = false;
+	BSP_SerialWriteAll(&SerialTxBuffer.SofPkt, SerialTxBuffer.SerialBuf.CmdLen + 3);
+	SerialSetTxTimeout();
 }
 
 /******************************************************************************/
@@ -260,12 +305,32 @@ static void SerialCheckTxTimeout(void)
 			SerialTxStalled = false;
 			break;
 		}
+		else if (SerialTxResendReq)
+		{
+			SerialResend();
+		}
 		else if ((TIME_ReadAbsoluteTime() - SerialTxTimeout) > SERIAL_TIMEOUT)
 		{
 			SerialTxStalled = false;
 			SerialTimeoutCount++;
 			break;
 		}
+	}
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Checks Rx Timeout
+ *******************************************************************************
+ ******************************************************************************/
+static void SerialCheckRxTimeout(void)
+{
+	if (SerialRxState != SERIAL_INBETWEEN && (TIME_ReadAbsoluteTime() - SerialRxTimeout) > RX_TIMEOUT)
+	{
+		BSP_SerialRead(NULL, 0); //Cancel DMA
+		SerialReadComplete();    //Reset rx state machine
+		SerialRxPending = false; //Remove pending transaction
+		SerialSendRxFail();      //Signal for repeat send
 	}
 }
 

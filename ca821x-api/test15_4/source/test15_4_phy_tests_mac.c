@@ -172,7 +172,7 @@ uint8_t PHYTestMACDeinitialise(struct ca821x_dev *pDeviceRef)
 uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t         i;
-	uint8_t         status;
+	uint8_t         status = 0;
 	uint8_t         randnum[2];
 	uint8_t         attlen;
 	struct FullAddr DstFAdd;
@@ -256,7 +256,7 @@ uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struc
 {
 	uint8_t                           status = 0;
 	uint8_t                           DSN;
-	uint8_t                           edvallp, freqoffs;
+	uint8_t                           edvallp = 0, freqoffs = 0;
 	uint8_t                           len;
 	struct TDME_RXPKT_indication_pset tdmeind;
 

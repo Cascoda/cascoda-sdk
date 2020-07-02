@@ -183,14 +183,17 @@ static void addMulticastAddress(const otIp6Address *aAddress)
 
 static void addAddress(const struct otIp6Address *aAddress)
 {
-	otError error = OT_ERROR_NONE;
-	err_t   err   = ERR_OK;
+	otError    error = OT_ERROR_NONE;
+	err_t      err   = ERR_OK;
+	ip6_addr_t addr;
+
+	memcpy(&addr, aAddress, sizeof(*aAddress));
 
 	LOCK_TCPIP_CORE();
 
 	if (IsLinkLocal(aAddress))
 	{
-		netif_ip6_addr_set(&sNetif, 0, (const ip6_addr_t *)(aAddress));
+		netif_ip6_addr_set(&sNetif, 0, &addr);
 		netif_ip6_addr_set_state(&sNetif, 0, IP6_ADDR_PREFERRED);
 	}
 	else
@@ -198,7 +201,7 @@ static void addAddress(const struct otIp6Address *aAddress)
 		int8_t                   index  = -1;
 		const otMeshLocalPrefix *prefix = otThreadGetMeshLocalPrefix(sInstance);
 
-		err = netif_add_ip6_address(&sNetif, (const ip6_addr_t *)aAddress, &index);
+		err = netif_add_ip6_address(&sNetif, &addr, &index);
 		VerifyOrExit(err == ERR_OK && index != -1, error = OT_ERROR_FAILED);
 		if (memcmp(aAddress, prefix, sizeof(prefix->m8)) != 0)
 		{
@@ -237,10 +240,13 @@ static void delMulticastAddress(const otIp6Address *aAddress)
 
 static void delAddress(const otIp6Address *aAddress)
 {
-	int8_t index;
+	int8_t     index;
+	ip6_addr_t addr;
+
+	memcpy(&addr, aAddress, sizeof(*aAddress));
 
 	LOCK_TCPIP_CORE();
-	index = netif_get_ip6_addr_match(&sNetif, (const ip6_addr_t *)aAddress);
+	index = netif_get_ip6_addr_match(&sNetif, &addr);
 	if (index != -1)
 		netif_ip6_addr_set_state(&sNetif, index, IP6_ADDR_INVALID);
 	UNLOCK_TCPIP_CORE();

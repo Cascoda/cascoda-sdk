@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 3.12)
 project (ot-sed-thermometer)
 
+if (NOT CASCODA_OPENTHREAD_FTD)
+	message(WARNING "Skipping ot-sed-thermometer demo, constrained platform")
+	return()
+endif()
+
 add_executable(ot-sed-thermometer
 	${PROJECT_SOURCE_DIR}/source/sed_standalone.c
 )

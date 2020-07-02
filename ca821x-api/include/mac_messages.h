@@ -54,7 +54,7 @@ extern "C" {
 /** Contains full addressing information for a node */
 struct FullAddr
 {
-	uint8_t AddressMode; /**< Clarifies the contents of \ref Address (empty, short, extended)*/
+	uint8_t AddressMode; /**< Clarifies the contents of \ref Address (empty, short, extended). See \ref mac_addr_mode.*/
 	uint8_t PANId[2];    /**< PanId (little-endian) */
 	uint8_t Address[8];  /**< Short or Extended Address, based on AddressMode (little-endian) */
 };
@@ -72,10 +72,10 @@ struct ExtAddr
 };
 
 /** Holds either short or extended address */
-union MacAddr
+struct MacAddr
 {
-	uint16_t ShortAddress;
-	uint8_t  IEEEAddress[8];
+	uint8_t AddressMode; /**< Clarifies the contents of \ref Address (empty, short, extended). See \ref mac_addr_mode.*/
+	uint8_t Address[8];  /**< Short or Extended Address, based on AddressMode (little-endian) */
 };
 
 /** Security specification to be applied to MAC frames */

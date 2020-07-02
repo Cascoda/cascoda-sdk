@@ -59,9 +59,11 @@ struct uart_exchange_priv
 	struct ca821x_exchange_base base;       //!< Exchange base structure
 	int                         fd;         //!< UART device file descriptor
 	uint8_t                     tx_stalled; //!< True if transmissions are stalled waiting for ack
-	uint8_t         buf[MAX_BUF_SIZE];      //!< Private buffer for buffering read data before full packet is received
+	uint8_t         rx_buf[MAX_BUF_SIZE];   //!< Private buffer for buffering read data before full packet is received
+	uint8_t         tx_buf[MAX_BUF_SIZE];   //!< Private buffer for buffering tx data (in case retransmit is required)
 	size_t          offset;                 //!< Current offset for reading into buf
 	struct timespec prev_send;              //!< Time that previous message was sent (for timing out ack)
+	struct timespec rx_start;               //!< Time that current message receive started (for timing out receive)
 	int             dummyPipe[2];           //!< Dummy pipe to release from select() call when write is due
 };
 
@@ -81,11 +83,11 @@ static struct uart_device *s_uart_device_head       = NULL;
 
 //! Start of frame delimiter
 static const uint8_t UART_SOM = 0xDE;
-//! UART ACK command ID
-static const uint8_t UART_ACK = 0xAA;
 
-//! Timeout for waiting for ack = 2 seconds
-static const struct timespec ack_timeout = {2, 0};
+//! Timeout for waiting for ack = 1 second
+static const struct timespec ack_timeout = {1, 0};
+//! Timeout for waiting for full message = 0.2 seconds
+static const struct timespec rx_timeout = {0, 200000000ULL};
 //! Timeout for posix select call = 0.5 seconds
 static const struct timespec select_timeout = {0, 500000000ULL};
 
@@ -105,7 +107,7 @@ static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
  * @param priv exchange private state
  * @return the time that has passed since last UART transmission.
  */
-static struct timespec get_time_passed(const struct uart_exchange_priv *priv)
+static struct timespec get_tx_time_passed(const struct uart_exchange_priv *priv)
 {
 	struct timespec curTime;
 	if (!clock_gettime(CLOCK_REALTIME, &curTime))
@@ -120,15 +122,38 @@ static struct timespec get_time_passed(const struct uart_exchange_priv *priv)
 }
 
 /**
- * Send a UART ACK packet over the interface
+ * Get the amount of time that has passed since the last receive started.
+ * @param priv exchange private state
+ * @return the time that has passed since last UART receive begun.
+ */
+static struct timespec get_rx_time_passed(const struct uart_exchange_priv *priv)
+{
+	struct timespec curTime;
+	if (!clock_gettime(CLOCK_REALTIME, &curTime))
+	{
+		curTime = time_sub(&curTime, &priv->rx_start);
+	}
+	else
+	{
+		memset(&curTime, 0, sizeof(curTime));
+	}
+	return curTime;
+}
+
+/**
+ * Send a UART ACK or NACK packet over the interface
  * @param fd The UART device to use to send the ACK
+ * @param rx_success True if receive was successful, False if receive failed (negative ack will be sent)
  * @return ca_error value
  */
-static ca_error send_uart_ack(int fd)
+static ca_error send_uart_ack(int fd, bool rx_success)
 {
 	ca_error error = CA_ERROR_SUCCESS;
-	uint8_t  ack[] = {UART_SOM, UART_ACK, 0};
+	uint8_t  ack[] = {UART_SOM, EVBME_RXRDY, 0};
 	int      rval, len;
+
+	if (!rx_success)
+		ack[1] = EVBME_RXFAIL;
 
 	len = sizeof(ack);
 
@@ -146,6 +171,58 @@ static ca_error send_uart_ack(int fd)
 	return error;
 }
 
+static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
+{
+	int                        rval  = 0;
+	ca_error                   error = CA_ERROR_SUCCESS;
+	struct uart_exchange_priv *priv  = pDeviceRef->exchange_context;
+
+	assert_uart_exchange(pDeviceRef);
+	assert(len == (size_t)(buffer[1] + 2));
+
+	//send SOM byte
+	do
+	{
+		rval = write(priv->fd, &UART_SOM, 1);
+		if (rval < 0)
+		{
+			error = CA_ERROR_FAIL;
+			break;
+		}
+	} while (rval != 1);
+
+	//send message
+	while (len)
+	{
+		rval = write(priv->fd, buffer, len);
+		if (rval < 0)
+		{
+			error = CA_ERROR_FAIL;
+			break;
+		}
+		len -= len;
+		buffer += rval;
+	}
+
+	//store sent message
+	if (buffer != priv->tx_buf)
+		memcpy(priv->tx_buf, buffer, len);
+
+	if (error < 0)
+	{
+		ca_log_crit("UART Send error!");
+		error = CA_ERROR_FAIL;
+	}
+	else
+	{
+		//Wait for ack
+		ca_log_debg("Wrote to UART");
+		priv->tx_stalled = 1;
+		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+	}
+	return error;
+}
+
 static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
@@ -154,9 +231,9 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	int                        nfds;
 	ssize_t                    len;
 	int                        error  = 0;
-	uint8_t *                  som    = priv->buf;
-	uint8_t *                  cmdid  = priv->buf + 1;
-	uint8_t *                  cmdlen = priv->buf + 2;
+	uint8_t *                  som    = priv->rx_buf;
+	uint8_t *                  cmdid  = priv->rx_buf + 1;
+	uint8_t *                  cmdlen = priv->rx_buf + 2;
 
 	assert_uart_exchange(pDeviceRef);
 
@@ -170,7 +247,7 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	//Set up timeout, taking ack timeout into account. Max block time = select_timeout
 	if (priv->tx_stalled)
 	{
-		timeout = get_time_passed(priv);
+		timeout = get_tx_time_passed(priv);
 		timeout = time_sub(&ack_timeout, &timeout);
 		if (time_cmp(&timeout, &select_timeout) > 0)
 			timeout = select_timeout;
@@ -189,7 +266,7 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	}
 
 	//Read from the device if possible
-	len = read(priv->fd, priv->buf + priv->offset, sizeof(priv->buf) - priv->offset);
+	len = read(priv->fd, priv->rx_buf + priv->offset, sizeof(priv->rx_buf) - priv->offset);
 	if (len < 0)
 	{
 		int cur_errno = errno;
@@ -204,6 +281,13 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 			goto exit;
 		}
 	}
+
+	//If we are just starting to receive, then register the start time
+	if (len && !priv->offset)
+	{
+		clock_gettime(CLOCK_REALTIME, &(priv->rx_start));
+	}
+
 	priv->offset += len;
 
 	//Catch SOM errors
@@ -215,8 +299,8 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		 * and the baud rate should be decreased. If a stream of these occur in a row
 		 * then it is likely a SOM has been missed and a packet has been lost.
 		 */
-		ca_log_warn("No SOM, got 0x%02x", priv->buf[0]);
-		memmove(priv->buf, priv->buf + 1, priv->offset);
+		ca_log_warn("No SOM, got 0x%02x", priv->rx_buf[0]);
+		memmove(priv->rx_buf, priv->rx_buf + 1, priv->offset);
 		priv->offset -= 1;
 	}
 
@@ -230,11 +314,11 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		len = framelen - 1;
 		memcpy(buf, cmdid, len);
 		// If extra data has been received, shuffle about
-		memmove(priv->buf, priv->buf + framelen, (priv->offset - framelen));
+		memmove(priv->rx_buf, priv->rx_buf + framelen, (priv->offset - framelen));
 		priv->offset -= framelen;
 
 		//Send ACK
-		if (buf[0] != UART_ACK && send_uart_ack(priv->fd) != CA_ERROR_SUCCESS)
+		if (buf[0] != EVBME_RXRDY && send_uart_ack(priv->fd, true) != CA_ERROR_SUCCESS)
 		{
 			error = -uart_exchange_err_uart;
 			goto exit;
@@ -242,15 +326,36 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	}
 	else
 	{
+		//If we fail to receive the entire packet within the receive timeout, then nack the entire packet and dump received data
+		struct timespec timeDiff = get_rx_time_passed(priv);
+		if (priv->offset && time_cmp(&timeDiff, &rx_timeout) > 0)
+		{
+			ca_log_warn("UART RX timed out");
+			send_uart_ack(priv->fd, false);
+			priv->offset = 0;
+		}
 		len = 0;
 	}
 
 	//Catch, process & discard UART ACKs
-	if (len && buf[0] == UART_ACK)
+	if (len && buf[0] == EVBME_RXRDY)
 	{
 		priv->tx_stalled = 0;
 		len              = 0;
 		ca_log_debg("processed ACK");
+	}
+
+	//Catch, process & discard UART NACKs
+	if (len && buf[0] == EVBME_RXFAIL)
+	{
+		len = 0;
+		ca_log_debg("received NACK");
+		if (uart_try_write(priv->tx_buf, priv->tx_buf[1] + 2, pDeviceRef))
+		{
+			ca_log_crit("UART failed to retransmit.");
+			error = -uart_exchange_err_uart;
+			goto exit;
+		}
 	}
 
 	if (len >= 3 && buf[0] == 0xF0)
@@ -288,59 +393,15 @@ static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
 	// Check ack timeout
 	if (priv->tx_stalled)
 	{
-		struct timespec timeDiff = get_time_passed(priv);
+		struct timespec timeDiff = get_tx_time_passed(priv);
 		if (time_cmp(&timeDiff, &ack_timeout) > 0)
+		{
+			ca_log_warn("UART Ack missed");
 			priv->tx_stalled = 0;
+		}
 	}
 
 	return priv->tx_stalled ? CA_ERROR_BUSY : CA_ERROR_SUCCESS;
-}
-
-static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDeviceRef)
-{
-	int                        rval  = 0;
-	ca_error                   error = CA_ERROR_SUCCESS;
-	struct uart_exchange_priv *priv  = pDeviceRef->exchange_context;
-
-	assert_uart_exchange(pDeviceRef);
-
-	//send SOM byte
-	do
-	{
-		rval = write(priv->fd, &UART_SOM, 1);
-		if (rval < 0)
-		{
-			error = CA_ERROR_FAIL;
-			break;
-		}
-	} while (rval != 1);
-
-	//send message
-	while (len)
-	{
-		rval = write(priv->fd, buffer, len);
-		if (rval < 0)
-		{
-			error = CA_ERROR_FAIL;
-			break;
-		}
-		len -= len;
-		buffer += rval;
-	}
-
-	if (error < 0)
-	{
-		ca_log_crit("UART Send error!");
-		error = CA_ERROR_FAIL;
-	}
-	else
-	{
-		//Wait for ack
-		ca_log_debg("Wrote to UART");
-		priv->tx_stalled = 1;
-		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
-	}
-	return error;
 }
 
 static void flush_unread_uart(struct ca821x_dev *pDeviceRef)

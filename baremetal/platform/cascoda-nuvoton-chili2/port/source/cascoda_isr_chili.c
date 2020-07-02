@@ -50,21 +50,12 @@
 #include "cascoda_chili_usb.h"
 #include "cascoda_secure.h"
 
-#if (__ARM_FEATURE_CMSE == 3U)
-// Nonsecure function type, when called by a TrustZone enabled environment
-// the hardware switches to the nonsecure world
-typedef void __attribute__((cmse_nonsecure_call)) (*nsc_dispatch_read_t)(struct ca821x_dev *pDeviceRef);
-#else
-// If not a TrustZone environment, this is a normal function pointer
-typedef void (*nsc_dispatch_read_t)(struct ca821x_dev *pDeviceRef);
-#endif
-
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief ISR 16: External interrupt from PA ports
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY void GPA_IRQHandler(void)
+void GPA_IRQHandler(void)
 {
 	CHILI_ModulePinIRQHandler(PN_A);
 }
@@ -74,7 +65,7 @@ __NONSECURE_ENTRY void GPA_IRQHandler(void)
  * \brief ISR 17: External interrupt from PB ports
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY void GPB_IRQHandler(void)
+void GPB_IRQHandler(void)
 {
 	CHILI_ModulePinIRQHandler(PN_B);
 }
@@ -120,7 +111,7 @@ void GPC_IRQHandler(void)
 
 		if (i < NUM_DEVICES)
 		{
-			((nsc_dispatch_read_t)(devlink->dispatch_read))(devlink->dev); /* Read downstream message */
+			DISPATCH_ReadCA821x(devlink->dev); /* Read downstream message */
 		}
 		return; /* should make handling quicker if no other interrupts are triggered */
 	}
@@ -233,7 +224,7 @@ void UART1_IRQHandler(void)
  * \brief ISR 48: UART2 interrupt
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY void UART2_IRQHandler(void)
+void UART2_IRQHandler(void)
 {
 #if defined(USE_UART)
 #if (UART_CHANNEL == 2)
@@ -309,7 +300,7 @@ void UART4_IRQHandler(void)
  * \brief ISR 75: UART5 interrupt
  *******************************************************************************
  ******************************************************************************/
-__NONSECURE_ENTRY void UART5_IRQHandler(void)
+void UART5_IRQHandler(void)
 {
 #if defined(USE_UART)
 #if (UART_CHANNEL == 5)

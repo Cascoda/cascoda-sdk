@@ -65,6 +65,7 @@
 #include <string.h>
 
 #include "ca821x_api.h"
+#include "ca821x_blacklist.h"
 #include "ca821x_log.h"
 #include "mac_messages.h"
 
@@ -903,6 +904,8 @@ ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(0, 0xFE, 0x3F, pDeviceRef))) // Tx Output Power 8 dBm
 		return (ca_mac_status)(status);
+	if ((status = TDME_SETSFR_request_sync(1, 0xDD, 0x3F, pDeviceRef))) // 7uS output & 7us data holdoff in tx amp
+		return (ca_mac_status)(status);
 
 #if CASCODA_CA_VER == 8210
 	/* Set hardware lqi limit to 0 to disable lqi-based frame filtering */
@@ -1128,7 +1131,7 @@ ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
 ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
-	uint8_t paib;
+	uint8_t paib = 0;
 	int8_t  txp_val;
 
 	if (pDeviceRef->MAC_MPW)
@@ -1204,14 +1207,14 @@ static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, s
 	if (ind->Dst.AddressMode == MAC_MODE_SHORT_ADDR)
 	{
 		if (GETLE16(ind->Dst.Address) != MAC_BROADCAST_ADDRESS &&
-		    memcmp(ind->Dst.Address, &(pDeviceRef->shortaddr), 2) && pDeviceRef->shortaddr != 0xFFFF)
+		    memcmp(ind->Dst.Address, &(pDeviceRef->shortaddr), 2) != 0 && pDeviceRef->shortaddr != 0xFFFF)
 		{
 			return (CA_ERROR_FAIL);
 		}
 	}
 	else if (ind->Dst.AddressMode == MAC_MODE_LONG_ADDR)
 	{
-		if (memcmp(ind->Dst.Address, pDeviceRef->extaddr, 8))
+		if (memcmp(ind->Dst.Address, pDeviceRef->extaddr, 8) != 0)
 		{
 			for (i = 0; i < 9; i++)
 			{
@@ -1367,6 +1370,68 @@ union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev 
 	return rval;
 }
 
+#if CASCODA_MAC_BLACKLIST != 0
+
+static uint8_t blacklist_must_filter(uint8_t *buf, struct ca821x_dev *pDeviceRef)
+{
+	struct FullAddr     src;
+	struct MAC_Message *msg = (struct MAC_Message *)(buf);
+	size_t              address_len;
+	src.AddressMode = MAC_MODE_NO_ADDR;
+
+	switch (buf[0])
+	{
+	case SPI_MCPS_DATA_INDICATION:
+		src = msg->PData.DataInd.Src;
+		break;
+	case SPI_MLME_ASSOCIATE_INDICATION:
+		src.AddressMode = MAC_MODE_LONG_ADDR;
+		memcpy(src.Address, msg->PData.AssocInd.DeviceAddress, sizeof(src.Address));
+		break;
+	case SPI_MLME_BEACON_NOTIFY_INDICATION:
+		src = msg->PData.BeaconInd.PanDescriptor.Coord;
+		break;
+	case SPI_MLME_COMM_STATUS_INDICATION:
+		src.AddressMode = msg->PData.CommStatusInd.SrcAddrMode;
+		memcpy(src.Address, msg->PData.CommStatusInd.SrcAddr, sizeof(src.Address));
+		break;
+	case SPI_MLME_DISASSOCIATE_INDICATION:
+		src.AddressMode = MAC_MODE_LONG_ADDR;
+		memcpy(src.Address, msg->PData.DisassocInd.DevAddr, sizeof(src.Address));
+		break;
+	case SPI_MLME_ORPHAN_INDICATION:
+		src.AddressMode = MAC_MODE_LONG_ADDR;
+		memcpy(src.Address, msg->PData.OrphanInd.OrphanAddr, sizeof(src.Address));
+		break;
+#if CASCODA_CA_VER >= 8211
+	case SPI_MLME_POLL_INDICATION:
+		src = msg->PData.PollInd.Src;
+		break;
+#endif
+	}
+
+	if (src.AddressMode == MAC_MODE_SHORT_ADDR)
+		address_len = 2;
+	else if (src.AddressMode == MAC_MODE_LONG_ADDR)
+		address_len = 8;
+	else
+		address_len = 0;
+
+	if (address_len)
+	{
+		for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
+		{
+			if ((pDeviceRef->blacklist[i].AddressMode == src.AddressMode &&
+			     (memcmp(src.Address, pDeviceRef->blacklist[i].Address, address_len) == 0)))
+			{
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+#endif
+
 ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
 	ca_error ret = CA_ERROR_NOT_HANDLED;
@@ -1399,6 +1464,14 @@ ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev 
 	}
 #endif
 
+#if CASCODA_MAC_BLACKLIST != 0
+	if (blacklist_must_filter(buf, pDeviceRef))
+	{
+		ret = CA_ERROR_SUCCESS;
+		goto exit;
+	}
+#endif // CASCODA_MAC_BLACKLIST
+
 	//If there is a callback registered, call it. Otherwise, call the generic dispatch.
 	ret = CA_ERROR_NOT_HANDLED;
 	if (rval->generic_callback)
@@ -1412,4 +1485,47 @@ ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev 
 
 exit:
 	return ret;
+}
+
+ca_error BLACKLIST_Add(struct MacAddr *pAddress, struct ca821x_dev *pDeviceRef)
+{
+#if CASCODA_MAC_BLACKLIST != 0
+	ca_error ret;
+	if (pAddress->AddressMode != MAC_MODE_LONG_ADDR && pAddress->AddressMode != MAC_MODE_SHORT_ADDR)
+	{
+		ret = CA_ERROR_INVALID_ARGS;
+		goto exit;
+	}
+
+	ret = CA_ERROR_NO_BUFFER;
+	for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
+	{
+		if (pDeviceRef->blacklist[i].AddressMode == MAC_MODE_NO_ADDR)
+		{
+			pDeviceRef->blacklist[i].AddressMode = pAddress->AddressMode;
+			memcpy(pDeviceRef->blacklist[i].Address, pAddress->Address, 8);
+			ret = CA_ERROR_SUCCESS;
+			goto exit;
+		}
+	}
+
+exit:
+	return ret;
+#else
+	(void)pAddress;
+	(void)pDeviceRef;
+	return CA_ERROR_FAIL;
+#endif
+}
+
+void BLACKLIST_Clear(struct ca821x_dev *pDeviceRef)
+{
+#if CASCODA_MAC_BLACKLIST != 0
+	for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
+	{
+		pDeviceRef->blacklist[i].AddressMode = MAC_MODE_NO_ADDR;
+	}
+#else
+	(void)pDeviceRef;
+#endif
 }

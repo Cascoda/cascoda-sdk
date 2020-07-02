@@ -39,7 +39,7 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 	char *          lev_str;
 	struct timespec ts;
 	char            timeString[40];
-	long            secs;
+	time_t          secs;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	secs = ts.tv_sec;

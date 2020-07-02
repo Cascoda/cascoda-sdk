@@ -72,9 +72,9 @@
  */
 struct usb_exchange_priv
 {
-	struct ca821x_exchange_base base;     //!< Exchange base struct
-	hid_device *                hid_dev;  //!< hidapi device reference struct
-	char *                      hid_path; //!< platform-specific device string
+	struct ca821x_exchange_base base;          //!< Exchange base struct
+	hid_device *                hid_dev;       //!< hidapi device reference struct
+	wchar_t *                   serial_number; //!< chili serial number
 
 #if CASCODA_RASPI_USB_WORKAROUND
 	struct timespec prev_send; //!< The time that the previous usb packet was sent
@@ -98,8 +98,9 @@ static void (*dhid_close)(hid_device *);
 static void (*dhid_free_enumeration)(struct hid_device_info *);
 static int (*dhid_read_timeout)(hid_device *, unsigned char *, size_t, int);
 static int (*dhid_write)(hid_device *, const unsigned char *, size_t);
+static int (*dhid_exit)(void);
 
-static int reload_hid_device(struct ca821x_dev *pDeviceRef);
+static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef);
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
@@ -173,7 +174,7 @@ static int assemble_frags(uint8_t *frag_in, uint8_t *buf_out, uint8_t *len_out, 
 		else
 		{
 			// Drop this frame, will be able to receive next packet
-			ca_log_crit("Dropped received frame: Missed 'first' packet.", buf_out[0]);
+			ca_log_crit("Dropped received frame: Missed 'first' packet.");
 			*offset  = 0;
 			*len_out = 0;
 			return 0;
@@ -262,7 +263,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 {
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
 	uint8_t                   frag_buf[MAX_FRAG_SIZE + 1]; //+1 for report ID
-	uint8_t                   delay, len, offset;
+	uint8_t                   delay, offset, len = 0;
 	int                       error;
 
 	assert_usb_exchange(pDeviceRef);
@@ -283,7 +284,7 @@ ssize_t usb_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	if (error < 0)
 	{
 		error = -usb_exchange_err_usb;
-		if (reload_hid_device(pDeviceRef) == 0) //usb disconnected - attempt to grab new device
+		if (reload_hid_device(pDeviceRef) == CA_ERROR_SUCCESS) //usb disconnected - attempt to grab new device
 		{
 			len   = 0;
 			error = 0;
@@ -336,7 +337,7 @@ ca_error usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDe
 	{
 		ca_log_crit("USB Send error!");
 		caerror = CA_ERROR_FAIL;
-		if (reload_hid_device(pDeviceRef) == 0)
+		if (reload_hid_device(pDeviceRef) == CA_ERROR_SUCCESS)
 		{
 			caerror = usb_try_write(buffer, len, pDeviceRef); //usb disconnected - attempt to grab new device
 		}
@@ -374,6 +375,7 @@ static ca_error load_dlibs()
 	dhid_free_enumeration = &hid_free_enumeration;
 	dhid_read_timeout     = &hid_read_timeout;
 	dhid_write            = &hid_write;
+	dhid_exit             = &hid_exit;
 
 	return CA_ERROR_SUCCESS;
 }
@@ -413,6 +415,7 @@ static ca_error load_dlibs()
 	dhid_free_enumeration = dlsym(s_hid_lib_handle, "hid_free_enumeration");
 	dhid_read_timeout = dlsym(s_hid_lib_handle, "hid_read_timeout");
 	dhid_write = dlsym(s_hid_lib_handle, "hid_write");
+	dhid_exit = dlsym(s_hid_lib_handle, "hid_exit");
 
 	if (dlerror() != NULL)
 	{
@@ -447,6 +450,7 @@ exit:
 
 static ca_error deinit_statics()
 {
+	dhid_exit();
 	s_initialised = 0;
 #ifndef _WIN32
 	dlclose(s_hid_lib_handle);
@@ -459,7 +463,7 @@ int usb_exchange_init(struct ca821x_dev *pDeviceRef)
 	return usb_exchange_init_withhandler(NULL, pDeviceRef);
 }
 
-static int is_hidpath_in_use(char *path)
+static int is_serialno_in_use(wchar_t *path)
 {
 	int rval;
 	for (int i = 0; i < USB_MAX_DEVICES; i++)
@@ -467,7 +471,7 @@ static int is_hidpath_in_use(char *path)
 		if (!s_devs[i])
 			continue;
 		struct usb_exchange_priv *cur = s_devs[i]->exchange_context;
-		rval                          = strcmp(path, cur->hid_path);
+		rval                          = wcscmp(path, cur->serial_number);
 		if (rval == 0)
 			return 1;
 	}
@@ -478,7 +482,7 @@ static struct hid_device_info *get_next_hid(struct hid_device_info *hid_cur)
 {
 	while (hid_cur != NULL)
 	{
-		if (!is_hidpath_in_use(hid_cur->path))
+		if (!is_serialno_in_use(hid_cur->serial_number))
 			break;
 		hid_cur = hid_cur->next;
 	}
@@ -486,10 +490,11 @@ static struct hid_device_info *get_next_hid(struct hid_device_info *hid_cur)
 	return hid_cur;
 }
 
-static int reload_hid_device(struct ca821x_dev *pDeviceRef)
+static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef)
 {
-	struct usb_exchange_priv *priv  = pDeviceRef->exchange_context;
-	int                       error = 0;
+	struct usb_exchange_priv *priv   = pDeviceRef->exchange_context;
+	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
+	ca_error                  error = CA_ERROR_SUCCESS;
 
 	assert_usb_exchange(pDeviceRef);
 	pthread_mutex_lock(&devs_mutex);
@@ -501,19 +506,33 @@ static int reload_hid_device(struct ca821x_dev *pDeviceRef)
 
 	sleep(1);
 
-	//Try to reopen the same device.
-	priv->hid_dev = dhid_open_path(priv->hid_path);
-	if (priv->hid_dev == NULL)
+	//Iterate through compatible HIDs until matching serial number is found
+	hid_ll  = dhid_enumerate(USB_VID, USB_PID);
+	hid_cur = hid_ll;
+	while (priv->hid_dev == NULL && hid_cur != NULL)
+	{
+		//Find matching serial number
+		if (wcscmp(priv->serial_number, hid_cur->serial_number) == 0)
+			priv->hid_dev = dhid_open_path(hid_cur->path);
+
+		if (priv->hid_dev == NULL)
+		{
+			hid_cur = get_next_hid(hid_cur->next);
+		}
+	}
+	if (hid_cur == NULL)
 	{ //Device not found
-		error = -1;
+		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
 
 exit:
+	if (hid_ll)
+		dhid_free_enumeration(hid_ll);
 	if (error)
 		ca_log_crit("Failed to reload HID device");
 	else
-		ca_log_info("Successfully loaded HID device");
+		ca_log_info("Successfully reloaded HID device");
 	pthread_mutex_unlock(&devs_mutex);
 	return error;
 }
@@ -650,9 +669,9 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 		goto exit;
 	}
 
-	len            = strlen(hid_cur->path) + 1;
-	priv->hid_path = malloc(len);
-	strncpy(priv->hid_path, hid_cur->path, len);
+	len                 = (wcslen(hid_cur->serial_number) + 1) * sizeof(wchar_t);
+	priv->serial_number = malloc(len);
+	memcpy(priv->serial_number, hid_cur->serial_number, len);
 	priv->hid_dev = dev;
 
 	error = init_generic(pDeviceRef) ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
@@ -680,7 +699,7 @@ exit:
 		dhid_free_enumeration(hid_ll);
 	if (error && pDeviceRef->exchange_context)
 	{
-		free(priv->hid_path);
+		free(priv->serial_number);
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
 	}
@@ -714,7 +733,7 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef)
 	}
 	pthread_mutex_unlock(&devs_mutex);
 
-	free(priv->hid_path);
+	free(priv->serial_number);
 	free(priv);
 	pDeviceRef->exchange_context = NULL;
 }

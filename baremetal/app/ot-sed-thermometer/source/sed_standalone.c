@@ -310,6 +310,9 @@ int main(void)
 {
 	u8_t              StartupStatus;
 	struct ca821x_dev dev;
+	otError           otErr    = OT_ERROR_NONE;
+	otLinkModeConfig  linkMode = {0};
+
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
@@ -319,20 +322,24 @@ int main(void)
 	NANO120_Initialise(StartupStatus, &dev);
 
 	PlatformRadioInitWithDev(&dev);
-
 	OT_INSTANCE = otInstanceInitSingle();
 
-	/* Setup Thread stack with hard coded demo parameters */
-	otLinkModeConfig linkMode = {0};
-	//ca5c0da50107ca5c0daacafebeefdead
-	otMasterKey key = {0xca, 0x5c, 0x0d, 0xa5, 0x01, 0x07, 0xca, 0x5c, 0x0d, 0xaa, 0xca, 0xfe, 0xbe, 0xef, 0xde, 0xad};
+	// Print the joiner credentials, delaying for up to 5 seconds
+	PlatformPrintJoinerCredentials(&dev, OT_INSTANCE, 5000);
+	// Try to join network
+	do
+	{
+		otErr = PlatformTryJoin(&dev, OT_INSTANCE);
+		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
+			break;
+
+		PlatformSleep(30000);
+	} while (1);
+
 	otLinkSetPollPeriod(OT_INSTANCE, 5000);
-	otIp6SetEnabled(OT_INSTANCE, true);
-	otLinkSetPanId(OT_INSTANCE, 0xc0da);
 	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-	otThreadSetMasterKey(OT_INSTANCE, &key);
-	otLinkSetChannel(OT_INSTANCE, 22);
+
 	otThreadSetEnabled(OT_INSTANCE, true);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);

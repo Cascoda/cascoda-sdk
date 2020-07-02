@@ -38,7 +38,7 @@ add_subdirectory(ca821x-api)
 add_subdirectory(cascoda-util)
 
 # Posix
-if(UNIX OR MINGW)
+if((UNIX OR MINGW) AND (NOT CASCODA_BUILD_DUMMY))
 	add_subdirectory(posix)
 endif()
 
@@ -61,11 +61,16 @@ add_subdirectory(third-party/tinycbor-master EXCLUDE_FROM_ALL)
 # lwip, used for providing an expanded IP stack for Thread applications
 add_subdirectory(third-party/lwip EXCLUDE_FROM_ALL)
 
-# Doxygen
-add_subdirectory(docs)
 
-# Add clang-format target
-add_custom_target(format
-	COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/etc/clang-format.cmake
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	)
+# Helper targets, only if Cascoda SDK is the root project ---------------------
+
+if(CASCODA_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	# Doxygen
+	add_subdirectory(docs)
+
+	# Add clang-format target
+	add_custom_target(format
+		COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/etc/clang-format.cmake
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+		)
+endif()

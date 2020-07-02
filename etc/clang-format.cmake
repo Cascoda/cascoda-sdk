@@ -3,11 +3,7 @@ cmake_minimum_required (VERSION 3.11)
 # Create list of all source files
 file(GLOB_RECURSE cascoda_allsource *.c *.cpp *.h *.hpp)
 # Remove vendor code and cmake4eclipse build dir
-foreach(TMP_PATH ${cascoda_allsource})
-	if(${TMP_PATH} MATCHES "(/vendor/|third-party/|build/)")
-		list(REMOVE_ITEM cascoda_allsource ${TMP_PATH})
-	endif()
-endforeach()
+list(FILTER cascoda_allsource EXCLUDE REGEX "(/vendor/|third-party/|build/)")
 
 # Find clang-format
 find_program(

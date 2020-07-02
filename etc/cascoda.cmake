@@ -27,13 +27,30 @@ macro(cascoda_make_binary a_target)
 	unset(cascoda_made_binary)
 endmacro()
 
-# Helper function to enable compiler warnings for a certain library
-option( CASCODA_USE_WARNINGS "Enable compiler warnings for cascoda libraries" ON)
-macro(cascoda_use_warnings a_target)
+# Helper function to enable compiler warnings and linting for a certain library
+option(CASCODA_USE_WARNINGS "Enable compiler warnings for cascoda libraries" ON)
+option(CASCODA_USE_CLANG_TIDY "Enable clang-tidy warnings for cascoda libraries" OFF)
+function(cascoda_use_warnings a_target)
 	if(CASCODA_USE_WARNINGS)
 		target_compile_options(${a_target} PRIVATE -Wall -Wextra -Wno-format)
 	endif()
-endmacro()
+
+	if(CASCODA_USE_CLANG_TIDY)
+		# Find clang-tidy
+		find_program(
+			CLANG_TIDY_EXE
+			NAMES "clang-tidy-8"
+			      "clang-tidy"
+			DOC "Path to clang-tidy executable"
+			)
+		if(CLANG_TIDY_EXE)
+			set(CLANG_TIDY_ARGS ${CLANG_TIDY_EXE} "-checks=bugprone-*,clang-analyzer-*,portability-*,-clang-diagnostic-unused-function")
+			set_target_properties(${a_target} PROPERTIES C_CLANG_TIDY "${CLANG_TIDY_ARGS}" CXX_CLANG_TIDY "${CLANG_TIDY_ARGS}")
+		else()
+			message(FATAL_ERROR "CASCODA_USE_CLANG_TIDY enabled but clang-tidy not found.")
+		endif()
+	endif()
+endfunction()
 
 # Helper function to add a cache variable that is restricted to certain values
 # First argument is default
@@ -128,7 +145,7 @@ endmacro()
 # which is run at every build.
 set(CASCODA_IMPORTANT_VARS "" CACHE INTERNAL "")
 function(cascoda_mark_important important_var)
-	set(CASCODA_IMPORTANT_VARS ${CASCODA_IMPORTANT_VARS} "${important_var}" CACHE INTERNAL "")
+	set(CASCODA_IMPORTANT_VARS ${CASCODA_IMPORTANT_VARS} "${ARGV}" CACHE INTERNAL "")
 endfunction()
 
 # Helper function to change the memory configuration for a given application.

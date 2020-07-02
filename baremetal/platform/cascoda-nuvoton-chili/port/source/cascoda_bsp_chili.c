@@ -581,9 +581,8 @@ void BSP_Waiting(void)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchRead)
+void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 {
-	(void)pDispatchRead;
 	u32_t               i;
 	struct device_link *device;
 

@@ -150,10 +150,11 @@ size_t pop_from_queue(struct buffer_queue **head_buffer_queue,
 			*head_buffer_queue = current->next;
 			len                = current->len;
 
-			if (len > maxlen)
+			if (len > maxlen || !destBuf)
 				len = 0; //Invalid
+			else
+				memcpy(destBuf, current->buf, len);
 
-			memcpy(destBuf, current->buf, len);
 			*pDeviceRef_out = current->pDeviceRef;
 
 			free(current->buf);

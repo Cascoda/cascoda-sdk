@@ -142,7 +142,7 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_
 
 	/* read downstream message that has woken up device */
 	if (!use_timer0)
-		device_list[0].dispatch_read(pDeviceRef);
+		DISPATCH_ReadCA821x(pDeviceRef);
 }
 
 /*---------------------------------------------------------------------------*
@@ -279,6 +279,8 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 	u32_t numBytes = 0;
 	if (BufferSize > 1)
 		CHILI_UARTDMASetupRead(pBuffer, BufferSize);
+	else if (BufferSize == 0)
+		CHILI_UARTDMAReadCancel();
 	else
 		numBytes = CHILI_UARTFIFORead(pBuffer, BufferSize);
 	return (numBytes);
@@ -477,7 +479,7 @@ void BSP_SystemReset(sysreset_mode resetMode)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchReadCallback)
+void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	struct device_link *device;
 
@@ -507,7 +509,6 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef, dispatch_read_t pDispatchRead
 	device                       = &device_list[0];
 	device->chip_select_gpio     = &SPI_CS_PVAL;
 	device->irq_gpio             = &ZIG_IRQB_PVAL;
-	device->dispatch_read        = pDispatchReadCallback;
 	device->dev                  = pDeviceRef;
 	pDeviceRef->exchange_context = device;
 }

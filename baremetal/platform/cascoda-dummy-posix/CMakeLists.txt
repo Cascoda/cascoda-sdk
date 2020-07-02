@@ -11,10 +11,14 @@ if(TARGET cascoda-bm-plat)
 	return()
 endif()
 
-option( CASCODA_BUILD_DUMMY "Build the dummy baremetal layer for posix" OFF)
 if(NOT CASCODA_BUILD_DUMMY)
 	return()
+else()
+	message(WARNING "Warning: Configured to build dummy platform instead of Posix SDK - ONLY useful for unit tests!")
 endif()
+
+# Mark the device as being FTD-capable
+set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy

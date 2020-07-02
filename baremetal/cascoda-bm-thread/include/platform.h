@@ -141,15 +141,18 @@ bool PlatformCanSleep(otInstance *aInstance);
 otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength);
 
 /**
- * Helper function to attempt the Thread joining process.
+ * Helper function to attempt the Thread joining process. The state of the Thread IPv6 interface
+ * (otIp6SetEnabled) upon returning from this function depends on the return code. Upon a success
+ * (OT_ERROR_ALREADY or OT_ERROR_NONE), the interface is left up, anticipating further radio activity.
+ * Otherwise, it is brought down, anticipating being retried after a wait period.
  *
  * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
  * @param aInstance The openthread instance
  *
  * @return Status of the join
- * @retval OT_ERROR_NONE Successfully joined Thread Network
- * @retval OT_ERROR_ALREADY Device was already joined to Thread network (can leave with otInstanceFactoryReset)
- * @retval (other) Failed to join a Thread Network for the given reason.
+ * @retval OT_ERROR_NONE Successfully joined Thread Network (Thread IPv6 interface is left up)
+ * @retval OT_ERROR_ALREADY Device was already joined to Thread network (can leave with otInstanceFactoryReset) (Thread IPv6 interface is left up)
+ * @retval (other) Failed to join a Thread Network for the given reason. (Thread IPv6 interface is brought down)
  */
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
 
