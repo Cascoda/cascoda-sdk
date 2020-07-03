@@ -577,9 +577,9 @@ static ca_error setup_port(int fd, int baudrate)
 	port.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	port.c_oflag &= ~OPOST;
 
-	/* fetch bytes as they become available, waiting 1/10th of a second for new bytes */
+	/* fetch bytes as they become available, nonblocking */
 	port.c_cc[VMIN]  = 0;
-	port.c_cc[VTIME] = 1;
+	port.c_cc[VTIME] = 0;
 
 	if (tcsetattr(fd, TCSANOW, &port) != 0)
 	{
