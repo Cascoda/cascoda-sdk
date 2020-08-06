@@ -29,6 +29,16 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * @brief Definitions relating to the IEEE 802.15.4 Specification
+ */
+/**
+ * @ingroup ca821x-api-struct
+ * @defgroup ca821x-api-ieee IEEE 802.15.4 definitions
+ * @brief Definitions used by the IEEE 802.15.4 Specification
+ * @{
+ */
 
 #ifndef IEEE_802_15_4_H
 #define IEEE_802_15_4_H
@@ -267,5 +277,9 @@ enum pib_attribute
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // IEEE_802_15_4_H

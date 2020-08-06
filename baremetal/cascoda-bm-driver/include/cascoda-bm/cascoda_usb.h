@@ -27,7 +27,7 @@
  */
 /**
  * @file
- * @brief  USB definitions
+ * @brief  Internal USB definitions
  */
 
 #ifndef CASCODA_USB_H

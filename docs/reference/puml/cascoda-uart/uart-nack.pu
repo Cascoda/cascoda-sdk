@@ -1,0 +1,16 @@
+@startuml
+
+participant "Host (Linux PC)" as Host
+participant "Device (Chili2)" as Device
+
+Host ->X Device : Msg1
+rnote left : Msg1, Msg2 requested
+rnote right : Message only partially received, or UART error
+Host <-- Device : EVBME_RXFAIL
+Host -> Device : Msg1
+rnote left : Retransmit
+Host <-- Device : EVBME_RXRDY
+Host -> Device : Msg2
+Host <-- Device : EVBME_RXRDY
+
+@enduml

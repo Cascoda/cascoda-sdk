@@ -108,6 +108,12 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-cli-lwip-freertos | Same as above, but taking advantage of the POSIX socket API and FreeRTOS. [Click here for more documentation](baremetal/app/ot-cli-lwip-freertos/README.md)
 | ot-cli | The OpenThread command line interface running on a Chili. Interfaces with the Cascoda sensordemo application layer. Works with the serial-adapter POSIX application.
 | ot-cli-actuator | Similar to ot-cli, but also has actuator commands. [Click here for more documentation.](baremetal/app/ot-cli-actuator/README.md)
+| ocf-cli-light | Use a Chili as a controller for an OCF-over-Thread smart lightbulb. [Click here for more documentation.](ocf/README.md)
+| ocf-sensorif | Use a Chili as a OCF-over-Thread device connected to various I2C and SPI sensors.
+| ocf-sensorif-unsecure  | The same as the above target, but without OCF security 
+| ocf-cli-thermometer  | Use a Chili as a OCF-over-Thread smart thermometer. This demo uses the in-built thermometer of the M2351, so no external hardware is required. 
+| ocf-sleepy-thermometer  | Same as above, but the device sleeps between temperature readings.
+| ocf-sleepy-thermometer-unsecure  | Same as above, but without OCF security.
 | ot-ncp |The OpenThread network co-processor interface running on a Chili. Works with the serial-adapter POSIX application. 
 | ot-sed-thermometer | Sleepy end device that interfaces with the Cascoda sensordemo application layer. Only reports temperature. [Click here for more documentation.](baremetal/app/ot-sed-thermometer/README.md)
 | ot-sed-thermometer-freertos | Same as above, but taking advantage of FreeRTOS concurrency features. [Click here for more documentation.](baremetal/app/ot-sed-thermometer-freertos/README.md)
@@ -115,6 +121,7 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-sed-eink-freertos | Display images onto an e-ink screen. The images are transmitted over a Thread network. The system sleeps while idle. Used in conjunction with ot-eink-server. [Click here for more documentation.](baremetal/app/ot-sed-eink-freertos/README.md)
 | eink-test | Tests the connection between a Chili and a E-Ink display by showing an image. Does not commmunicate over IEEE 802.15.4.
 | sensorif-test | Tests the sensorif API by attempting communication with all connected sensors.
+| ocf-storage-test  | Test the flash storage API of Iotivity-Lite. Useful for developers.
 | mac-tempsense | Legacy temperature demo running directly on top of IEEE 802.15.4 MAC. 
 | ot-barebone-mtd| Barebones OpenThread demo, designed for the Chili 1.
 | ot-barebone-ftd | The FTD version of ot-barebone-mtd

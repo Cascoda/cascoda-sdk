@@ -29,6 +29,13 @@
  * @file
  * @brief Definitions relating to EVBME API messages.
  */
+/**
+ * @ingroup ca821x-api-struct
+ * @defgroup ca821x-api-evbme EVBME Message definitions
+ * @brief Data structures and definitions used for EVBME Messages
+ *
+ * @{
+ */
 
 #ifndef EVBME_MESSAGES_H
 #define EVBME_MESSAGES_H
@@ -50,8 +57,8 @@ enum evbme_command_ids
 	EVBME_SET_CONFIRM = 0x5E, //!< M<-S Response including status for EVBME set (sync resp)
 	EVBME_SET_REQUEST = 0x5F, //!< M->S Set an EVBME parameter (sync req)
 
-	EVBME_GUI_CONNECTED      = 0x81, //!< M->S Notification from host that connection is established
-	EVBME_GUI_DISCONNECTED   = 0x82, //!< M->S Notification from host that connection is about to be terminated
+	EVBME_HOST_CONNECTED      = 0x81, //!< M->S Notification from host that connection is established
+	EVBME_HOST_DISCONNECTED   = 0x82, //!< M->S Notification from host that connection is about to be terminated
 	EVBME_MESSAGE_INDICATION = 0xA0, //!< M<-S Text message to be printed by host
 	EVBME_COMM_CHECK         = 0xA1, //!< M->S Communication check message from host that generates COMM_INDICATIONS
 	EVBME_COMM_INDICATION    = 0xA2, //!< M<-S Communication check indication from slave to master as requested
@@ -248,5 +255,9 @@ struct EVBME_Message
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // EVBME_MESSAGES_H

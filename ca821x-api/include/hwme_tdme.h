@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief Definitions for Cascoda's HWME and TDME.
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -28,6 +24,17 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
+ * @file
+ * @brief Definitions relating to HWME and TDME API messages.
+ */
+/**
+ * @ingroup ca821x-api-struct
+ * @defgroup ca821x-api-hwme HWME and TWME Message definitions
+ * @brief Data structures and definitions used for HWME and TDME Messages
+ *
+ * @{
  */
 
 #ifndef HWME_TDME_H
@@ -183,5 +190,9 @@ enum tdme_attribute
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // HWME_TDME_H

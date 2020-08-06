@@ -1,0 +1,35 @@
+@startuml
+
+participant "Host (Linux PC)" as Host
+participant "Device (Chili2)" as Device
+
+group Unidirectional
+Host -> Host : Msg1 requested
+Host -> Device : Msg1
+Host -> Host : Msg2 requested
+rnote left : Msg2 requested, but cannot be sent over interface until RXRDY is received
+Host <-- Device : EVBME_RXRDY
+Host -> Device : Msg2
+rnote left : Msg2 can be sent as soon as RXRDY is received
+Host <-- Device : EVBME_RXRDY
+end
+
+|||
+
+group Bidirectional
+Host -> Host : Msg3 requested
+Host -> Device : Msg3
+Host -> Host : Msg4 requested
+Device <- Device : Msg5 requested
+Host <- Device : Msg5
+rnote left : It is possible for another message to be received before the RXRDY (especially the reply of synchronous commands)
+Device <- Device : Msg6 requested
+Host --> Device : EVBME_RXRDY
+Host <- Device : Msg6
+Host <-- Device : EVBME_RXRDY
+Host --> Device : EVBME_RXRDY
+Host -> Device : Msg5
+Host <-- Device : EVBME_RXRDY
+end
+
+@enduml

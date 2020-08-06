@@ -32,6 +32,13 @@
  * @file
  * @brief Utility functions for using the cascoda sdk on posix.
  */
+/**
+ * @ingroup posix
+ * @defgroup posix-core Posix Core
+ * @brief  Core functions for getting a connected CA-821x/Chili device and establishing a communications link
+ *
+ * @{
+ */
 
 #ifndef CA821X_POSIX_H
 #define CA821X_POSIX_H 1
@@ -152,7 +159,7 @@ ca_error ca821x_util_stop_downstream_dispatch_worker();
 
 /**
  * Registers the callback to call for any non-ca821x commands that are sent over
- * the interface. Commands are still limited to the ca821x format, and must
+ * the interface. Commands are still limited to the cascoda tlv format, and must
  * use a command ID that is not currently used by the ca821x-spi protocol.
  *
  * @param[in]  callback   Function pointer to an user-command-handling callback
@@ -186,3 +193,7 @@ ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, 
 #endif
 
 #endif //CA821X_POSIX_H
+
+/**
+ * @}
+ */

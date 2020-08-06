@@ -32,6 +32,13 @@
  *   The functions in this file provide a high-level abstraction for controlling the
  *   ca821x.
  */
+/**
+ * @ingroup ca821x-api
+ * @defgroup ca821x-api-core CA-821x Core API
+ * @brief A high-level abstraction for interacting with the CA-821x
+ *
+ * @{
+ */
 
 #ifndef CA821X_API_H
 #define CA821X_API_H
@@ -767,5 +774,9 @@ ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // CA821X_API_H

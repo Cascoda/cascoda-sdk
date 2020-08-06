@@ -30,7 +30,14 @@
  */
 /**
  * @file
+ * Declaration of os-abstraction functions
+ */
+/**
+ * @ingroup bm-driver
+ * @addtogroup bm-os Baremetal OS abstraction for RTOS integration
  * @brief  OS abstraction functions - in baremetal (no rtos) these are just stubs!
+ *
+ * @{
  */
 
 #ifndef BAREMETAL_CASCODA_BM_DRIVER_INCLUDE_CASCODA_BM_CASCODA_OS_H_
@@ -120,5 +127,9 @@ void CA_OS_UnlockAPI(void);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* BAREMETAL_CASCODA_BM_DRIVER_INCLUDE_CASCODA_BM_CASCODA_OS_H_ */

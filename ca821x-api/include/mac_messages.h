@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief Definitions relating to API messages.
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -28,6 +24,17 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
+ * @file
+ * @brief Definitions relating to MLME and MCPS API messages.
+ */
+/**
+ * @ingroup ca821x-api-struct
+ * @defgroup ca821x-api-macm MLME and MCPS Message definitions
+ * @brief Data structures and definitions used for MLME and MCPS Messages
+ *
+ * @{
  */
 
 #ifndef MAC_MESSAGES_H
@@ -875,5 +882,9 @@ enum spi_command_ids
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // MAC_MESSAGES_H

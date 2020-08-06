@@ -14,8 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- * Sensor interface for LITEON LTR-303ALS-01 ambient light sensor
+/**
+ * @ingroup bm-sensorif
+ * @defgroup bm-sensorif-ltr303als LITEON LTR-303ALS-01 ambient light sensor driver
+ * @brief Sensor interface for LITEON LTR-303ALS-01 ambient light sensor.
+ *
+ * @{
 */
 
 #ifndef SIF_LTR303ALS_H
@@ -145,5 +149,9 @@ u8_t SIF_LTR303ALS_ReadLight(u16_t *ch0, u16_t *ch1);                         /*
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // SIF_LTR303ALS_H

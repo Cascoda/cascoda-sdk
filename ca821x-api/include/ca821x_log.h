@@ -25,6 +25,23 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Declarations of global, platform independent logging functions that can be enabled or disabled
+ */
+/**
+ * @ingroup ca821x-api-support
+ * @defgroup ca821x-api-log Logging
+ * @brief The logging functionality that allows for logging messages at different
+ * log levels. They can also be disabled using CMake cache variable CASCODA_LOG_LEVEL.
+ *
+ * @{
+ */
+
+#ifndef DOXYGEN
+// Force doxygen to document static inline
+#define STATIC static
+#endif
 
 #ifndef CA821X_API_INCLUDE_CA821X_LOG_H_
 #define CA821X_API_INCLUDE_CA821X_LOG_H_
@@ -59,13 +76,11 @@ typedef enum ca_loglevel
  */
 void ca_log(ca_loglevel loglevel, const char *format, va_list argp);
 
-static inline void ca_log_crit(const char *format, ...);
-static inline void ca_log_warn(const char *format, ...);
-static inline void ca_log_note(const char *format, ...);
-static inline void ca_log_info(const char *format, ...);
-static inline void ca_log_debg(const char *format, ...);
-
-static inline void ca_log_crit(const char *format, ...)
+/**
+ * Print a log message with log level CRIT (Will always be displayed)
+ * @param format printf-style format string, followed by printf-style arguments
+ */
+STATIC inline void ca_log_crit(const char *format, ...)
 {
 	if (CASCODA_LOG_LEVEL >= CA_LOGLEVEL_CRIT)
 	{
@@ -75,7 +90,12 @@ static inline void ca_log_crit(const char *format, ...)
 		va_end(va_args);
 	}
 }
-static inline void ca_log_warn(const char *format, ...)
+
+/**
+ * Print a log message with log level WARN (Will be displayed if log level is equal or higher, see \ref ca_loglevel)
+ * @param format printf-style format string, followed by printf-style arguments
+ */
+STATIC inline void ca_log_warn(const char *format, ...)
 {
 	if (CASCODA_LOG_LEVEL >= CA_LOGLEVEL_WARN)
 	{
@@ -85,7 +105,12 @@ static inline void ca_log_warn(const char *format, ...)
 		va_end(va_args);
 	}
 }
-static inline void ca_log_note(const char *format, ...)
+
+/**
+ * Print a log message with log level NOTE (Will be displayed if log level is equal or higher, see \ref ca_loglevel)
+ * @param format printf-style format string, followed by printf-style arguments
+ */
+STATIC inline void ca_log_note(const char *format, ...)
 {
 	if (CASCODA_LOG_LEVEL >= CA_LOGLEVEL_NOTE)
 	{
@@ -95,7 +120,12 @@ static inline void ca_log_note(const char *format, ...)
 		va_end(va_args);
 	}
 }
-static inline void ca_log_info(const char *format, ...)
+
+/**
+ * Print a log message with log level INFO (Will be displayed if log level is equal or higher, see \ref ca_loglevel)
+ * @param format printf-style format string, followed by printf-style arguments
+ */
+STATIC inline void ca_log_info(const char *format, ...)
 {
 	if (CASCODA_LOG_LEVEL >= CA_LOGLEVEL_INFO)
 	{
@@ -105,7 +135,12 @@ static inline void ca_log_info(const char *format, ...)
 		va_end(va_args);
 	}
 }
-static inline void ca_log_debg(const char *format, ...)
+
+/**
+ * Print a log message with log level DEBG (Will be displayed if log level is equal or higher, see \ref ca_loglevel)
+ * @param format printf-style format string, followed by printf-style arguments
+ */
+STATIC inline void ca_log_debg(const char *format, ...)
 {
 	if (CASCODA_LOG_LEVEL >= CA_LOGLEVEL_DEBG)
 	{
@@ -119,5 +154,9 @@ static inline void ca_log_debg(const char *format, ...)
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* CA821X_API_INCLUDE_CA821X_LOG_H_ */

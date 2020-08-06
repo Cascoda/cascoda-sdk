@@ -87,7 +87,7 @@ static void blacklist_test(void **state)
 	assert_true(received_data_indication == 1);
 
 	// Clear the blacklist and make sure you can receive the indication
-    BLACKLIST_Clear(&device);
+	BLACKLIST_Clear(&device);
 	received_data_indication                      = 0;
 	data_indication.PData.DataInd.Src.AddressMode = blacklisted_address.AddressMode;
 	memcpy(data_indication.PData.DataInd.Src.Address, blacklisted_address.Address, 2);

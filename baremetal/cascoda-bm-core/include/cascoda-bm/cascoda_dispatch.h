@@ -27,7 +27,14 @@
  */
 /**
  * @file
- * @brief  Internal functions to handle messages going to and from the CA-821x
+ * Declarations of internal functions for communication with CA-821x
+ */
+/**
+ * @ingroup bm-core
+ * @defgroup bm-dispatch Baremetal CA-821x Dispatch
+ * @brief  Internal functions used by ca821x-api to handle messages going to and from the CA-821x
+ *
+ * @{
  */
 
 #ifndef CASCODA_DISPATCH_H
@@ -84,3 +91,7 @@ void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef);
 #endif
 
 #endif // CASCODA_SPI_H
+
+/**
+ * @}
+ */

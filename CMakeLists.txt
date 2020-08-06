@@ -45,6 +45,8 @@ endif()
 # Baremetal
 add_subdirectory(baremetal)
 
+# IoTivity-Lite port & source code
+add_subdirectory(ocf)
 
 # Openthread
 add_subdirectory(openthread)

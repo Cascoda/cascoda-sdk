@@ -36,7 +36,7 @@ The header file ```mac_messages.h``` includes some useful struct definitions for
 
 The header files ```ca821x_endian.h, ca821x_error.h, hwme_tdme.h, ieee_802_15_4.h``` provide some useful enumerations and macro functions.
 
-# Exchange (Platform abstraction) Usage
+## Exchange (Platform abstraction) Usage
 
 All downstream commands will be sent using the function pointer in the pDeviceRef:
 ```C

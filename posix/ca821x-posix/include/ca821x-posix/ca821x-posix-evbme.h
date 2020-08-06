@@ -32,11 +32,22 @@
  * @file
  * @brief EVBME host API commands
  */
+/**
+ * @ingroup posix
+ * @defgroup posix-evbme Posix EVBME
+ * @brief  Functions for communicating with the EVBME of a connected Chili platform
+ *
+ * @{
+ */
 
 #ifndef POSIX_CA821X_POSIX_INCLUDE_CA821X_POSIX_CA821X_POSIX_EVBME_H_
 #define POSIX_CA821X_POSIX_INCLUDE_CA821X_POSIX_CA821X_POSIX_EVBME_H_
 
 #include "ca821x_api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //Callback definitions ------------------------------------------------------------------------
 
@@ -92,7 +103,7 @@ ca_error EVBME_COMM_CHECK_request(uint8_t            aHandle,
  * @return Status of the command
  * @retval CA_ERROR_SUCCESS Success
  */
-ca_error EVBME_GUI_CONNECTED_notify(struct ca821x_dev *pDeviceRef);
+ca_error EVBME_HOST_CONNECTED_notify(struct ca821x_dev *pDeviceRef);
 
 /**
  * Send a notification to the given device to reset and release control of it. Causes an RF reset.
@@ -104,7 +115,7 @@ ca_error EVBME_GUI_CONNECTED_notify(struct ca821x_dev *pDeviceRef);
  * @return Status of the command
  * @retval CA_ERROR_SUCCESS Success
  */
-ca_error EVBME_GUI_DISCONNECTED_notify(struct ca821x_dev *pDeviceRef);
+ca_error EVBME_HOST_DISCONNECTED_notify(struct ca821x_dev *pDeviceRef);
 
 /**
  * Send a DFU request for reboot to the given device. Causes a full device reset into the requested mode.
@@ -225,4 +236,12 @@ ca_error EVBME_GET_request_sync(enum evbme_attribute aAttrId,
                                 uint8_t *            aAttrLen,
                                 struct ca821x_dev *  pDeviceRef);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* POSIX_CA821X_POSIX_INCLUDE_CA821X_POSIX_CA821X_POSIX_EVBME_H_ */
+
+/**
+ * @}
+ */

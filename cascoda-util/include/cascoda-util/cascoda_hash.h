@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief  Hashing helper functions
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -28,6 +24,18 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/**
+ * @file
+ * @brief  Hashing helper functions
+ */
+/**
+ * @ingroup cascoda-util
+ * @defgroup ca-hash Hashing functions
+ * @brief  General functions for hashing data
+ *
+ * @{
  */
 
 #ifndef CASCODA_HASH_H
@@ -65,3 +73,7 @@ uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes);
 #endif
 
 #endif // CASCODA_HASH_H
+
+/**
+ * @}
+ */

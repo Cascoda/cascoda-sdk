@@ -1,0 +1,21 @@
+@startuml
+
+participant "Linux PC" as Linux
+box "Chili 2D" #LightGreen
+participant M2351
+participant "CA-8211" as ca8211
+end box
+
+Linux -> M2351 : EVBME Get Request
+rnote left: EVBME message is sent to M2351
+Linux <-- M2351 : EVBME Get Confirm
+
+|||
+
+Linux -> M2351 : MLME Get Request
+rnote left: MLME message is sent to CA-8211 via M2351
+M2351 -> ca8211 : MLME Get Request
+M2351 <-- ca8211 : MLME Get Confirm
+Linux <-- M2351 : MLME Get Confirm
+
+@enduml

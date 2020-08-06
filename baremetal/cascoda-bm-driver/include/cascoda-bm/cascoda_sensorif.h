@@ -27,7 +27,14 @@
  */
 /**
  * @file
- * @brief  sensor/actuator I2C interface functions
+ * Declarations of I2C and SPI interface functions for sensorif
+ */
+/**
+ * @ingroup bm-driver
+ * @defgroup bm-sensorif-core Baremetal I2C & SPI interface abstraction
+ * @brief Sensor/Actuator I2C & SPI interface functions, used by @ref bm-sensorif
+ *
+ * @{
  */
 
 #ifndef CASCODA_SENSORIF_H
@@ -145,5 +152,9 @@ ca_error SENSORIF_SPI_Write(u8_t out_data);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // CASCODA_SENSORIF_H

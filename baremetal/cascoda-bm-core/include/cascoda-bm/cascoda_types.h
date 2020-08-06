@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief Type definitions used by Cascoda baremetal drivers
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -29,6 +25,11 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * @brief Type definitions used by Cascoda baremetal drivers
+ */
+
 #ifndef CASCODA_TYPES_H
 #define CASCODA_TYPES_H
 

@@ -25,8 +25,12 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Library for E-ink display of images.
+/**
+ * @ingroup bm-sensorif
+ * @defgroup bm-sensorif-eink EInk display sensorif driver
+ * @brief Library for E-ink display of images.
+ *
+ * @{
 */
 
 #ifndef SIF_EINK_H
@@ -147,6 +151,10 @@ ca_error EINK_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif
 // SIF_EINK_H

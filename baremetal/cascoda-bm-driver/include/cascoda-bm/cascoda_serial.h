@@ -27,7 +27,7 @@
  */
 /**
  * @file
- * @brief  Function definitions for communicating with a host using UART/USB
+ * Internal Function definitions for communicating with a host using UART/USB
  */
 
 #ifndef CASCODA_SERIAL_H

@@ -159,11 +159,11 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
 		ret = 1;
 		EVBME_SET_request(&rxEvbme->EVBME.SET_request, pDeviceRef);
 		break;
-	case EVBME_GUI_CONNECTED:
+	case EVBME_HOST_CONNECTED:
 		ret = 1;
 		EVBME_Connect(app_name, pDeviceRef);
 		break;
-	case EVBME_GUI_DISCONNECTED:
+	case EVBME_HOST_DISCONNECTED:
 		ret = 1;
 		EVBME_Disconnect();
 		break;

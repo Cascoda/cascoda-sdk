@@ -25,8 +25,13 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Sensor interface for Silicon Labs Si7021 temperature / humidity sensor
+/**
+ *
+ * @ingroup bm-sensorif
+ * @defgroup bm-sensorif-si7021 Silicon Labs Si7021 temperature / humidity sensor driver
+ * @brief Sensor interface for Silicon Labs Si7021 temperature / humidity sensor.
+ *
+ * @{
 */
 
 #ifndef SIF_SI7021_H
@@ -42,9 +47,12 @@ extern "C" {
 /* master measurement (read access) modes */
 enum sif_si7021_mode
 {
-	SIF_SI7021_MODE_HOLD_MASTER, /* master hold mode (clock streching, clock suspend) */
-	SIF_SI7021_MODE_NACK_WAIT,   /* no-hold master hold mode (wait while NACKs) */
-	SIF_SI7021_MODE_TCONV_WAIT,  /* wait for maximum conversion time */
+	SIF_SI7021_MODE_HOLD_MASTER,
+	/* master hold mode (clock streching, clock suspend) */ //!< SIF_SI7021_MODE_HOLD_MASTER
+	SIF_SI7021_MODE_NACK_WAIT,
+	/* no-hold master hold mode (wait while NACKs) */ //!< SIF_SI7021_MODE_NACK_WAIT
+	SIF_SI7021_MODE_TCONV_WAIT,
+	/* wait for maximum conversion time */ //!< SIF_SI7021_MODE_TCONV_WAIT
 };
 
 /* measurement mode */
@@ -93,5 +101,9 @@ u8_t SIF_SI7021_ReadID(void);                                                 /*
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // SIF_SI7021_H

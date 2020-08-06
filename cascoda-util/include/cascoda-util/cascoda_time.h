@@ -30,6 +30,13 @@
  *  @brief A simple time interface that records absolute time to millisecond resolution
  *  and allows waiting for a set number of milliseconds.
  */
+/**
+ * @ingroup cascoda-util
+ * @defgroup ca-time Time
+ * @brief  Simple time interface for getting time since application start with millisecond resolution
+ *
+ * @{
+ */
 
 #ifndef INCLUDE_CASCODA_BM_CASCODA_TIME_H_
 #define INCLUDE_CASCODA_BM_CASCODA_TIME_H_
@@ -44,3 +51,7 @@
 uint32_t TIME_ReadAbsoluteTime(void);
 
 #endif /* INCLUDE_CASCODA_BM_CASCODA_TIME_H_ */
+
+/**
+ * @}
+ */

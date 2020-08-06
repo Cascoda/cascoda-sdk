@@ -133,7 +133,7 @@ int TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct c
 {
 	/* switch clock otherwise chip is locking up as it loses external clock */
 	if (((SerialRxBuffer->CmdId == EVBME_SET_REQUEST) && (SerialRxBuffer->Data[0] == EVBME_RESETRF)) ||
-	    (SerialRxBuffer->CmdId == EVBME_GUI_CONNECTED))
+	    (SerialRxBuffer->CmdId == EVBME_HOST_CONNECTED))
 	{
 		printf("Clock has been switched due to device reset\n");
 		EVBME_SwitchClock(pDeviceRef, 0);

@@ -25,6 +25,17 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Declarations of the helper functions to assist with parsing certain responses from CA-821x
+ */
+/**
+ * @ingroup ca821x-api
+ * @defgroup ca821x-api-help Helper functions for CA-821x messages
+ * @brief Helper functions for parsing certain responses from CA-821x
+ *
+ * @{
+ */
 
 #ifndef CA821X_API_INCLUDE_CA821X_API_HELPER_H_
 #define CA821X_API_INCLUDE_CA821X_API_HELPER_H_
@@ -161,5 +172,9 @@ struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(const struct M_KeyTableEn
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* CA821X_API_INCLUDE_CA821X_API_HELPER_H_ */

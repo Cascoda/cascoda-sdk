@@ -1,4 +1,4 @@
-# Nuvoton OpenOCD Guide # 
+# Nuvoton OpenOCD Guide #
 
 [OpenOCD-Nuvoton.zip](https://github.com/Cascoda/cascoda-sdk-priv/files/3596028/OpenOCD-Nuvoton.zip)
 

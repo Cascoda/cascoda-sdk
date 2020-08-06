@@ -27,7 +27,14 @@
  */
 /**
  * @file
- * @brief  Platform abstraction layer definition for baremetal
+ * Declaration of platform abstraction functions
+ */
+/**
+ * @ingroup bm-driver
+ * @defgroup bm-interface Baremetal platform abstraction
+ * @brief  Platform abstraction layer definition for baremetal, expands upon \ref bm-interface-core
+ *
+ * @{
  */
 
 #ifndef CASCODA_INTERFACE_H
@@ -538,5 +545,9 @@ void BSP_RTCRegisterCallback(int (*callback)(void));
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // CASCODA_BSP_H

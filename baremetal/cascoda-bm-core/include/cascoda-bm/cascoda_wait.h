@@ -27,7 +27,14 @@
  */
 /**
  * @file
+ * Declarations of helper wait functions
+ */
+/**
+ * @ingroup bm-core
+ * @defgroup bm-wait Baremetal helper functions for waiting
  * @brief  Helper 'wait' framework for blocking functions
+ *
+ * @{
  */
 
 #ifndef CASCODA_WAIT_H
@@ -129,3 +136,7 @@ void *WAIT_GetContext(void);
 #endif
 
 #endif //CASCODA_WAIT_H
+
+/**
+ * @}
+ */

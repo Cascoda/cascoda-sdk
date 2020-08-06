@@ -1,0 +1,22 @@
+@startuml
+
+participant Host
+participant Device
+
+group Synchronous
+Host -> Device ++ : Synchronous Request
+rnote right: Process request
+Host <-- Device -- : Synchronous Confirm
+deactivate Device
+end
+
+|||
+
+group Asynchronous
+Host -> Device ++: Asynchronous Request
+rnote right: Process request & potentially do other work
+Host <[#blue]-> Device ++ : Other communication (Sync and Async)
+Host <-- Device --: Asynchronous Confirm
+end
+
+@enduml

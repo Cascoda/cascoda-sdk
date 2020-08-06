@@ -569,6 +569,7 @@ static void printPcapHeader(void)
  */
 static void initialiseRadio(struct ca821x_dev *pDeviceRef)
 {
+	EVBME_HOST_CONNECTED_notify(pDeviceRef); // reset device with hardware reset
 	MLME_RESET_request_sync(1, pDeviceRef);
 	uint8_t one = 1;
 	//Set RxMode to PCPS

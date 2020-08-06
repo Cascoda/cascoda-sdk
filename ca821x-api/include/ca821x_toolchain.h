@@ -26,6 +26,18 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @file
+ * Preprocessor defines for coping with different toolchains
+ */
+/**
+ * @ingroup ca821x-api-support
+ * @defgroup ca821x-api-toolchain Toolchain definitions
+ * @brief The defines for standardising across different toolchains
+ *
+ * @{
+ */
+
 #ifndef CA821X_API_INCLUDE_CA821X_TOOLCHAIN_H_
 #define CA821X_API_INCLUDE_CA821X_TOOLCHAIN_H_
 
@@ -61,5 +73,9 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* CA821X_API_INCLUDE_CA821X_TOOLCHAIN_H_ */

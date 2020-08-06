@@ -27,7 +27,14 @@
  */
 /**
  * @file
- * @brief  EvaBoard Management Entity (EVBME) Definitions/Declarations
+ * Declaration of EVBME Functions
+ */
+/**
+ * @ingroup bm-driver
+ * @defgroup bm-evbme Baremetal EVBME abstraction
+ * @brief  Evaluation Board Management Entity (EVBME) for core application-platform interactions
+ *
+ * @{
  */
 
 #include "cascoda-bm/cascoda_bm.h"
@@ -168,5 +175,9 @@ ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, 
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // CASCODA_EVBME_H

@@ -25,6 +25,17 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Declarations of platform helper functions for Thread
+ */
+/**
+ * @ingroup bm-thread
+ * @defgroup bm-thread-helper Thread helper functions for baremetal
+ * @brief  Platform helper functions for OpenThread
+ *
+ * @{
+ */
 
 #ifndef CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_
 #define CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_
@@ -179,3 +190,7 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
 const char *PlatformGetJoinerCredential(otInstance *aInstance);
 
 #endif /* CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_ */
+
+/**
+ * @}
+ */

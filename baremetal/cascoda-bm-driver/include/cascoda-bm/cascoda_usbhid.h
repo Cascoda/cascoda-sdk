@@ -27,7 +27,7 @@
  */
 /**
  * @file
- * @brief  USB HID definitions
+ * @brief  Internal USB HID definitions
  */
 
 #ifndef CASCODA_USBHID_H

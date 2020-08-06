@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief  SPI Communication Driver Definitions/Declarations
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -28,6 +24,17 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
+ * @file
+ * Declarations of internal SPI functions for communication with CA-821x
+ */
+/**
+ * @ingroup bm-core
+ * @defgroup bm-spi Baremetal SPI abstraction (internal)
+ * @brief  SPI Communication Driver Definitions/Declarations
+ *
+ * @{
  */
 
 #ifndef CASCODA_SPI_H
@@ -170,7 +177,7 @@ bool SPI_IsFifoEmpty(void);
 bool SPI_IsSyncChainInFlight(void);
 
 /**
- * Start a 'Sync Chain' For more efficient and safer chains of sync message comms
+ * Start a 'Sync Chain' For more efficient and safer chains of sync message communication
  * with the CA821x. This function should be called before starting to send a group
  * of synchronous messages, and SPI_StopSyncChain must be called afterwards.
  *
@@ -204,3 +211,7 @@ void SPI_Initialise(void);
 #endif
 
 #endif // CASCODA_SPI_H
+
+/**
+ * @}
+ */

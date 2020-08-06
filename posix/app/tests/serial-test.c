@@ -234,7 +234,7 @@ static void resultsAnalysis()
 		printf("\n");
 
 		if (numberOfMessagesSent == missedHandles)
-			return;
+			goto exit;
 	}
 
 	if (strcmp(resultsOption, "statistics") == 0 || strcmp(resultsOption, "both") == 0)
@@ -257,7 +257,7 @@ static void resultsAnalysis()
 		}
 
 		if (numberOfMessagesSent == missedHandles)
-			return;
+			goto exit;
 
 		printf("Summary statistics about elapsed time between each message and its first response:\n");
 
@@ -336,6 +336,8 @@ static void resultsAnalysis()
 		       "standard deviation:",
 		       standardDeviation);
 	}
+exit:
+	free(elapsedMilliseconds);
 }
 
 static void displayResults(uint32_t expectedIndications, struct EVBME_COMM_CHECK_request *CommCheckReq)

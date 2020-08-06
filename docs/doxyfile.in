@@ -453,7 +453,7 @@ EXTRACT_PACKAGE        = NO
 # included in the documentation.
 # The default value is: NO.
 
-EXTRACT_STATIC         = YES
+EXTRACT_STATIC         = NO
 
 # If the EXTRACT_LOCAL_CLASSES tag is set to YES, classes (and structs) defined
 # locally in source files will be included in the documentation. If set to NO,
@@ -841,8 +841,6 @@ FILE_PATTERNS          = *.c \
                          *.phtml \
                          *.inc \
                          *.m \
-                         *.markdown \
-                         *.md \
                          *.mm \
                          *.dox \
                          *.py \
@@ -959,7 +957,7 @@ INPUT_FILTER           =
 # need to set EXTENSION_MAPPING for the extension otherwise the files are not
 # properly processed by doxygen.
 
-FILTER_PATTERNS        = *.md="@CASCODA_SOURCE_DIR@/docs/doxymd.sed"
+FILTER_PATTERNS        =
 
 # If the FILTER_SOURCE_FILES tag is set to YES, the input filter (if set using
 # INPUT_FILTER) will also be used to filter the input files that are used for
@@ -981,7 +979,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = @CASCODA_SOURCE_DIR@/README.md
+USE_MDFILE_AS_MAINPAGE =
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
@@ -2421,12 +2419,12 @@ DIAFILE_DIRS           =
 # generate a warning when it encounters a \startuml command in this case and
 # will not generate output for the diagram.
 
-PLANTUML_JAR_PATH      =
+PLANTUML_JAR_PATH      = @CASCODA_PLANTUML_JAR@
 
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
 # configuration file for plantuml.
 
-PLANTUML_CFG_FILE      =
+PLANTUML_CFG_FILE      = @CASCODA_SOURCE_DIR@/docs/plantuml/cascoda.pu.conf
 
 # When using plantuml, the specified paths are searched for files specified by
 # the !include statement in a plantuml block.

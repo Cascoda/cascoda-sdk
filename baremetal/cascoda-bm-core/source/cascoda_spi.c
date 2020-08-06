@@ -1,7 +1,3 @@
-/**
- * @file
- * @brief  SPI Communication Driver Functions
- */
 /*
  *  Copyright (c) 2019, Cascoda Ltd.
  *  All rights reserved.
@@ -28,6 +24,10 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
+ * @file
+ * @brief  SPI Communication Driver Functions
  */
 #include <stdio.h>
 #include <string.h>

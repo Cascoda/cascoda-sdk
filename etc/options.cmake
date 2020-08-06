@@ -2,6 +2,7 @@
 # This file is processed before anything else, allowing options that affect the whole build. Options
 # only affect certain modules should be kept in their respective projects.
 
+option(CASCODA_BUILD_OCF "Whether to build Iotivity-Lite. Turning this on will also force OT_BUILTIN_MBEDTLS to be off." OFF)
 
 option(CASCODA_BUILD_LWIP "Build the LwIP stack into the Cascoda SDK" ON)
 

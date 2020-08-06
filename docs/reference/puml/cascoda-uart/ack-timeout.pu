@@ -1,0 +1,25 @@
+@startuml
+
+participant "Host (Linux PC)" as Host
+participant "Device (Chili2)" as Device
+
+Host -> Device : Msg1
+rnote left : Msg1, Msg2, Msg3, Msg4, Msg5, Msg6 requested
+
+group Repeat x5
+... 1000ms pass ...
+Host -> Device : Msg[n]
+rnote left : RXRDY Timeout, send anyway
+end
+
+Host -> Device : Msg6
+rnote left : Connection down, send anyway
+
+|||
+
+Host <- Device : Msg7
+rnote left : Message received, connection back up
+Host --> Device : EVBME_RXRDY
+Host -> Device : Msg8
+Host <-- Device : EVBME_RXRDY
+@enduml

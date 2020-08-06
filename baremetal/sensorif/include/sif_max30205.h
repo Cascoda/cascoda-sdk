@@ -25,8 +25,12 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Sensor interface for Maxim MAX30205 human body temperature sensor
+/**
+ * @ingroup bm-sensorif
+ * @defgroup bm-sensorif-max30205 Maxim MAX30205 human body temperature sensor driver
+ * @brief Sensor interface for Maxim MAX30205 human body temperature sensor.
+ *
+ * @{
 */
 
 #ifndef SIF_MAX30205_H
@@ -84,5 +88,9 @@ u8_t SIF_MAX30205_Initialise(void);                                           /*
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif // SIF_MAX30205_H

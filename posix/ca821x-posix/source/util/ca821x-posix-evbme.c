@@ -67,21 +67,21 @@ ca_error EVBME_COMM_CHECK_request(uint8_t            aHandle,
 	return ca821x_api_downstream((uint8_t *)&txMsg, txMsg.mLen + 2, NULL, pDeviceRef);
 }
 
-ca_error EVBME_GUI_CONNECTED_notify(struct ca821x_dev *pDeviceRef)
+ca_error EVBME_HOST_CONNECTED_notify(struct ca821x_dev *pDeviceRef)
 {
 	struct EVBME_Message txMsg;
 
-	txMsg.mCmdId = EVBME_GUI_CONNECTED;
+	txMsg.mCmdId = EVBME_HOST_CONNECTED;
 	txMsg.mLen   = 0;
 
 	return ca821x_api_downstream((uint8_t *)&txMsg, txMsg.mLen + 2, NULL, pDeviceRef);
 }
 
-ca_error EVBME_GUI_DISCONNECTED_notify(struct ca821x_dev *pDeviceRef)
+ca_error EVBME_HOST_DISCONNECTED_notify(struct ca821x_dev *pDeviceRef)
 {
 	struct EVBME_Message txMsg;
 
-	txMsg.mCmdId = EVBME_GUI_DISCONNECTED;
+	txMsg.mCmdId = EVBME_HOST_DISCONNECTED;
 	txMsg.mLen   = 0;
 
 	return ca821x_api_downstream((uint8_t *)&txMsg, txMsg.mLen + 2, NULL, pDeviceRef);

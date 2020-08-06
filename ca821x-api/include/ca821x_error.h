@@ -25,6 +25,17 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @file
+ * Global error declarations for use across the Cascoda SDK
+ */
+/**
+ * @ingroup ca821x-api-support
+ * @defgroup ca821x-api-err Error codes
+ * @brief The error codes that are used as return values across the Cascoda SDK
+ *
+ * @{
+ */
 
 #ifndef CA821X_API_INCLUDE_CA821X_ERROR_H_
 #define CA821X_API_INCLUDE_CA821X_ERROR_H_
@@ -79,5 +90,9 @@ const char *ca_error_str(ca_error aError);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* CA821X_API_INCLUDE_CA821X_ERROR_H_ */

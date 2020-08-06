@@ -29,6 +29,13 @@
  * @file
  * @brief  Helper 'tasklet' framework for scheduling simple events for the future.
  */
+/**
+ * @ingroup cascoda-util
+ * @defgroup ca-tasklet Tasklets
+ * @brief  Tasklet framework for scheduling simple events for the future
+ *
+ * @{
+ */
 
 #ifndef CASCODA_TASKLET_H
 #define CASCODA_TASKLET_H
@@ -146,3 +153,7 @@ ca_error TASKLET_Process(void);
 #endif
 
 #endif //CASCODA_TASKLET_H
+
+/**
+ * @}
+ */
