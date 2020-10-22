@@ -47,6 +47,11 @@
 extern "C" {
 #endif
 
+#ifndef CA_TARGET_NAME
+// Should be defined by the build system
+#define CA_TARGET_NAME "UNKNOWN-TARGET"
+#endif
+
 /** Definitions for Powerdown Modes */
 enum powerdown_mode
 {
@@ -100,9 +105,10 @@ const char *EVBME_GetAppName(void);
  * \brief Sends DownStream Command from API UpStream to Serial
  *******************************************************************************
  * \param msg - Message to send upstream
+ * \param pDeviceRef - Cascoda device reference
  *******************************************************************************
  ******************************************************************************/
-void DISPATCH_NotHandled(struct MAC_Message *msg);
+ca_error EVBME_NotHandled(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**

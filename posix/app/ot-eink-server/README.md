@@ -10,15 +10,14 @@ file. For instance: `GET ca/img?id=001.gz` would send the file titled `001.gz`
 in the response.
 
 If a child attempts to open a nonexistant file, the server ignores the GET
-request and prints an error. However, if the client requests a file that is too
-large to transmit in a single CoAP message (larger than 1024 bytes), the server
-crashes since this is an unrecoverable error.
+request and prints an error. Same behaviour if the client requests a file that is too
+large to transmit in a single CoAP message (larger than 1024 bytes).
 
 For the E-Ink application in particular, the client expects the files to be
 GZipped 1-bit raw pixel data. Thankfully, this is easy enough to accomplish
 using ImageMagick (looks like `convert` on most Unix systems, and ImageMagick
 is significantly easier to Google than `convert`). You can install it with
-`apt install imagemagick`, on Ubuntu and Debian. I have written several
+`apt install imagemagick`, on Ubuntu and Debian. There are several
 helper scripts that accomplish common tasks.
 
 ## format.sh ##
@@ -42,15 +41,15 @@ mv "$1.gray.gz" "$1.gz"
 
 This script can be used to generate an image containing arbitrary text, in the
 format expected by the EInk client device. It accomplishes this by using the
-`format.sh` script from above, and therefore it must live in the same folder.
+`format.sh` script from above, and therefore it must exist in the same folder.
 The text is scaled to fit onto a single line, so long lines may prove difficult
 to read.
 
 The script expects one argument containing the text of the image, and generates
 two files: "$TEXT.bmp" is a preview of what will be shown on the display, and
 "$TEXT.gz" is the file that should be uploaded by the server. If the text you
-want to display contains spaces, you must surround it in quotes: `./label.sh
-"Text containing spaces"`.
+want to display contains spaces, you must surround it in quotes: 
+``./label.sh "Text containing spaces"``.
 
 
 ```bash

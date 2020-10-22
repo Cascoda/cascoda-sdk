@@ -81,7 +81,7 @@ static int ca821x_run_downstream_dispatch()
 	if (len > 0)
 	{
 		priv = pDeviceRef->exchange_context;
-		rval = ca821x_downstream_dispatch(buffer, len, pDeviceRef);
+		rval = ca821x_downstream_dispatch((struct MAC_Message *)buffer, pDeviceRef);
 
 		if (rval != CA_ERROR_SUCCESS)
 		{

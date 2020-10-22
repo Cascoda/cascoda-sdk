@@ -102,7 +102,7 @@ if(CASCODA_OPENTHREAD_FTD)
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
 		)
 	target_link_libraries(ot-cli openthread-cli-ftd ca821x-openthread-bm-ftd tinycbor-master)
-	target_compile_definitions(ot-cli PRIVATE APP_NAME="OT CLI" OT_CLI=1)
+	target_compile_definitions(ot-cli PRIVATE OT_CLI=1)
 	cascoda_make_binary(ot-cli)
 
 	add_executable(ot-ncp
@@ -112,6 +112,6 @@ if(CASCODA_OPENTHREAD_FTD)
 		PRIVATE ${PROJECT_SOURCE_DIR}/platform
 		)
 	target_link_libraries(ot-ncp ca821x-openthread-bm-ftd openthread-ncp-ftd)
-	target_compile_definitions(ot-ncp PRIVATE APP_NAME="OT NCP" OT_NCP=1)
+	target_compile_definitions(ot-ncp PRIVATE OT_NCP=1)
 	cascoda_make_binary(ot-ncp)
 endif()

@@ -152,7 +152,7 @@ int main(void)
 	// Initialisation of Chip and EVBME
 	// Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action
 	// in case there is no UpStream Communications Channel available
-	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	// Insert Application-Specific Initialisation Routines here
 	NANO120_Initialise(StartupStatus, &dev);

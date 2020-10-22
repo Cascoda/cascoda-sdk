@@ -40,9 +40,11 @@
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_rand.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
+#include "cascoda_bm_internal.h"
 #include "evbme_messages.h"
 #include "mac_messages.h"
 
@@ -228,7 +230,7 @@ static void EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_de
 		// Synchronous Confirms have to be sent upstream for interrupt driven handlers
 		if ((buf[0] != SPI_IDLE) && (buf[0] != SPI_NACK) && (buf[0] & SPI_SYN))
 		{
-			DISPATCH_NotHandled(&response);
+			EVBME_NotHandled(&response, pDeviceRef);
 		}
 	}
 } // End of EVBMESendDownStream()
@@ -260,7 +262,7 @@ static int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct c
 			response.PData.Payload[0] = MAC_INVALID_PARAMETER;
 			response.PData.Payload[1] = SerialRxBuffer->Data[0];
 			response.PData.Payload[2] = SerialRxBuffer->Data[1];
-			DISPATCH_NotHandled(&response);
+			EVBME_NotHandled(&response, pDeviceRef);
 		}
 	}
 
@@ -274,7 +276,7 @@ static int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct c
 		response.PData.Payload[0] = status;
 		response.PData.Payload[1] = SerialRxBuffer->Data[0];
 		response.PData.Payload[2] = SerialRxBuffer->Data[1];
-		DISPATCH_NotHandled(&response);
+		EVBME_NotHandled(&response, pDeviceRef);
 	}
 	if ((SerialRxBuffer->CmdId == SPI_MLME_GET_REQUEST) && (SerialRxBuffer->Data[0] == phyTransmitPower))
 	{
@@ -287,7 +289,7 @@ static int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct c
 		response.PData.Payload[2] = SerialRxBuffer->Data[1];
 		response.PData.Payload[3] = 1;
 		response.PData.Payload[4] = val;
-		DISPATCH_NotHandled(&response);
+		EVBME_NotHandled(&response, pDeviceRef);
 	}
 
 	if (SerialRxBuffer->CmdId == SPI_MLME_ASSOCIATE_REQUEST)
@@ -778,12 +780,16 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 	CA_OS_Yield();
 }
 
-void DISPATCH_NotHandled(struct MAC_Message *msg)
+ca_error EVBME_NotHandled(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
+	(void)pDeviceRef;
 	if (MAC_Message)
+	{
 		MAC_Message(msg->CommandId, msg->Length, msg->PData.Payload);
-
-} // End of DISPATCH_NotHandled()
+		return CA_ERROR_SUCCESS;
+	}
+	return CA_ERROR_NOT_HANDLED;
+}
 
 void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
 {
@@ -914,6 +920,10 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 #endif
 
 	status = EVBME_Connect(aAppName, pDeviceRef); // reset and connect RF
+
+	pDeviceRef->callbacks.generic_dispatch = &EVBME_NotHandled;
+
+	RAND_SetCryptoEntropyDev(pDeviceRef);
 
 	return status;
 }

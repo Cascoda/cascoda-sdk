@@ -364,17 +364,17 @@ static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct 
 	return CA_ERROR_SUCCESS;
 }
 
-static ca_error handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleGenericDispatchFrame(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *priv = pDeviceRef->context;
 	/*
 	 * This is a debugging function for unhandled incoming MAC data
 	 */
-	fprintf(stderr, "%x: Unexpected command 0x%02x\r\n", priv->mAddress, buf[0]);
+	fprintf(stderr, "%x: Unexpected command 0x%02x\r\n", priv->mAddress, msg->CommandId);
 
-	for (int i = 1; i < buf[1] + 2; i++)
+	for (int i = 0; i < msg->Length; i++)
 	{
-		fprintf(stderr, " %02x", buf[i]);
+		fprintf(stderr, " %02x", msg->PData.Payload);
 	}
 	fprintf(stderr, "\r\n");
 

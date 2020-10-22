@@ -223,7 +223,7 @@ static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_ps
 	return CA_ERROR_SUCCESS;
 }
 
-static ca_error handleGenericDispatchFrame(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleGenericDispatchFrame(const struct MAC_Message *buf, struct ca821x_dev *pDeviceRef) //Async
 {
 	/*
 	 * This is a debugging function for unhandled incoming MAC data

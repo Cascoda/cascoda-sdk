@@ -1,10 +1,10 @@
 # ot-cli-actuator
 
-A simple demo that demonstrates the control of several actuators (running ot-cli-actuator), by a central controller (also running ot-cli-actuator). This demo provides a CLI for interaction (serial-adapter). The controller can individually set and request two variables owned by each actuator, and those are `brightness` and `colour_mix`.
+A simple demo that demonstrates the control of several actuators (running ot-cli-actuator), by a central controller (also running ot-cli-actuator). This demo provides a CLI for interaction, which can be used with the ``serial-adapter`` posix application. The controller can individually set and request two variables owned by each actuator, and those are `brightness` and `colour_mix`.
 
 ## Configuring a Chili as a controller or actuator
 
-1- Connect the Chili to a Windows or Linux machine and run the file `serial-adapter.exe`, or `serial-adapter`. This will open up the CLI.
+1- Connect the Chili to a Windows or Linux machine and run the executable `serial-adapter.exe`, or `serial-adapter`. This will open up the CLI.
 
 2- Type the command `actuatordemo actuator` or `actuatordemo controller` depending on which role you want the Chili to take.
 

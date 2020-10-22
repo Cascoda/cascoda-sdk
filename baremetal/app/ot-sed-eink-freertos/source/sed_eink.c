@@ -15,6 +15,7 @@
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-util/cascoda_rand.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "ca821x_endian.h"
@@ -30,7 +31,7 @@
 #include "semphr.h"
 #include "task.h"
 
-#include "sif_eink.h"
+#include "sif_il3820.h"
 #include "uzlib.h"
 
 #define SuccessOrExit(aCondition) \
@@ -57,11 +58,6 @@ const int IMAGE_OK_SLEEP_MS = 8 * 1000;
 const int IMAGE_RANDOM_SLEEP_MS = 4 * 1000;
 // How long to wait between resending image GET requests
 const int IMAGE_FAIL_RETRY_MS = 5 * 1000;
-
-/******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-const char *APP_NAME = "OT SED";
 
 const char *uriCascodaDiscover    = "ca/di";
 const char *uriCascodaTemperature = "ca/te";
@@ -271,17 +267,16 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 	decompress_data();
 
 	// Write the received data to the display
-	EINK_Initialise(&lut_full_update);
-	EINK_Display(image_buffer);
-	EINK_DeepSleep();
+	SIF_IL3820_Initialise(&lut_full_update);
+	SIF_IL3820_Display(image_buffer);
+	SIF_IL3820_DeepSleep();
 
 	// Get a random number, to randomise the sleep time
-	uint8_t ranLen = 0;
-	uint8_t random[2];
-	HWME_GET_request_sync(HWME_RANDOMNUM, &ranLen, random, &sDeviceRef);
+	uint16_t random;
+	RAND_GetBytes(sizeof(random), &random);
 
 	// Sleep until you must get a new image
-	int random_delay_ms = (GETLE16(random)) % IMAGE_RANDOM_SLEEP_MS;
+	int random_delay_ms = random % IMAGE_RANDOM_SLEEP_MS;
 	EVBME_PowerDown(PDM_DPD, IMAGE_OK_SLEEP_MS + random_delay_ms, &sDeviceRef);
 
 	// Should not get here
@@ -391,7 +386,7 @@ void initialise_communications()
 	ca821x_api_init(&sDeviceRef);
 
 	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(APP_NAME, &sDeviceRef);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
 
 	// Insert Application-Specific Initialisation Routines here
 	App_Initialise(StartupStatus, &sDeviceRef);

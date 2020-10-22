@@ -9,7 +9,7 @@ add_library(sensorif
 	)
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "M2351")
-	target_sources(sensorif PRIVATE ${PROJECT_SOURCE_DIR}/source/sif_eink.c)
+	target_sources(sensorif PRIVATE ${PROJECT_SOURCE_DIR}/source/sif_il3820.c)
 endif()
 
 target_include_directories(sensorif

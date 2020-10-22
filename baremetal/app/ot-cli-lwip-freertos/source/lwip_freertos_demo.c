@@ -69,11 +69,6 @@
 	} while (0)
 
 /******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-const char *APP_NAME = "OT LWIP RTOS";
-
-/******************************************************************************/
 /****** Single instance                                                  ******/
 /******************************************************************************/
 otInstance *             OT_INSTANCE;
@@ -140,7 +135,7 @@ static void System_Init()
 	cascoda_serial_dispatch = ot_serial_dispatch;
 
 	// Initialisation of Chip and EVBME
-	EVBMEInitialise(APP_NAME, &sDeviceRef);
+	EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
 
 	//Openthread Init
 	PlatformRadioInitWithDev(&sDeviceRef);

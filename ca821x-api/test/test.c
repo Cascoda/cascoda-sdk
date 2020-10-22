@@ -1183,14 +1183,13 @@ ca_error test_TDME_ERROR_indication(struct TDME_ERROR_indication_pset *params, s
 /***************************************************************************/ /**
  * \brief Generic callback function
  *******************************************************************************
- * \param buf - Message buffer
- * \param len - Length of message
+ * \param msg - Message buffer
  * \param pDeviceRef - Device reference
  *******************************************************************************
  * \return CA_ERROR_SUCCESS if this callback was expected, CA_ERROR_NOT_HANDLED otherwise
  *******************************************************************************
  ******************************************************************************/
-ca_error test_generic_dispatch(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error test_generic_dispatch(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.generic)
@@ -1207,14 +1206,13 @@ ca_error test_generic_dispatch(const uint8_t *buf, size_t len, struct ca821x_dev
  *******************************************************************************
  * Calls ca821x_downstream_dispatch and prints the result
  *******************************************************************************
- * \param buf - Message buffer
- * \param len - Length of message
+ * \param msg - Message buffer
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-void call_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+void call_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
-	if (ca821x_downstream_dispatch(buf, len, pDeviceRef) == CA_ERROR_SUCCESS)
+	if (ca821x_downstream_dispatch(msg, pDeviceRef) == CA_ERROR_SUCCESS)
 	{
 		printf(ANSI_COLOR_GREEN "Success\n" ANSI_COLOR_RESET);
 	}
@@ -1260,67 +1258,67 @@ int api_callbacks_test(void)
 	printf("%-35s", "MCPS_DATA_indication... ");
 	msgbuf.CommandId         = SPI_MCPS_DATA_INDICATION;
 	tcontext.dflags.data_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MCPS_DATA_confirm... ");
 	msgbuf.CommandId         = SPI_MCPS_DATA_CONFIRM;
 	tcontext.dflags.data_cnf = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_ASSOCIATE_indication... ");
 	msgbuf.CommandId          = SPI_MLME_ASSOCIATE_INDICATION;
 	tcontext.dflags.assoc_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_ASSOCIATE_confirm... ");
 	msgbuf.CommandId          = SPI_MLME_ASSOCIATE_CONFIRM;
 	tcontext.dflags.assoc_cnf = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_DISASSOCIATE_indication... ");
 	msgbuf.CommandId             = SPI_MLME_DISASSOCIATE_INDICATION;
 	tcontext.dflags.disassoc_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_DISASSOCIATE_confirm... ");
 	msgbuf.CommandId             = SPI_MLME_DISASSOCIATE_CONFIRM;
 	tcontext.dflags.disassoc_cnf = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_BEACON_NOTIFY_indication... ");
 	msgbuf.CommandId                  = SPI_MLME_BEACON_NOTIFY_INDICATION;
 	tcontext.dflags.beacon_notify_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_ORPHAN_indication... ");
 	msgbuf.CommandId           = SPI_MLME_ORPHAN_INDICATION;
 	tcontext.dflags.orphan_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_SCAN_confirm... ");
 	msgbuf.CommandId         = SPI_MLME_SCAN_CONFIRM;
 	tcontext.dflags.scan_cnf = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_COMM_STATUS_indication... ");
 	msgbuf.CommandId                = SPI_MLME_COMM_STATUS_INDICATION;
 	tcontext.dflags.comm_status_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "MLME_SYNC_LOSS_indication... ");
 	msgbuf.CommandId              = SPI_MLME_SYNC_LOSS_INDICATION;
 	tcontext.dflags.sync_loss_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "HWME_WAKEUP_indication... ");
 	msgbuf.CommandId           = SPI_HWME_WAKEUP_INDICATION;
 	tcontext.dflags.wakeup_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "TDME_RXPKT_indication... ");
 	msgbuf.CommandId          = SPI_TDME_RXPKT_INDICATION;
 	tcontext.dflags.rxpkt_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "TDME_EDDET_indication... ");
 	msgbuf.CommandId          = SPI_TDME_EDDET_INDICATION;
 	tcontext.dflags.eddet_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "TDME_ERROR_indication... ");
 	msgbuf.CommandId          = SPI_TDME_ERROR_INDICATION;
 	tcontext.dflags.error_ind = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("%-35s", "generic_dispatch... ");
 	test_dev.callbacks.TDME_ERROR_indication = NULL;
 	tcontext.dflags.generic                  = 1;
-	call_dispatch(&msgbuf.CommandId, 0, &test_dev);
+	call_dispatch(&msgbuf, &test_dev);
 	printf("Callbacks test complete\n\n");
 	return 0;
 }

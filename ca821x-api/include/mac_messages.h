@@ -406,7 +406,7 @@ struct MLME_GET_confirm_pset
 };
 
 /** Default size of scan results list */
-#define DEFAULT_RESULT_LIST_SIZE (16)
+#define DEFAULT_RESULT_LIST_SIZE (128)
 
 /** MLME_SCAN_confirm parameter set */
 struct MLME_SCAN_confirm_pset

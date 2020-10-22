@@ -105,7 +105,7 @@ struct ca821x_api_callbacks
 	TDME_RXPKT_indication_callback         TDME_RXPKT_indication;
 	TDME_EDDET_indication_callback         TDME_EDDET_indication;
 	TDME_ERROR_indication_callback         TDME_ERROR_indication;
-	ca_error (*generic_dispatch)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+	ca_error (*generic_dispatch)(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
 };
 
 /**
@@ -742,8 +742,7 @@ const char *ca821x_get_version_nodate(void);
  * \brief Call the relevant callback routine if populated or the
  *        generic_dispatch for a received command. Internal function.
  *******************************************************************************
- * \param *buf - Receive buffer
- * \param len - Length of command in octets
+ * \param *msg - Receive buffer
  * \param *pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return CA_ERROR_NOT_HANDLED: command was unhandled<br>
@@ -751,7 +750,7 @@ const char *ca821x_get_version_nodate(void);
  *         CA_ERROR_*: any other error
  *******************************************************************************
  ******************************************************************************/
-ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**

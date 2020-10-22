@@ -357,12 +357,8 @@ static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *
 {
 	ca_error ret;
 
-	ret = ca821x_downstream_dispatch(&aMessage->CommandId, aMessage->Length + 2, pDeviceRef);
-	if (ret == CA_ERROR_NOT_HANDLED)
-	{
-		DISPATCH_NotHandled(aMessage);
-	}
-	else if (ret != CA_ERROR_SUCCESS)
+	ret = ca821x_downstream_dispatch(aMessage, pDeviceRef);
+	if (ret != CA_ERROR_SUCCESS)
 	{
 		ca_log_crit("Err %s dispatching on SPI %02x!", ca_error_str(ret), aMessage->CommandId);
 	}

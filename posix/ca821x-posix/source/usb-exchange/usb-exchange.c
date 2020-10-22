@@ -517,7 +517,7 @@ static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef)
 
 		if (priv->hid_dev == NULL)
 		{
-			hid_cur = get_next_hid(hid_cur->next);
+			hid_cur = hid_cur->next;
 		}
 	}
 	if (hid_cur == NULL)

@@ -102,7 +102,6 @@ static char g_temperature_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.a",
                                                               "oic.if.baseline"}; /* interface if (as an array) */
 int         g_temperature_nr_resource_interfaces           = 2;
 
-const char *APP_NAME = "OT OCF Thermometer";
 otInstance *OT_INSTANCE;
 /**
 * function to set up the device.
@@ -383,7 +382,7 @@ int main(void)
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 	PlatformRadioInitWithDev(&dev);
 
 	// OpenThread Configuration
@@ -396,6 +395,10 @@ int main(void)
 	otIp6SubscribeMulticastAddress(OT_INSTANCE, &address);
 
 	otCliUartInit(OT_INSTANCE);
+
+	if (otDatasetIsCommissioned(OT_INSTANCE))
+		otThreadSetEnabled(OT_INSTANCE, true);
+
 	oc_assert(OT_INSTANCE);
 
 #ifdef OC_RETARGET

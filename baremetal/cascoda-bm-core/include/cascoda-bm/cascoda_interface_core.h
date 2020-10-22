@@ -44,17 +44,6 @@
 #include "mac_messages.h"
 
 /**
- * @brief Send an unhandled message upstream.
- *
- * This function must be implemented by a lower layer (such as EVBME). If you
- * want to catch unhandled messages at the application level, implement the
- * `generic_dispatch` member of `ca821x_api_callbacks.
- *
- * @param msg Message to send upstream
- */
-void DISPATCH_NotHandled(struct MAC_Message *msg);
-
-/**
  * \brief Wait for specified Time in Microseconds (max. 1000)
  *
  * \param us - Time in microseconds

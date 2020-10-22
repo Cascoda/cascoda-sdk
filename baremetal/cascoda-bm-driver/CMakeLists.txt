@@ -42,6 +42,7 @@ add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_os.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_rand.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
 	)
@@ -50,13 +51,22 @@ target_link_libraries(cascoda-bm
 	PUBLIC
 		ca821x-api
 		cascoda-bm-core
+	PRIVATE
+		mbedcrypto
 	)
 
-target_include_directories( cascoda-bm
+target_include_directories(cascoda-bm
 	PUBLIC
 		${PROJECT_SOURCE_DIR}/include
 		${PROJECT_BINARY_DIR}/include
+	PRIVATE
+		${PROJECT_SOURCE_DIR}/source
 	)
+
+target_compile_definitions(cascoda-bm
+	INTERFACE
+		CA_TARGET_NAME=\"$<TARGET_PROPERTY:NAME>\"
+)
 
 cascoda_use_warnings(cascoda-bm)
 

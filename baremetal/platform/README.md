@@ -1,8 +1,8 @@
 # platform
 Platform abstraction layer code linking cascoda-bm-driver to vendor libraries for specific modules and MCUs.<br>
-Implements the interface functions declared in cascoda-bm/cascoda_interface.h.<br>
+Implements the interface functions declared in cascoda-bm/cascoda_interface.h.
 
-The following platforms are currently implemented:<br>
+The following platforms are currently implemented:
 
 | Platform | Module / Board | MCU |
 | :--- | :--- | :--- |

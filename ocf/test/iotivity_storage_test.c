@@ -23,7 +23,7 @@ int main(void)
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
-	EVBMEInitialise("Storage Test", &dev);
+	EVBMEInitialise(CA_TARGET_NAME, &dev);
 	PlatformRadioInitWithDev(&dev);
 
 	// OpenThread Configuration

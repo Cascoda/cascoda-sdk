@@ -116,10 +116,10 @@ static int setup(void **state)
 {
 	(void)state;
 
-	will_return_always(__wrap_BSP_Waiting, 1);
+	will_return_maybe(__wrap_BSP_Waiting, 1);
 
 	ca821x_api_init(&sdev);
-	EVBMEInitialise("Unit Test", &sdev);
+	SPI_Initialise();
 
 	return 0;
 }

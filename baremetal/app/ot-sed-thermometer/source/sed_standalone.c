@@ -26,11 +26,6 @@
 
 #include "cbor.h"
 
-/******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-const char *APP_NAME = "OT SED";
-
 static const char *uriCascodaDiscover            = "ca/di";
 static const char *uriCascodaSensorDiscoverQuery = "t=sen";
 static const char *uriCascodaSensor              = "ca/se";
@@ -316,7 +311,7 @@ int main(void)
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	// Insert Application-Specific Initialisation Routines here
 	NANO120_Initialise(StartupStatus, &dev);

@@ -33,6 +33,8 @@
 */
 /* System */
 #include <stdio.h>
+#include <string.h>
+
 /* Platform */
 #include "M2351.h"
 #include "fmc.h"
@@ -141,7 +143,7 @@ __NONSECURE_ENTRY void BSP_EraseDataFlashPage(u32_t startaddr)
  *---------------------------------------------------------------------------*/
 __NONSECURE_ENTRY void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize)
 {
-	uint32_t addr;
+	uint32_t *addr = (uint32_t *)(startaddr + DATA_FLASH_BASE);
 
 	if (!isValidFlashAddr(startaddr))
 	{
@@ -149,19 +151,7 @@ __NONSECURE_ENTRY void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t dat
 		return;
 	}
 
-	SYS_UnlockReg();
-	FMC_Open();
-
-	/* Loop to read the data into the buffer */
-	addr = startaddr;
-	for (uint32_t i = 0; i < datasize; ++i)
-	{
-		data[i] = FMC_Read(DATA_FLASH_BASE + addr);
-		addr += 4;
-	}
-
-	FMC_Close();
-	SYS_LockReg();
+	memcpy(data, addr, datasize * sizeof(uint32_t));
 }
 
 /*---------------------------------------------------------------------------*

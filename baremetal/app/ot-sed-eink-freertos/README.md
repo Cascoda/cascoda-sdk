@@ -1,9 +1,9 @@
-# Sleepy End Device EInk demo #
+# Sleepy End Device EPaper demo #
 
 This target contains an application which requests compressed images from a
 server (`ot-eink-server`) and displays them onto a Waveshare 2.9" e-Paper
 module. See [the server
-documentation](../../../posix/app/ot-eink-server/Readme-eink.md) for a high
+documentation](../../../posix/app/ot-eink-server/README.md) for a high
 level overview of the application as a whole, and for a description of how to
 generate images compatible with this application.
 
@@ -16,5 +16,5 @@ build directory.
 
 Once the devices are all ready, plug the server Chili into a Linux machine
 and run the `ot-eink-server` executable. Then, power the end device
-Chili. After 10 to 20 seconds, the server will receive discover requests, as
+Chili and [commission it](../../../docs/guides/thread-commissioning.md). After 10 to 20 seconds, the server will receive discover requests, as
 well as image requests from the end device.

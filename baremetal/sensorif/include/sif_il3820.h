@@ -27,14 +27,14 @@
  */
 /**
  * @ingroup bm-sensorif
- * @defgroup bm-sensorif-eink EInk display sensorif driver
- * @brief Library for E-ink display of images.
+ * @defgroup bm-sensorif-il3820 IL3820 E-Paper Display sensorif driver
+ * @brief Library for communicating with the IL3820 E-Paper display driver.
  *
  * @{
 */
 
-#ifndef SIF_EINK_H
-#define SIF_EINK_H
+#ifndef SIF_SIF_IL3820_H
+#define SIF_SIF_IL3820_H
 
 #include <stdint.h>
 
@@ -59,20 +59,20 @@ extern "C" {
 */
 
 /* Pin configuration */
-#define EINK_BUSY_PIN 31
-#define EINK_RST_PIN 15
-#define EINK_DC_PIN 34
-//#define EINK_CS_PIN 34
+#define SIF_IL3820_BUSY_PIN 31
+#define SIF_IL3820_RST_PIN 15
+#define SIF_IL3820_DC_PIN 34
+//#define SIF_IL3820_CS_PIN 34
 
 /* Display resolution */
-#define EINK_WIDTH 128
-#define EINK_HEIGHT 296
+#define SIF_IL3820_WIDTH 128
+#define SIF_IL3820_HEIGHT 296
 
 /* QR code image array size */
-#define ARRAY_SIZE (EINK_HEIGHT * EINK_WIDTH / 8)
+#define ARRAY_SIZE (SIF_IL3820_HEIGHT * SIF_IL3820_WIDTH / 8)
 
 /* Look-up table declarations */
-struct EINK_lut
+struct SIF_IL3820_lut
 {
 	uint8_t lut_array[30];
 };
@@ -84,7 +84,7 @@ struct EINK_lut
  * A full update of the display to clear the screen should be performed regularly.
  *********************************************************************************************
  ********************************************************************************************/
-extern const struct EINK_lut lut_full_update;
+extern const struct SIF_IL3820_lut lut_full_update;
 
 /********************************************************************************************/
 /*****************************************************************************************/ /**
@@ -93,7 +93,7 @@ extern const struct EINK_lut lut_full_update;
  * after several partial updates, otherwise the e-Paper will be permanently damaged.
  *********************************************************************************************
  ********************************************************************************************/
-extern const struct EINK_lut lut_partial_update;
+extern const struct SIF_IL3820_lut lut_partial_update;
 
 /* functions */
 
@@ -104,7 +104,7 @@ extern const struct EINK_lut lut_partial_update;
  *              lut_full_update or lut_partial_update.
  *******************************************************************************
  ******************************************************************************/
-ca_error EINK_Initialise(const struct EINK_lut *lut);
+ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -112,28 +112,28 @@ ca_error EINK_Initialise(const struct EINK_lut *lut);
  * \param image - Image to display
  *******************************************************************************
  ******************************************************************************/
-void EINK_Display(const uint8_t *image);
+void SIF_IL3820_Display(const uint8_t *image);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Clears the display
  *******************************************************************************
  ******************************************************************************/
-void EINK_ClearDisplay(void);
+void SIF_IL3820_ClearDisplay(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Clears the display many times to make sure there is no ghost image
  *******************************************************************************
  ******************************************************************************/
-void EINK_StrongClearDisplay(void);
+void SIF_IL3820_StrongClearDisplay(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Enter deep sleep mode. Device draws around 2uA in this mode. 
  *******************************************************************************
  ******************************************************************************/
-void EINK_DeepSleep(void);
+void SIF_IL3820_DeepSleep(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -146,7 +146,7 @@ void EINK_DeepSleep(void);
  * \param y     - The y-coordinate of the top-left corner of the QR symbol.
  *******************************************************************************
  ******************************************************************************/
-ca_error EINK_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y);
+ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y);
 
 #ifdef __cplusplus
 }
@@ -157,4 +157,4 @@ ca_error EINK_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8
  */
 
 #endif
-// SIF_EINK_H
+// SIF_SIF_IL3820_H

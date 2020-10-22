@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include "ca821x-posix/ca821x-posix.h"
+#include "cascoda-util/cascoda_rand.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x-generic-exchange.h"
 #include "ca821x-posix-util-internal.h"
@@ -61,6 +62,7 @@ static void initTime(void)
 	if (sStartTime.tv_sec == 0 && sStartTime.tv_nsec == 0)
 	{
 		clock_gettime(CLOCK_MONOTONIC, &sStartTime);
+		RAND_Seed((uint64_t)time(NULL));
 	}
 }
 

@@ -1,6 +1,6 @@
 # LwIP FreeRTOS demo #
 
-This demonstration shows LwIP capabilities in combination with freeRTOS. This enables the posix-style Socket API, which means that existing posix applications can be easily ported to run on the Chili2 and Thread. This demo is compatible with ot-cli-lwip.
+This demonstration shows LwIP capabilities in combination with freeRTOS. This uses the posix-style Socket API, which means that existing posix applications can be easily ported to run on the Chili2 and Thread. This demo is compatible with ot-cli-lwip.
 
 This demo provides the standard openthread CLI as documented here: https://github.com/Cascoda/openthread/tree/ext-mac-dev/src/cli
 

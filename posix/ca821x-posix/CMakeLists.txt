@@ -38,6 +38,7 @@ if(UNIX)
 		${PROJECT_SOURCE_DIR}/source/usb-exchange/usb-exchange.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-evbme.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-log.c
+		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-rand.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-util.c
 		)
 
@@ -58,6 +59,7 @@ if(WIN32)
 		${PROJECT_SOURCE_DIR}/source/usb-exchange/usb-exchange.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-evbme.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-log.c
+		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-rand.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-util.c
 		)
 

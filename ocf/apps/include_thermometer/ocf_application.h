@@ -1,8 +1,6 @@
 #ifndef OCF_APPLICATION
 #define OCF_APPLICATION
 
-const char *APP_NAME = "Temperature Server";
-
 // Functions defined in the auto-generated Device Builder file
 void initialize_variables(void);
 int  app_init(void);

@@ -110,7 +110,7 @@ int main(void)
 	cascoda_serial_dispatch = ot_serial_dispatch;
 
 	// Initialisation
-	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 	NCP_Initialise(StartupStatus, &dev);
 	PlatformRadioInitWithDev(&dev);
 	OT_INSTANCE = otInstanceInitSingle();

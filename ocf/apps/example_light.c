@@ -84,7 +84,6 @@
 /* Note: Magic numbers are derived from the resource definition, either from the example or the definition.*/
 
 otInstance *OT_INSTANCE;
-const char *APP_NAME = "OT OC Server Example";
 
 // Pin used by the relay, for the lamp demo
 #define RELAY_OUT_PIN 15
@@ -669,10 +668,12 @@ void handle_ocf_light_server(int argc, char *argv[])
 		if (strcmp(argv[1], "0") == 0)
 		{
 			g_binaryswitch_value = 0;
+			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
 		}
 		else if (strcmp(argv[1], "1") == 0)
 		{
 			g_binaryswitch_value = 1;
+			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
 		}
 		else
 		{
@@ -713,7 +714,7 @@ int main(void)
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(APP_NAME, &dev);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 	PlatformRadioInitWithDev(&dev);
 
 	// OpenThread Configuration
@@ -730,6 +731,9 @@ int main(void)
 	ocfCommand.mCommand = handle_ocf_light_server;
 	ocfCommand.mName    = "ocflight";
 	otCliSetUserCommands(&ocfCommand, 1);
+
+	if (otDatasetIsCommissioned(OT_INSTANCE))
+		otThreadSetEnabled(OT_INSTANCE, true);
 
 	oc_assert(OT_INSTANCE);
 

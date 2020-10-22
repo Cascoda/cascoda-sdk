@@ -1,6 +1,6 @@
 # ot-cli-lwip
 
-This demonstration shows LwIP capabilities on a baremetal system. This enables the callback-style API, which does not require threads, so can run on a baremetal system. This demo is compatible with ot-cli-lwip-freertos.
+This demonstration shows LwIP capabilities on a baremetal system. This uses the LWIP callback-style API, which does not require threads, so can run on a baremetal system. This demo is compatible with ot-cli-lwip-freertos.
 
 This demo provides the standard openthread CLI as documented here: https://github.com/Cascoda/openthread/tree/ext-mac-dev/src/cli
 

@@ -47,11 +47,6 @@
 #include "test15_4_evbme.h"
 
 /******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-#define APP_NAME "SENSORIF"
-
-/******************************************************************************/
 /***************************************************************************/ /**
  * \brief Dispatch function to process received serial messages
  *******************************************************************************
@@ -87,7 +82,7 @@ int main(void)
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
 	/* in case there is no UpStream Communications Channel available */
-	EVBMEInitialise(APP_NAME, &dev);
+	EVBMEInitialise(CA_TARGET_NAME, &dev);
 	/* Insert Application-Specific Initialisation Routines here */
 	TEST15_4_Initialise(&dev);
 	SENSORIF_Initialise(&dev);

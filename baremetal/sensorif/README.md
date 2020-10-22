@@ -1,10 +1,15 @@
 # sensorif
-Example sensor interfaces for adding external sensor or actuator support to applications. Sensor measurement functions and actuator control are implemented in simple examples so they can be ported to other applications.<br>
-This code is intended as a library in which additional sensors can be added.
+Example sensor interfaces for adding external sensor or actuator support to applications. These modules abstract away the underlying I2C/SPI bus and present easy-to-use functions in C.
 
-List of supported devices:<br>
+These interfaces are used in some of the example applications in baremetal/app, such as ``sensorif-bm`` and ``ot-sed-sensorif`` and can be easily used in other applications.
 
-| Manufacturer | Device | Interface | Type | Declarations for Interface Functions |
-| :----------- | :----- | :-------- | :--- | :------------- |
-| Silicon Labs | Si7021 | I2C | Humidity and Temperature Sensor | sif_si7021.h |
-| Maxim Integrated | MAX30205 | I2C | Human Body Temperature Sensor | sif_max30205.h |
+sensorif is intended to be used as a library and additional sensors can be added as new files.
+
+List of supported devices:
+
+| Manufacturer      | Device        | Interface | Type | Declarations for Interface Functions |
+| :---------------- | :------------ | :-------- | :--- | :------------- |
+| Silicon Labs      | Si7021        | I2C | Humidity and Temperature Sensor | sif_si7021.h |
+| Maxim Integrated  | MAX30205      | I2C | Human Body Temperature Sensor | sif_max30205.h |
+| LITEON            | LTR-303ALS-01 | I2C | Ambient Light Sensor | sif_ltr303als.h         | 
+| Good Display      | IL3820        | SPI | E-Paper Display Driver | sif_il3820.h |

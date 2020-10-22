@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cascoda-util/cascoda_rand.h"
 #include "ca821x_api.h"
 #include "test15_4_phy_tests.h"
 
@@ -173,8 +174,6 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 {
 	uint8_t         i;
 	uint8_t         status = 0;
-	uint8_t         randnum[2];
-	uint8_t         attlen;
 	struct FullAddr DstFAdd;
 
 	msg->PData.TDMETxPktReq.TestPacketSequenceNumber = LS_BYTE(PHY_TESTRES.SEQUENCENUMBER);
@@ -188,24 +187,12 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	}
 	else if (PHY_TESTPAR.PACKETDATATYPE == TDME_TXD_RANDOM)
 	{
-		for (i = 0; i < PHY_TESTPAR.PACKETLENGTH; ++i)
-		{
-			if ((status = HWME_GET_request_sync(HWME_RANDOMNUM, &attlen, randnum, pDeviceRef)))
-				return status;
-			else
-				msg->PData.TDMETxPktReq.TestPacketData[i] = randnum[0];
-		}
+		RAND_GetBytes(PHY_TESTPAR.PACKETLENGTH, msg->PData.TDMETxPktReq.TestPacketData);
 	}
 	else if (PHY_TESTPAR.PACKETDATATYPE == TDME_TXD_SEQRANDOM)
 	{
 		msg->PData.TDMETxPktReq.TestPacketData[0] = PHY_TESTRES.SEQUENCENUMBER;
-		for (i = 1; i < PHY_TESTPAR.PACKETLENGTH; ++i)
-		{
-			if ((status = HWME_GET_request_sync(HWME_RANDOMNUM, &attlen, randnum, pDeviceRef)))
-				return (status);
-			else
-				msg->PData.TDMETxPktReq.TestPacketData[i] = randnum[0];
-		}
+		RAND_GetBytes(PHY_TESTPAR.PACKETLENGTH - 1, msg->PData.TDMETxPktReq.TestPacketData + 1);
 	}
 	else /* PHY_TESTPAR.PACKETDATATYPE == TDME_TXD_COUNT) */
 	{

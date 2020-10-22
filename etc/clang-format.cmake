@@ -29,6 +29,9 @@ if(NOT ${CLANG_VERSION} MATCHES "version 6\.0")
 endif()
 
 # Run clang format
-foreach(TMP_PATH ${cascoda_allsource})
+list(LENGTH cascoda_allsource LIST_LEN)
+math(EXPR LIST_LEN "${LIST_LEN} - 1")
+foreach(INDEX RANGE 0 ${LIST_LEN} 8)
+	list(SUBLIST cascoda_allsource ${INDEX} 8 TMP_PATH)
 	execute_process(COMMAND ${CLANG_FORMAT_EXE} -i ${TMP_PATH})
 endforeach()

@@ -1,12 +1,17 @@
 /* Tip: Use <jenkins-url>/pipeline-syntax to help write new command snippets */
-
 pipeline {
 	agent any
 
+	options {
+		checkoutToSubdirectory('repo')
+	}
+
+
 	environment {
-	    REPO_DIR = "${JENKINS_HOME}/repos"
-	    OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
-	    IOTIVITY_REPO = "${REPO_DIR}/iotivity-lite.git"
+		SRC_DIR = "${WORKSPACE}/repo"
+		REPO_DIR = "${JENKINS_HOME}/repos"
+		OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
+		IOTIVITY_REPO = "${REPO_DIR}/iotivity-lite.git"
 	}
 
 	stages {
@@ -59,171 +64,139 @@ pipeline {
 			}
 		}
 
+		stage('Precheck') {
+			environment {
+				//Reuse the build-posix build directory as we are running a native build
+				BUILD_DIR = 'build-posix'
+			}
+			steps {
+				// Allow build to continue even if the precheck fails
+				catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+					/* Verify that the committed code is formatted */
+					cmake_build_helper(
+						cleanBuild: true,
+						steps: [[args: 'format']]
+					)
+					dir("${env.SRC_DIR}") {
+						sh(
+							script: 'git diff --exit-code',
+							label: 'Verify code is correctly formatted'
+						)
+					}
+
+					/* Shell static analysis */
+				}
+			}
+		}
+
 		/** Build Stage
 		 *  Compile for all major platforms in various configurations & run unit tests
 		 */
 		stage('Build') {
 			parallel {
 				stage('Chili2') {
+					environment {
+					    BUILD_DIR = 'build-chili2'
+					}
 					steps {
 						/* Build for CA8210 */
-						cmakeBuild(
+						cmake_build_helper(
 							cleanBuild: true,
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
-							steps: [[args: '-j10 -O']]
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210'
 						)
 
 						/* Build for CA8211*/
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_CA_VER=8211',
-							steps: [[args: '-j10 -O']]
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211')
+
+						/* Collect binary size information for graphing using 'plot' calls in PostBuild stage*/
+						dir("build-chili2")
+						{
+							sh '${SRC_DIR}/etc/make_size_csvs.sh "mac-dongle" "ot-cli" "ot-sed-thermometer"'
+						}
 
 						/* Build with TrustZone*/
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON',
-							steps: [[args: '-j10 -O']]
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON')
 
 						/* Build with UART instead of USB */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_TRUSTZONE=OFF',
-							steps: [[args: '-j10 -O']]
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_TRUSTZONE=OFF')
 
 						/* Build with no comms interface */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=NONE',
-							steps: [[args: '-j10 -O']]
-						)
-
-						/* Build with Iotivity enabled */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili2',
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON',
-							steps: [[args: '-j10 -O']]
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_BM_INTERFACE=NONE')
 					}
 				}
 
 				stage('Chili') {
+					environment {
+						BUILD_DIR = 'build-chili'
+					}
 					steps {
 						/* Build for CA8210 */
-						cmakeBuild(
+						cmake_build_helper(
 							cleanBuild: true,
-							installation: 'InSearchPath',
-							buildDir: 'build-chili',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
-							steps: [[args: '-j10 -O']]
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_nano120.cmake -DCASCODA_CA_VER=8210'
 						)
 
 						/* Build for CA8211 */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-chili',
-							cmakeArgs: '-DCASCODA_CA_VER=8211',
-							steps: [[args: '-j10 -O']]
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211')
 					}
 				}
 
 				stage('Posix') {
+					environment {
+						BUILD_DIR = 'build-posix'
+					}
 					steps {
 						/* Build and test for CA8210 */
-						cmakeBuild(
-							cleanBuild: true,
-							installation: 'InSearchPath',
-							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}" -DCASCODA_BUILD_DUMMY=OFF -DCASCODA_USE_CLANG_TIDY=ON -DCASCODA_MAC_BLACKLIST=5',
-							steps: [[args: '-j10 -O']]
+						cmake_build_helper(
+							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_BUILD_DUMMY=OFF -DCASCODA_USE_CLANG_TIDY=ON -DCASCODA_MAC_BLACKLIST=5'
 						)
-						ctest(
-							installation: 'InSearchPath',
-							arguments: '--output-on-failure',
-							workingDir: 'build-posix'
-						)
+						ctest_helper()
+
 						/* Follow up with dummy baremetal for further tests */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_BUILD_DUMMY=ON',
-							steps: [[args: '-j10 -O']]
-						)
-						ctest(
-							installation: 'InSearchPath',
-							arguments: '--output-on-failure',
-							workingDir: 'build-posix'
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_BUILD_DUMMY=ON')
+						ctest_helper()
 
 						/* Build for CA8211 */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_LOG_LEVEL=DEBG -DCASCODA_BUILD_DUMMY=OFF',
-							steps: [[args: '-j10 -O']]
-						)
-						ctest(
-							installation: 'InSearchPath',
-							arguments: '--output-on-failure',
-							workingDir: 'build-posix'
-						)
-						/* Follow up with dummy baremetal for further tests */
-						cmakeBuild(
-							cleanBuild: true,
-							installation: 'InSearchPath',
-							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_BUILD_DUMMY=ON',
-							steps: [[args: '-j10 -O']]
-						)
-						ctest(
-							installation: 'InSearchPath',
-							arguments: '--output-on-failure',
-							workingDir: 'build-posix'
-						)
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_LOG_LEVEL=DEBG -DCASCODA_BUILD_DUMMY=OFF')
+						ctest_helper()
 
-						/* Build docs */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-posix',
-							cmakeArgs: '-DCASCODA_EXCLUDE_DOXYGEN="*/build-posix/* */build-chili/* */build-chili2/* */build-raspberrypi/* */build-ninja-chili2/*"',
-							steps: [[args: 'docs']]
-						)
+						/* Follow up with dummy baremetal for further tests */
+						cmake_build_helper(cmakeArgs: '-DCASCODA_BUILD_DUMMY=ON')
+						ctest_helper()
 						
-						/* Shell static analysis */
+						/* Build docs */
+						cmake_build_helper(steps: [[args: 'docs']])
 					}
 				}
 
 				stage('Raspberry Pi') {
+					environment {
+						BUILD_DIR = 'build-raspberrypi'
+					}
 					steps {
 						/* Build for CA8211 */
-						cmakeBuild(
+						cmake_build_helper(
 							cleanBuild: true,
-							installation: 'InSearchPath',
-							buildDir: 'build-raspberrypi',
-							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
-							steps: [[args: '-j10 -O']]
+							cmakeArgs: '-DCASCODA_CA_VER=8211 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_raspberrypi.cmake'
 						)
 					}
 				}
 
 				stage('Chili2 Ninja') {
+					environment {
+						BUILD_DIR = 'build-ninja-chili2'
+					}
 					steps {
 						/* Test the Ninja build for Chili2 CA8211 */
-						cmakeBuild(
-							installation: 'InSearchPath',
-							buildDir: 'build-ninja-chili2',
-							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -GNinja -DCASCODA_OPENTHREAD_REPO="${OPENTHREAD_REPO}" -DCASCODA_IOTIVITY_REPO="${IOTIVITY_REPO}"',
+						cmake_build_helper(
+							cleanBuild: true,
+							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -GNinja',
+							steps: [[args: '']]
+						)
+
+						/* Build with Iotivity enabled */
+						cmake_build_helper(
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON',
 							steps: [[args: '']]
 						)
 					}
@@ -250,6 +223,11 @@ pipeline {
 					tools: [doxygen(pattern: '**/doxyerr.txt')]
 				)
 
+				plottarget('all')
+				plottarget('mac-dongle')
+				plottarget('ot-cli')
+				plottarget('ot-sed-thermometer')
+
 				/* Publish the html docs to jenkins */
 				publishHTML(
 					target: [
@@ -264,4 +242,60 @@ pipeline {
 			}
 		}
 	}
+}
+
+/* Below here are a collection of helper functions for using in the pipeline above */
+
+/** Helper function to run a cmake config + build with common arguments.
+ *
+ * @param cmakeArgs  - The argument string to pass to CMake. This will be supplemented by certain required additionals.
+ * @param cleanBuild - Default false. Set to true to run make clean before make.
+ * @param steps      - Default '-j10 -O'. The arguments to pass to the build tool (e.g. 'make')
+ */
+def cmake_build_helper(Map args) {
+	def defaultargs = [cmakeArgs: '', cleanBuild: false, steps: [[args: '-j10 -O']]]
+	args = defaultargs + args
+	cmakeBuild(
+		cleanBuild: args.cleanBuild,
+		installation: 'InSearchPath',
+		buildDir: "${env.BUILD_DIR}",
+		sourceDir: "${env.SRC_DIR}",
+		cmakeArgs: "${args.cmakeArgs} -DCASCODA_OPENTHREAD_REPO=\"${env.OPENTHREAD_REPO}\" -DCASCODA_IOTIVITY_REPO=\"${env.IOTIVITY_REPO}\"",
+		steps: args.steps
+	)
+}
+
+/**  Helper function to run ctest with common args
+ */
+def ctest_helper() {
+	ctest(
+		installation: 'InSearchPath',
+		arguments: '--output-on-failure',
+		workingDir: "${env.BUILD_DIR}",
+	)
+}
+
+/** Helper function to draw flash/ram plots of the given target. The target names must also be given to the make_size_csvs.sh script.
+ * 
+ * @param targetname (positional) - target name, or 'all' for full graph
+ */
+def plottarget(targetname) {
+	plot(
+		csvFileName: "plot-flash-${targetname}-644cad44-96a6-4316-b928-18f65f4d9385.csv",
+		csvSeries: [[displayTableFlag: false, exclusionValues: '', file: "build-chili2/flash_${targetname}.csv", inclusionFlag: 'OFF', url: '']],
+		exclZero: true,
+		group: 'Sizes',
+		style: 'line',
+		title: "Flash Usage - ${targetname}",
+		yaxis: 'Flash usage (bytes)'
+	)
+	plot(
+		csvFileName: "plot-ram-${targetname}-644cad44-96a6-4316-b928-18f65f4d9385.csv",
+		csvSeries: [[displayTableFlag: false, exclusionValues: '', file: "build-chili2/ram_${targetname}.csv", inclusionFlag: 'OFF', url: '']],
+		exclZero: true,
+		group: 'Sizes',
+		style: 'line',
+		title: "RAM Usage - ${targetname}",
+		yaxis: 'RAM usage (bytes)'
+	)
 }

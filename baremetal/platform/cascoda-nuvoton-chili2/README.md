@@ -107,7 +107,7 @@ CPU Pin | Default Function  | Chili 2 Function | Usage
  PC.9     IN    | PC.9        IN     | ZIG_IRQB    (CA821x NIRQ,   P20)
 
 ### Interrupts
-Several interrupts are used in this project with different priorities. Interrupts with a higher priority (smaller value) will interrupt lower priority ISRs. The interrupts and their priorities are as follows:
+Several interrupts are used in this project with different priorities. Interrupts with a higher priority (smaller value) will preempt lower priority ISRs (only 2 MSB considered for preemption). The interrupts and their priorities are as follows:
 
 | Interrupt  | Priority |
 | ---------- | -------- |

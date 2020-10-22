@@ -5,8 +5,7 @@ layer work on top of Thread, using our embedded Chili platform.
 
 This document describes the existing OCF applications. If you would like to
 create a custom application, 
-[there is a separate guide](../docs/guides/how-to-create-custom-ocf-applications.md#) for this.
-
+[there is a separate guide](../docs/guides/create-custom-ocf-applications.md#) for this.
 
 ## apps ##
 

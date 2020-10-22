@@ -4,6 +4,7 @@ project (cascoda-util)
 # Main library config ---------------------------------------------------------
 add_library(cascoda-util
 	${PROJECT_SOURCE_DIR}/src/cascoda_hash.c
+	${PROJECT_SOURCE_DIR}/src/cascoda_rand.c
 	${PROJECT_SOURCE_DIR}/src/cascoda_tasklet.c
 	)
 

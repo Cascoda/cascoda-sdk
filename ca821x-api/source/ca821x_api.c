@@ -904,8 +904,6 @@ ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(0, 0xFE, 0x3F, pDeviceRef))) // Tx Output Power 8 dBm
 		return (ca_mac_status)(status);
-	if ((status = TDME_SETSFR_request_sync(1, 0xDD, 0x3F, pDeviceRef))) // 7uS output & 7us data holdoff in tx amp
-		return (ca_mac_status)(status);
 
 #if CASCODA_CA_VER == 8210
 	/* Set hardware lqi limit to 0 to disable lqi-based frame filtering */
@@ -1372,14 +1370,13 @@ union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev 
 
 #if CASCODA_MAC_BLACKLIST != 0
 
-static uint8_t blacklist_must_filter(uint8_t *buf, struct ca821x_dev *pDeviceRef)
+static uint8_t blacklist_must_filter(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
-	struct FullAddr     src;
-	struct MAC_Message *msg = (struct MAC_Message *)(buf);
-	size_t              address_len;
+	struct FullAddr src;
+	size_t          address_len;
 	src.AddressMode = MAC_MODE_NO_ADDR;
 
-	switch (buf[0])
+	switch (msg->CommandId)
 	{
 	case SPI_MCPS_DATA_INDICATION:
 		src = msg->PData.DataInd.Src;
@@ -1432,11 +1429,11 @@ static uint8_t blacklist_must_filter(uint8_t *buf, struct ca821x_dev *pDeviceRef
 }
 #endif
 
-ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
 	ca_error ret = CA_ERROR_NOT_HANDLED;
 
-	union ca821x_api_callback *rval = ca821x_get_callback(buf[0], pDeviceRef);
+	union ca821x_api_callback *rval = ca821x_get_callback(msg->CommandId, pDeviceRef);
 
 	if (!rval) //Unrecognised command ID
 	{
@@ -1446,41 +1443,41 @@ ca_error ca821x_downstream_dispatch(uint8_t *buf, size_t len, struct ca821x_dev 
 
 	/* call appropriate checks/updates/workarounds */
 #if CASCODA_CA_VER == 8210
-	switch (buf[0])
+	switch (msg->CommandId)
 	{
 	case SPI_MCPS_DATA_INDICATION:
-		ret = check_data_ind_destaddr((struct MCPS_DATA_indication_pset *)(buf + 2), pDeviceRef);
+		ret = check_data_ind_destaddr(&msg->PData.DataInd, pDeviceRef);
 		if (ret)
 		{
 			goto exit;
 		}
 		break;
 	case SPI_MLME_SCAN_CONFIRM:
-		verify_scancnf_results((struct MAC_Message *)buf, pDeviceRef);
+		verify_scancnf_results(msg, pDeviceRef);
 		break;
 	case SPI_MLME_ASSOCIATE_CONFIRM:
-		get_assoccnf_shortaddr((struct MLME_ASSOCIATE_confirm_pset *)(buf + 2), pDeviceRef);
+		get_assoccnf_shortaddr(&msg->PData.AssocCnf, pDeviceRef);
 		break;
 	}
 #endif
 
 #if CASCODA_MAC_BLACKLIST != 0
-	if (blacklist_must_filter(buf, pDeviceRef))
+	if (blacklist_must_filter(msg, pDeviceRef))
 	{
 		ret = CA_ERROR_SUCCESS;
 		goto exit;
 	}
 #endif // CASCODA_MAC_BLACKLIST
 
-	//If there is a callback registered, call it. Otherwise, call the generic dispatch.
+	//If there is a callback registered, call it. Otherwise (or if not handled), call the generic dispatch.
 	ret = CA_ERROR_NOT_HANDLED;
 	if (rval->generic_callback)
 	{
-		ret = rval->generic_callback(buf + 2, pDeviceRef);
+		ret = rval->generic_callback(msg->PData.Payload, pDeviceRef);
 	}
-	else if (pDeviceRef->callbacks.generic_dispatch)
+	if (ret == CA_ERROR_NOT_HANDLED && pDeviceRef->callbacks.generic_dispatch)
 	{
-		ret = pDeviceRef->callbacks.generic_dispatch(buf, len, pDeviceRef);
+		ret = pDeviceRef->callbacks.generic_dispatch(msg, pDeviceRef);
 	}
 
 exit:

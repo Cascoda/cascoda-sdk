@@ -47,10 +47,12 @@
 
 enum
 {
-	JOINER_CREDENTIAL_LEN = 8
+	JOINER_CREDENTIAL_LEN    = 8,
+	JOINER_CREDENTIAL_MAXLEN = 32, // Thread Spec
+	JOINER_CREDENTIAL_MINLEN = 6,  // Thread Spec
 };
 
-static char       joiner_credential[JOINER_CREDENTIAL_LEN + 1];
+static char       joiner_credential[JOINER_CREDENTIAL_MAXLEN + 1];
 static const char joiner_alphabet[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
                                        'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y'};
 
@@ -145,18 +147,50 @@ static void genJoinerCred(char *aPskd, uint8_t len)
 		uint8_t index = aPskd[i] >> 3;
 		aPskd[i]      = joiner_alphabet[index];
 	}
+	aPskd[len] = '\0';
+}
+
+static bool isValidJoinerCredChar(char aChar)
+{
+	bool rval = false;
+	for (int i = 0; i < sizeof(joiner_alphabet); i++)
+	{
+		if (aChar == joiner_alphabet[i])
+		{
+			rval = true;
+			break;
+		}
+	}
+	return rval;
+}
+
+static bool isValidJoinerCred(char *aPskd, uint8_t len)
+{
+	if (len > JOINER_CREDENTIAL_MAXLEN || len < JOINER_CREDENTIAL_MINLEN)
+		return false;
+
+	for (int i = 0; i < len; i++)
+	{
+		if (!isValidJoinerCredChar(aPskd[i]))
+			return false;
+	}
+
+	if (aPskd[len] != '\0')
+		return false;
+
+	return true;
 }
 
 const char *PlatformGetJoinerCredential(otInstance *aInstance)
 {
-	uint16_t cred_len = JOINER_CREDENTIAL_LEN;
+	uint16_t cred_len = JOINER_CREDENTIAL_MAXLEN;
 
 	if (joiner_credential[0])
 		return joiner_credential; //Already cached
 
 	//Generate or get the joiner credential
 	if (otPlatSettingsGet(aInstance, joiner_credential_key, 0, joiner_credential, &cred_len) != OT_ERROR_NONE ||
-	    cred_len != JOINER_CREDENTIAL_LEN)
+	    !isValidJoinerCred(joiner_credential, cred_len))
 	{
 		genJoinerCred(joiner_credential, JOINER_CREDENTIAL_LEN);
 		otPlatSettingsSet(aInstance, joiner_credential_key, joiner_credential, JOINER_CREDENTIAL_LEN);

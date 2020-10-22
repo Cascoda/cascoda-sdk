@@ -57,8 +57,8 @@ enum evbme_command_ids
 	EVBME_SET_CONFIRM = 0x5E, //!< M<-S Response including status for EVBME set (sync resp)
 	EVBME_SET_REQUEST = 0x5F, //!< M->S Set an EVBME parameter (sync req)
 
-	EVBME_HOST_CONNECTED      = 0x81, //!< M->S Notification from host that connection is established
-	EVBME_HOST_DISCONNECTED   = 0x82, //!< M->S Notification from host that connection is about to be terminated
+	EVBME_HOST_CONNECTED     = 0x81, //!< M->S Notification from host that connection is established
+	EVBME_HOST_DISCONNECTED  = 0x82, //!< M->S Notification from host that connection is about to be terminated
 	EVBME_MESSAGE_INDICATION = 0xA0, //!< M<-S Text message to be printed by host
 	EVBME_COMM_CHECK         = 0xA1, //!< M->S Communication check message from host that generates COMM_INDICATIONS
 	EVBME_COMM_INDICATION    = 0xA2, //!< M<-S Communication check indication from slave to master as requested

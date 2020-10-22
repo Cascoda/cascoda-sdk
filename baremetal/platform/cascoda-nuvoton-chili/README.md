@@ -49,7 +49,7 @@ Nuvoton Nano100B_Series_BSP_CMSIS_v3.03.000
   45    | XT1_OUT  I/O   | XT1_OUT     I/O    | -
 
 ### Interrupts
-Several interrupts are used in this project with different priorities. Interrupts with a higher priority (smaller value) will interrupt lower priority ISRs. The interrupts and their priorities are as follows:
+Several interrupts are used in this project with different priorities. Interrupts with a higher priority (smaller value) will preempt lower priority ISRs (only 2 MSB considered for preemption). The interrupts and their priorities are as follows:
 
 | Interrupt  | Priority |
 | ---------- | -------- |

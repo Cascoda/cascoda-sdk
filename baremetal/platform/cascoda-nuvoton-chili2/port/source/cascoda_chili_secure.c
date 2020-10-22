@@ -62,6 +62,7 @@ static volatile u8_t asleep = 0;
 static volatile u8_t wakeup = 0;
 static u8_t          lxt_connected;
 
+#if CASCODA_LOG_LEVEL == 5 //LOG LEVEL_DEBUG
 // Table of registers & their names, used by the hard fault handler
 typedef struct
 {
@@ -70,7 +71,7 @@ typedef struct
 	uint8_t  u8NSIdx;
 } IP_T;
 
-IP_T ip_tbl[] = {
+static const IP_T ip_tbl[] = {
     {"SYS", SYS_BASE, 0},
     {"CLK", CLK_BASE, 0},
     {"INT", INT_BASE, 0},
@@ -143,6 +144,7 @@ IP_T ip_tbl[] = {
     {"USCI1", USCI1_BASE, USCI1_Attr},
     {0, USCI1_BASE + 4096, 0},
 };
+#endif
 
 __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 {
@@ -635,9 +637,11 @@ int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief System Startup called from Assembler
+ * \brief Hardfault handler
  *******************************************************************************
  ******************************************************************************/
+
+#if CASCODA_LOG_LEVEL == 5 //LOG_LEVEL_DEBUG
 #if defined(__GNUC__)
 __attribute__((optimize("O0")))
 #endif
@@ -853,6 +857,17 @@ __NONSECURE_ENTRY uint32_t
 
 	return lr;
 }
+#else  //CASCODA_LOG_LEVEL == 5 //LOG_LEVEL_DEBUG
+__NONSECURE_ENTRY uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
+{
+	(void)lr;
+	(void)msp;
+	(void)psp;
+	while (1)
+		;
+	return 1;
+}
+#endif //CASCODA_LOG_LEVEL == 5 //LOG_LEVEL_DEBUG
 
 __NONSECURE_ENTRY void CHILI_CRYPTOEnableClock(void)
 {

@@ -46,13 +46,8 @@
 
 /* Insert Application-Specific Includes here */
 #include "eink_image.h"
-#include "sif_eink.h"
+#include "sif_il3820.h"
 #include "test15_4_evbme.h"
-
-/******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-#define APP_NAME "EINK"
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -85,23 +80,23 @@ int main(void)
 {
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
-	EINK_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
+	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
 	cascoda_serial_dispatch = test15_4_serial_dispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
 	/* in case there is no UpStream Communications Channel available */
-	EVBMEInitialise(APP_NAME, &dev);
+	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	/* Insert Application-Specific Initialisation Routines here */
 	TEST15_4_Initialise(&dev);
-	EINK_Initialise(&lut_full_update);
-	EINK_ClearDisplay();
+	SIF_IL3820_Initialise(&lut_full_update);
+	SIF_IL3820_ClearDisplay();
 	WAIT_ms(500);
-	EINK_Display(cascoda_img_2in9);
+	SIF_IL3820_Display(cascoda_img_2in9);
 	WAIT_ms(1000);
 	WAIT_ms(1000);
-	EINK_DeepSleep();
+	SIF_IL3820_DeepSleep();
 
 	/* Endless Polling Loop */
 	while (1)

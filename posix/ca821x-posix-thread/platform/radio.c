@@ -51,6 +51,7 @@
 
 #include "ca821x-posix-thread/posix-platform.h"
 #include "ca821x-posix/ca821x-posix.h"
+#include "cascoda-util/cascoda_rand.h"
 #include "ca821x_api.h"
 #include "code_utils.h"
 #include "ieee_802_15_4.h"
@@ -582,15 +583,7 @@ void initIeeeEui64()
 	if (create)
 	{
 		file = open(fileName, O_RDWR | O_CREAT, 0666);
-		for (int i = 0; i < 4; i += 1)
-		{
-			uint8_t ranLen = 0;
-			uint8_t random[2];
-			HWME_GET_request_sync(HWME_RANDOMNUM, &ranLen, random, pDeviceRef);
-			assert(ranLen == 2);
-			sIeeeEui64[2 * i]     = random[0];
-			sIeeeEui64[2 * i + 1] = random[1];
-		}
+		RAND_GetBytes(sizeof(sIeeeEui64), sIeeeEui64);
 		sIeeeEui64[0] &= ~1; //Unset Group bit
 		sIeeeEui64[0] |= 2;  //Set local bit
 		write(file, sIeeeEui64, 8);

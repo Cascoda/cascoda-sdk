@@ -39,11 +39,6 @@
 		}                         \
 	} while (0)
 
-/******************************************************************************/
-/****** Application name                                                 ******/
-/******************************************************************************/
-const char *APP_NAME = "OT SED";
-
 const char *       uriCascodaDiscover            = "ca/di";
 static const char *uriCascodaSensorDiscoverQuery = "t=sen";
 const char *       uriCascodaSensor              = "ca/se";
@@ -113,7 +108,7 @@ static void System_Init()
 	ca821x_api_init(&sDeviceRef);
 
 	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(APP_NAME, &sDeviceRef);
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
 
 	EVBME_SwitchClock(&sDeviceRef, 1);
 
