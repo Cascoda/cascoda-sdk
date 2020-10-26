@@ -52,7 +52,7 @@ jobs:
 
     - name: enable compiler
       run: |
-        echo "::add-path::${{ github.workspace }}\gcc-arm-none-eabi-9-2020-q2-update-win32\bin"
+        echo "${{ github.workspace }}\gcc-arm-none-eabi-9-2020-q2-update-win32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: configure chili build on windows
       run: |
@@ -109,7 +109,7 @@ jobs:
 
     - name: enable compiler
       run: |
-        echo "::add-path::${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin"
+        echo "${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin" >> $GITHUB_PATH
 
     - name: configure Chili2S-UART0-1Mbaud
       run: |
