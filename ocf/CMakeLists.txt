@@ -2,14 +2,14 @@ project (iotivity)
 
 include(FetchContent)
 
-# Only the Chili 2 has enough memory and flash to run Iotivity
-if(NOT TARGET cascoda-chili2)
-    return()
-endif()
-
 # Cannot build Iotivity without its patched mbedtls
 if(NOT ${CASCODA_BUILD_OCF})
     return()
+endif()
+
+# Only the Chili 2 has enough memory and flash to run Iotivity
+if(NOT TARGET cascoda-chili2)
+	message(FATAL_ERROR "OCF is currently only supported for the Chili2 target")
 endif()
 
 if(NOT CASCODA_IOTIVITY_REPO)
@@ -21,7 +21,7 @@ FetchContent_Declare(
     iotivitylite
     GIT_REPOSITORY ${CASCODA_IOTIVITY_REPO}
     GIT_TAG 6d195d348ef2f0ad4993f7691c65a03b0f334ba5
-    PATCH_COMMAND  make -C ./port/linux ../../deps/mbedtls/patched.txt
+    PATCH_COMMAND  ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/iotivity-patch.cmake
 )
 
 FetchContent_GetProperties(iotivitylite)
