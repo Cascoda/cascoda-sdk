@@ -172,7 +172,7 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 And also the following reference documents:
 
 - [The Cascoda TLV message format](docs/reference/cascoda-tlv-message.md)
-- [The Cascoda UART interface](doca/reference/cascoda-uart-if.md)
+- [The Cascoda UART interface](docs/reference/cascoda-uart-if.md)
 
 ### toolchain
 `toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#instructions). There is extra info on how to compile for different targets in docs, such as [cross compiling for the raspberry pi.](docs/guides/cross-compile-for-the-raspberry-pi.md)

@@ -15,7 +15,7 @@ jobs:
 
     - name: configure windows sdk
       run: |
-        cmake.exe -S ${{ github.workspace }}\cascoda-sdk -B ${{ github.workspace }}\build-win -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles"
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles"
 
     - name: build windows-sdk
       run: |
@@ -32,6 +32,36 @@ jobs:
       with:
         name: Windows-SDK
         path: ${{ github.workspace }}\release
+
+    - name: cache arm compiler
+      id: cache-compiler
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-gcc-arm-win
+      with:
+        path: ${{ github.workspace }}/gcc-arm-none-eabi-9-2020-q2-update-win32
+        key: gcc-arm-none-eabi-9-2020-q2-update-win32
+
+    - name: download compiler
+      if: steps.cache-compiler.outputs.cache-hit != 'true'
+      run: |
+        $uri =  "https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2020q2/gcc-arm-none-eabi-9-2020-q2-update-win32.zip"
+        $zipfile = "gcc-arm-none-eabi-9-2020-q2-update-win32.zip"
+        (New-Object System.Net.WebClient).DownloadFile($uri, $zipfile)
+        Expand-Archive -Path gcc-arm-none-eabi-9-2020-q2-update-win32.zip -DestinationPath gcc-arm-none-eabi-9-2020-q2-update-win32
+
+    - name: enable compiler
+      run: |
+        echo "${{ github.workspace }}\gcc-arm-none-eabi-9-2020-q2-update-win32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: configure chili build on windows
+      run: |
+        arm-none-eabi-gcc --version
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -DCASCODA_BUILD_OCF=ON -G "MinGW Makefiles"
+
+    - name: build chili binaries on windows
+      run: |
+        mingw32-make.exe -C ${{ github.workspace }}\build-chili2-win -j4
 
   # Build artifacts for macos - for build testing only, no artifacts
   macos:
@@ -79,7 +109,7 @@ jobs:
 
     - name: enable compiler
       run: |
-        echo "::add-path::${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin"
+        echo "${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin" >> $GITHUB_PATH
 
     - name: configure Chili2S-UART0-1Mbaud
       run: |
