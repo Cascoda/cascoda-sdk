@@ -14,20 +14,40 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 
 ## Contents
 
-1. [Building](#building)
-2. [Example Applications](#example-applications)
-3. [Debugging](#debugging)
-4. [Directory Layout](#directory-layout)
-5. [CMake Library Targets](#cmake-library-targets)
+<!-- TOC -->
+
+- [Cascoda SDK](#cascoda-sdk)
+  - [Contents](#contents)
+  - [Building](#building)
+    - [Instructions](#instructions)
+      - [Linux/MacOS](#linuxmacos)
+      - [Windows](#windows)
+  - [Example Applications](#example-applications)
+    - [Embedded Targets](#embedded-targets)
+    - [Hosted Targets](#hosted-targets)
+  - [Debugging](#debugging)
+  - [Directory layout](#directory-layout)
+    - [ca821x-api](#ca821x-api)
+    - [baremetal](#baremetal)
+    - [docs](#docs)
+    - [toolchain](#toolchain)
+    - [posix](#posix)
+    - [cascoda-utils](#cascoda-utils)
+    - [openthread](#openthread)
+    - [etc](#etc)
+  - [CMake Library Targets](#cmake-library-targets)
+
+<!-- /TOC -->
 
 ## Building
 
 The Cascoda SDK takes advantage of open source tools, such as Git, GCC, CMake and Doxygen. It is possible to build the Cascoda SDK natively, or cross compile for embedded platforms. Several different compilers and targets are supported, and this process is driven by CMake. CMake is the build tool used for configuring the build system for a given compiler and target, and also selecting build options.
 
 ### Instructions
+
 To build the Cascoda SDK, first configure your environment as detailed [here](docs/guides/development-setup.md), then follow the instructions below:
 
-<details open><summary>Linux/MacOS</summary>
+#### Linux/MacOS
 
 ```Bash
 # Make a working directory
@@ -54,9 +74,7 @@ make -j12
 # Built for Chili 2! To change configuration, the 'ccmake .' command can be used
 ```
 
-</details>
-
-<details><summary>Windows</summary>
+#### Windows
 
 ```Bash
 # Make a working directory
@@ -84,8 +102,6 @@ mingw32-make.exe -j8
 # Built for Chili 2! To change configuration, the 'cmake-gui.exe .' command can be used
 ```
 
-</details>
-
 Libraries will be built into the ``lib/`` directory, while application binaries will be built into the ``bin/`` directory. For the Chili platforms, both elf format and binary .bin format files will be created.
 
 In order to compile for the Chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
@@ -105,11 +121,11 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-cli-actuator | Similar to ot-cli, but also has actuator commands. [More information.](baremetal/app/ot-cli-actuator/README.md)
 | ocf-cli-light | Use a Chili as a controller for an OCF-over-Thread smart lightbulb. [More information.](ocf/README.md)
 | ocf-sensorif | Use a Chili as a OCF-over-Thread device connected to various I2C and SPI sensors.
-| ocf-sensorif-unsecure  | The same as the above target, but without OCF security 
-| ocf-cli-thermometer  | Use a Chili as a OCF-over-Thread smart thermometer. This demo uses the in-built thermometer of the M2351, so no external hardware is required. 
+| ocf-sensorif-unsecure  | The same as the above target, but without OCF security
+| ocf-cli-thermometer  | Use a Chili as a OCF-over-Thread smart thermometer. This demo uses the in-built thermometer of the M2351, so no external hardware is required.
 | ocf-sleepy-thermometer  | Same as above, but the device sleeps between temperature readings.
 | ocf-sleepy-thermometer-unsecure  | Same as above, but without OCF security.
-| ot-ncp |The OpenThread network co-processor interface running on a Chili. Works with the serial-adapter POSIX application. 
+| ot-ncp |The OpenThread network co-processor interface running on a Chili. Works with the serial-adapter POSIX application.
 | ot-sed-thermometer | Sleepy end device that interfaces with the Cascoda sensordemo application layer. Only reports temperature. [More information.](baremetal/app/ot-sed-thermometer/README.md)
 | ot-sed-thermometer-freertos | Same as above, but taking advantage of FreeRTOS concurrency features. [More information.](baremetal/app/ot-sed-thermometer-freertos/README.md)
 | ot-sed-sensorif | Sleepy end device that interfaces with the Cascoda sensordemo application layer. Connects to various I2C and SPI sensors. [More information.](baremetal/app/ot-sed-sensorif/README.md)
@@ -141,6 +157,7 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 | serial-test | Stress test of the serial connection between the host and the connected Chili. Requires a Chili to be connected to the host. [More information.](posix/app/tests/README.md)
 
 ## Debugging
+
 The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the Chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in arm-none-eabi-gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
 
 The Chilis can also be [debugged with a NuLink Pro](docs/guides/debug-with-a-nu-link-pro.md). This is a cheaper alternative, but the developer experience is inferior - you cannot flash the Chili from within GDB, and setting & getting to breakpoints is slower.
@@ -148,9 +165,11 @@ The Chilis can also be [debugged with a NuLink Pro](docs/guides/debug-with-a-nu-
 ## Directory layout
 
 ### ca821x-api
+
 [ca821x-api](ca821x-api/README.md) contains the cross-platform API which abstracts all of the functionality of the CA-8210 and CA-8211. It is required for every project.
 
-### baremetal 
+### baremetal
+
 [baremetal](baremetal/cascoda-bm-driver/README.md) contains the cross-platform baremetal drivers, some example applications, and a set of platform abstractions. The baremetal drivers implement useful, cross-platform functionality, and should be your go-to API when trying to interact with peripherals and outside world.
 
 The platform abstractions (sometimes referred to in the source code as the Board Support Package) are what enables the baremetal drivers to be cross-platform. They provide a set of functions which abstract away the specifics of what platform you are dealing on, such as how to set up the device and how to communicate with peripherals.
@@ -158,6 +177,7 @@ The platform abstractions (sometimes referred to in the source code as the Board
 While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to control the chip from your top-level application, it is a lot easier to rely on the functionality provided by the baremetal drivers, such as the functions in `cascoda_time.h`, `cascoda_evbme.h` and so on.
 
 ### docs
+
 `docs` contains the following guides:
 
 - [Development Environment Setup](docs/guides/development-setup.md)
@@ -175,9 +195,11 @@ And also the following reference documents:
 - [The Cascoda UART interface](docs/reference/cascoda-uart-if.md)
 
 ### toolchain
+
 `toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#instructions). There is extra info on how to compile for different targets in docs, such as [cross compiling for the raspberry pi.](docs/guides/cross-compile-for-the-raspberry-pi.md)
 
 ### posix
+
 [posix](posix/ca821x-posix/README.md) contains the Posix-specific drivers and tools, as well as some example applications that can be run from a Linux system.
 
 Useful documents:
@@ -185,12 +207,15 @@ Useful documents:
 - [Cascoda OpenThread Platform layer](posix/ca821x-posix-thread/Readme.md)
 
 ### cascoda-utils
+
 `cascoda-utils` Contains a cross-platform library of useful utilities, such as tasklets for simple scheduling and hash functions for basic hashing functionality.
 
 ### openthread
-`openthread` contains the glue configuration to download the openthread repository from https://github.com/Cascoda/openthread, and configure it to be built with the SDK.
+
+`openthread` contains the glue configuration to download the openthread repository from [https://github.com/Cascoda/openthread](https://github.com/Cascoda/openthread), and configure it to be built with the SDK.
 
 ### etc
+
 `etc` contains miscellaneous resources.
 
 ## CMake Library Targets

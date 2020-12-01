@@ -1,4 +1,5 @@
 # ca821x-api
+
 This is Cascoda's IEEE 802.15.4 API library used for communication with the CA-821X family of devices.
 
 The API models the SAP interface of the 802.15.4 specification (MCPS+MLME) as well as two proprietary entities, the HWME (Hardware Management Entity) and the TDME (Test & Debug Management Entity). The API defines two main types of command:
@@ -22,11 +23,11 @@ ca821x_api_init(&pDeviceRef);
 A set of callbacks exist in the ca821x_dev struct for processing asynchronous responses and indications:
 
 ```C
-	pDeviceRef->callbacks.MCPS_DATA_indication;
-	pDeviceRef->callbacks.MLME_SCAN_confirm;
-	pDeviceRef->callbacks.HWME_WAKEUP_indication;
-	pDeviceRef->callbacks.generic_dispatch;
-	//etc...
+ pDeviceRef->callbacks.MCPS_DATA_indication;
+ pDeviceRef->callbacks.MLME_SCAN_confirm;
+ pDeviceRef->callbacks.HWME_WAKEUP_indication;
+ pDeviceRef->callbacks.generic_dispatch;
+ //etc...
 ```
 
 These callbacks should be populated by the application as required, or can be NULL if they are not required. The generic_dispatch callback is called if the relevant callback for the received command isn't populated, so can be useful for debugging.
