@@ -61,6 +61,7 @@
 static volatile u8_t asleep = 0;
 static volatile u8_t wakeup = 0;
 static u8_t          lxt_connected;
+static uint32_t      systick_freq = 0;
 
 #if CASCODA_LOG_LEVEL == 5 //LOG LEVEL_DEBUG
 // Table of registers & their names, used by the hard fault handler
@@ -146,8 +147,32 @@ static const IP_T ip_tbl[] = {
 };
 #endif
 
+static uint32_t CHILI_FreqEnumToInt(fsys_mhz aFreqEnum)
+{
+	switch (aFreqEnum)
+	{
+	case FSYS_64MHZ:
+		return 64000000;
+	case FSYS_48MHZ:
+		return 48000000;
+	case FSYS_32MHZ:
+		return 32000000;
+	case FSYS_24MHZ:
+		return 24000000;
+	case FSYS_16MHZ:
+		return 16000000;
+	case FSYS_12MHZ:
+		return 12000000;
+	default:
+	case FSYS_4MHZ:
+		return 4000000;
+	}
+}
+
 __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 {
+	uint32_t clkFreqMhz = CHILI_FreqEnumToInt(CHILI_GetSystemFrequency() / 1000000);
+
 	/* enable references */
 	SYS_UnlockReg();
 	SYS->VREFCTL = (SYS->VREFCTL & ~SYS_VREFCTL_VREFCTL_Msk) | reference;
@@ -157,20 +182,7 @@ __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 	CLK_EnableModuleClock(EADC_MODULE);
 
 	/* EADC clock source is PCLK->HCLK, divide down to 1 MHz */
-	if (CHILI_GetSystemFrequency() == FSYS_64MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(64));
-	else if (CHILI_GetSystemFrequency() == FSYS_48MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(48));
-	else if (CHILI_GetSystemFrequency() == FSYS_32MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(32));
-	else if (CHILI_GetSystemFrequency() == FSYS_24MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(24));
-	else if (CHILI_GetSystemFrequency() == FSYS_16MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(16));
-	else if (CHILI_GetSystemFrequency() == FSYS_12MHZ)
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(12));
-	else /* FSYS_4MHZ */
-		CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(4));
+	CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(clkFreqMhz));
 
 	/* reset EADC module */
 	SYS_ResetModule(EADC_RST);
@@ -219,10 +231,11 @@ __NONSECURE_ENTRY void CHILI_SetClockExternalCFGXT1(u8_t clk_external)
 
 u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
 {
-	u8_t mask = 0;
+	u8_t mask      = 0;
+	bool useExtClk = CHILI_GetUseExternalClock();
 
 	/* check if PLL required */
-	if (CHILI_GetUseExternalClock())
+	if (useExtClk)
 	{
 		if (fsys > FSYS_4MHZ) /* PLL needed to generate fsys from HXT */
 			mask |= CLKCFG_ENPLL;
@@ -244,12 +257,10 @@ u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
 #endif
 	}
 
-	/* check if HXT required */
-	if (CHILI_GetUseExternalClock())
+	/* check if HXT or HIRC required */
+	if (useExtClk)
 		mask |= CLKCFG_ENHXT; /* external clock always requires HXT */
-
-	/* check if HIRC required */
-	if (!CHILI_GetUseExternalClock())
+	else
 		mask |= CLKCFG_ENHIRC; /* internal clock always requires HIRC for timers etc. */
 
 	/* check if HIRC48 required */
@@ -260,7 +271,7 @@ u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
 			mask |= CLKCFG_ENHIRC48;
 #endif
 	}
-	if (!CHILI_GetUseExternalClock()) /* internal clock */
+	if (!useExtClk) /* internal clock */
 	{
 #ifdef USE_USB
 		if (enable_comms) /* HIRC48 always used for USB clock */
@@ -276,11 +287,53 @@ u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
 	return (mask);
 }
 
+static ca_error clk_enable(uint32_t pwrctlMask, uint32_t statusMask)
+{
+	ca_error status   = CA_ERROR_SUCCESS;
+	uint32_t delayCnt = 0;
+
+	SYS_UnlockReg();
+	CLK->PWRCTL |= pwrctlMask;
+	SYS_LockReg();
+	for (delayCnt = 0; delayCnt < MAX_CLOCK_SWITCH_DELAY; ++delayCnt)
+	{
+		if (CLK->STATUS & statusMask)
+			break;
+	}
+	if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
+	{
+		status = CA_ERROR_FAIL;
+	}
+	return (status);
+}
+
 __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 {
 	uint32_t delayCnt;
 	ca_error status = CA_ERROR_SUCCESS;
 	u8_t     clkcfg;
+	uint32_t divisor = 1;
+
+	switch (fsys)
+	{
+	case FSYS_4MHZ:
+		divisor = 12;
+		break;
+	case FSYS_12MHZ:
+		divisor = 4;
+		break;
+	case FSYS_16MHZ:
+	case FSYS_32MHZ: //For 32MHz a 96MHz PLL is used, hence the out-of-sequence divisor
+		divisor = 3;
+		break;
+	case FSYS_24MHZ:
+		divisor = 2;
+		break;
+	case FSYS_48MHZ:
+	case FSYS_64MHZ:
+		divisor = 1;
+		break;
+	}
 
 	/* NOTE: __HXT in system_M2351.h has to be changed to correct input clock frequency !! */
 #if __HXT != 4000000UL
@@ -297,17 +350,10 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	/* enable HXT */
 	if (clkcfg & CLKCFG_ENHXT)
 	{
-		SYS_UnlockReg();
-		CLK->PWRCTL |= (CLK_PWRCTL_HXTEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
-		SYS_LockReg();
-		for (delayCnt = 0; delayCnt <= MAX_CLOCK_SWITCH_DELAY; ++delayCnt)
+		status =
+		    clk_enable((CLK_PWRCTL_HXTEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk), CLK_STATUS_HXTSTB_Msk);
+		if (status)
 		{
-			if (CLK->STATUS & CLK_STATUS_HXTSTB_Msk)
-				break;
-		}
-		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
-		{
-			status = CA_ERROR_FAIL;
 			ca_log_crit("HXT Enable Fail");
 			return (status);
 		}
@@ -316,17 +362,10 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	/* enable HIRC */
 	if (clkcfg & CLKCFG_ENHIRC)
 	{
-		SYS_UnlockReg();
-		CLK->PWRCTL |= (CLK_PWRCTL_HIRCEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
-		SYS_LockReg();
-		for (delayCnt = 0; delayCnt <= MAX_CLOCK_SWITCH_DELAY; ++delayCnt)
+		status =
+		    clk_enable((CLK_PWRCTL_HIRCEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk), CLK_STATUS_HIRCSTB_Msk);
+		if (status)
 		{
-			if (CLK->STATUS & CLK_STATUS_HIRCSTB_Msk)
-				break;
-		}
-		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
-		{
-			status = CA_ERROR_FAIL;
 			ca_log_crit("HIRC Enable Fail");
 			return (status);
 		}
@@ -335,17 +374,10 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	/* enable HIRC48 */
 	if (clkcfg & CLKCFG_ENHIRC48)
 	{
-		SYS_UnlockReg();
-		CLK->PWRCTL |= (CLK_PWRCTL_HIRC48EN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk);
-		SYS_LockReg();
-		for (delayCnt = 0; delayCnt <= MAX_CLOCK_SWITCH_DELAY; ++delayCnt)
+		status = clk_enable((CLK_PWRCTL_HIRC48EN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk),
+		                    CLK_STATUS_HIRC48STB_Msk);
+		if (status)
 		{
-			if (CLK->STATUS & CLK_STATUS_HIRC48STB_Msk)
-				break;
-		}
-		if (delayCnt >= MAX_CLOCK_SWITCH_DELAY)
-		{
-			status = CA_ERROR_FAIL;
 			ca_log_crit("HIRC48 Enable Fail");
 			return (status);
 		}
@@ -415,18 +447,8 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	{
 		if (fsys == FSYS_4MHZ)
 			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HXT, CLK_CLKDIV0_HCLK(1));
-		else if (fsys == FSYS_12MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(4));
-		else if (fsys == FSYS_16MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
-		else if (fsys == FSYS_24MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(2));
-		else if (fsys == FSYS_32MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
-		else if (fsys == FSYS_48MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
-		else /* FSYS_64MHZ */
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+		else
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor));
 	}
 	else
 	{
@@ -436,33 +458,11 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1));
 		else if (clkcfg & CLKCFG_ENPLL)
 		{
-			if (fsys == FSYS_4MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(12));
-			else if (fsys == FSYS_12MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(4));
-			else if (fsys == FSYS_16MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
-			else if (fsys == FSYS_24MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(2));
-			else if (fsys == FSYS_32MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(3));
-			else if (fsys == FSYS_48MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
-			else if (fsys == FSYS_64MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(1));
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor));
 		}
 		else if (clkcfg & CLKCFG_ENHIRC48)
 		{
-			if (fsys == FSYS_4MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(12));
-			else if (fsys == FSYS_12MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(4));
-			else if (fsys == FSYS_16MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(3));
-			else if (fsys == FSYS_24MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(2));
-			else if (fsys == FSYS_48MHZ)
-				CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(1));
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(divisor));
 		}
 	}
 
@@ -502,7 +502,23 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 		status = CA_ERROR_FAIL;
 	}
 
+	CHILI_SetSysTickFreq(systick_freq);
+
 	return (status);
+}
+
+__NONSECURE_ENTRY void CHILI_SetSysTickFreq(uint32_t freqHz)
+{
+	systick_freq = freqHz;
+
+	SysTick->CTRL = 0;
+	SysTick->VAL  = 0;
+	if (systick_freq)
+	{
+		/* Configure SysTick to interrupt at the requested rate. */
+		SysTick->LOAD = (CHILI_FreqEnumToInt(CHILI_GetSystemFrequency()) / systick_freq) - 1UL;
+		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+	}
 }
 
 __NONSECURE_ENTRY void CHILI_CompleteClockInit(fsys_mhz fsys, u8_t enable_comms)
@@ -569,6 +585,8 @@ __NONSECURE_ENTRY void CHILI_DisableIntOscCal(void)
 
 __NONSECURE_ENTRY void CHILI_TimersInit(void)
 {
+	bool useExtClk = CHILI_GetUseExternalClock();
+
 	/* TIMER0: millisecond periodic tick (AbsoluteTicks) and power-down wake-up */
 	/* TIMER1: microsecond timer / counter */
 	CLK_EnableModuleClock(TMR0_MODULE);
@@ -576,7 +594,7 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 
 	/* configure clock selects and dividers for timers 0 and 1 */
 	/* clocks are fixed to HXT (4 MHz) or HIRC (12 MHz) */
-	if (CHILI_GetUseExternalClock())
+	if (useExtClk)
 	{
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HXT, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HXT, 0);
@@ -591,7 +609,7 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	TIMER_Open(TIMER1, TIMER_CONTINUOUS_MODE, 1000000);
 
 	/* prescale value has to be set after TIMER_Open() is called! */
-	if (CHILI_GetUseExternalClock())
+	if (useExtClk)
 	{
 		/*  4 MHZ Clock: prescaler 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 3);
@@ -957,7 +975,8 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	SYS_ResetModule(UART_RST);
 	UART_SetLineConfig(UART, UART_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
 	UART_Open(UART, UART_BAUDRATE);
-	UART_EnableInt(UART, UART_INTEN_RDAIEN_Msk); //TODO: This is probably one of the reasons UART doesn't work on tz
+	UART_EnableInt(UART,
+	               UART_INTEN_RDAIEN_Msk); //TODO: This is probably one of the reasons UART doesn't work on tz
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 	TZ_NVIC_EnableIRQ_NS(UART_IRQn);
 #else
