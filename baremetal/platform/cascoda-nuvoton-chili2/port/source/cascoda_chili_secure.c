@@ -147,31 +147,9 @@ static const IP_T ip_tbl[] = {
 };
 #endif
 
-static uint32_t CHILI_FreqEnumToInt(fsys_mhz aFreqEnum)
-{
-	switch (aFreqEnum)
-	{
-	case FSYS_64MHZ:
-		return 64000000;
-	case FSYS_48MHZ:
-		return 48000000;
-	case FSYS_32MHZ:
-		return 32000000;
-	case FSYS_24MHZ:
-		return 24000000;
-	case FSYS_16MHZ:
-		return 16000000;
-	case FSYS_12MHZ:
-		return 12000000;
-	default:
-	case FSYS_4MHZ:
-		return 4000000;
-	}
-}
-
 __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 {
-	uint32_t clkFreqMhz = CHILI_FreqEnumToInt(CHILI_GetSystemFrequency() / 1000000);
+	uint32_t clkFreqMhz = (uint32_t)CHILI_GetSystemFrequency();
 
 	/* enable references */
 	SYS_UnlockReg();
@@ -516,8 +494,9 @@ __NONSECURE_ENTRY void CHILI_SetSysTickFreq(uint32_t freqHz)
 	if (systick_freq)
 	{
 		/* Configure SysTick to interrupt at the requested rate. */
-		SysTick->LOAD = (CHILI_FreqEnumToInt(CHILI_GetSystemFrequency()) / systick_freq) - 1UL;
-		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+		uint32_t sysFreq = (uint32_t)CHILI_GetSystemFrequency() * 1000000;
+		SysTick->LOAD    = (sysFreq / systick_freq) - 1UL;
+		SysTick->CTRL    = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 	}
 }
 
