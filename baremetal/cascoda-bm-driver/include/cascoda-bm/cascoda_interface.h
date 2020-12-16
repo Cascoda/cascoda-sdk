@@ -54,13 +54,13 @@ extern "C" {
 /****** Enum system core clock frequency [MHz] ******/
 typedef enum fsys_mhz
 {
-	FSYS_4MHZ  = 0,
-	FSYS_12MHZ = 1,
-	FSYS_16MHZ = 2,
-	FSYS_24MHZ = 3,
-	FSYS_32MHZ = 4,
-	FSYS_48MHZ = 5,
-	FSYS_64MHZ = 6
+	FSYS_4MHZ  = 4,
+	FSYS_12MHZ = 12,
+	FSYS_16MHZ = 16,
+	FSYS_24MHZ = 24,
+	FSYS_32MHZ = 32,
+	FSYS_48MHZ = 48,
+	FSYS_64MHZ = 64
 } fsys_mhz;
 
 /****** Enum for wakeup condition after reset ******/

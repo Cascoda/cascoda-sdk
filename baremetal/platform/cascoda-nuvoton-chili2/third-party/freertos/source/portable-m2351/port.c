@@ -49,6 +49,7 @@
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
 //Force linking of cascoda freertos abstraction
+void     CHILI_SetSysTickFreq(uint32_t freqHz);
 void  CA_OS_freertos_bind(void);
 void *linkertrick_CA_OS_freertos_bind = &CA_OS_freertos_bind;
 
@@ -329,13 +330,7 @@ static volatile uint32_t ulCriticalNesting = 0xaaaaaaaaUL;
 
 static void prvSetupTimerInterrupt( void ) /* PRIVILEGED_FUNCTION */
 {
-	/* Stop and reset the SysTick. */
-	*( portNVIC_SYSTICK_CTRL ) = 0UL;
-	*( portNVIC_SYSTICK_CURRENT_VALUE ) = 0UL;
-
-	/* Configure SysTick to interrupt at the requested rate. */
-	*( portNVIC_SYSTICK_LOAD ) = ( configCPU_CLOCK_HZ / configTICK_RATE_HZ ) - 1UL;
-	*( portNVIC_SYSTICK_CTRL ) = portNVIC_SYSTICK_CLK | portNVIC_SYSTICK_INT | portNVIC_SYSTICK_ENABLE;
+	CHILI_SetSysTickFreq(configTICK_RATE_HZ);
 }
 /*-----------------------------------------------------------*/
 
