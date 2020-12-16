@@ -65,7 +65,8 @@ otError utilsFlashInit(void)
  */
 uint32_t utilsFlashGetSize(void)
 {
-	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	struct FlashInfo flash_info;
+	BSP_GetFlashInfo(&flash_info);
 	return flash_info.numPages * flash_info.pageSize;
 }
 
@@ -85,7 +86,10 @@ uint32_t utilsFlashGetSize(void)
  */
 otError utilsFlashErasePage(uint32_t aAddress)
 {
-	BSP_EraseDataFlashPage(aAddress);
+	struct FlashInfo flash_info;
+
+	BSP_GetFlashInfo(&flash_info);
+	BSP_FlashErase(flash_info.dataFlashBaseAddr + aAddress);
 	return OT_ERROR_NONE;
 }
 
@@ -121,22 +125,29 @@ otError utilsFlashStatusWait(uint32_t aTimeout)
  */
 uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize)
 {
-	uint32_t buffer[FLASH_BUFSIZE];
-	uint32_t sizeLeft = aSize;
+	uint32_t         buffer[FLASH_BUFSIZE];
+	uint32_t         sizeLeft = aSize;
+	struct FlashInfo flash_info;
 
+	BSP_GetFlashInfo(&flash_info);
+	aAddress += flash_info.dataFlashBaseAddr;
+
+	//TODO: Investigate whether this dance is necessary
 	while (sizeLeft)
 	{
 		//Calculate byte count to copy
 		uint32_t byteLen = sizeLeft;
+		uint32_t alignLen;
 		if (byteLen > FLASH_BUFSIZE * 4)
 			byteLen = FLASH_BUFSIZE * 4;
 
 		//Copy into buffer
-		memset(buffer, 0xFF, FLASH_BUFSIZE * 4);
+		memset(buffer, 0xFF, sizeof(buffer));
 		memcpy(buffer, aData, byteLen);
 
 		//Move to flash
-		BSP_WriteDataFlashInitial(aAddress, buffer, (byteLen + 3) / 4);
+		alignLen = ((byteLen + sizeof(uint32_t) - 1) / sizeof(uint32_t)) * sizeof(uint32_t);
+		BSP_FlashWriteInitial(aAddress, buffer, alignLen);
 
 		//Increment remainders
 		sizeLeft -= byteLen;
@@ -164,8 +175,12 @@ uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize
  */
 uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
 {
-	uint32_t buffer[FLASH_BUFSIZE];
-	uint32_t sizeLeft = aSize;
+	uint32_t         buffer[FLASH_BUFSIZE];
+	uint32_t         sizeLeft = aSize;
+	struct FlashInfo flash_info;
+
+	BSP_GetFlashInfo(&flash_info);
+	aAddress += flash_info.dataFlashBaseAddr;
 
 	while (sizeLeft)
 	{
@@ -176,7 +191,7 @@ uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
 
 		//Move from flash
 		memset(buffer, 0, sizeof(buffer));
-		BSP_ReadDataFlash(aAddress, buffer, (byteLen + 3) / 4);
+		BSP_FlashRead(aAddress, buffer, (byteLen + 3) / 4);
 
 		//Copy from buffer
 		memcpy(aData, buffer, byteLen);

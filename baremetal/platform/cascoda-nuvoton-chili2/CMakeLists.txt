@@ -106,6 +106,7 @@ set(CHILI2_SECURE_SOURCES
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_dataflash_m2351_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_rtc_m2351_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_secure.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_spi_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_time_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351_secure.c
 )
@@ -228,11 +229,12 @@ elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	set(CASCODA_HEAP_SIZE Heap_Size CACHE INTERNAL "")
 endif()
 
-if(CASCODA_BM_USE_USB)
+if(CASCODA_BM_INTERFACE STREQUAL "USB")
 	add_executable(ldrom_hid
 		${PROJECT_SOURCE_DIR}/LDROM/ldrom_hid.c
 		${PROJECT_SOURCE_DIR}/LDROM/hid_transfer.c
 	)
-	target_link_libraries(ldrom_hid cascoda-chili2 cascoda-chili2-ldfile-ldrom)
+	target_include_directories(ldrom_hid PRIVATE $<TARGET_PROPERTY:ca821x-api,INTERFACE_INCLUDE_DIRECTORIES>)
+	target_link_libraries(ldrom_hid nuvoton-vendor-m2351 cascoda-chili2-ldfile-ldrom)
 	cascoda_make_binary(ldrom_hid)
 endif()

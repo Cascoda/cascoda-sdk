@@ -221,6 +221,22 @@ void TxReady(void)
 	EP2_Handler();
 }
 
+//from cascoda_hash.c
+static const uint64_t prime64 = 1099511628211ULL;
+static const uint64_t basis64 = 14695981039346656037ULL;
+
+uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes)
+{
+	uint64_t       hash = basis64;
+	const uint8_t *data = data_in;
+
+	for (size_t i = 0; i < num_bytes; i++)
+	{
+		hash = (data[i] ^ hash) * prime64;
+	}
+	return hash;
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Populate the USB serial number with the device's unique ID.
@@ -283,8 +299,5 @@ void HID_Init(void)
 	/* trigger to receive OUT data */
 	USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 
-	gTxBuffer.cmdid     = EVBME_DFU_CMD;
-	gTxBuffer.len       = 2;
-	gTxBuffer.dfu_cmdid = DFU_STATUS;
-	gTxBuffer.isReady   = true;
+	gTxBuffer.isReady = true;
 }

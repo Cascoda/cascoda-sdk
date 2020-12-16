@@ -1,8 +1,8 @@
 # ca821x-posix-thread
 
-A posix platform layer for openthread, and some examples for how to use it on Linux.
+A POSIX platform layer for OpenThread, and some examples for how to use it on Linux.
 
-In the examples folder is an example program which presents a command line interface to test the thread interface. For more documentation on how to use this, and also information on the openthread API, see the main openthread repo:
+In the examples folder is an example program which presents a command line interface to test the Thread interface. For more documentation on how to use this, and also information on the openthread API, see the main openthread repo:
 <https://github.com/Cascoda/openthread>
 
 The CLI Documentation can be found here:

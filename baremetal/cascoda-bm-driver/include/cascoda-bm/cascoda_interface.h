@@ -163,13 +163,10 @@ struct ModuleSpecialPins
 /** Description of the internal flash */
 struct FlashInfo
 {
-	u16_t pageSize; //!< Size of each flash page (in bytes)
-	u8_t  numPages; //!< Number of flash pages that make up the user flash region
+	u32_t dataFlashBaseAddr; //!< Base address of the dataflash
+	u16_t pageSize;          //!< Size of each flash page (in bytes)
+	u8_t  numPages;          //!< Number of flash pages that make up the user flash region
 };
-
-// Getter for variables that must be populated by the BSP
-struct ModuleSpecialPins BSP_GetModuleSpecialPins(void);
-struct FlashInfo         BSP_GetFlashInfo(void);
 
 // Type for a function pointer that points to DISPATCH_ReadCA821x
 typedef void (*dispatch_read_t)(struct ca821x_dev *pDeviceRef);
@@ -272,8 +269,14 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef);
 void BSP_UseExternalClock(u8_t useExternalClock);
 
 /**
+ * Get the struct of special pins for the platform
+ * @return Struct of special function pins for use with the Module system
+ */
+struct ModuleSpecialPins BSP_GetModuleSpecialPins(void);
+
+/**
  * \brief Registers GPIO Functionality for Module Pin
- * \param args Arguments
+ * \param args Arguments, see gpio_input_args
  * \return status
  *
  */
@@ -341,6 +344,13 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val);
  * \param resetMode The mode of reset to use
  */
 void BSP_SystemReset(sysreset_mode resetMode);
+
+/**
+ * \brief Set the default boot mode for the device
+ * @param bootMode The default mode to boot into
+ * @return ca_error code, CA_ERROR_SUCCESS if successful
+ */
+ca_error BSP_SetBootMode(sysreset_mode bootMode);
 
 /**
  * \brief Get a 64-bit ID that is unique to this device
@@ -443,45 +453,61 @@ u8_t BSP_IsUSBPresent(void);
 void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms);
 
 /**
+ * Get the flashinfo struct for the current platform.
+ * @param aFlashInfoOut Pointer to struct to fill with flashinfo
+ */
+void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut);
+
+/**
  * \brief Writes Dataflash Memory, relies on Memory erased
  *
- * startaddr is relative to the start of userflash, so first address is 0.
+ * startaddr is absolute, see the dataFlashBaseAddr of the FlashInfo struct for correct offset.
  *
  * \param startaddr - byte address (divisible by 4 (word))
- * \param data -      pointer to data (words)
- * \param datasize -  size of data (in words)
- *
+ * \param data -      pointer to data
+ * \param datasize -  size of data (in bytes)
+ * @retval CA_ERROR_SUCCESS       Flash erased successfully
+ * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
  */
-void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize);
+ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize);
 
 /**
  * \brief Erases a Dataflash Memory page (All words in page set to 0xFFFFFFFF)
  *
- * startaddr is relative to the start of userflash, so first address is 0.
+ * startaddr is absolute, see the dataFlashBaseAddr of the FlashInfo struct for correct offset.
  * Using any address in a given page will erase that entire page.
  *
  * \param startaddr - byte address (divisible by 4 (word))
- *
+ * @retval CA_ERROR_SUCCESS       Flash erased successfully
+ * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
  */
-void BSP_EraseDataFlashPage(u32_t startaddr);
+ca_error BSP_FlashErase(u32_t startaddr);
 
 /**
  * \brief Reads Dataflash Memory
  *
- * startaddr is relative to the start of userflash, so first address is 0.
+ * startaddr is absolute, see the dataFlashBaseAddr of the FlashInfo struct for correct offset.
  *
  * \param startaddr - byte address (divisible by 4 (word))
  * \param data -      pointer to data (words)
  * \param datasize -  size of data (in words)
- *
+ * @retval CA_ERROR_SUCCESS       Flash read into buffer successfully
+ * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
  */
-void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize);
+ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize);
 
 /**
- * \brief Erases all Dataflash Memory
+ * Check that a given range of flash matches the provided CRC32 checksum.
  *
+ * @param startaddr The start address to check (must be page-aligned)
+ * @param checklen  The number of bytes to check (must be page-aligned)
+ * @param crc32     The CRC32 checksum to verify against
+ * @return cascoda status
+ * @retval CA_ERROR_SUCCESS       CRC32 matches the data in flash
+ * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
+ * @retval CA_ERROR_FAIL          CRC32 value does not match the data in flash range
  */
-void BSP_ClearDataFlash(void);
+ca_error BSP_FlashCheck(u32_t startaddr, u32_t checklen, u32_t crc32);
 
 /**
  * \brief Initialises RTC

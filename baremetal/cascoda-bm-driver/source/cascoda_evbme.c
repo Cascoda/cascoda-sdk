@@ -81,7 +81,6 @@ static void     EVBME_WakeUpRF(void);
 static void     EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf);
 static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
-static int      EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
 static void     EVBME_Disconnect(void);
 static ca_error EVBME_GET_request(struct EVBME_GET_request *req);
 static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef);
@@ -109,30 +108,92 @@ static void EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf)
 	}
 }
 
+static ca_error EVBME_DFU_reboot(struct EVBME_DFU_cmd *dfuCmd)
+{
+	if (dfuCmd->mSubCmd.reboot_cmd.rebootMode)
+		BSP_SystemReset(SYSRESET_DFU);
+	else
+		BSP_SystemReset(SYSRESET_APROM);
+	//Should not return, as above functions reset program.
+	return CA_ERROR_FAIL;
+}
+
+static ca_error EVBME_DFU_erase(struct EVBME_DFU_cmd *dfuCmd)
+{
+	ca_error         status    = CA_ERROR_INVALID_ARGS;
+	uint32_t         eraseLen  = GETLE32(dfuCmd->mSubCmd.erase_cmd.eraseLen);
+	uint32_t         startAddr = GETLE32(dfuCmd->mSubCmd.erase_cmd.startAddr);
+	struct FlashInfo flash_info;
+
+	BSP_GetFlashInfo(&flash_info);
+
+	for (uint32_t offset = 0; offset < eraseLen; offset += flash_info.pageSize)
+	{
+		status = BSP_FlashErase(startAddr + offset);
+		if (status)
+			break;
+	}
+	return status;
+}
+
+static ca_error EVBME_DFU_write(struct EVBME_Message *rxMsg)
+{
+	struct EVBME_DFU_cmd *dfuCmd = &rxMsg->EVBME.DFU_cmd;
+	uint32_t writeLen  = rxMsg->mLen - sizeof(dfuCmd->mDfuSubCmdId) - sizeof(dfuCmd->mSubCmd.write_cmd.startAddr);
+	uint32_t startAddr = GETLE32(dfuCmd->mSubCmd.write_cmd.startAddr);
+	uint8_t *data      = dfuCmd->mSubCmd.write_cmd.data;
+
+	return BSP_FlashWriteInitial(startAddr, data, writeLen);
+}
+
+static ca_error EVBME_DFU_check(struct EVBME_DFU_cmd *dfuCmd)
+{
+	u32_t startaddr = GETLE32(dfuCmd->mSubCmd.check_cmd.startAddr);
+	u32_t checklen  = GETLE32(dfuCmd->mSubCmd.check_cmd.checkLen);
+	u32_t checksum  = GETLE32(dfuCmd->mSubCmd.check_cmd.checksum);
+
+	return BSP_FlashCheck(startaddr, checklen, checksum);
+}
+
+static ca_error EVBME_DFU_bootmode(struct EVBME_DFU_cmd *dfuCmd)
+{
+	return BSP_SetBootMode(dfuCmd->mSubCmd.bootmode_cmd.bootMode);
+}
+
 /**
- * Handle dfu command at chili layer. Return invalid status for anything that isn't reboot.
+ * Handle dfu command at chili layer.
  * @param rxMsg The received EVBME message
  */
 static void EVBME_DFU_cmd(struct EVBME_Message *rxMsg)
 {
+	ca_error              status = CA_ERROR_FAIL;
 	struct EVBME_DFU_cmd *dfuCmd = &rxMsg->EVBME.DFU_cmd;
+	struct EVBME_DFU_cmd  dfuRsp;
 
-	if (dfuCmd->mDfuSubCmdId == DFU_REBOOT)
+	switch (dfuCmd->mDfuSubCmdId)
 	{
-		if (dfuCmd->mSubCmd.reboot_cmd.rebootMode)
-			BSP_SystemReset(SYSRESET_DFU);
-		else
-			BSP_SystemReset(SYSRESET_APROM);
+	case DFU_REBOOT:
+		status = EVBME_DFU_reboot(dfuCmd);
+		break;
+	case DFU_ERASE:
+		status = EVBME_DFU_erase(dfuCmd);
+		break;
+	case DFU_WRITE:
+		status = EVBME_DFU_write(rxMsg);
+		break;
+	case DFU_CHECK:
+		status = EVBME_DFU_check(dfuCmd);
+		break;
+	case DFU_BOOTMODE:
+		status = EVBME_DFU_bootmode(dfuCmd);
+		break;
+	default:
+		status = CA_ERROR_INVALID_STATE;
+		break;
 	}
-	else
-	{
-		struct EVBME_DFU_cmd dfuStat;
-
-		dfuStat.mDfuSubCmdId              = DFU_STATUS;
-		dfuStat.mSubCmd.status_cmd.status = CA_ERROR_INVALID_STATE;
-
-		MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuStat);
-	}
+	dfuRsp.mDfuSubCmdId              = DFU_STATUS;
+	dfuRsp.mSubCmd.status_cmd.status = (uint8_t)status;
+	MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuRsp);
 }
 
 /******************************************************************************/
@@ -181,8 +242,6 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
 		EVBME_DFU_cmd(rxEvbme);
 		break;
 	default:
-		// check if MAC/API straight-through command requires additional action
-		ret = EVBMECheckSerialCommand(SerialRxBuffer, pDeviceRef);
 		break;
 	}
 
@@ -234,75 +293,6 @@ static void EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_de
 		}
 	}
 } // End of EVBMESendDownStream()
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Checks if MAC/API Command from Serial requires Action
- *******************************************************************************
- * \param SerialRxBuffer - Serial message to process
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
- *******************************************************************************
- * \return  0: Message was not consumed by EVBME (should go downstream)
- *         >0: Message was consumed by EVBME
- *******************************************************************************
- ******************************************************************************/
-static int EVBMECheckSerialCommand(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
-{
-	uint8_t            status, val;
-	struct MAC_Message response;
-	int                ret = 0;
-
-	if (SerialRxBuffer->CmdId == SPI_MLME_SET_REQUEST)
-	{
-		if (TDME_CheckPIBAttribute(SerialRxBuffer->Data[0], SerialRxBuffer->Data[2], SerialRxBuffer->Data + 3))
-		{
-			ret                       = 1;
-			response.CommandId        = SPI_MLME_SET_CONFIRM;
-			response.Length           = 3;
-			response.PData.Payload[0] = MAC_INVALID_PARAMETER;
-			response.PData.Payload[1] = SerialRxBuffer->Data[0];
-			response.PData.Payload[2] = SerialRxBuffer->Data[1];
-			EVBME_NotHandled(&response, pDeviceRef);
-		}
-	}
-
-	// MLME set / get phyTransmitPower
-	if ((SerialRxBuffer->CmdId == SPI_MLME_SET_REQUEST) && (SerialRxBuffer->Data[0] == phyTransmitPower))
-	{
-		status                    = TDME_SetTxPower(SerialRxBuffer->Data[3], pDeviceRef);
-		ret                       = 1;
-		response.CommandId        = SPI_MLME_SET_CONFIRM;
-		response.Length           = 3;
-		response.PData.Payload[0] = status;
-		response.PData.Payload[1] = SerialRxBuffer->Data[0];
-		response.PData.Payload[2] = SerialRxBuffer->Data[1];
-		EVBME_NotHandled(&response, pDeviceRef);
-	}
-	if ((SerialRxBuffer->CmdId == SPI_MLME_GET_REQUEST) && (SerialRxBuffer->Data[0] == phyTransmitPower))
-	{
-		status                    = TDME_GetTxPower(&val, pDeviceRef);
-		ret                       = 1;
-		response.CommandId        = SPI_MLME_GET_CONFIRM;
-		response.Length           = 5;
-		response.PData.Payload[0] = status;
-		response.PData.Payload[1] = SerialRxBuffer->Data[0];
-		response.PData.Payload[2] = SerialRxBuffer->Data[1];
-		response.PData.Payload[3] = 1;
-		response.PData.Payload[4] = val;
-		EVBME_NotHandled(&response, pDeviceRef);
-	}
-
-	if (SerialRxBuffer->CmdId == SPI_MLME_ASSOCIATE_REQUEST)
-		TDME_ChannelInit(SerialRxBuffer->Data[0], pDeviceRef);
-	else if (SerialRxBuffer->CmdId == SPI_MLME_START_REQUEST)
-		TDME_ChannelInit(SerialRxBuffer->Data[2], pDeviceRef);
-	else if ((SerialRxBuffer->CmdId == SPI_MLME_SET_REQUEST) && (SerialRxBuffer->Data[0] == phyCurrentChannel))
-		TDME_ChannelInit(SerialRxBuffer->Data[3], pDeviceRef);
-	else if ((SerialRxBuffer->CmdId == SPI_TDME_SET_REQUEST) && (SerialRxBuffer->Data[0] == TDME_CHANNEL))
-		TDME_ChannelInit(SerialRxBuffer->Data[2], pDeviceRef);
-
-	return ret;
-} // End of EVBMECheckSerialCommand()
 
 /******************************************************************************/
 /***************************************************************************/ /**

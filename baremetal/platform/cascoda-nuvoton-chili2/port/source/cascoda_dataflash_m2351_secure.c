@@ -54,10 +54,11 @@
 #define DATA_FLASH_BASE \
 	(FMC_APROM_END - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE)) /* Dataflash: on top of APROM */
 
-const struct FlashInfo             BSP_FlashInfo = {FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
-__NONSECURE_ENTRY struct FlashInfo BSP_GetFlashInfo(void)
+const struct FlashInfo BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
+
+__NONSECURE_ENTRY void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
 {
-	return BSP_FlashInfo;
+	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
 }
 
 /*---------------------------------------------------------------------------*
@@ -65,126 +66,145 @@ __NONSECURE_ENTRY struct FlashInfo BSP_GetFlashInfo(void)
  *---------------------------------------------------------------------------*/
 static u8_t isValidFlashAddr(u32_t flashaddr)
 {
+	u8_t rval = 1;
 	/* Check word alignment and range */
-	if ((flashaddr % 4) || (flashaddr >= CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE))
-		return 0;
+	if ((flashaddr % 4))
+		rval = 0;
 
-	return 1;
+	if (flashaddr < DATA_FLASH_BASE || flashaddr >= FMC_APROM_END)
+		if (flashaddr < FMC_LDROM_BASE || flashaddr >= FMC_LDROM_END)
+			rval = 0;
+
+	if (!rval)
+		ca_log_crit("Invalid Flash Address");
+
+	return rval;
 }
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize)
+__NONSECURE_ENTRY ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize)
 {
-	uint32_t addr;
-
-	if (!isValidFlashAddr(startaddr))
+	if (!isValidFlashAddr(startaddr) || !isValidFlashAddr(startaddr + datasize))
 	{
-		ca_log_crit("BSP_WriteDataFlashInitial: Start Address invalid");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	SYS_UnlockReg();
 	FMC_Open();
 
 	FMC_ENABLE_AP_UPDATE();
+	FMC_ENABLE_LD_UPDATE();
 
 	/* Write Dataflash */
-	addr = startaddr;
-	for (uint32_t i = 0; i < datasize; ++i)
+	for (uint32_t i = 0; i < datasize; i += sizeof(uint32_t))
 	{
-		uint32_t u32data = data[i];
-		FMC_Write(DATA_FLASH_BASE + addr, u32data);
-
-		addr += 4;
+		uint32_t u32data;
+		memcpy(&u32data, data + i, sizeof(u32data));
+		FMC_Write(startaddr + i, u32data);
 	}
 
+	FMC_DISABLE_LD_UPDATE();
 	FMC_DISABLE_AP_UPDATE();
 
 	FMC_Close();
 	SYS_LockReg();
+
+	return CA_ERROR_SUCCESS;
 }
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_EraseDataFlashPage(u32_t startaddr)
+__NONSECURE_ENTRY ca_error BSP_FlashErase(u32_t startaddr)
 {
 	int32_t  error;
 	uint32_t page;
 
 	page = startaddr / FMC_FLASH_PAGE_SIZE;
-	if (page >= CASCODA_CHILI_FLASH_PAGES)
+	if (!isValidFlashAddr(startaddr))
 	{
-		ca_log_crit("BSP_EraseDataFlashPage address out of range");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	SYS_UnlockReg();
 	FMC_Open();
 
 	FMC_ENABLE_AP_UPDATE();
+	FMC_ENABLE_LD_UPDATE();
 
 	/* Align address to start of page and then erase whole page */
-	error = FMC_Erase(DATA_FLASH_BASE + (FMC_FLASH_PAGE_SIZE * page));
+	error = FMC_Erase(FMC_FLASH_PAGE_SIZE * page);
 
 	if (error)
 		ca_log_crit("FMC_Erase Dataflash Error.");
 
+	FMC_DISABLE_LD_UPDATE();
 	FMC_DISABLE_AP_UPDATE();
 
 	FMC_Close();
 	SYS_LockReg();
+
+	if (error)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
 }
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize)
+__NONSECURE_ENTRY ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize)
 {
-	uint32_t *addr = (uint32_t *)(startaddr + DATA_FLASH_BASE);
+	uint32_t *addr = (uint32_t *)(startaddr);
 
-	if (!isValidFlashAddr(startaddr))
+	if (!isValidFlashAddr(startaddr) || !isValidFlashAddr(startaddr + datasize * sizeof(uint32_t)))
 	{
-		ca_log_crit("BSP_WriteDataFlashReprog: Start Address invalid");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	memcpy(data, addr, datasize * sizeof(uint32_t));
+	return CA_ERROR_SUCCESS;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-__NONSECURE_ENTRY void BSP_ClearDataFlash(void)
+__NONSECURE_ENTRY ca_error BSP_FlashCheck(u32_t startaddr, u32_t checklen, u32_t crc32)
 {
-	SYS_UnlockReg();
-	FMC_Open();
+	uint32_t crc_flash;
 
-	FMC_ENABLE_AP_UPDATE();
-
-	for (int32_t i = 0; i < CASCODA_CHILI_FLASH_PAGES; i++)
+	// Subtraction of single word is because that is the final word we are actually operating on.
+	// Otherwise we fail when we try to check the final page.
+	if (!isValidFlashAddr(startaddr) || !isValidFlashAddr(startaddr + checklen - sizeof(uint32_t)))
 	{
-		int32_t error = FMC_Erase(DATA_FLASH_BASE + (FMC_FLASH_PAGE_SIZE * i));
-
-		if (error)
-			ca_log_crit("FMC_Erase Dataflash Page %d Error.", i);
+		return CA_ERROR_INVALID_ARGS;
 	}
 
-	FMC_DISABLE_AP_UPDATE();
-
+	SYS_UnlockReg();
+	FMC_Open();
+	crc_flash = FMC_GetChkSum(startaddr, checklen);
 	FMC_Close();
 	SYS_LockReg();
+
+	if (crc_flash != crc32)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
 }
 
 __NONSECURE_ENTRY void CHILI_SetLDROMBoot(void)
 {
 	SYS_UnlockReg();
 	FMC_Open();
-	FMC_ENABLE_AP_UPDATE();
 	FMC_SetVectorPageAddr(FMC_LDROM_BASE);
-	FMC_DISABLE_AP_UPDATE();
+	FMC->ISPCTL |= FMC_ISPCTL_BS_Msk;
+	FMC_Close();
+	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void CHILI_SetAPROMBoot(void)
+{
+	SYS_UnlockReg();
+	FMC_Open();
+	FMC_SetVectorPageAddr(FMC_APROM_BASE);
+	FMC->ISPCTL |= FMC_ISPCTL_BS_Msk; //We set to LDROM boot mode so vector mapping takes effect.
 	FMC_Close();
 	SYS_LockReg();
 }

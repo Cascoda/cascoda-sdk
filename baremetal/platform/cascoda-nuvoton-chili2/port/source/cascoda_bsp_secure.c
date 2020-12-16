@@ -100,10 +100,8 @@ __NONSECURE_ENTRY void CHILI_GetUID(uint32_t *uid_out)
 
 __NONSECURE_ENTRY void CHILI_EnableSpiModuleClock(void)
 {
-	/* Unlock protected registers */
 	SYS_UnlockReg();
 	CLK_EnableModuleClock(SPI_MODULE);
-	/* Lock protected registers */
 	SYS_LockReg();
 }
 

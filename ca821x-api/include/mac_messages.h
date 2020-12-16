@@ -167,6 +167,16 @@ struct MLME_GET_request_pset
 	uint8_t PIBAttributeIndex;
 };
 
+/** MLME_GET_confirm parameter set */
+struct MLME_GET_confirm_pset
+{
+	uint8_t Status;
+	uint8_t PIBAttribute;
+	uint8_t PIBAttributeIndex;
+	uint8_t PIBAttributeLength;
+	uint8_t PIBAttributeValue[MAX_ATTRIBUTE_SIZE];
+};
+
 /** MLME_ORPHAN_response parameter set */
 struct MLME_ORPHAN_response_pset
 {
@@ -212,6 +222,14 @@ struct MLME_SET_request_pset
 	uint8_t PIBAttributeIndex;
 	uint8_t PIBAttributeLength;
 	uint8_t PIBAttributeValue[MAX_ATTRIBUTE_SIZE];
+};
+
+/** MLME_GET_confirm parameter set */
+struct MLME_SET_confirm_pset
+{
+	uint8_t Status;
+	uint8_t PIBAttribute;
+	uint8_t PIBAttributeIndex;
 };
 
 /** MLME_START_request parameter set */
@@ -393,16 +411,6 @@ struct MLME_BEACON_NOTIFY_indication_pset
 {
 	uint8_t              BSN;
 	struct PanDescriptor PanDescriptor; /**< Variable length, see ca821x_api_helper.h */
-};
-
-/** MLME_GET_confirm parameter set */
-struct MLME_GET_confirm_pset
-{
-	uint8_t Status;
-	uint8_t PIBAttribute;
-	uint8_t PIBAttributeIndex;
-	uint8_t PIBAttributeLength;
-	uint8_t PIBAttributeValue[MAX_ATTRIBUTE_SIZE];
 };
 
 /** Default size of scan results list */
@@ -742,6 +750,7 @@ struct MAC_Message
 		struct MLME_RX_ENABLE_request_pset        RxEnableReq;
 		struct MLME_SCAN_request_pset             ScanReq;
 		struct MLME_SET_request_pset              SetReq;
+		struct MLME_SET_confirm_pset              SetCnf;
 		struct MLME_START_request_pset            StartReq;
 		struct MCPS_DATA_confirm_pset             DataCnf;
 		struct MCPS_PURGE_confirm_pset            PurgeCnf;

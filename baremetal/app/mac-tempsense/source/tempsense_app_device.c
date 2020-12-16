@@ -533,13 +533,17 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 {
 	u32_t            add;
+	u32_t            maxadd;
 	u32_t            buffer;
-	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	struct FlashInfo flash_info;
+
+	BSP_GetFlashInfo(&flash_info);
+	maxadd = flash_info.dataFlashBaseAddr + (flash_info.numPages * flash_info.pageSize);
 
 	/* look for first free entry */
-	for (add = 0; add < (flash_info.numPages * flash_info.pageSize); add += 8)
+	for (add = flash_info.dataFlashBaseAddr; add < maxadd; add += 8)
 	{
-		BSP_ReadDataFlash(add, &buffer, 1);
+		BSP_FlashRead(add, &buffer, 1);
 		if (buffer & 0x80000000)
 		{
 			APP_FlashSaveAddr = add;
@@ -550,26 +554,27 @@ static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 
 void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 {
-	u32_t buffer[2];
-	u32_t i;
+	u32_t            buffer[2];
+	u32_t            i;
+	struct FlashInfo flash_info;
 
-	BSP_ReadDataFlash(0, &buffer[0], 1);
-	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	BSP_GetFlashInfo(&flash_info);
+	BSP_FlashRead(flash_info.dataFlashBaseAddr, &buffer[0], 1);
 
 	/* erase next page if last address has been reached */
 	for (i = 1; i <= flash_info.numPages; ++i)
 	{
-		if (APP_FlashSaveAddr == (i * flash_info.pageSize - 8))
+		if (APP_FlashSaveAddr == flash_info.dataFlashBaseAddr + (i * flash_info.pageSize - 8))
 		{
 			if (i == flash_info.numPages)
 			{
 				/* erase page 0 */
-				BSP_EraseDataFlashPage(0);
+				BSP_FlashErase(flash_info.dataFlashBaseAddr);
 			}
 			else
 			{
 				/* erase next page */
-				BSP_EraseDataFlashPage(i * flash_info.pageSize);
+				BSP_FlashErase(flash_info.dataFlashBaseAddr + i * flash_info.pageSize);
 			}
 		}
 	}
@@ -591,27 +596,28 @@ void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 	buffer[0] += (APP_ShortAddress & 0xFFFF);
 	buffer[1] = APP_Handle;
 
-	BSP_WriteDataFlashInitial(APP_FlashSaveAddr, buffer, 2);
+	BSP_FlashWriteInitial(APP_FlashSaveAddr, buffer, 2);
 }
 
 void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 {
-	u32_t add;
-	u32_t buffer[2];
-	u32_t i;
+	u32_t            add;
+	u32_t            buffer[2];
+	u32_t            i;
+	struct FlashInfo flash_info;
 
 	BSP_DisableUSB();
 
 	/* get address of first free flash entry */
 	TEMPSENSE_APP_Device_GetFlashSaveAddress();
-	struct FlashInfo flash_info = BSP_GetFlashInfo();
+	BSP_GetFlashInfo(&flash_info);
 
 	if (APP_FlashSaveAddr == 0)
-		add = ((flash_info.numPages * flash_info.pageSize) - 8);
+		add = flash_info.dataFlashBaseAddr + ((flash_info.numPages * flash_info.pageSize) - 8);
 	else
 		add = APP_FlashSaveAddr - 8;
 
-	BSP_ReadDataFlash(add, buffer, 2);
+	BSP_FlashRead(add, buffer, 2);
 
 	APP_Channel        = (buffer[0] >> 24) & 0x1F;
 	APP_CONNECTED      = (buffer[0] >> 23) & 0x01;
@@ -626,7 +632,7 @@ void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 		for (i = 0; i < flash_info.numPages; ++i)
 		{
 			/* erase all pages */
-			BSP_EraseDataFlashPage(i * flash_info.pageSize);
+			BSP_FlashErase(flash_info.dataFlashBaseAddr + i * flash_info.pageSize);
 		}
 		TEMPSENSE_APP_Initialise(pDeviceRef);
 		return;

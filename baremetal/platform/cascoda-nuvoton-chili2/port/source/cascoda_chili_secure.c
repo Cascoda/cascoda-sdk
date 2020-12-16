@@ -147,6 +147,58 @@ static const IP_T ip_tbl[] = {
 };
 #endif
 
+__NONSECURE_ENTRY ca_error BSP_SetBootMode(sysreset_mode bootMode)
+{
+	uint32_t config[4];
+	ca_error status = CA_ERROR_SUCCESS;
+
+	/**
+	 * Here we set bit 7 (BS) of CONFIG0 to set the default
+	 * boot source of the chip. CONFIG0 is nonvolatile, but
+	 * BS can be overridden by FMC_ISPCTL_BS when software
+	 * reboot takes place.
+	 */
+
+	SYS_UnlockReg();
+	FMC_Open();
+	FMC_ENABLE_AP_UPDATE();
+	FMC_ENABLE_CFG_UPDATE();
+
+	FMC_ReadConfig(config, 4);
+	if (bootMode == SYSRESET_DFU)
+	{
+		if (!(config[0] & (1 << 7)))
+			goto exit;
+		//Setting bit to 0, therefore can just overwrite
+		config[0] &= ~(1 << 7); //LDROM
+	}
+	else if (bootMode == SYSRESET_APROM)
+	{
+		if (config[0] & (1 << 7))
+			goto exit;
+		//Setting bit to 1, therefore must erase
+		config[0] |= (1 << 7); //APROM
+		FMC_Erase(FMC_USER_CONFIG_0);
+		FMC_Write(FMC_USER_CONFIG_1, config[1]);
+		FMC_Write(FMC_USER_CONFIG_2, config[2]);
+		FMC_Write(FMC_USER_CONFIG_3, config[3]);
+	}
+	else
+	{
+		status = CA_ERROR_NOT_HANDLED;
+		goto exit;
+	}
+
+	FMC_Write(FMC_USER_CONFIG_0, config[0]);
+
+exit:
+	FMC_DISABLE_CFG_UPDATE();
+	FMC_DISABLE_AP_UPDATE();
+	FMC_Close();
+	SYS_LockReg();
+	return status;
+}
+
 __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 {
 	uint32_t clkFreqMhz = (uint32_t)CHILI_GetSystemFrequency();
@@ -617,6 +669,15 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	TMR0_IRQHandler();
 }
 
+__NONSECURE_ENTRY void CHILI_PDMAInit(void)
+{
+	SYS_UnlockReg();
+	CLK_EnableModuleClock(PDMA0_MODULE);
+	SYS_ResetModule(PDMA0_RST);
+	SYS_LockReg();
+	NVIC_EnableIRQ(PDMA0_IRQn);
+}
+
 __NONSECURE_ENTRY void CHILI_ReInitSetTimerPriority()
 {
 	NVIC_SetPriority(TMR0_IRQn, 0);
@@ -979,9 +1040,6 @@ __NONSECURE_ENTRY void CHILI_UARTDeinit(void)
 	UART_DisableInt(UART, UART_INTEN_RDAIEN_Msk);
 	CLK_DisableModuleClock(UART_MODULE);
 	UART_Close(UART);
-	/* disable DMA */
-	PDMA_Close(PDMA0);
-	CLK_DisableModuleClock(PDMA0_MODULE);
 	CHILI_ModuleSetMFP(UART_TXD_PNUM, UART_TXD_PIN, PMFP_GPIO);
 	CHILI_ModuleSetMFP(UART_RXD_PNUM, UART_RXD_PIN, PMFP_GPIO);
 	GPIO_SetPullCtl(UART_TXD_PORT, BITMASK(UART_TXD_PIN), GPIO_PUSEL_PULL_UP);
@@ -995,11 +1053,6 @@ __NONSECURE_ENTRY void CHILI_UARTDeinit(void)
  ******************************************************************************/
 static void CHILI_UARTDMAInitialise(void)
 {
-	CLK_EnableModuleClock(PDMA0_MODULE);
-
-	/* Reset PDMA module */
-	SYS_ResetModule(PDMA0_RST);
-
 	/* Open DMA channels */
 	PDMA_Open(PDMA0, (1 << UART_RX_DMA_CH) | (1 << UART_TX_DMA_CH));
 
@@ -1010,8 +1063,6 @@ static void CHILI_UARTDMAInitialise(void)
 	/* Disable table interrupt */
 	PDMA0->DSCT[UART_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 	PDMA0->DSCT[UART_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
-
-	NVIC_EnableIRQ(PDMA0_IRQn);
 }
 
 #endif // USE_UART

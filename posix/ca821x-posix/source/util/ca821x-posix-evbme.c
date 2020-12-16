@@ -150,6 +150,19 @@ ca_error EVBME_DFU_CHECK_request(uint32_t           aStartAddr,
 	return ca821x_api_downstream((uint8_t *)&txMsg, txMsg.mLen + 2, NULL, pDeviceRef);
 }
 
+ca_error EVBME_DFU_BOOTMODE_request(enum evbme_dfu_rebootmode aBootMode, struct ca821x_dev *pDeviceRef)
+{
+	struct EVBME_Message txMsg;
+
+	txMsg.mCmdId = EVBME_DFU_CMD;
+	txMsg.mLen   = sizeof(txMsg.EVBME.DFU_cmd.mDfuSubCmdId) + sizeof(txMsg.EVBME.DFU_cmd.mSubCmd.bootmode_cmd);
+
+	txMsg.EVBME.DFU_cmd.mDfuSubCmdId                  = DFU_BOOTMODE;
+	txMsg.EVBME.DFU_cmd.mSubCmd.bootmode_cmd.bootMode = (uint8_t)aBootMode;
+
+	return ca821x_api_downstream((uint8_t *)&txMsg, txMsg.mLen + 2, NULL, pDeviceRef);
+}
+
 ca_error EVBME_SET_request_sync(enum evbme_attribute aAttrId,
                                 size_t               aAttrLen,
                                 uint8_t *            aAttrData,

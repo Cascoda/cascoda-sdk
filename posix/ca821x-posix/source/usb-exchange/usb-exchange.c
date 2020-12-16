@@ -53,19 +53,18 @@
 #define USB_VID 0x0416
 #define USB_PID 0x5020
 
+/** Maximum USB fragment size */
 #define MAX_FRAG_SIZE 64
 /** Max time to wait on rx data in milliseconds */
 #define POLL_DELAY 2
-
-#ifndef USB_MAX_DEVICES
-#define USB_MAX_DEVICES 5
-#endif
 
 #define FRAG_LEN_MASK 0x3F
 #define FRAG_LAST_MASK (1 << 7)
 #define FRAG_FIRST_MASK (1 << 6)
 
 #define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
+
+#define NO_CONST_CHAR(x) (((char *)(x)))
 
 /**
  * The usb exchange private-data struct representing a single device.
@@ -84,9 +83,10 @@ struct usb_exchange_priv
 #endif
 };
 
-static struct ca821x_dev *s_devs[USB_MAX_DEVICES] = {0};
-static int                s_devcount              = 0;
-static int                s_initialised           = 0;
+static struct ca821x_dev **s_devs        = NULL;
+static int                 s_maxdevcount = 0;
+static int                 s_devcount    = 0;
+static int                 s_initialised = 0;
 
 //Dynamic hid-api library
 #ifndef _WIN32
@@ -221,7 +221,8 @@ void test_frag_loopback()
 		abort();
 
 	rval = memcmp(data_in, data_out, len);
-	assert(rval == 0);
+	if (rval)
+		abort();
 }
 #endif
 
@@ -250,8 +251,7 @@ void usb_apply_raspi_workaround(struct ca821x_dev *pDeviceRef)
 
 	// Add a USB packet (EVBME COMM_CHECK to the queue)
 	uint8_t comm_check[] = {0xA1, 3, 0, 0, 0};
-	add_to_queue(
-	    &(priv->base.out_buffer_queue), &(priv->base.out_queue_mutex), comm_check, sizeof(comm_check), pDeviceRef);
+	add_to_queue(&(priv->base.out_buffer_queue), comm_check, sizeof(comm_check), pDeviceRef);
 
 	clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
 #else
@@ -438,6 +438,11 @@ static ca_error init_statics()
 {
 	ca_error error = CA_ERROR_SUCCESS;
 
+	if (s_initialised)
+		goto exit;
+
+	ca_log_debg("First time init, initialising statics (such as dynamic lib).");
+
 	error = load_dlibs();
 	if (error)
 		goto exit;
@@ -458,15 +463,10 @@ static ca_error deinit_statics()
 	return CA_ERROR_SUCCESS;
 }
 
-int usb_exchange_init(struct ca821x_dev *pDeviceRef)
-{
-	return usb_exchange_init_withhandler(NULL, pDeviceRef);
-}
-
 static int is_serialno_in_use(wchar_t *path)
 {
 	int rval;
-	for (int i = 0; i < USB_MAX_DEVICES; i++)
+	for (int i = 0; i < s_maxdevcount; i++)
 	{
 		if (!s_devs[i])
 			continue;
@@ -476,6 +476,53 @@ static int is_serialno_in_use(wchar_t *path)
 			return 1;
 	}
 	return 0;
+}
+
+static void add_sdev(struct ca821x_dev *pDeviceRef)
+{
+	// devs_mutex should be locked when calling this function
+	struct ca821x_dev **old_devs = s_devs;
+	const size_t        sdev_inc = 10;
+	size_t              mem_increase;
+
+	s_devcount++;
+	pthread_cond_signal(&devs_cond);
+	for (int i = 0; i < s_maxdevcount; i++)
+	{
+		if (s_devs[i] == NULL)
+		{
+			s_devs[i] = pDeviceRef;
+			return;
+		}
+	}
+
+	//dev array full, increase allocation
+	mem_increase = sdev_inc * sizeof(s_devs[0]);
+	s_devs       = realloc(s_devs, s_maxdevcount * sizeof(s_devs[0]) + mem_increase);
+	if (s_devs == NULL)
+	{
+		ca_log_crit("usb exchange realloc failed. Device not tracked.");
+		s_devs = old_devs;
+		return;
+	}
+	memset(s_devs + s_maxdevcount, 0, mem_increase);
+	s_devs[s_maxdevcount] = pDeviceRef;
+	s_maxdevcount += sdev_inc;
+}
+
+static void rm_sdev(struct ca821x_dev *pDeviceRef)
+{
+	// devs_mutex should be locked when calling this function
+	s_devcount--;
+	pthread_cond_signal(&devs_cond);
+	for (int i = 0; i < s_maxdevcount; i++)
+	{
+		if (s_devs[i] == pDeviceRef)
+		{
+			s_devs[i] = NULL;
+			break;
+		}
+	}
 }
 
 static struct hid_device_info *get_next_hid(struct hid_device_info *hid_cur)
@@ -594,34 +641,26 @@ static ca_error unlock_device(struct ca821x_dev *pDeviceRef)
 }
 #endif
 
-ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef)
 {
 	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
-	hid_device *              dev   = NULL;
-	struct usb_exchange_priv *priv  = NULL;
-	ca_error                  error = CA_ERROR_SUCCESS;
-	size_t                    len   = 0;
+	hid_device *              dev        = NULL;
+	struct usb_exchange_priv *priv       = NULL;
+	ca_error                  error      = CA_ERROR_SUCCESS;
+	size_t                    len        = 0;
+	bool                      path_found = false;
 
 	ca_log_debg("Trying USB Exchange");
-	if (!s_initialised)
-	{
-		ca_log_debg("First time init, initialising statics (such as dynamic lib).");
-		error = init_statics();
-		if (error)
-			return error;
-	}
+
+	error = init_statics();
+	if (error)
+		return error;
 
 	if (pDeviceRef->exchange_context)
 		return CA_ERROR_ALREADY;
 
 	ca_log_debg("USB exchange static parts loaded, initialising device...");
 	pthread_mutex_lock(&devs_mutex);
-	if (s_devcount >= USB_MAX_DEVICES)
-	{
-		ca_log_warn("Aborting device search, maximum usb exchange count reached.");
-		error = CA_ERROR_NOT_FOUND;
-		goto exit;
-	}
 
 	pDeviceRef->exchange_context = calloc(1, sizeof(struct usb_exchange_priv));
 	priv                         = pDeviceRef->exchange_context;
@@ -647,6 +686,12 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	hid_cur = get_next_hid(hid_ll);
 	while (dev == NULL && hid_cur != NULL)
 	{
+		if (path && strcmp(hid_cur->path, path) != 0)
+		{
+			hid_cur = get_next_hid(hid_cur->next);
+			continue;
+		}
+		path_found = true;
 		ca_log_debg("Attempting to claim usb device %s", hid_cur->path);
 		error = lock_device(hid_cur->serial_number, pDeviceRef);
 		if (error == CA_ERROR_SUCCESS)
@@ -663,7 +708,10 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 	if (hid_cur == NULL)
 	{ //Device not found
 		ca_log_debg("Failed to find unused usb device.");
-		error = CA_ERROR_NOT_FOUND;
+		if (path && path_found)
+			error = CA_ERROR_NO_ACCESS;
+		else
+			error = CA_ERROR_NOT_FOUND;
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
 		goto exit;
@@ -682,17 +730,7 @@ ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca82
 		goto exit;
 	}
 
-	//Add the new device to the device list for io
-	s_devcount++;
-	pthread_cond_signal(&devs_cond);
-	for (int i = 0; i < USB_MAX_DEVICES; i++)
-	{
-		if (s_devs[i] == NULL)
-		{
-			s_devs[i] = pDeviceRef;
-			break;
-		}
-	}
+	add_sdev(pDeviceRef);
 
 exit:
 	if (hid_ll)
@@ -703,6 +741,8 @@ exit:
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
 	}
+	if (s_devcount == 0)
+		deinit_statics();
 	pthread_mutex_unlock(&devs_mutex);
 	if (error == CA_ERROR_SUCCESS)
 		ca_log_info("Successfully started USB Exchange.");
@@ -719,23 +759,83 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef)
 	unlock_device(pDeviceRef);
 
 	pthread_mutex_lock(&devs_mutex);
-	s_devcount--;
+	rm_sdev(pDeviceRef);
 	if (s_devcount == 0)
 		deinit_statics();
-	pthread_cond_signal(&devs_cond);
-	for (int i = 0; i < USB_MAX_DEVICES; i++)
-	{
-		if (s_devs[i] == pDeviceRef)
-		{
-			s_devs[i] = NULL;
-			break;
-		}
-	}
 	pthread_mutex_unlock(&devs_mutex);
 
 	free(priv->serial_number);
 	free(priv);
 	pDeviceRef->exchange_context = NULL;
+}
+
+ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext)
+{
+	struct hid_device_info *hid_ll = NULL, *hid_cur = NULL;
+	const int               buf_size = 100;
+	ca_error                status   = CA_ERROR_NOT_FOUND;
+
+	status = init_statics();
+	if (status)
+		return status;
+
+	pthread_mutex_lock(&devs_mutex);
+	//Increment the dev_count to prevent statics being deinitialised
+	s_devcount++;
+	pthread_mutex_unlock(&devs_mutex);
+
+	hid_ll  = dhid_enumerate(USB_VID, USB_PID);
+	hid_cur = hid_ll;
+
+	while (hid_cur)
+	{
+		struct ca_device_info devi = {0};
+		char *                devpath, *devname, *serialno;
+		size_t                pathlen = strlen(hid_cur->path);
+
+		devi.exchange_type = ca821x_exchange_usb;
+		devi.path = devpath = malloc(pathlen + 1);
+		devi.device_name = devname = malloc(buf_size);
+		devi.serialno = serialno = malloc(buf_size);
+		devi.available           = false;
+
+		//Null terminators
+		devpath[pathlen]       = '\0';
+		devname[buf_size - 1]  = '\0';
+		serialno[buf_size - 1] = '\0';
+
+		memcpy(devpath, hid_cur->path, pathlen);
+		//The '-1' below are because wcstombs does not safely null-terminate in case of overflow
+		wcstombs(devname, hid_cur->product_string, buf_size - 1);
+		wcstombs(serialno, hid_cur->serial_number, buf_size - 1);
+
+		//Seperate the USB product string into app name and device name
+		for (size_t i = 0; i < strlen(devname); i++)
+		{
+			if (devname[i] == ':')
+			{
+				devname[i]    = '\0';
+				devi.app_name = devname + i + 1;
+				break;
+			}
+		}
+
+		//Notify the caller
+		aCallback(&devi, aContext);
+
+		free(devpath);
+		free(devname);
+		free(serialno);
+		hid_cur = hid_cur->next;
+	}
+
+	dhid_free_enumeration(hid_ll);
+	pthread_mutex_lock(&devs_mutex);
+	s_devcount--;
+	if (s_devcount == 0)
+		deinit_statics();
+	pthread_mutex_unlock(&devs_mutex);
+	return status;
 }
 
 int usb_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef)

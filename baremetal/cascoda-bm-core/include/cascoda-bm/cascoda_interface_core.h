@@ -122,51 +122,21 @@ void BSP_SetRFSSBLow(void);
 void BSP_SPIInit(void);
 
 /**
- * \brief Transmit Byte to SPI and Receive Byte at same Time
+ * Exchange bytes over SPI, receiving into RxBuf and transferring from TxBuf.
  *
- * \param OutByte - Character to transmit
+ * Any bytes received after a count of RxLen MUST be discarded. Any bytes sent
+ * after a count of TxLen MUST have the value 0xFF. A total of MAX(RxLen, TxLen)
+ * bytes MUST be exchanged. When the exchange is complete, the BSP MUST call the
+ * SPI_ExchangeComplete function.
  *
- * \return Character received
+ * RFIRQ will be disabled before this function is called.
  *
- * It is required that the Exchange & push/pop methods can work together,
- * so it is recommended that one is implemented with the other. The FIFO
- * behaviour is optimal, as it allows maximal usage of the SPI bus. Then
- * SPIExchangeByte can be implemented like:
- *
- * u8_t BSP_SPIExchangeByte( u8_t OutByte )
- * {
- *    u8_t InByte;
- *    while(!BSP_SPIPushByte(OutByte));
- *    while(!BSP_SPIPopByte(&InByte));
- *    return InByte;
- * }
- *
- * If the given board doesn't support FIFO behaviour, then the push/pop methods
- * can be implemented by using a virtual receive FIFO of length 1, and actually
- * doing the SPI byte exchange when PushByte is called.
- *
+ * @param RxBuf Buffer to fill with received bytes. Must be at least RxLen big.
+ * @param TxBuf Buffer to send bytes from. Must be at least TxLen big.
+ * @param RxLen Count of bytes to receive before dumping all future bytes.
+ * @param TxLen Count of bytes to transmit before sending all 0xFF bytes.
  */
-u8_t BSP_SPIExchangeByte(u8_t OutByte);
-
-/**
- * \brief Push byte to FIFO for transmitting over SPI
- *
- * \param OutByte - Character to transmit
- *
- * \return 1 if successful, 0 if the FIFO is full
- *
- */
-u8_t BSP_SPIPushByte(u8_t OutByte);
-
-/**
- * \brief Get Byte from SPI receive FIFO
- *
- * \param InByte - output, filled with the received byte if retval is 1
- *
- * \return 1 if successful, 0 if the FIFO is full
- *
- */
-u8_t BSP_SPIPopByte(u8_t *InByte);
+void BSP_SPIExchange(u8_t *RxBuf, const u8_t *TxBuf, u8_t RxLen, u8_t TxLen);
 
 /**
  * \brief Is the code running in an interrupt context?

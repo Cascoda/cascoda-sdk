@@ -127,7 +127,7 @@ ssize_t kernel_exchange_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 
 	assert_kernel_exchange(pDeviceRef);
 
-	if (!peek_queue(priv->base.out_buffer_queue, &(priv->base.out_queue_mutex)))
+	if (!peek_queue(&(priv->base.out_buffer_queue)))
 	{
 		fd_set  rx_block_fd_set;
 		int     nfds;
@@ -182,12 +182,7 @@ static int deinit_statics()
 	return 0;
 }
 
-int kernel_exchange_init(struct ca821x_dev *pDeviceRef)
-{
-	return kernel_exchange_init_withhandler(NULL, pDeviceRef);
-}
-
-ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error kernel_exchange_init(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
 {
 	ca_error                     error;
 	struct kernel_exchange_priv *priv = NULL;
@@ -271,4 +266,40 @@ int kernel_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef
 {
 	assert_kernel_exchange(pDeviceRef);
 	return ioctl(DriverFileDescriptor, CA8210_IOCTL_HARD_RESET, resettime);
+}
+
+ca_error kernel_exchange_enumerate(util_device_found aCallback, void *aContext)
+{
+	ca_error              status  = CA_ERROR_NOT_FOUND;
+	struct ca_device_info devinfo = {0};
+	int                   fd      = 0;
+
+	if (access(DriverFilePath, F_OK) == -1)
+		goto exit;
+
+	status                = CA_ERROR_SUCCESS;
+	devinfo.exchange_type = ca821x_exchange_kernel;
+	devinfo.path          = DriverFilePath;
+	devinfo.device_name   = "kernel";
+	devinfo.app_name      = "N/A";
+	devinfo.version       = "N/A";
+	devinfo.serialno      = "N/A";
+	devinfo.available     = false;
+
+	fd = open(DriverFilePath, O_RDWR | O_NONBLOCK);
+
+	if (fd != -1)
+	{
+		int ret;
+		do
+		{
+			ret = close(DriverFileDescriptor);
+		} while (ret < 0 && errno == EINTR);
+		devinfo.available = true;
+	}
+
+	aCallback(&devinfo, aContext);
+
+exit:
+	return status;
 }

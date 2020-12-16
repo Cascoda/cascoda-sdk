@@ -29,7 +29,7 @@ add_cmocka_test(spi_test
 		${CMOCKA_SHARED_LIBRARY}
 		cascoda-bm
 	LINK_OPTIONS
-		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte,--wrap=BSP_SPIExchangeByte
+		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte
 	)
 
 add_cmocka_test(wait_test
@@ -40,7 +40,7 @@ add_cmocka_test(wait_test
 		cascoda-bm
 		cascoda-bm-core
 	LINK_OPTIONS
-		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte,--wrap=BSP_SPIExchangeByte
+		-Wl,--wrap=BSP_Waiting,--wrap=BSP_SPIPopByte
 	)
 
 add_cmocka_test(dispatch_test

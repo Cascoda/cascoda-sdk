@@ -71,7 +71,7 @@ extern "C" {
 # endif
 #else
 # define __NONSECURE_ENTRY
-# define __NONSECURE_ENTRY_WEAK
+# define __NONSECURE_ENTRY_WEAK __attribute__((weak))
 # define __NONSECURE_CALL
 #endif
 

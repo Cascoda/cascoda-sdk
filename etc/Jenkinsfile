@@ -6,7 +6,6 @@ pipeline {
 		checkoutToSubdirectory('repo')
 	}
 
-
 	environment {
 		SRC_DIR = "${WORKSPACE}/repo"
 		REPO_DIR = "${JENKINS_HOME}/repos"
@@ -71,7 +70,7 @@ pipeline {
 			}
 			steps {
 				// Allow build to continue even if the precheck fails
-				catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+				catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
 					/* Verify that the committed code is formatted */
 					cmake_build_helper(
 						cleanBuild: true,
@@ -165,7 +164,10 @@ pipeline {
 						ctest_helper()
 						
 						/* Build docs */
-						cmake_build_helper(steps: [[args: 'docs']])
+						cmake_build_helper(
+							cmakeArgs: '-DCASCODA_PLANTUML_JAR=/usr/share/plantuml/plantuml.jar',
+							steps: [[args: 'docs']]
+						)
 					}
 				}
 
@@ -254,13 +256,16 @@ pipeline {
  */
 def cmake_build_helper(Map args) {
 	def defaultargs = [cmakeArgs: '', cleanBuild: false, steps: [[args: '-j10 -O']]]
+	def cmakeRepoArgs = "-DCASCODA_OPENTHREAD_REPO=\"${env.OPENTHREAD_REPO}\" -DCASCODA_IOTIVITY_REPO=\"${env.IOTIVITY_REPO}\""
+	def cmakeCCacheArgs = "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache"
+
 	args = defaultargs + args
 	cmakeBuild(
 		cleanBuild: args.cleanBuild,
 		installation: 'InSearchPath',
 		buildDir: "${env.BUILD_DIR}",
 		sourceDir: "${env.SRC_DIR}",
-		cmakeArgs: "${args.cmakeArgs} -DCASCODA_OPENTHREAD_REPO=\"${env.OPENTHREAD_REPO}\" -DCASCODA_IOTIVITY_REPO=\"${env.IOTIVITY_REPO}\"",
+		cmakeArgs: "${args.cmakeArgs} ${cmakeRepoArgs} ${cmakeCCacheArgs}",
 		steps: args.steps
 	)
 }

@@ -171,6 +171,13 @@ void CHILI_TimersInit(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Initialise PDMA
+ *******************************************************************************
+ ******************************************************************************/
+void CHILI_PDMAInit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief System Re-Initialisation
  *******************************************************************************
  ******************************************************************************/
@@ -321,9 +328,11 @@ void cascoda_isr_chili_init(void);
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
+#define SPI_NUM 0
 #elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
 #define SPI SPI1
 #define SPI_MODULE SPI1_MODULE
+#define SPI_NUM 1
 #else
 #error "Unsupported Chili 2 Revision"
 #endif /* CASCODA_CHILI2_REV */
@@ -392,6 +401,9 @@ void cascoda_isr_chili_init(void);
 #error "UART Channel not available"
 #endif /* UART_CHANNEL */
 #endif /* USE_UART */
+
+#define SPI_RX_DMA_CH 2
+#define SPI_TX_DMA_CH 3
 
 #ifdef __cplusplus
 }

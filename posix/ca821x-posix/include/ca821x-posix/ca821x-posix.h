@@ -58,6 +58,8 @@ extern "C" {
  * Calling twice on the same pDeviceRef without a deinit produces undefined
  * behaviour.
  *
+ * Also see ca821x_util_init_path for initialising a specific device.
+ *
  * @param[in]   pDeviceRef   Device reference to be initialised. Must point to
  *                           allocated memory, but does not have to be
  *                           initialised. The memory is cleared and initialised
@@ -65,19 +67,7 @@ extern "C" {
  *
  * @param[in]   errorHandler A function pointer to an error handling function.
  *                           This callback will be triggered in the event of an
- *                           unrecoverable error. The driver will make a best
- *                           effort to recover the ca821x, and call this callback
- *                           to reset the PiB to the correct state.
- *
- *                           This will be spawned from a seperate recovery
- *                           thread and can be used to reset the PiB to the
- *                           correct state. The recovery thread has special
- *                           properties and should only be used with sync
- *                           commands (eg. to reset pib). Any messages that
- *                           had been requested but not actually sent will be
- *                           sent after recovery. If a sync command was in
- *                           progress during the crash, it will be locked until
- *                           the recovery is complete, then completed afterwards.
+ *                           unrecoverable error.
  *
  * @retval CA_ERROR_SUCCESS Device was initialised successfully
  * @retval CA_ERROR_ALREADY Device was already initialised
@@ -85,6 +75,36 @@ extern "C" {
  *
  */
 ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler);
+
+/**
+ * Generic function to initialise a specific device as found via ca821x_util_enumerate
+ * or other mechanism. See ca821x_util_init for basic description, as this function
+ * carries out the same purpose, but for a specific device.
+ *
+ * @param[in]   pDeviceRef   Device reference to be initialised. Must point to
+ *                           allocated memory, but does not have to be
+ *                           initialised. The memory is cleared and initialised
+ *                           internally.
+ *
+ * @param[in]   errorHandler A function pointer to an error handling function.
+ *                           This callback will be triggered in the event of an
+ *                           unrecoverable error.
+ *
+ * @param exchangeType       The exchange type (eg usb, uart, kernel) to be used.
+ *                           Obtained from ca821x_util_enumerate.
+ *
+ * @param path               The exchange-specific path to the desired device.
+ *                           Obtained from ca821x_util_enumerate.
+ *
+ * @retval CA_ERROR_SUCCESS  Device was initialised successfully
+ * @retval CA_ERROR_ALREADY  Device was already initialised
+ * @retval CA_ERROR_NOT_FOUND  Device could not be initialised
+ * @retval CA_ERROR_INVALID_ARGS  Exchange type not recognised
+ */
+ca_error ca821x_util_init_path(struct ca821x_dev *       pDeviceRef,
+                               ca821x_errorhandler       errorHandler,
+                               enum ca821x_exchange_type exchangeType,
+                               const char *              path);
 
 /**
  * Generic function to deinitialise an initialised ca821x device. This will
@@ -96,6 +116,19 @@ ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler err
  *
  */
 void ca821x_util_deinit(struct ca821x_dev *pDeviceRef);
+
+/**
+ * Function to enumerate all of the connected devices, calling aCallback with a struct
+ * describing each one. The struct passed to aCallback will only be valid for the
+ * duration that the function is called. This function will not return until every
+ * callback has been called.
+ *
+ * @param aCallback The callback to call with each result
+ * @param aContext  The generic void pointer to provide to the callback when it is called
+ * @retval CA_ERROR_SUCCESS   Enumeration successful
+ * @retval CA_ERROR_NOT_FOUND No devices found
+ */
+ca_error ca821x_util_enumerate(util_device_found aCallback, void *aContext);
 
 /**
  * Generic function to attempt a hard reset of the ca821x chip.
@@ -170,6 +203,15 @@ ca_error ca821x_util_stop_downstream_dispatch_worker();
  *
  */
 ca_error exchange_register_user_callback(exchange_user_callback callback, struct ca821x_dev *pDeviceRef);
+
+/**
+ * Query whether the given exchange has any messages pending being sent in its send queue.
+ * @param timeout_s timeout in seconds, or 0 for nonblocking mode
+ * @param pDeviceRef Device reference to check the exchange of.
+ * @retval CA_ERROR_SUCCESS All pending transmissions to the device are complete
+ * @retval CA_ERROR_BUSY    All pending transmissions are not complete (returned due to timeout or non-blocking)
+ */
+ca_error exchange_wait_send_complete(time_t timeout_s, struct ca821x_dev *pDeviceRef);
 
 /**
  * Sends a user-defined command over the connected interface. This is not useful for direct CA-821x

@@ -85,8 +85,9 @@ void CHILI_SystemReInit()
 		CHILI_UARTDeinit();
 #endif /* USE_UART */
 
-	/* configure clocks */
+	/* configure clocks & DMA */
 	CHILI_ClockInit(CHILI_GetSystemFrequency(), CHILI_GetEnableCommsInterface());
+	CHILI_PDMAInit();
 
 	/* switch on comms */
 #if defined(USE_USB)
@@ -126,6 +127,7 @@ void CHILI_SystemReInit()
 	NVIC_SetPriority(GPF_IRQn, 1);
 	NVIC_SetPriority(GPG_IRQn, 1);
 	NVIC_SetPriority(GPH_IRQn, 1);
+	NVIC_SetPriority(PDMA0_IRQn, 1);
 #if defined(USE_USB)
 	NVIC_SetPriority(USBD_IRQn, 2);
 #endif

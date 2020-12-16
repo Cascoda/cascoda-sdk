@@ -86,6 +86,9 @@ if(NOT openthread_POPULATED)
   add_subdirectory(${openthread_SOURCE_DIR} ${openthread_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
+# Mark any incompatible options as advanced, so they are not presented in CMake UI
+mark_as_advanced(FORCE OT_TIME_SYNC OT_LINK_RAW)
+
 add_library(openthread-plat-api INTERFACE)
 
 target_include_directories(openthread-plat-api

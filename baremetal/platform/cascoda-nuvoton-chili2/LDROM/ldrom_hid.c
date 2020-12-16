@@ -93,14 +93,24 @@ void SYS_Init(void)
 void ParseReboot(void)
 {
 	FMC_Open();
-	FMC_ENABLE_AP_UPDATE();
 
+	/**
+	 * Here we set the vector mapping, so that upon the
+	 * software triggered System Reset, the system boots
+	 * into either LDROM or APROM depending on the setting.
+	 * This setting is volatile, unlike CONFIG0 BS.
+	 */
+
+	FMC->ISPCTL |= FMC_ISPCTL_BS_Msk; //We set to LDROM boot mode so vector mapping takes effect.
 	if (gRxBuffer.dfu_cmd.reboot_cmd.rebootMode)
+	{
 		FMC_SetVectorPageAddr(FMC_LDROM_BASE);
+	}
 	else
+	{
 		FMC_SetVectorPageAddr(FMC_APROM_BASE);
+	}
 
-	FMC_DISABLE_AP_UPDATE();
 	FMC_Close();
 
 	NVIC_SystemReset();
@@ -145,15 +155,15 @@ void ParseWrite(void)
 	uint32_t startAddr = GETLE32(gRxBuffer.dfu_cmd.write_cmd.startAddr);
 	uint8_t  writeLen  = gRxBuffer.len - 5; //1 for dfu_cmdid, 4 for startAddr
 
-	//Check that startAddr is page aligned and writeLen is word-aligned
-	if ((startAddr % FMC_FLASH_PAGE_SIZE) || (writeLen % sizeof(uint32_t)))
+	//Check that startAddr is word aligned and writeLen is word-aligned
+	if ((startAddr % sizeof(uint32_t)) || (writeLen % sizeof(uint32_t)))
 	{
 		gTxBuffer.dfu_cmd.status_cmd.status = CA_ERROR_INVALID_ARGS;
 		TxReady();
 		return;
 	}
 
-	writeLen /= 4;
+	writeLen /= sizeof(uint32_t);
 
 	FMC_Open();
 	FMC_ENABLE_AP_UPDATE();
@@ -189,9 +199,7 @@ void ParseCheck(void)
 	}
 
 	FMC_Open();
-	FMC_ENABLE_AP_UPDATE();
 	rval = FMC_GetChkSum(startAddr, checkLen);
-	FMC_DISABLE_AP_UPDATE();
 	FMC_Close();
 
 	if (checksum == rval)
@@ -208,8 +216,50 @@ void ParseCheck(void)
 	}
 }
 
+void ParseBootMode(void)
+{
+	uint32_t config[4];
+
+	FMC_Open();
+	FMC_ENABLE_AP_UPDATE();
+	FMC_ENABLE_CFG_UPDATE();
+
+	FMC_ReadConfig(config, 4);
+
+	/**
+	 * Here we set bit 7 (BS) of CONFIG0 to set the default
+	 * boot source of the chip. CONFIG0 is nonvolatile, but
+	 * BS can be overridden by FMC_ISPCTL_BS when software
+	 * reboot takes place.
+	 */
+
+	if (gRxBuffer.dfu_cmd.reboot_cmd.rebootMode)
+	{
+		config[0] &= ~(1 << 7); //Boot into LDROM
+	}
+	else
+	{
+		config[0] |= (1 << 7);        //Boot into APROM
+		FMC_Erase(FMC_USER_CONFIG_0); //Page-erase, so we have to re-write all configs
+		FMC_Write(FMC_USER_CONFIG_1, config[1]);
+		FMC_Write(FMC_USER_CONFIG_2, config[2]);
+		FMC_Write(FMC_USER_CONFIG_3, config[3]);
+	}
+
+	FMC_Write(FMC_USER_CONFIG_0, config[0]);
+	FMC_DISABLE_CFG_UPDATE();
+	FMC_DISABLE_AP_UPDATE();
+	FMC_Close();
+
+	gTxBuffer.dfu_cmd.status_cmd.status = CA_ERROR_SUCCESS;
+	TxReady();
+}
+
 void ParseCmd(void)
 {
+	gTxBuffer.cmdid     = EVBME_DFU_CMD;
+	gTxBuffer.len       = 2;
+	gTxBuffer.dfu_cmdid = DFU_STATUS;
 	switch (gRxBuffer.dfu_cmdid)
 	{
 	case DFU_REBOOT:
@@ -224,9 +274,20 @@ void ParseCmd(void)
 	case DFU_CHECK:
 		ParseCheck();
 		break;
+	case DFU_BOOTMODE:
+		ParseBootMode();
+		break;
 	default:
 		break;
 	}
+}
+
+void ParseEvbmeGet(void)
+{
+	gTxBuffer.cmdid     = EVBME_GET_CONFIRM;
+	gTxBuffer.len       = 1;
+	gTxBuffer.dfu_cmdid = CA_ERROR_INVALID_STATE;
+	TxReady();
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -292,6 +353,10 @@ int32_t main(void)
 			if (gRxBuffer.cmdid == EVBME_DFU_CMD)
 			{
 				ParseCmd();
+			}
+			else if (gRxBuffer.cmdid == EVBME_GET_REQUEST)
+			{
+				ParseEvbmeGet();
 			}
 			RxHandled();
 		}

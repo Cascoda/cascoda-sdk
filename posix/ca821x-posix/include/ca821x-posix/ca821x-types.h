@@ -55,21 +55,21 @@ extern "C" {
  * Optional callback for the application layer
  * to handle any exchange errors which would otherwise
  * cause a crash.
- * 
+ *
  * \returns Cascoda error code
  */
 typedef ca_error (*ca821x_errorhandler)(ca_error error, struct ca821x_dev *pDeviceRef);
 
 /**
  * @brief Optional Exchange User Callback
- * 
+ *
  * Optional callback for the application layer
  * to handle any non-ca821x communication with
  * a device over the same protocol. Any
  * command IDs which are not recognised as
  * a valid ca821x SPI command will be passed
  * to this callback.
- * 
+ *
  * \returns Cascoda error code
  */
 typedef ca_error (*exchange_user_callback)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
@@ -83,7 +83,7 @@ typedef ca_error (*exchange_user_callback)(const uint8_t *buf, size_t len, struc
  * \param buf buffer containing the message to send to the ca821x
  * \param len length of the buffer data
  * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
- * 
+ *
  * \returns Cascoda error code
  */
 typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
@@ -95,7 +95,7 @@ typedef ca_error (*exchange_write)(const uint8_t *buf, size_t len, struct ca821x
  * return true (nonzero) if it is ready to send, or 0 if not.
  *
  * \param pDeviceRef a Pointer to the relevant pDeviceRef struct
- * 
+ *
  * \returns Status
  * \retval CA_ERROR_SUCCESS The exchange is ready to send a packet
  * \retval CA_ERROR_BUSY The exhange is not ready to send a packet
@@ -154,6 +154,23 @@ enum ca821x_exchange_type
 	ca821x_exchange_uart,       //!< UART device
 };
 
+/** Single item in a singly-linked list of data buffers */
+struct buffer_queue_item
+{
+	size_t                    len;        //!< Length of buffer
+	uint8_t *                 buf;        //!< Buffer pointer
+	struct ca821x_dev *       pDeviceRef; //!< Data's target/originating device
+	struct buffer_queue_item *next;       //!< Next queue item
+};
+
+/** Queue struct for singly-linked list of buffer_queue_items */
+struct buffer_queue
+{
+	struct buffer_queue_item *head;
+	pthread_mutex_t           q_mutex;
+	pthread_cond_t            q_cond;
+};
+
 /** Base structure for exchange private data collections */
 struct ca821x_exchange_base
 {
@@ -173,22 +190,34 @@ struct ca821x_exchange_base
 	pthread_mutex_t flag_mutex;        //!< mutex for generic flag handling
 	pthread_cond_t  sync_cond;         //!< condition variable for synchronous exchanges
 	pthread_mutex_t sync_mutex;        //!< mutex for synchronous exchanges
+
 	//In queue = Device to host(us)
 	//Out queue = Host(us) to device
-	pthread_mutex_t      in_queue_mutex, out_queue_mutex;    //!< queue mutexes
-	struct buffer_queue *in_buffer_queue, *out_buffer_queue; //!< queues
+	struct buffer_queue in_buffer_queue, out_buffer_queue; //!< queues
 
 	struct EVBME_callbacks evbme_callbacks; //!< EVBME Callback struct
 };
 
-/** Single index in a singly-linked list of data buffers */
-struct buffer_queue
+/**
+ * Struct for getting info of connected devices (primarily for enumerating them)
+ */
+struct ca_device_info
 {
-	size_t               len;        //!< Length of buffer
-	uint8_t *            buf;        //!< Buffer pointer
-	struct ca821x_dev *  pDeviceRef; //!< Data's target/originating device
-	struct buffer_queue *next;       //!< Next queue item
+	enum ca821x_exchange_type exchange_type; //!< Exchange type for this device
+	const char *              path;          //!< Exchange & system specific 'path', unique to this device
+	const char *              device_name;   //!< Name of the device, eg 'Chili2'
+	const char *              app_name;      //!< Name of the application running on the device, eg 'ot-cli'
+	const char *              version;       //!< Version string of the device
+	const char *              serialno;      //!< Serial number of the device
+	bool                      available; //!< Is the device available for use (or not, eg. in use by other application)
 };
+
+/**
+ * Function type for handling enumerated devices when finding them.
+ * @param aDeviceInfo The information about the found device
+ * @param aContext    Generic context pointer requested when callback was provided
+ */
+typedef void (*util_device_found)(struct ca_device_info *aDeviceInfo, void *aContext);
 
 #ifdef __cplusplus
 }

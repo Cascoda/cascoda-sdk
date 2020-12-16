@@ -75,6 +75,7 @@ void *ca821x_io_worker(void *arg);
  * @return status
  * @retval CA_ERROR_SUCCESS Success
  * @retval CA_ERROR_INVALID_STATE Invalid state, such as uninitialised.
+ * @retval CA_ERROR_TIMEOUT Response was not received to synchronous command in reasonable timeframe.
  */
 ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
 

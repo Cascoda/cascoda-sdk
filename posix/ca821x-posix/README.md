@@ -1,6 +1,6 @@
 # ca821x-posix
 
-The ca821x-posix module contains the posix-specific functionality for the Cascoda SDK. It also includes partial windows support when built with MinGW. It enables communication with a CA-821x platform from a host, and also communication to embedded Cascoda platforms such as the Chili2.
+The ca821x-posix module contains the POSIX-specific functionality for the Cascoda SDK. It also includes Windows support when built with MinGW. It enables communication with a CA-821x platform from a host OS, and also communication to embedded Cascoda platforms such as the Chili2.
 
 ca821x-posix includes two major components:
 

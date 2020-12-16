@@ -137,7 +137,6 @@ ca_error ca821x_api_init(struct ca821x_dev *pDeviceRef)
 		return CA_ERROR_INVALID_ARGS;
 
 	memset(pDeviceRef, 0, sizeof(*pDeviceRef));
-	ca_log_note("Cascoda SDK %s", ca821x_get_version());
 
 #if (CASCODA_CA_VER == 8210)
 	pDeviceRef->shortaddr = 0xFFFF;
@@ -238,12 +237,8 @@ ca_mac_status MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            status;
 	struct MAC_Message Command;
 #define ASSOCREQ (Command.PData.AssocReq)
-	status = TDME_ChannelInit(LogicalChannel, pDeviceRef);
-	if (status)
-		return (ca_mac_status)status;
 
 	Command.CommandId       = SPI_MLME_ASSOCIATE_REQUEST;
 	Command.Length          = sizeof(struct MLME_ASSOCIATE_request_pset);
@@ -337,29 +332,22 @@ ca_mac_status MLME_GET_request_sync(uint8_t            PIBAttribute,
 	struct MAC_Message Command, Response;
 #define GETREQ (Command.PData.GetReq)
 #define GETCNF (Response.PData.GetCnf)
-	if (PIBAttribute == phyTransmitPower)
+
+	Command.CommandId        = SPI_MLME_GET_REQUEST;
+	Command.Length           = sizeof(struct MLME_GET_request_pset);
+	GETREQ.PIBAttribute      = PIBAttribute;
+	GETREQ.PIBAttributeIndex = PIBAttributeIndex;
+
+	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+		return MAC_SYSTEM_ERROR;
+
+	if (Response.CommandId != SPI_MLME_GET_CONFIRM)
+		return MAC_SYSTEM_ERROR;
+
+	if (GETCNF.Status == MAC_SUCCESS)
 	{
-		GETCNF.Status        = TDME_GetTxPower(((uint8_t *)pPIBAttributeValue), pDeviceRef);
-		*pPIBAttributeLength = 1;
-	}
-	else
-	{
-		Command.CommandId        = SPI_MLME_GET_REQUEST;
-		Command.Length           = sizeof(struct MLME_GET_request_pset);
-		GETREQ.PIBAttribute      = PIBAttribute;
-		GETREQ.PIBAttributeIndex = PIBAttributeIndex;
-
-		if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
-			return MAC_SYSTEM_ERROR;
-
-		if (Response.CommandId != SPI_MLME_GET_CONFIRM)
-			return MAC_SYSTEM_ERROR;
-
-		if (GETCNF.Status == MAC_SUCCESS)
-		{
-			*pPIBAttributeLength = GETCNF.PIBAttributeLength;
-			memcpy(pPIBAttributeValue, GETCNF.PIBAttributeValue, GETCNF.PIBAttributeLength);
-		}
+		*pPIBAttributeLength = GETCNF.PIBAttributeLength;
+		memcpy(pPIBAttributeValue, GETCNF.PIBAttributeValue, GETCNF.PIBAttributeLength);
 	}
 
 	return (ca_mac_status)GETCNF.Status;
@@ -496,26 +484,9 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
                                     const void *       pPIBAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            status;
 	struct MAC_Message Command, Response;
 #define SETREQ (Command.PData.SetReq)
 #define SIMPLECNF (Response.PData)
-	/* pre-check the validity of PIBAttribute values that are not checked in MAC */
-	if (TDME_CheckPIBAttribute(PIBAttribute, PIBAttributeLength, pPIBAttributeValue))
-		return MAC_INVALID_PARAMETER;
-
-	if (PIBAttribute == phyCurrentChannel)
-	{
-		status = TDME_ChannelInit(*((uint8_t *)pPIBAttributeValue), pDeviceRef);
-		if (status)
-		{
-			return (ca_mac_status)status;
-		}
-	}
-	else if (PIBAttribute == phyTransmitPower)
-	{
-		return (TDME_SetTxPower(*((uint8_t *)pPIBAttributeValue), pDeviceRef));
-	}
 
 	Command.CommandId         = SPI_MLME_SET_REQUEST;
 	Command.Length            = sizeof(struct MLME_SET_request_pset) - MAX_ATTRIBUTE_SIZE + PIBAttributeLength;
@@ -560,14 +531,9 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       struct SecSpec *   pBeaconSecurity,
                                       struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            status;
 	struct SecSpec *   pBS;
 	struct MAC_Message Command, Response;
 #define STARTREQ (Command.PData.StartReq)
-
-	status = TDME_ChannelInit(LogicalChannel, pDeviceRef);
-	if (status)
-		return (ca_mac_status)status;
 
 	Command.CommandId             = SPI_MLME_START_REQUEST;
 	Command.Length                = sizeof(struct MLME_START_request_pset);
@@ -783,14 +749,7 @@ ca_mac_status TDME_SET_request_sync(uint8_t            TestAttribute,
                                     void *             pTestAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            status;
 	struct MAC_Message Command, Response;
-	if (TestAttribute == TDME_CHANNEL)
-	{
-		status = TDME_ChannelInit(*((uint8_t *)pTestAttributeValue), pDeviceRef);
-		if (status)
-			return (ca_mac_status)status;
-	}
 
 	Command.CommandId                          = SPI_TDME_SET_REQUEST;
 	Command.Length                             = 2 + TestAttributeLength;
@@ -969,6 +928,10 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 	switch (PIBAttribute)
 	{
 	/* PHY */
+	case phyCurrentChannel:
+		if (value < 11 || value > 26)
+			status = MAC_INVALID_PARAMETER;
+		break;
 	case phyTransmitPower:
 		if (value > 0x3F)
 			status = MAC_INVALID_PARAMETER;

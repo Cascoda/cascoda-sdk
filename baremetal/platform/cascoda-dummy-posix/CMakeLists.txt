@@ -23,6 +23,7 @@ set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_dummy.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_spi_dummy.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_time.c
 	)
 

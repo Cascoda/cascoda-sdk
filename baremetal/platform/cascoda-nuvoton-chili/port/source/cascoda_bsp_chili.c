@@ -59,6 +59,8 @@
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 /******************************************************************************/
 /****** Global Variables                                                 ******/
 /******************************************************************************/
@@ -356,19 +358,6 @@ void BSP_SPIInit(void)
 	SPI_EnableFIFO(SPI1, 7, 7);
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-u8_t BSP_SPIExchangeByte(u8_t OutByte)
-{
-	u8_t InByte;
-	while (!BSP_SPIPushByte(OutByte))
-		;
-	while (!BSP_SPIPopByte(&InByte))
-		;
-	return InByte;
-}
-
 /**
  * Get the number of bytes in the tx fifo.
  * For some reason this isn't in the nuvoton vendorcode.
@@ -378,10 +367,7 @@ static inline uint8_t getTxFifoCount()
 	return ((SPI1->STATUS & SPI_STATUS_TX_FIFO_CNT_Msk) >> SPI_STATUS_TX_FIFO_CNT_Pos) & 0x0f;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-u8_t BSP_SPIPushByte(u8_t OutByte)
+static u8_t BSP_SPIPushByte(u8_t OutByte)
 {
 	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI1) && (SPI_GET_RX_FIFO_COUNT(SPI1) + getTxFifoCount() < 7))
 	{
@@ -391,10 +377,7 @@ u8_t BSP_SPIPushByte(u8_t OutByte)
 	return 0;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-u8_t BSP_SPIPopByte(u8_t *InByte)
+static u8_t BSP_SPIPopByte(u8_t *InByte)
 {
 	if (!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI1))
 	{
@@ -402,6 +385,49 @@ u8_t BSP_SPIPopByte(u8_t *InByte)
 		return 1;
 	}
 	return 0;
+}
+
+void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
+{
+	int     TxDataLeft, RxDataLeft;
+	uint8_t junk;
+
+	//Transmit & Receive command payloads asynchronously using transmit and receive buffers
+	TxDataLeft = TxLen;                //Total amount of valid data to send
+	RxDataLeft = RxLen;                //Total amount of valid data to receive
+	TxLen = RxLen = MAX(RxLen, TxLen); //Total number of byte transactions
+	for (u8_t i = 0, j = 0; (TxLen != 0) || (RxLen != 0);)
+	{
+		if (TxDataLeft)
+		{
+			if (BSP_SPIPushByte(TxBuf[i]))
+			{
+				i++;
+				TxLen--;
+				TxDataLeft--;
+			}
+		}
+		else if (TxLen && BSP_SPIPushByte(SPI_IDLE))
+		{
+			TxLen--;
+		}
+
+		if (RxDataLeft)
+		{
+			if (BSP_SPIPopByte(RxBuf + j))
+			{
+				j++;
+				RxLen--;
+				RxDataLeft--;
+			}
+		}
+		else if (RxLen && BSP_SPIPopByte(&junk))
+		{
+			RxLen--;
+		}
+	}
+
+	SPI_ExchangeComplete();
 }
 
 /*---------------------------------------------------------------------------*
@@ -569,6 +595,11 @@ void BSP_SystemReset(sysreset_mode resetMode)
 {
 	(void)resetMode;
 	NVIC_SystemReset();
+}
+
+ca_error BSP_SetBootMode(sysreset_mode bootMode)
+{
+	return CA_ERROR_NOT_HANDLED;
 }
 
 /*---------------------------------------------------------------------------*

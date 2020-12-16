@@ -1,11 +1,5 @@
-/**
- * @file
- * @brief Board Support Package (BSP)\n
- *        Micro: Nuvoton M2351\n
- *        Board: Chili Module
- */
 /*
- *  Copyright (c) 2019, Cascoda Ltd.
+ *  Copyright (c) 2020, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -33,6 +27,7 @@
  */
 //System
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 //Cascoda
@@ -44,18 +39,20 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
-const struct FlashInfo BSP_FlashInfo = {0};
-struct FlashInfo       BSP_GetFlashInfo(void)
-{
-	return BSP_FlashInfo;
-}
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
+const struct FlashInfo         BSP_FlashInfo         = {0};
 const struct ModuleSpecialPins BSP_ModuleSpecialPins = {MSP_DEFAULT};
+
+void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
+{
+	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
+}
 
 struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
 {
 	return BSP_ModuleSpecialPins;
 }
-static struct ca821x_dev internal_device;
 
 void BSP_WaitUs(u32_t us)
 {
@@ -144,25 +141,50 @@ void BSP_SPIInit(void)
 {
 }
 
-u8_t BSP_SPIExchangeByte(u8_t OutByte)
-{
-	u8_t InByte;
-	while (!BSP_SPIPushByte(OutByte))
-		;
-	while (!BSP_SPIPopByte(&InByte))
-		;
-	return InByte;
-}
+u8_t BSP_SPIPushByte(u8_t OutByte);
+u8_t BSP_SPIPopByte(u8_t *InByte);
 
-u8_t BSP_SPIPushByte(u8_t OutByte)
+void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
 {
-	return 1;
-}
+	int     TxDataLeft, RxDataLeft;
+	uint8_t junk;
 
-u8_t BSP_SPIPopByte(u8_t *InByte)
-{
-	*InByte = 0xFF;
-	return 1;
+	//Transmit & Receive command payloads asynchronously using transmit and receive buffers
+	TxDataLeft = TxLen;                //Total amount of valid data to send
+	RxDataLeft = RxLen;                //Total amount of valid data to receive
+	TxLen = RxLen = MAX(RxLen, TxLen); //Total number of byte transactions
+	for (u8_t i = 0, j = 0; (TxLen != 0) || (RxLen != 0);)
+	{
+		if (TxDataLeft)
+		{
+			if (BSP_SPIPushByte(TxBuf[i]))
+			{
+				i++;
+				TxLen--;
+				TxDataLeft--;
+			}
+		}
+		else if (TxLen && BSP_SPIPushByte(SPI_IDLE))
+		{
+			TxLen--;
+		}
+
+		if (RxDataLeft)
+		{
+			if (BSP_SPIPopByte(RxBuf + j))
+			{
+				j++;
+				RxLen--;
+				RxDataLeft--;
+			}
+		}
+		else if (RxLen && BSP_SPIPopByte(&junk))
+		{
+			RxLen--;
+		}
+	}
+
+	SPI_ExchangeComplete();
 }
 
 void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef)
@@ -220,6 +242,11 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 
 void BSP_SystemReset(sysreset_mode resetMode)
 {
+}
+
+ca_error BSP_SetBootMode(sysreset_mode bootMode)
+{
+	return CA_ERROR_NOT_HANDLED;
 }
 
 bool BSP_IsInsideInterrupt(void)
@@ -295,20 +322,24 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 {
 }
 
-void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize)
+ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize)
 {
+	return CA_ERROR_INVALID_ARGS;
 }
 
-void BSP_EraseDataFlashPage(u32_t startaddr)
+ca_error BSP_FlashErase(u32_t startaddr)
 {
+	return CA_ERROR_INVALID_ARGS;
 }
 
-void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize)
+ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize)
 {
+	return CA_ERROR_INVALID_ARGS;
 }
 
-void BSP_ClearDataFlash(void)
+ca_error BSP_FlashCheck(u32_t startaddr, u32_t checklen, u32_t crc32)
 {
+	return CA_ERROR_INVALID_ARGS;
 }
 
 void SENSORIF_I2C_Init(void)

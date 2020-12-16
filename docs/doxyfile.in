@@ -2424,7 +2424,7 @@ PLANTUML_JAR_PATH      = @CASCODA_PLANTUML_JAR@
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
 # configuration file for plantuml.
 
-PLANTUML_CFG_FILE      = @CASCODA_SOURCE_DIR@/docs/plantuml/cascoda.pu.conf
+PLANTUML_CFG_FILE      = @CASCODA_SOURCE_DIR@/docs/cascoda.pu.conf
 
 # When using plantuml, the specified paths are searched for files specified by
 # the !include statement in a plantuml block.

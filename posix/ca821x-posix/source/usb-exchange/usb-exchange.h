@@ -47,44 +47,26 @@ enum usb_exchange_errors
 	usb_exchange_err_generic
 };
 
-/*
- * Must call ONE of the following functions in order to initialize driver communications
- *
- * Using usb_exchange_init will cause the program to crash if there is an error
- *
- * Using usb_exchange_init_withhandler and passing a callback function will cause
- * that callback function to execute in the case of an error. Passing a callback of NULL causes
- * the same behaviour as usb_exchange_init.
- */
-
 /**
- * Initialise the usb exchange, with no callback for errors (program will
- * crash in the case of an error.
+ * Initialise the usb exchange
  *
- * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * If callback is specified, then it will be used to report any fatal errors back to the
+ * application, which can react as required (i.e. crash gracefully or attempt to reset the ca821x)
  *
- * @warning It is recommended to use the usb_exchange_init_withandler function
- * instead, so that any errors can be handled by your application.
+ * If path is specified, then the exchange will attempt to open that device, and fail if it cannot.
+ * The path of a device can be obtained with usb_exchange_enumerate.
  *
- * @returns 0 for success, -1 for error, 1 if already initialised
+ * @param[in]  callback    Function pointer to an error-handling callback (can be NULL)
+ * @param[in]  path        String representing an exchange & system specific path to a device (can be NULL)
+ * @param[in]  pDeviceRef  Pointer to initialised ca821x_device_ref struct
  *
- */
-int usb_exchange_init(struct ca821x_dev *pDeviceRef);
-
-/**
- * Initialise the usb exchange, using the supplied errorhandling callback to
- * report any errors back to the application, which can react as required
- * (i.e. crash gracefully or attempt to reset the ca821x)
- *
- * @param[in]  callback   Function pointer to an error-handling callback
- * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
- *
- * @retval CA_ERROR_SUCCESS for success
- * @retval CA_ERROR_NOT_FOUND for error
- * @retval CA_ERROR_ALREADY if the device is already initialised
+ * @retval CA_ERROR_SUCCESS  success
+ * @retval CA_ERROR_NOT_FOUND No available devices found (or device at path not found)
+ * @retval CA_ERROR_NO_ACCESS The specified path cannot be opened (e.g. no permissions, already in use)
+ * @retval CA_ERROR_ALREADY The pDeviceRef is already initialised
  *
  */
-ca_error usb_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the usb exchange, so that it can be reinitialised by another
@@ -105,6 +87,19 @@ void usb_exchange_deinit(struct ca821x_dev *pDeviceRef);
  *
  */
 int usb_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef);
+
+/**
+ * Function to enumerate all of the USB connected devices, calling aCallback with a struct
+ * describing each one. The struct passed to aCallback will only be valid for the
+ * duration that the function is called. This function will not return until every
+ * callback has been called.
+ *
+ * @param aCallback The callback to call with each result
+ * @param aContext  The generic void pointer to provide to the callback when it is called
+ * @retval CA_ERROR_SUCCESS   Enumeration successful
+ * @retval CA_ERROR_NOT_FOUND No devices found
+ */
+ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext);
 
 #ifdef TEST_ENABLE
 /**Run to test fragmentation. Crashes upon fail.*/

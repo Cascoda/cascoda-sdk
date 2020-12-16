@@ -40,31 +40,29 @@
 #include "ca821x_api.h"
 #include "mac_messages.h"
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-
 /******************************************************************************/
 /****** Global Variables for SPI Message Buffers                         ******/
 /******************************************************************************/
 /** Cyclic SPI receive message FIFO. Messages are read from the SPI and put into
  *  the next available index. */
-struct MAC_Message       SPI_Receive_Buffer[SPI_RX_FIFO_SIZE];
-static int               SPI_FIFO_Start = 0;
-static int               SPI_FIFO_End   = 0;
-static bool              SPI_FIFO_Full  = false;
-static uint32_t          waterMark      = 0; //!< Actual current fifo level
-static volatile uint32_t highWaterMark  = 0; //!< Actual worst fifo level
+struct MAC_Message SPI_Receive_Buffer[SPI_RX_FIFO_SIZE];
+static int         SPI_FIFO_Start = 0;
+static int         SPI_FIFO_End   = 0;
+static bool        SPI_FIFO_Full  = false;
+static uint32_t    waterMark      = 0; //!< Actual current fifo level
+static uint32_t    highWaterMark  = 0; //!< Actual worst fifo level
+
+static volatile bool ExchangeInProgress = false; //!< SPI Exchange currently in progress (possibly dma)
+static volatile bool FinalExchange      = false; //!< If true, the RFSS pin will be set to high upon exchange completion
 
 // Sync chaining system
-static volatile bool syncChainActive   = 0; //!< Sync chaining is currently active
-static volatile bool syncChainInFlight = 0; //!< A sync chain block message is currently in flight
+static volatile bool syncChainActive   = false; //!< Sync chaining is currently active
+static volatile bool syncChainInFlight = false; //!< A sync chain block message is currently in flight
 //The sync chain message is an MLME_GET for MAC_ACK_WAIT_DURATION
 static const uint8_t syncChainMessage[] = {0x45, 0x02, 0x40, 0x00};
 
 /** Pointer to buffer to be used to store synchronous responses */
 static struct MAC_Message *SPI_Wait_Buf;
-
-/** Flag to prevent messages being sent while the system is scanning */
-u8_t SPI_MLME_SCANNING = 0;
 
 /******************************************************************************/
 /****** Static function declarations for cascoda_spi.c                   ******/
@@ -73,7 +71,6 @@ static ca_error            SPI_SyncWait(uint8_t cmdid);
 static struct MAC_Message *SPI_GetFreeBuf();
 static struct MAC_Message *getBuf(uint8_t cmdid);
 static ca_error            SPI_WaitSlave(void);
-static void                SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen);
 static void                SPI_Error(ca_error errcode);
 
 bool SPI_IsFifoFull()
@@ -98,6 +95,24 @@ bool SPI_IsFifoEmpty()
 	return rval;
 }
 
+/**
+ * Does the FIFO have a single buffer in use, and is that buffer currently being filled?
+ *
+ * RFIRQ must be enabled when calling this.
+ * @return True if there is only a single FIFO buffer allocated AND it is not ready for reading.
+ */
+static bool SPI_IsSingleFifoBufInUse()
+{
+	bool rval;
+
+	BSP_DisableRFIRQ();
+	rval = (SPI_FIFO_End == ((SPI_FIFO_Start + 1) % SPI_RX_FIFO_SIZE)); //One item in the fifo
+	rval = rval && ExchangeInProgress;                                  //Currently being filled.
+	BSP_EnableRFIRQ();
+
+	return rval;
+}
+
 bool SPI_IsFifoAlmostFull()
 {
 	//This deals with the case that we are receiving a sync response
@@ -114,6 +129,11 @@ bool SPI_IsFifoAlmostFull()
 			return true;
 	}
 	return false;
+}
+
+bool SPI_IsExchangeInProgress()
+{
+	return ExchangeInProgress;
 }
 
 bool SPI_IsSyncChainInFlight()
@@ -154,7 +174,16 @@ static void SPI_IncrementWaterMark()
 	if (++waterMark > highWaterMark)
 	{
 		highWaterMark = waterMark;
+		ca_log_debg("New SPI hwm: %d", highWaterMark);
 	}
+}
+
+static void SPI_ExchangeBlocking(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
+{
+	ExchangeInProgress = true;
+	BSP_SPIExchange(RxBuf, TxBuf, RxLen, TxLen);
+	while (ExchangeInProgress)
+		;
 }
 
 /**
@@ -183,7 +212,7 @@ struct MAC_Message *SPI_PeekFullBuf()
 {
 	struct MAC_Message *rval = NULL;
 
-	if (!SPI_IsFifoEmpty())
+	if (!SPI_IsFifoEmpty() && !SPI_IsSingleFifoBufInUse())
 	{
 		rval = SPI_Receive_Buffer + SPI_FIFO_Start;
 	}
@@ -292,52 +321,6 @@ static ca_error SPI_WaitSlave(void)
 #endif
 
 /**
- *\brief Bulk transfer an SPI chunk of data, filling with IDLE to equalize channel length
- *
- * RFIRQ must be disabled when calling.
- */
-static void SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
-{
-	int     TxDataLeft, RxDataLeft;
-	uint8_t junk;
-
-	//Transmit & Receive command payloads asynchronously using transmit and receive buffers
-	TxDataLeft = TxLen;                //Total amount of valid data to send
-	RxDataLeft = RxLen;                //Total amount of valid data to receive
-	TxLen = RxLen = MAX(RxLen, TxLen); //Total number of byte transactions
-	for (u8_t i = 0, j = 0; (TxLen != 0) || (RxLen != 0);)
-	{
-		if (TxDataLeft)
-		{
-			if (BSP_SPIPushByte(TxBuf[i]))
-			{
-				i++;
-				TxLen--;
-				TxDataLeft--;
-			}
-		}
-		else if (TxLen && BSP_SPIPushByte(SPI_IDLE))
-		{
-			TxLen--;
-		}
-
-		if (RxDataLeft)
-		{
-			if (BSP_SPIPopByte(RxBuf + j))
-			{
-				j++;
-				RxLen--;
-				RxDataLeft--;
-			}
-		}
-		else if (RxLen && BSP_SPIPopByte(&junk))
-		{
-			RxLen--;
-		}
-	}
-}
-
-/**
  *\brief Exchange the first 2 bytes of a transaction (CommandId and Length)
  *
  * On the CA-8210, this can time out with NACKs, but NACKs were removed from the
@@ -348,33 +331,35 @@ static void SPI_BulkExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen
 #if CASCODA_CA_VER == 8211
 static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, const struct MAC_Message *pTxBuffer)
 {
+	uint8_t txBytes[] = {0xFF, 0xFF};
 	if (pTxBuffer)
 	{
-		ReadBytes[0] = pTxBuffer->CommandId;
-		ReadBytes[1] = pTxBuffer->Length;
+		txBytes[0] = pTxBuffer->CommandId;
+		txBytes[1] = pTxBuffer->Length;
 	}
 
-	ReadBytes[0] = BSP_SPIExchangeByte(ReadBytes[0]);
-	ReadBytes[1] = BSP_SPIExchangeByte(ReadBytes[1]);
+	SPI_ExchangeBlocking(ReadBytes, txBytes, 2, 2);
 
 	return CA_ERROR_SUCCESS;
 }
 #elif CASCODA_CA_VER == 8210
 static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, const struct MAC_Message *pTxBuffer)
 {
-	u32_t T_Start, T_Now = TIME_ReadAbsoluteTime();
+	u32_t   T_Start, T_Now = TIME_ReadAbsoluteTime();
+	uint8_t txBytes[] = {0xFF, 0xFF};
+
+	if (pTxBuffer)
+	{
+		txBytes[0] = pTxBuffer->CommandId;
+		txBytes[1] = pTxBuffer->Length;
+	}
+
 	T_Start = T_Now;
 	do
 	{
 		BSP_SetRFSSBLow();
-		if (pTxBuffer)
-		{
-			ReadBytes[0] = pTxBuffer->CommandId;
-			ReadBytes[1] = pTxBuffer->Length;
-		}
 
-		ReadBytes[0] = BSP_SPIExchangeByte(ReadBytes[0]);
-		ReadBytes[1] = BSP_SPIExchangeByte(ReadBytes[1]);
+		SPI_ExchangeBlocking(ReadBytes, txBytes, 2, 2);
 
 		if (ReadBytes[1] != SPI_NACK)
 			break;
@@ -406,8 +391,8 @@ static u8_t SPI_CA8210_Align(u8_t *ReadBytes, const struct MAC_Message *pTxBuffe
 		if (pTxBuffer)
 			OutByte = pTxBuffer->PData.Payload[0];
 		ReadBytes[0] = ReadBytes[1];
-		ReadBytes[1] = BSP_SPIExchangeByte(OutByte);
-		rval         = 1;
+		SPI_ExchangeBlocking(ReadBytes + 1, &OutByte, 1, 1);
+		rval = 1;
 	}
 
 	return rval;
@@ -438,6 +423,10 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 		return CA_ERROR_NO_BUFFER;
 	}
 
+	//Wait for previous SPI exchange to complete...
+	while (ExchangeInProgress)
+		;
+
 	BSP_SetRFSSBHigh();
 
 	//Wait for slave or time out
@@ -463,6 +452,7 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 
 	if (!TxLen && !pRxBuffer)
 	{
+		BSP_SetRFSSBHigh();
 		goto exit;
 	}
 
@@ -472,18 +462,21 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 		RxLen -= AlignMod;
 	}
 
-	SPI_BulkExchange(pRxBuffer->PData.Payload, pTxBuffer->PData.Payload, RxLen, TxLen);
-
-	if (pTxBuffer && pTxBuffer->CommandId == SPI_MLME_SCAN_REQUEST) // disable SPI sends during scan
-		SPI_MLME_SCANNING = 1;
-	else if ((triageBuf[0] == SPI_MLME_SCAN_CONFIRM) || (triageBuf[0] == SPI_HWME_WAKEUP_INDICATION))
-		SPI_MLME_SCANNING = 0; // re-enable SPI sends
+	FinalExchange = true;
+	if (TxLen != 0)
+	{
+		SPI_ExchangeBlocking(pRxBuffer->PData.Payload, pTxBuffer->PData.Payload, RxLen, TxLen);
+	}
+	else
+	{
+		ExchangeInProgress = true;
+		BSP_SPIExchange(pRxBuffer->PData.Payload, pTxBuffer->PData.Payload, RxLen, TxLen);
+	}
 
 	if (setSyncChain)
 		syncChainInFlight = true;
 
 exit:
-	BSP_SetRFSSBHigh(); // end access
 	return error;
 }
 
@@ -510,7 +503,8 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 
 	do
 	{
-		if (SPI_Wait_Buf->CommandId == rspid)
+		//TODO: This is perhaps a bit aggressive, as we don't need to wait for every exchange to finish, just the sync one.
+		if (SPI_Wait_Buf->CommandId == rspid && !SPI_IsExchangeInProgress())
 		{
 			status = CA_ERROR_SUCCESS;
 			break;
@@ -530,12 +524,6 @@ ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_
 	ca_error Status = CA_ERROR_SUCCESS;
 	bool     sync   = (buf[0] & SPI_SYN) && (buf[0] != SPI_IDLE);
 	(void)len;
-
-	if (SPI_MLME_SCANNING == 1)
-	{
-		Status = CA_ERROR_SPI_SCAN_IN_PROGRESS;
-		goto exit;
-	}
 
 	BSP_DisableRFIRQ();
 	if (sync)
@@ -576,6 +564,16 @@ static void SPI_Error(ca_error errcode)
 {
 	BSP_SetRFSSBHigh();
 	ca_log_crit("SPI Error %s", ca_error_str(errcode));
+}
+
+void SPI_ExchangeComplete()
+{
+	if (FinalExchange)
+	{
+		BSP_SetRFSSBHigh(); // end access
+		FinalExchange = false;
+	}
+	ExchangeInProgress = false;
 }
 
 void SPI_Initialise(void)

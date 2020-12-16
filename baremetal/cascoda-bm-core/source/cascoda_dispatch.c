@@ -61,6 +61,7 @@ static bool             isPCPSFixActive       = false;
 static uint8_t          isPCPSRxOn            = 0;
 static volatile uint8_t isReadPending         = 0;
 static bool             isCacheFlushFixActive = false;
+static bool             isScanInProgress      = false;
 
 static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef);
 
@@ -264,22 +265,108 @@ static inline void ApplyMixedDirectHotfix(struct ca821x_dev *pDeviceRef)
 	SPI_Send(hotfix, 3, reply, pDeviceRef);
 }
 
+/**
+ * Check if MAC MLME SET/GET Command requires intervention (that isn't in the hard mac)
+ *
+ * @param msg - MAC message to process
+ * @param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *
+ * @returns ca_error value
+ * @retval  CA_ERROR_SUCCESS  Message was not consumed (should go to CA821x)
+ * @retval  CA_ERROR_ALREADY  Message was consumed, and workaround already applied
+ */
+static ca_error CheckSetGet(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
+{
+	uint8_t            status, val;
+	struct MAC_Message response;
+
+	if (msg->CommandId == SPI_MLME_SET_REQUEST)
+	{
+		if (TDME_CheckPIBAttribute(msg->PData.SetReq.PIBAttribute,
+		                           msg->PData.SetReq.PIBAttributeLength,
+		                           msg->PData.SetReq.PIBAttributeValue))
+		{
+			response.CommandId                      = SPI_MLME_SET_CONFIRM;
+			response.Length                         = 3;
+			response.PData.SetCnf.Status            = MAC_INVALID_PARAMETER;
+			response.PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
+			response.PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
+			DispatchFromCa821x(&response, pDeviceRef);
+			return CA_ERROR_ALREADY;
+		}
+	}
+
+	// MLME set / get phyTransmitPower
+	if ((msg->CommandId == SPI_MLME_SET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
+	{
+		status                                  = TDME_SetTxPower(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
+		response.CommandId                      = SPI_MLME_SET_CONFIRM;
+		response.Length                         = 3;
+		response.PData.SetCnf.Status            = status;
+		response.PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
+		response.PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
+		DispatchFromCa821x(&response, pDeviceRef);
+		return CA_ERROR_ALREADY;
+	}
+	if ((msg->CommandId == SPI_MLME_GET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
+	{
+		status                                     = TDME_GetTxPower(&val, pDeviceRef);
+		response.CommandId                         = SPI_MLME_GET_CONFIRM;
+		response.Length                            = 5;
+		response.PData.GetCnf.Status               = status;
+		response.PData.GetCnf.PIBAttribute         = msg->PData.GetReq.PIBAttribute;
+		response.PData.GetCnf.PIBAttributeIndex    = msg->PData.GetReq.PIBAttributeIndex;
+		response.PData.GetCnf.PIBAttributeLength   = 1;
+		response.PData.GetCnf.PIBAttributeValue[0] = val;
+		DispatchFromCa821x(&response, pDeviceRef);
+		return CA_ERROR_ALREADY;
+	}
+
+	return CA_ERROR_SUCCESS;
+}
+
+/**
+ * Check if the channel is being changed, and call TDME_ChannelInit accordingly.
+ * @param msg  MAC message to process
+ * @param pDeviceRef Cascoda Device reference
+ */
+static inline void CheckChannel(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
+{
+	if (msg->CommandId == SPI_MLME_ASSOCIATE_REQUEST)
+		TDME_ChannelInit(msg->PData.AssocReq.LogicalChannel, pDeviceRef);
+	else if (msg->CommandId == SPI_MLME_START_REQUEST)
+		TDME_ChannelInit(msg->PData.StartReq.LogicalChannel, pDeviceRef);
+	else if ((msg->CommandId == SPI_MLME_SET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyCurrentChannel))
+		TDME_ChannelInit(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
+	else if ((msg->CommandId == SPI_TDME_SET_REQUEST) && (msg->PData.TDMESetReq.TDAttribute == TDME_CHANNEL))
+		TDME_ChannelInit(msg->PData.TDMESetReq.TDAttributeValue[0], pDeviceRef);
+}
+
 /** Checks to run before sending a message to the CA821x */
 static ca_error PreCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDeviceRef)
 {
 	ca_error            Status = CA_ERROR_SUCCESS;
 	struct MAC_Message *msg    = (struct MAC_Message *)buf;
 
+	if (isScanInProgress)
+	{
+		Status = CA_ERROR_SPI_SCAN_IN_PROGRESS;
+		goto exit;
+	}
+
+	if ((Status = CheckSetGet(msg, pDeviceRef)))
+		goto exit;
+
+	CheckChannel(msg, pDeviceRef);
+
 #if CASCODA_CA_VER == 8211
 	if (msg->CommandId == SPI_PCPS_DATA_REQUEST)
 	{
 		ApplyPCPSHotFix(&(msg->PData.PhyDataReq), pDeviceRef);
 	}
-#else
-	(void)pDeviceRef;
-	(void)msg;
 #endif
 
+exit:
 	return Status;
 }
 
@@ -300,6 +387,11 @@ static ca_error PostCheckToCA821x(const uint8_t *buf, const uint8_t *rspbuf, str
 		{
 			ApplyMixedDirectHotfix(pDeviceRef);
 		}
+	}
+
+	if (msg->CommandId == SPI_MLME_SCAN_REQUEST)
+	{
+		isScanInProgress = true;
 	}
 
 #if CASCODA_CA_VER == 8211
@@ -342,6 +434,10 @@ static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage)
 	{
 		CacheRemoveItem(aMessage->PData.DataCnf.MsduHandle, MDR_CacheTypeMCPS);
 	}
+	if (aMessage->CommandId == SPI_MLME_SCAN_CONFIRM || aMessage->CommandId == SPI_HWME_WAKEUP_INDICATION)
+	{
+		isScanInProgress = false;
+	}
 #if CASCODA_CA_VER == 8211
 	else if (aMessage->CommandId == SPI_PCPS_DATA_CONFIRM)
 	{
@@ -371,7 +467,11 @@ void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef)
 	BSP_DisableRFIRQ();
 	rfirq = BSP_SenseRFIRQ();
 
-	if (!rfirq && !SPI_IsFifoAlmostFull() && !SPI_IsSyncChainInFlight())
+	if (SPI_IsExchangeInProgress())
+	{
+		//Do nothing...
+	}
+	else if (!rfirq && !SPI_IsFifoAlmostFull() && !SPI_IsSyncChainInFlight())
 	{
 		SPI_Exchange(NULLP, pDeviceRef);
 		isReadPending = 0;
@@ -402,6 +502,8 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 	if (!Status)
 		Status = PostCheckToCA821x(buf, response, pDeviceRef);
 
+	if (Status == CA_ERROR_ALREADY)
+		Status = CA_ERROR_SUCCESS;
 	return Status;
 }
 

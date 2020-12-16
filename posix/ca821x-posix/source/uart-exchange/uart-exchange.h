@@ -47,38 +47,20 @@ enum uart_exchange_errors
 	uart_exchange_err_generic
 };
 
-/*
- * Must call ONE of the following functions in order to initialize driver communications
- *
- * Using uart_exchange_init will cause the program to crash if there is an error
- *
- * Using uart_exchange_init_withhandler and passing a callback function will cause
- * that callback function to execute in the case of an error. Passing a callback of NULL causes
- * the same behaviour as uart_exchange_init.
- */
-
-/**
- * Initialise the uart exchange, with no callback for errors (program will
- * crash in the case of an error.
- *
- * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
- *
- * @warning It is recommended to use the uart_exchange_init_withandler function
- * instead, so that any errors can be handled by your application.
- *
- * @retval CA_ERROR_SUCCESS Successful initialisation
- * @retval CA_ERROR_FAIL Could not initialise
- * @retval CA_ERROR_ALREADY The exchange was already initialised
- *
- */
-ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef);
-
 /**
  * Initialise the uart exchange, using the supplied errorhandling callback to
  * report any errors back to the application, which can react as required
  * (i.e. crash gracefully or attempt to reset the ca821x)
  *
- * @param[in]  callback   Function pointer to an error-handling callback
+ * Regarding the path argument, it can be manually selected, or obtained from
+ * calling uart_exchange enumerate. The string is a colon-delimited list of
+ * comma delimited 'device,baud' pairs. Unlike the USB version of this function,
+ * the path argument can be used to specify devices that wouldn't otherwise
+ * be available (i.e. they don't need to exist in the CASCODA_UART environment
+ * variable).
+ *
+ * @param[in]  callback   Function pointer to an error-handling callback (can be NULL)
+ * @param[in]  path        String representing possible UART devices and baud rates in the form "/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,6000000"
  * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
  *
  * @retval CA_ERROR_SUCCESS for success
@@ -86,7 +68,7 @@ ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef);
  * @retval CA_ERROR_ALREADY if the device was already initialised
  *
  */
-ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the uart exchange, so that it can be reinitialised by another
@@ -95,6 +77,19 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
  *@param pDeviceRef Pointer to initialised ca821x_device_ref struct
  */
 void uart_exchange_deinit(struct ca821x_dev *pDeviceRef);
+
+/**
+ * Function to enumerate all of the UART devices configured (in the CASCODA_UART
+ * environment variable), calling aCallback with a struct describing each one. The
+ * struct passed to aCallback will only be valid for the duration that the function
+ * is called. This function will not return until every callback has been called.
+ *
+ * @param aCallback The callback to call with each result
+ * @param aContext  The generic void pointer to provide to the callback when it is called
+ * @retval CA_ERROR_SUCCESS   Enumeration successful
+ * @retval CA_ERROR_NOT_FOUND No devices found
+ */
+ca_error uart_exchange_enumerate(util_device_found aCallback, void *aContext);
 
 /**
  * Send a hard reset to the ca821x. This should not be necessary, but is provided

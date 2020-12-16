@@ -33,6 +33,7 @@
 */
 /* System */
 #include <stdio.h>
+#include <string.h>
 /* Platform */
 #include "Nano100Series.h"
 #include "fmc.h"
@@ -52,10 +53,48 @@
 #define DATA_FLASH_BASE \
 	(FMC_APROM_END - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE)) /* Dataflash: 122k - 123k (1k or 2 pages) */
 
-const struct FlashInfo BSP_FlashInfo = {FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
-struct FlashInfo       BSP_GetFlashInfo(void)
+const struct FlashInfo BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
+void                   BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
 {
-	return BSP_FlashInfo;
+	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
+}
+
+/*
+ * CRC32 algorithm taken from the zlib source, which is
+ * Copyright (C) 1995-1998 Jean-loup Gailly and Mark Adler
+ */
+static const unsigned int tinf_crc32tab[16] = {0x00000000,
+                                               0x1db71064,
+                                               0x3b6e20c8,
+                                               0x26d930ac,
+                                               0x76dc4190,
+                                               0x6b6b51f4,
+                                               0x4db26158,
+                                               0x5005713c,
+                                               0xedb88320,
+                                               0xf00f9344,
+                                               0xd6d6a3e8,
+                                               0xcb61b38c,
+                                               0x9b64c2b0,
+                                               0x86d3d2d4,
+                                               0xa00ae278,
+                                               0xbdbdf21c};
+
+/* crc is previous value for incremental computation, 0xffffffff initially */
+static uint32_t uzlib_crc32(const void *data, unsigned int length, uint32_t crc)
+{
+	const unsigned char *buf = (const unsigned char *)data;
+	unsigned int         i;
+
+	for (i = 0; i < length; ++i)
+	{
+		crc ^= buf[i];
+		crc = tinf_crc32tab[crc & 0x0f] ^ (crc >> 4);
+		crc = tinf_crc32tab[crc & 0x0f] ^ (crc >> 4);
+	}
+
+	// return value suitable for passing in next time, for final value invert it
+	return crc /* ^ 0xffffffff*/;
 }
 
 /*---------------------------------------------------------------------------*
@@ -87,8 +126,16 @@ void CHILI_FlashInit()
 static u8_t isValidFlashAddr(u32_t flashaddr)
 {
 	/* Check word alignment and range */
-	if ((flashaddr % 4) || (flashaddr >= CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE))
+	if ((flashaddr % 4))
 		return 0;
+
+	if (flashaddr < DATA_FLASH_BASE)
+		return 0;
+
+	if (flashaddr >= FMC_APROM_END)
+		return 0;
+
+	ca_log_crit("Flash Address invalid");
 
 	return 1;
 }
@@ -96,14 +143,11 @@ static u8_t isValidFlashAddr(u32_t flashaddr)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize)
+ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize)
 {
-	uint32_t addr;
-
 	if (!isValidFlashAddr(startaddr))
 	{
-		ca_log_crit("BSP_WriteDataFlashInitial: Start Address invalid");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	SYS_UnlockReg();
@@ -112,34 +156,33 @@ void BSP_WriteDataFlashInitial(u32_t startaddr, u32_t *data, u32_t datasize)
 	FMC_ENABLE_AP_UPDATE();
 
 	/* Write Dataflash */
-	addr = startaddr;
-	for (uint32_t i = 0; i < datasize; ++i)
+	for (uint32_t i = 0; i < datasize; i += sizeof(uint32_t))
 	{
-		uint32_t u32data = data[i];
-		FMC_Write(DATA_FLASH_BASE + addr, u32data);
-
-		addr += 4;
+		uint32_t u32data;
+		memcpy(&u32data, data + i, sizeof(u32data));
+		FMC_Write(startaddr + i, u32data);
 	}
 
 	FMC_DISABLE_AP_UPDATE();
 
 	FMC_Close();
 	SYS_LockReg();
+
+	return CA_ERROR_SUCCESS;
 }
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_EraseDataFlashPage(u32_t startaddr)
+ca_error BSP_FlashErase(u32_t startaddr)
 {
 	int32_t  error;
 	uint32_t page;
 
 	page = startaddr / FMC_FLASH_PAGE_SIZE;
-	if (page >= CASCODA_CHILI_FLASH_PAGES)
+	if (isValidFlashAddr(startaddr))
 	{
-		ca_log_crit("BSP_EraseDataFlashPage address out of range");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	SYS_UnlockReg();
@@ -148,7 +191,7 @@ void BSP_EraseDataFlashPage(u32_t startaddr)
 	FMC_ENABLE_AP_UPDATE();
 
 	/* Align address to start of page and then erase whole page */
-	error = FMC_Erase(DATA_FLASH_BASE + (FMC_FLASH_PAGE_SIZE * page));
+	error = FMC_Erase(FMC_FLASH_PAGE_SIZE * page);
 
 	if (error)
 		ca_log_crit("FMC_Erase Dataflash Error.");
@@ -157,19 +200,22 @@ void BSP_EraseDataFlashPage(u32_t startaddr)
 
 	FMC_Close();
 	SYS_LockReg();
+
+	if (error)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
 }
 
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize)
+ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize)
 {
 	uint32_t addr;
 
 	if (!isValidFlashAddr(startaddr))
 	{
-		ca_log_crit("BSP_WriteDataFlashReprog: Start Address invalid");
-		return;
+		return CA_ERROR_INVALID_ARGS;
 	}
 
 	SYS_UnlockReg();
@@ -179,34 +225,39 @@ void BSP_ReadDataFlash(u32_t startaddr, u32_t *data, u32_t datasize)
 	addr = startaddr;
 	for (uint32_t i = 0; i < datasize; ++i)
 	{
-		data[i] = FMC_Read(DATA_FLASH_BASE + addr);
+		data[i] = FMC_Read(addr);
 		addr += 4;
 	}
 
 	FMC_Close();
 	SYS_LockReg();
+	return CA_ERROR_SUCCESS;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-void BSP_ClearDataFlash(void)
+ca_error BSP_FlashCheck(u32_t startaddr, u32_t checklen, u32_t crc32)
 {
-	SYS_UnlockReg();
-	FMC_Open();
+	uint32_t crc_flash = 0xFFFFFFFF;
 
-	FMC_ENABLE_AP_UPDATE();
-
-	for (int32_t i = 0; i < CASCODA_CHILI_FLASH_PAGES; i++)
+	if (!isValidFlashAddr(startaddr))
 	{
-		int32_t error = FMC_Erase(DATA_FLASH_BASE + (FMC_FLASH_PAGE_SIZE * i));
-
-		if (error)
-			ca_log_crit("FMC_Erase Dataflash Page %d Error.", i);
+		return CA_ERROR_INVALID_ARGS;
 	}
 
-	FMC_DISABLE_AP_UPDATE();
-
+	SYS_UnlockReg();
+	FMC_Open();
+	/* Loop to read the data into the buffer */
+	for (uint32_t i = 0; i < checklen; ++i)
+	{
+		uint32_t data = FMC_Read(startaddr);
+		crc_flash     = uzlib_crc32(&data, sizeof(data), crc_flash);
+		startaddr += sizeof(data);
+	}
 	FMC_Close();
 	SYS_LockReg();
+
+	crc_flash = ~crc_flash;
+
+	if (crc_flash != crc32)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
 }

@@ -32,6 +32,7 @@
  * Interface Functions, see cascoda-bm/cascoda_interface.h for descriptions
 */
 /* System */
+#include <assert.h>
 #include <stdio.h>
 
 #include "cascoda-util/cascoda_hash.h"
@@ -61,6 +62,9 @@
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
+
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 /******************************************************************************/
 /****** Global Variables                                                 ******/
@@ -402,6 +406,8 @@ u32_t BSP_ADCGetVolts(void)
 void BSP_SPIInit(void)
 {
 	CHILI_EnableSpiModuleClock();
+	CHILI_RegisterSPIComplete(&SPI_ExchangeComplete); //Trustzone workaround
+
 	/* SPI clock rate */
 	SPI_Open(SPI, SPI_MASTER, SPI_MODE_2, 8, FCLK_SPI);
 
@@ -415,62 +421,15 @@ void BSP_SPIInit(void)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
-u8_t BSP_SPIExchangeByte(u8_t OutByte)
-{
-	u8_t InByte;
-	while (!BSP_SPIPushByte(OutByte))
-		;
-	while (!BSP_SPIPopByte(&InByte))
-		;
-	return InByte;
-}
-
-/**
- * Get the number of bytes in the tx fifo.
- * For some reason this isn't in the nuvoton vendorcode.
- */
-static inline uint8_t getTxFifoCount()
-{
-	return ((SPI->STATUS & SPI_STATUS_TXCNT_Msk) >> SPI_STATUS_TXCNT_Pos) & 0x0f;
-}
-
-static uint8_t fifo_imbalance = 0;
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-u8_t BSP_SPIPushByte(u8_t OutByte)
-{
-	if (!SPI_GET_TX_FIFO_FULL_FLAG(SPI) && (fifo_imbalance < 7))
-	{
-		fifo_imbalance++;
-		SPI_WRITE_TX(SPI, OutByte);
-		return 1;
-	}
-	return 0;
-}
-
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
-u8_t BSP_SPIPopByte(u8_t *InByte)
-{
-	if (!SPI_GET_RX_FIFO_EMPTY_FLAG(SPI))
-	{
-		fifo_imbalance--;
-		*InByte = SPI_READ_RX(SPI) & 0xFF;
-		return 1;
-	}
-	return 0;
-}
-
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SystemReset(sysreset_mode resetMode)
 {
 	if (resetMode == SYSRESET_DFU)
 	{
 		CHILI_SetLDROMBoot();
+	}
+	else
+	{
+		CHILI_SetAPROMBoot();
 	}
 
 	NVIC_SystemReset();
@@ -500,7 +459,6 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 	/* configure HXT to external clock input */
 	CHILI_SetClockExternalCFGXT1(1);
 
-	/* enable GPIO interrupts */
 	CHILI_GPIOEnableInterrupts();
 
 	if (USE_WATCHDOG_POWEROFF)

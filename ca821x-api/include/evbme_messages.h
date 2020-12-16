@@ -78,9 +78,17 @@ enum evbme_attribute
 	EVBME_VERSTRING   = 0x80, //!< Version string - Read only
 	EVBME_PLATSTRING  = 0x81, //!< Platform string - Read only
 	EVBME_APPSTRING   = 0x82, //!< Application string - Read only
-	EVBME_SERIALNO    = 0x83, //!< SerialNo 64 bit - Read only
+	EVBME_SERIALNO    = 0x83, //!< SerialNo 64 bit binary - Read only
 	EVBME_OT_EUI64    = 0x84, //!< Openthread EUI64 for commissioning - Read only
 	EVBME_OT_JOINCRED = 0x85, //!< Openthread joining credential for commissioning - Read only
+};
+
+/**
+ * General constants for DFU
+ */
+enum evbme_dfu_const
+{
+	DFU_WRITE_MAX_LEN = 244, //!< Maximum number of bytes that can be written in one command
 };
 
 /**
@@ -88,11 +96,12 @@ enum evbme_attribute
  */
 enum evbme_dfu_cmdid
 {
-	DFU_REBOOT = 0, //!< Reboot into DFU or non-dfu mode
-	DFU_ERASE  = 1, //!< Erase given flash pages
-	DFU_WRITE  = 2, //!< Write given data to already erased flash
-	DFU_CHECK  = 3, //!< Check flash checksum in given range
-	DFU_STATUS = 4, //!< Status command returned from chili to host
+	DFU_REBOOT   = 0, //!< Reboot into DFU or non-dfu mode
+	DFU_ERASE    = 1, //!< Erase given flash pages
+	DFU_WRITE    = 2, //!< Write given data to already erased flash
+	DFU_CHECK    = 3, //!< Check flash checksum in given range
+	DFU_STATUS   = 4, //!< Status command returned from chili to host
+	DFU_BOOTMODE = 5, //!< Set default boot mode of device
 };
 
 /**
@@ -127,7 +136,7 @@ struct evbme_dfu_erase_cmd
 struct evbme_dfu_write_cmd
 {
 	uint8_t startAddr[4]; //!< Start address for writing - must be word aligned
-	uint8_t data[];       //!< Data to write, must be whole words. Max 244 bytes.
+	uint8_t data[];       //!< Data to write, must be whole words. Max 244 bytes (DFU_WRITE_MAX_LEN)
 };
 
 /**
@@ -149,15 +158,24 @@ struct evbme_dfu_status_cmd
 };
 
 /**
+ * Boot mode command to set default boot into DFU or APROM
+ */
+struct evbme_dfu_bootmode_cmd
+{
+	uint8_t bootMode; //!< 0=APROM, 1=DFU - see evbme_dfu_rebootmode
+};
+
+/**
  * Union of all DFU sub-commands
  */
 union evbme_dfu_sub_cmd
 {
-	struct evbme_dfu_reboot_cmd reboot_cmd;
-	struct evbme_dfu_erase_cmd  erase_cmd;
-	struct evbme_dfu_write_cmd  write_cmd;
-	struct evbme_dfu_check_cmd  check_cmd;
-	struct evbme_dfu_status_cmd status_cmd;
+	struct evbme_dfu_reboot_cmd   reboot_cmd;
+	struct evbme_dfu_erase_cmd    erase_cmd;
+	struct evbme_dfu_write_cmd    write_cmd;
+	struct evbme_dfu_check_cmd    check_cmd;
+	struct evbme_dfu_status_cmd   status_cmd;
+	struct evbme_dfu_bootmode_cmd bootmode_cmd;
 };
 
 /**

@@ -106,10 +106,19 @@ void CHILI_SetWakeup(u8_t new_asleep);
 /** Configure the chili to boot from LDROM next time */
 void CHILI_SetLDROMBoot(void);
 
+/** Configure the chili to boot from APROM next time */
+void CHILI_SetAPROMBoot(void);
+
 /** Enable the TRNG Module Clock */
 void CHILI_EnableTRNGClk(void);
 
 /** Disable the TRNG Module Clock */
 void CHILI_DisableTRNGClk(void);
+
+/** Interrupt Handler for SPI DMA */
+void CHILI_SPIDMAIRQHandler(void);
+
+/** Register the SPIComplete callback on trustzone (Compiles to nothing on non-tz) */
+void CHILI_RegisterSPIComplete(void (*callback)(void));
 
 #endif

@@ -33,35 +33,23 @@
  * @brief Queue manipulation for ca821x-posix data exchange
  */
 
+#include <errno.h>
 #include <string.h>
+#include <time.h>
 
 #include "ca821x-queue.h"
 
-void add_to_queue(struct buffer_queue **head_buffer_queue,
-                  pthread_mutex_t *     buf_queue_mutex,
-                  const uint8_t *       buf,
-                  size_t                len,
-                  struct ca821x_dev *   pDeviceRef)
+void add_to_queue(struct buffer_queue *buffer_queue, const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	add_to_waiting_queue(head_buffer_queue, buf_queue_mutex, NULL, buf, len, pDeviceRef);
-}
-
-void add_to_waiting_queue(struct buffer_queue **head_buffer_queue,
-                          pthread_mutex_t *     buf_queue_mutex,
-                          pthread_cond_t *      queue_cond,
-                          const uint8_t *       buf,
-                          size_t                len,
-                          struct ca821x_dev *   pDeviceRef)
-{
-	if (pthread_mutex_lock(buf_queue_mutex) == 0)
+	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
 	{
-		struct buffer_queue *nextbuf = *head_buffer_queue;
+		struct buffer_queue_item *nextbuf = buffer_queue->head;
 		if (nextbuf == NULL)
 		{
 			//queue empty -> start new queue
-			*head_buffer_queue = malloc(sizeof(struct buffer_queue));
-			memset(*head_buffer_queue, 0, sizeof(struct buffer_queue));
-			nextbuf = *head_buffer_queue;
+			buffer_queue->head = malloc(sizeof(struct buffer_queue_item));
+			memset(buffer_queue->head, 0, sizeof(struct buffer_queue_item));
+			nextbuf = buffer_queue->head;
 		}
 		else
 		{
@@ -70,8 +58,8 @@ void add_to_waiting_queue(struct buffer_queue **head_buffer_queue,
 				nextbuf = nextbuf->next;
 			}
 			//allocate new buffer cell
-			nextbuf->next = malloc(sizeof(struct buffer_queue));
-			memset(nextbuf->next, 0, sizeof(struct buffer_queue));
+			nextbuf->next = malloc(sizeof(struct buffer_queue_item));
+			memset(nextbuf->next, 0, sizeof(struct buffer_queue_item));
 			nextbuf = nextbuf->next;
 		}
 
@@ -79,75 +67,40 @@ void add_to_waiting_queue(struct buffer_queue **head_buffer_queue,
 		nextbuf->buf = malloc(len);
 		memcpy(nextbuf->buf, buf, len);
 		nextbuf->pDeviceRef = pDeviceRef;
-		if (queue_cond)
-			pthread_cond_broadcast(queue_cond);
-		pthread_mutex_unlock(buf_queue_mutex);
+		pthread_cond_broadcast(&buffer_queue->q_cond);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
 	}
 }
 
-void flush_queue(struct buffer_queue **head_buffer_queue, pthread_mutex_t *buf_queue_mutex)
+void flush_queue(struct buffer_queue *buffer_queue)
 {
 	struct ca821x_dev *junkDev = NULL;
-	uint8_t *          junk    = NULL;
 
-	pthread_mutex_lock(buf_queue_mutex);
-	while (*head_buffer_queue != NULL)
+	pthread_mutex_lock(&buffer_queue->q_mutex);
+	while (buffer_queue->head != NULL)
 	{
-		pthread_mutex_unlock(buf_queue_mutex);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
 
-		pop_from_queue(head_buffer_queue, buf_queue_mutex, junk, 0, &junkDev);
+		pop_from_queue(buffer_queue, NULL, 0, &junkDev);
 
-		pthread_mutex_lock(buf_queue_mutex);
+		pthread_mutex_lock(&buffer_queue->q_mutex);
 	}
-	pthread_mutex_unlock(buf_queue_mutex);
+	pthread_mutex_unlock(&buffer_queue->q_mutex);
 }
 
-void reseat_queue(struct buffer_queue **head_buffer_queue,
-                  struct buffer_queue **head_buffer_queue2,
-                  pthread_mutex_t *     buf_queue_mutex,
-                  pthread_mutex_t *     buf_queue_mutex2)
+size_t pop_from_queue(struct buffer_queue *buffer_queue,
+                      uint8_t *            destBuf,
+                      size_t               maxlen,
+                      struct ca821x_dev ** pDeviceRef_out)
 {
-	struct buffer_queue *tomove;
-	struct buffer_queue *endbuf;
-
-	pthread_mutex_lock(buf_queue_mutex);
-	tomove             = *head_buffer_queue;
-	*head_buffer_queue = NULL;
-	pthread_mutex_unlock(buf_queue_mutex);
-
-	pthread_mutex_lock(buf_queue_mutex2);
-	endbuf = *head_buffer_queue2;
-	if (endbuf == NULL)
+	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
 	{
-		//queue empty -> simple move
-		*head_buffer_queue2 = tomove;
-	}
-	else
-	{
-		while (endbuf->next != NULL)
+		struct buffer_queue_item *current = buffer_queue->head;
+		size_t                    len     = 0;
+
+		if (buffer_queue->head != NULL)
 		{
-			endbuf = endbuf->next;
-		}
-		//add on to end
-		endbuf->next = tomove;
-	}
-	pthread_mutex_unlock(buf_queue_mutex2);
-}
-
-size_t pop_from_queue(struct buffer_queue **head_buffer_queue,
-                      pthread_mutex_t *     buf_queue_mutex,
-                      uint8_t *             destBuf,
-                      size_t                maxlen,
-                      struct ca821x_dev **  pDeviceRef_out)
-{
-	if (pthread_mutex_lock(buf_queue_mutex) == 0)
-	{
-		struct buffer_queue *current = *head_buffer_queue;
-		size_t               len     = 0;
-
-		if (*head_buffer_queue != NULL)
-		{
-			*head_buffer_queue = current->next;
+			buffer_queue->head = current->next;
 			len                = current->len;
 
 			if (len > maxlen || !destBuf)
@@ -157,54 +110,99 @@ size_t pop_from_queue(struct buffer_queue **head_buffer_queue,
 
 			*pDeviceRef_out = current->pDeviceRef;
 
+			pthread_cond_broadcast(&buffer_queue->q_cond);
 			free(current->buf);
 			free(current);
 		}
 
-		pthread_mutex_unlock(buf_queue_mutex);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
 		return len;
 	}
 	return 0;
 }
 
 //return the length of the next buffer in the queue if it exists, otherwise 0
-size_t peek_queue(struct buffer_queue *head_buffer_queue, pthread_mutex_t *buf_queue_mutex)
+size_t peek_queue(struct buffer_queue *buffer_queue)
 {
-	size_t in_queue = 0;
+	size_t next_len = 0;
 
-	if (pthread_mutex_lock(buf_queue_mutex) == 0)
+	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
 	{
-		if (head_buffer_queue != NULL)
+		if (buffer_queue->head != NULL)
 		{
-			in_queue = head_buffer_queue->len;
+			next_len = buffer_queue->head->len;
 		}
-		pthread_mutex_unlock(buf_queue_mutex);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
 	}
-	return in_queue;
+	return next_len;
 }
 
 //return the length of the next buffer in the queue, blocking until
 //it arrives. Returns length of buffer (or -1 upon error).
-size_t wait_on_queue(struct buffer_queue **head_buffer_queue,
-                     pthread_mutex_t *     buf_queue_mutex,
-                     pthread_cond_t *      queue_cond)
+size_t wait_on_queue(struct buffer_queue *buffer_queue, time_t timeout_s)
 {
-	size_t in_queue = -1;
+	size_t          in_queue = -1;
+	struct timespec ts;
 
-	if (pthread_mutex_lock(buf_queue_mutex) == 0)
+	if (timeout_s)
+	{
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += timeout_s;
+	}
+
+	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
 	{
 		do
 		{
-			if (*head_buffer_queue != NULL)
+			if (buffer_queue->head != NULL)
 			{
-				in_queue = (*head_buffer_queue)->len;
+				in_queue = buffer_queue->head->len;
+			}
+			else if (!timeout_s)
+			{
+				pthread_cond_wait(&buffer_queue->q_cond, &buffer_queue->q_mutex);
 			}
 			else
 			{
-				pthread_cond_wait(queue_cond, buf_queue_mutex);
+				if (pthread_cond_timedwait(&buffer_queue->q_cond, &buffer_queue->q_mutex, &ts) == ETIMEDOUT)
+					in_queue = 0;
 			}
 		} while (in_queue == ((size_t)-1));
-		pthread_mutex_unlock(buf_queue_mutex);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
 	}
 	return in_queue;
+}
+
+ca_error wait_on_queue_empty(struct buffer_queue *buffer_queue, time_t timeout_s)
+{
+	ca_error        error = CA_ERROR_FAIL;
+	struct timespec ts;
+
+	if (timeout_s)
+	{
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += timeout_s;
+	}
+
+	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
+	{
+		do
+		{
+			if (buffer_queue->head == NULL)
+			{
+				error = CA_ERROR_SUCCESS;
+			}
+			else if (!timeout_s)
+			{
+				pthread_cond_wait(&buffer_queue->q_cond, &buffer_queue->q_mutex);
+			}
+			else
+			{
+				if (pthread_cond_timedwait(&buffer_queue->q_cond, &buffer_queue->q_mutex, &ts) == ETIMEDOUT)
+					error = CA_ERROR_TIMEOUT;
+			}
+		} while (error != CA_ERROR_SUCCESS && error != CA_ERROR_TIMEOUT);
+		pthread_mutex_unlock(&buffer_queue->q_mutex);
+	}
+	return error;
 }

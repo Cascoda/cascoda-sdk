@@ -39,43 +39,20 @@
 #include "ca821x-posix/ca821x-types.h"
 #include "ca821x_api.h"
 
-/*
- * Must call ONE of the following functions in order to initialize driver communications
- *
- * Using kernel_exchange_init will cause the program to crash if there is an error
- *
- * Using kernel_exchange_init_withhandler and passing a callback function will cause
- * that callback function to execute in the case of an error. Passing a callback of NULL causes
- * the same behaviour as kernel_exchange_init.
- */
-
-/**
- * Initialise the kernel exchange, with no callback for errors (program will
- * crash in the case of an error.
- *
- * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
- *
- * @warning It is recommended to use the kernel_exchange_init_withandler function
- * instead, so that any errors can be handled by your application.
- *
- * @returns 0 for success, -1 for error
- *
- */
-int kernel_exchange_init(struct ca821x_dev *pDeviceRef);
-
 /**
  * Initialise the kernel exchange, using the supplied errorhandling callback to
  * report any errors back to the application, which can react as required
  * (i.e. crash gracefully or attempt to reset the ca8210)
  *
- * @param[in]  callback   Function pointer to an error-handling callback
+ *
+ * @param[in]  callback   Function pointer to an error-handling callback (can be NULL)
  * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
  *
  * @retval CA_ERROR_SUCCESS Successful initialisation
  * @retval CA_ERROR_NOT_FOUND Did not succeed
  *
  */
-ca_error kernel_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
+ca_error kernel_exchange_init(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef);
 
 /**
  * Deinitialise the kernel exchange, so that it can be reinitialised by another
@@ -96,5 +73,18 @@ void kernel_exchange_deinit(struct ca821x_dev *pDeviceRef);
  *
  */
 int kernel_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef);
+
+/**
+ * Function to enumerate all of the kernel devices configured (currently max single
+ * device per system), calling aCallback with a struct describing each one. The
+ * struct passed to aCallback will only be valid for the duration that the function
+ * is called. This function will not return until every callback has been called.
+ *
+ * @param aCallback The callback to call with each result
+ * @param aContext  The generic void pointer to provide to the callback when it is called
+ * @retval CA_ERROR_SUCCESS   Enumeration successful
+ * @retval CA_ERROR_NOT_FOUND No devices found
+ */
+ca_error kernel_exchange_enumerate(util_device_found aCallback, void *aContext);
 
 #endif

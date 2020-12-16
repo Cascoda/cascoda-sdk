@@ -38,16 +38,6 @@ u8_t __wrap_BSP_SPIPopByte(u8_t *InByte)
 	return 1;
 }
 
-u8_t __wrap_BSP_SPIExchangeByte(u8_t OutByte)
-{
-	u8_t InByte;
-	(void)OutByte;
-
-	__wrap_BSP_SPIPopByte(&InByte);
-
-	return InByte;
-}
-
 static void empty_test(void **state)
 {
 	(void)state;

@@ -195,6 +195,18 @@ ca_error EVBME_DFU_CHECK_request(uint32_t           aStartAddr,
                                  uint32_t           aChecksum,
                                  struct ca821x_dev *pDeviceRef);
 
+/**
+ * Send a DFU request to set the default boot mode of the given device.
+ * This command is processed asynchronously and the EVBME_DFU_STATUS_indication will indicate completion.
+ *
+ * @param aBootMode The mode to boot into by default
+ * @param pDeviceRef  The device struct for the device this message is to be sent to
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS Success
+ */
+ca_error EVBME_DFU_BOOTMODE_request(enum evbme_dfu_rebootmode aBootMode, struct ca821x_dev *pDeviceRef);
+
 //Synchronous commands -----------------------------------------------------------------------
 
 /**

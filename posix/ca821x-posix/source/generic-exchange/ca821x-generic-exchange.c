@@ -42,6 +42,11 @@
 #include "ca821x-queue.h"
 #include "ca821x_api.h"
 
+enum
+{
+	SYNC_TIMEOUT_S = 5
+};
+
 /** Is the downstream dispatch thread supposed to be running? */
 static int dd_run_flag = 0;
 
@@ -52,16 +57,10 @@ static int generic_initialised = 0;
 static pthread_mutex_t s_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Queue of buffers to be processed by downstream dispatch */
-static struct buffer_queue *downstream_dispatch_queue = NULL;
-
-/** mutex protecting downstream_dispatch_queue */
-static pthread_mutex_t downstream_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct buffer_queue downstream_dispatch_queue = {NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
 
 /** Thread for running the downstream dispatch functions on the dd queue */
 static pthread_t dd_thread;
-
-/** Condition variable for the dd queue */
-static pthread_cond_t dd_cond = PTHREAD_COND_INITIALIZER;
 
 void (*wake_hw_worker)(void);
 
@@ -76,7 +75,7 @@ static int ca821x_run_downstream_dispatch()
 	ca_error                     rval;
 	int                          len;
 
-	len = pop_from_queue(&downstream_dispatch_queue, &downstream_queue_mutex, buffer, MAX_BUF_SIZE, &pDeviceRef);
+	len = pop_from_queue(&downstream_dispatch_queue, buffer, MAX_BUF_SIZE, &pDeviceRef);
 
 	if (len > 0)
 	{
@@ -123,7 +122,7 @@ static void *ca821x_downstream_dispatch_worker(void *arg)
 	{
 		pthread_mutex_unlock(&s_flag_mutex);
 
-		wait_on_queue(&downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond);
+		wait_on_queue(&downstream_dispatch_queue, 0);
 
 		ca821x_run_downstream_dispatch();
 
@@ -172,7 +171,7 @@ ca_error ca821x_util_stop_downstream_dispatch_worker()
 	pthread_mutex_unlock(&s_flag_mutex);
 
 	//Wake the downstream dispatch thread up so that it dies cleanly
-	add_to_waiting_queue(&downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, NULL, 0, NULL);
+	add_to_queue(&downstream_dispatch_queue, NULL, 0, NULL);
 
 	rval = pthread_join(dd_thread, NULL);
 
@@ -190,8 +189,10 @@ ca_error init_generic(struct ca821x_dev *pDeviceRef)
 
 	pthread_mutex_init(&(base->flag_mutex), NULL);
 	pthread_mutex_init(&(base->sync_mutex), NULL);
-	pthread_mutex_init(&(base->in_queue_mutex), NULL);
-	pthread_mutex_init(&(base->out_queue_mutex), NULL);
+	pthread_mutex_init(&(base->in_buffer_queue.q_mutex), NULL);
+	pthread_mutex_init(&(base->out_buffer_queue.q_mutex), NULL);
+	pthread_cond_init(&(base->in_buffer_queue.q_cond), NULL);
+	pthread_cond_init(&(base->out_buffer_queue.q_cond), NULL);
 	pthread_cond_init(&(base->sync_cond), NULL);
 
 	pthread_mutex_lock(&base->flag_mutex);
@@ -219,13 +220,15 @@ ca_error deinit_generic(struct ca821x_dev *pDeviceRef)
 
 	pthread_join(priv->io_thread, NULL);
 
-	flush_queue(&priv->in_buffer_queue, &priv->in_queue_mutex);
-	flush_queue(&priv->out_buffer_queue, &priv->out_queue_mutex);
+	flush_queue(&priv->in_buffer_queue);
+	flush_queue(&priv->out_buffer_queue);
 
 	pthread_mutex_destroy(&(priv->flag_mutex));
 	pthread_mutex_destroy(&(priv->sync_mutex));
-	pthread_mutex_destroy(&(priv->in_queue_mutex));
-	pthread_mutex_destroy(&(priv->out_queue_mutex));
+	pthread_mutex_destroy(&(priv->in_buffer_queue.q_mutex));
+	pthread_mutex_destroy(&(priv->in_buffer_queue.q_mutex));
+	pthread_cond_destroy(&(priv->in_buffer_queue.q_cond));
+	pthread_cond_destroy(&(priv->in_buffer_queue.q_cond));
 	pthread_cond_destroy(&(priv->sync_cond));
 
 	priv->error_callback = NULL;
@@ -249,7 +252,7 @@ static ca_error deinit_generic_statics()
 
 	error = ca821x_util_stop_downstream_dispatch_worker();
 
-	flush_queue(&downstream_dispatch_queue, &downstream_queue_mutex);
+	flush_queue(&downstream_dispatch_queue);
 
 exit:
 	return error;
@@ -265,6 +268,26 @@ ca_error exchange_register_user_callback(exchange_user_callback callback, struct
 	priv->user_callback = callback;
 
 	return CA_ERROR_SUCCESS;
+}
+
+ca_error exchange_wait_send_complete(time_t timeout_s, struct ca821x_dev *pDeviceRef)
+{
+	struct ca821x_exchange_base *priv = pDeviceRef->exchange_context;
+
+	if (timeout_s)
+	{
+		if (wait_on_queue_empty(&(priv->out_buffer_queue), timeout_s))
+			return CA_ERROR_BUSY;
+		else
+			return CA_ERROR_SUCCESS;
+	}
+	else
+	{
+		if (peek_queue(&(priv->out_buffer_queue)))
+			return CA_ERROR_BUSY;
+		else
+			return CA_ERROR_SUCCESS;
+	}
 }
 
 ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, struct ca821x_dev *pDeviceRef)
@@ -283,7 +306,7 @@ ca_error exchange_user_command(uint8_t cmdid, uint8_t cmdlen, uint8_t *payload, 
 	buf[1] = cmdlen;
 	memcpy(buf + 2, payload, cmdlen);
 
-	add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, cmdlen + 2, pDeviceRef);
+	add_to_queue(&(priv->out_buffer_queue), buf, cmdlen + 2, pDeviceRef);
 
 	if (priv->signal_func)
 		priv->signal_func(pDeviceRef);
@@ -322,14 +345,12 @@ static inline ca_error ca821x_try_read(struct ca821x_dev *pDeviceRef)
 		if (buffer[0] & SPI_SYN)
 		{
 			//Add to queue for synchronous processing
-			add_to_waiting_queue(
-			    &(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond), buffer, len, pDeviceRef);
+			add_to_queue(&(priv->in_buffer_queue), buffer, len, pDeviceRef);
 		}
 		else
 		{
 			//Add to queue for dispatching downstream
-			add_to_waiting_queue(
-			    &downstream_dispatch_queue, &downstream_queue_mutex, &dd_cond, buffer, len, pDeviceRef);
+			add_to_queue(&downstream_dispatch_queue, buffer, len, pDeviceRef);
 		}
 		return CA_ERROR_SUCCESS;
 	}
@@ -351,7 +372,7 @@ static inline ca_error ca821x_try_write(struct ca821x_dev *pDeviceRef)
 		return CA_ERROR_BUSY;
 	}
 
-	len = pop_from_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buffer, MAX_BUF_SIZE, &pDeviceRef);
+	len = pop_from_queue(&(priv->out_buffer_queue), buffer, MAX_BUF_SIZE, &pDeviceRef);
 
 	if (len > 0)
 	{
@@ -398,8 +419,8 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 {
 	const uint8_t                isSynchronous = ((buf[0] & SPI_SYN) && response);
 	struct ca821x_exchange_base *priv          = pDeviceRef->exchange_context;
-	struct ca821x_dev *          ref_out;
-	size_t                       success = 0;
+	struct ca821x_dev *          ref_out       = pDeviceRef;
+	size_t                       success       = 0;
 
 	if (!generic_initialised)
 		return CA_ERROR_INVALID_STATE;
@@ -410,29 +431,29 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 	if (isSynchronous)
 		pthread_mutex_lock(&(priv->sync_mutex));
 
-	while (success == 0) //Retry loop
-	{
-		add_to_queue(&(priv->out_buffer_queue), &(priv->out_queue_mutex), buf, len, pDeviceRef);
+	add_to_queue(&(priv->out_buffer_queue), buf, len, pDeviceRef);
 
-		if (priv->signal_func)
-			priv->signal_func(pDeviceRef);
+	if (priv->signal_func)
+		priv->signal_func(pDeviceRef);
 
-		if (!isSynchronous)
-			return CA_ERROR_SUCCESS;
+	if (!isSynchronous)
+		return CA_ERROR_SUCCESS;
 
-		//A rval of zero here is an error packet notifying of a driver error during
-		//sync command. The original command will be resent after recovery so sync
-		//behaviour should be upheld.
-		success = wait_on_queue(&(priv->in_buffer_queue), &(priv->in_queue_mutex), &(priv->sync_cond));
+	//Wait for message to be sent
+	wait_on_queue_empty(&priv->out_buffer_queue, 0);
 
-		pop_from_queue(
-		    &(priv->in_buffer_queue), &(priv->in_queue_mutex), response, sizeof(struct MAC_Message), &ref_out);
-	}
+	//A rval of zero here is an indication of timeout
+	success = wait_on_queue(&(priv->in_buffer_queue), SYNC_TIMEOUT_S);
+
+	pop_from_queue(&(priv->in_buffer_queue), response, sizeof(struct MAC_Message), &ref_out);
 
 	assert(ref_out == pDeviceRef);
 	pthread_mutex_unlock(&(priv->sync_mutex));
 
-	return CA_ERROR_SUCCESS;
+	if (success)
+		return CA_ERROR_SUCCESS;
+	else
+		return CA_ERROR_TIMEOUT;
 }
 
 ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)

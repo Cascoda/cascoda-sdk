@@ -28,7 +28,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "ca821x-posix/ca821x-posix.h"
@@ -57,38 +58,73 @@ uint32_t TIME_ReadAbsoluteTime(void)
 	return time_ms;
 }
 
-static void initTime(void)
+static void initStatic(void)
 {
 	if (sStartTime.tv_sec == 0 && sStartTime.tv_nsec == 0)
 	{
 		clock_gettime(CLOCK_MONOTONIC, &sStartTime);
 		RAND_Seed((uint64_t)time(NULL));
+		ca_log_note("Host Cascoda SDK %s", ca821x_get_version());
 	}
 }
 
 ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler)
 {
-	int error = 0;
+	ca_error error = CA_ERROR_SUCCESS;
 
-	initTime();
+	initStatic();
 	error = ca821x_api_init(pDeviceRef);
 	if (error)
 		goto exit;
 #ifdef _WIN32
-	error = usb_exchange_init_withhandler(errorHandler, pDeviceRef);
+	error = usb_exchange_init(errorHandler, NULL, pDeviceRef);
 #else
-	error = kernel_exchange_init_withhandler(errorHandler, pDeviceRef);
+	error = kernel_exchange_init(errorHandler, pDeviceRef);
 
 	if (error)
 	{
-		error = uart_exchange_init_withhandler(errorHandler, pDeviceRef);
+		error = uart_exchange_init(errorHandler, NULL, pDeviceRef);
 	}
 
 	if (error)
 	{
-		error = usb_exchange_init_withhandler(errorHandler, pDeviceRef);
+		error = usb_exchange_init(errorHandler, NULL, pDeviceRef);
 	}
 #endif
+exit:
+	return error;
+}
+
+ca_error ca821x_util_init_path(struct ca821x_dev *       pDeviceRef,
+                               ca821x_errorhandler       errorHandler,
+                               enum ca821x_exchange_type exchangeType,
+                               const char *              path)
+{
+	ca_error error = CA_ERROR_SUCCESS;
+
+	initStatic();
+	error = ca821x_api_init(pDeviceRef);
+	if (error)
+		goto exit;
+
+	switch (exchangeType)
+	{
+	case ca821x_exchange_usb:
+		error = usb_exchange_init(errorHandler, path, pDeviceRef);
+		break;
+#ifndef _WIN32
+	case ca821x_exchange_uart:
+		error = uart_exchange_init(errorHandler, path, pDeviceRef);
+		break;
+	case ca821x_exchange_kernel:
+		error = kernel_exchange_init(errorHandler, pDeviceRef);
+		break;
+#endif
+	default:
+		error = CA_ERROR_INVALID_ARGS;
+		break;
+	}
+
 exit:
 	return error;
 }
@@ -118,6 +154,109 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef)
 		usb_exchange_deinit(pDeviceRef);
 		break;
 	}
+}
+
+struct dev_info_context
+{
+	util_device_found callback; //!< User callback
+	void *            context;  //!< Context to provide to user callback
+	ca_error          status;   //!< Status of the enumeration
+};
+
+/**
+ * Get an evbme Property into an allocated buffer
+ * @param destp Pointer to string pointer to set to allocated buffer
+ * @param aAttrId EVBME attribute to get
+ * @returns The size of the buffer allocated to destp
+ */
+static int evbme_getprop_alloc(char **destp, enum evbme_attribute aAttrId, struct ca821x_dev *pDeviceRef)
+{
+	ca_error  status   = CA_ERROR_NO_BUFFER;
+	const int buf_size = 100;
+	uint8_t   len      = 0;
+
+	*destp = malloc(buf_size);
+	if (*destp)
+	{
+		status        = EVBME_GET_request_sync(aAttrId, buf_size - 1, (uint8_t *)*destp, &len, pDeviceRef);
+		(*destp)[len] = '\0';
+		if (status)
+		{
+			free(*destp);
+			*destp = NULL;
+			return 0;
+		}
+		return buf_size;
+	}
+	return 0;
+}
+
+static void enumerate_callback(struct ca_device_info *aDeviceInfo, void *aContext)
+{
+	ca_error                 status  = CA_ERROR_INVALID_ARGS;
+	struct dev_info_context *context = aContext;
+	struct ca821x_dev        tDevice;
+
+	char *devNameBuf = NULL;
+	char *appNameBuf = NULL;
+	char *verBuf     = NULL;
+	char *serBuf     = NULL;
+
+	// Try to open the device to extract evbme info
+	status = ca821x_util_init_path(&tDevice, NULL, aDeviceInfo->exchange_type, aDeviceInfo->path);
+
+	//If successfully opened, extract the missing info. If not, leave it missing
+	if (status == CA_ERROR_SUCCESS)
+	{
+		aDeviceInfo->available = true;
+		if (!aDeviceInfo->device_name)
+		{
+			evbme_getprop_alloc(&devNameBuf, EVBME_PLATSTRING, &tDevice);
+			aDeviceInfo->device_name = devNameBuf;
+		}
+		if (!aDeviceInfo->app_name)
+		{
+			evbme_getprop_alloc(&appNameBuf, EVBME_APPSTRING, &tDevice);
+			aDeviceInfo->app_name = appNameBuf;
+		}
+		if (!aDeviceInfo->version)
+		{
+			evbme_getprop_alloc(&verBuf, EVBME_VERSTRING, &tDevice);
+			aDeviceInfo->version = verBuf;
+		}
+		if (!aDeviceInfo->serialno)
+		{
+			int bufsize = evbme_getprop_alloc(&serBuf, EVBME_SERIALNO, &tDevice);
+			if (bufsize >= 8)
+			{
+				uint64_t serialno;
+				serialno = GETLE64((uint8_t *)serBuf);
+				snprintf(serBuf, bufsize, "%016llx", serialno);
+				aDeviceInfo->serialno = serBuf;
+			}
+		}
+		ca821x_util_deinit(&tDevice);
+	}
+
+	//Call the user callback
+	context->callback(aDeviceInfo, context->context);
+	context->status = CA_ERROR_SUCCESS;
+
+	free(devNameBuf);
+	free(appNameBuf);
+	free(verBuf);
+	free(serBuf);
+}
+
+ca_error ca821x_util_enumerate(util_device_found aCallback, void *aContext)
+{
+	struct dev_info_context context = {aCallback, aContext, CA_ERROR_NOT_FOUND};
+#ifndef _WIN32
+	kernel_exchange_enumerate(&enumerate_callback, &context);
+	uart_exchange_enumerate(&enumerate_callback, &context);
+#endif
+	usb_exchange_enumerate(&enumerate_callback, &context);
+	return context.status;
 }
 
 ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef)

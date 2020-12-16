@@ -49,10 +49,6 @@
 #include "ca821x_api.h"
 #include "uart-exchange.h"
 
-#ifndef UART_MAX_DEVICES
-#define UART_MAX_DEVICES 5
-#endif
-
 /** Private data for the UART Exchange */
 struct uart_exchange_priv
 {
@@ -75,11 +71,10 @@ struct uart_device
 	int                 baud;   //!< Baudrate to be used for uart comms
 };
 
-static struct ca821x_dev * s_devs[UART_MAX_DEVICES] = {0};
-static int                 s_devcount               = 0;
-static int                 s_initialised            = 0;
-static char *              s_CASCODA_UART           = NULL;
-static struct uart_device *s_uart_device_head       = NULL;
+static int                 s_devcount         = 0;
+static int                 s_initialised      = 0;
+static char *              s_CASCODA_UART     = NULL;
+static struct uart_device *s_uart_device_head = NULL;
 
 //! Start of frame delimiter
 static const uint8_t UART_SOM = 0xDE;
@@ -418,15 +413,74 @@ static void flush_unread_uart(struct ca821x_dev *pDeviceRef)
 	} while (rval > 0);
 }
 
+/**
+ * Fill the linkedlist at tailp with the information from the pathstr (which will be modified in the process).
+ * @param tailp Pointer to the 'next' pointer of the tail of the linkedlist (Or pointer to head pointer)
+ * @param pathstr Modifiable string encoded like "/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,6000000"
+ * @return status
+ * @retval CA_ERROR_SUCCESS   Success
+ * @retval CA_ERROR_NOT_FOUND No devices found in path
+ */
+static ca_error fill_uartdev_ll(struct uart_device **tailp, char *pathstr)
+{
+	char *saveptr1, *saveptr2;
+	bool  found = false;
+
+	do
+	{
+		// Get the next, major ':' delimited section
+		char *majorStr = strtok_r(pathstr, ":", &saveptr1);
+		char *device, *baudstr;
+
+		pathstr = NULL;
+		if (!majorStr)
+			break;
+
+		// Split by token
+		device = strtok_r(majorStr, ",", &saveptr2);
+		if (!device)
+			continue;
+		baudstr = strtok_r(NULL, ",", &saveptr2);
+		if (!baudstr)
+			continue;
+
+		// Add to linked list
+		(*tailp)         = malloc(sizeof(struct uart_device));
+		(*tailp)->next   = NULL;
+		(*tailp)->baud   = atoi(baudstr);
+		(*tailp)->device = device;
+		tailp            = &((*tailp)->next);
+		found            = true;
+	} while (1);
+
+	if (found)
+		return CA_ERROR_SUCCESS;
+	return CA_ERROR_NOT_FOUND;
+}
+
+/**
+ * Free a uart device linked list. Note that this does not free the underlying string buffer.
+ * @param uartdev Pointer to the first item in the linkedlist
+ */
+static void free_uartdev_ll(struct uart_device *uartdev)
+{
+	while (uartdev)
+	{
+		struct uart_device *tmp = uartdev;
+		uartdev                 = uartdev->next;
+		free(tmp);
+	}
+}
+
 static ca_error init_statics()
 {
-	ca_error    error = CA_ERROR_SUCCESS;
-	char *      saveptr1, *saveptr2;
-	char *      masterStr;
+	ca_error    error              = CA_ERROR_SUCCESS;
 	const char *CONST_CASCODA_UART = getenv("CASCODA_UART");
 	//example: CASCODA_UART="/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,6000000"
-	size_t               envLen;
-	struct uart_device **oldTail = &s_uart_device_head;
+	size_t envLen;
+
+	if (s_initialised)
+		return CA_ERROR_SUCCESS;
 
 	s_initialised = 1;
 
@@ -441,40 +495,11 @@ static ca_error init_statics()
 	envLen         = strlen(CONST_CASCODA_UART) + 1;
 	s_CASCODA_UART = malloc(envLen);
 	memcpy(s_CASCODA_UART, CONST_CASCODA_UART, envLen);
-	s_CASCODA_UART[envLen - 1] = '\0';
-	masterStr                  = s_CASCODA_UART;
 
-	do
-	{
-		// Get the next, major ':' delimited section
-		char *majorStr = strtok_r(masterStr, ":", &saveptr1);
-		char *device, *baudstr;
+	error = fill_uartdev_ll(&s_uart_device_head, s_CASCODA_UART);
 
-		masterStr = NULL;
-		if (!majorStr)
-			break;
-
-		// Split by token
-		device = strtok_r(majorStr, ",", &saveptr2);
-		if (!device)
-			continue;
-		baudstr = strtok_r(NULL, ",", &saveptr2);
-		if (!baudstr)
-			continue;
-
-		// Add to linked list
-		(*oldTail)         = malloc(sizeof(struct uart_device));
-		(*oldTail)->next   = NULL;
-		(*oldTail)->baud   = atoi(baudstr);
-		(*oldTail)->device = device;
-		oldTail            = &((*oldTail)->next);
-	} while (1);
-
-	if (!s_uart_device_head)
-	{
-		error = CA_ERROR_NOT_FOUND;
+	if (error)
 		goto exit;
-	}
 
 exit:
 	return error;
@@ -487,12 +512,7 @@ static int deinit_statics()
 	s_initialised = 0;
 
 	s_uart_device_head = NULL;
-	while (uartdev)
-	{
-		struct uart_device *tmp = uartdev;
-		uartdev                 = uartdev->next;
-		free(tmp);
-	}
+	free_uartdev_ll(uartdev);
 	free(s_CASCODA_UART);
 
 	return 0;
@@ -589,36 +609,32 @@ static ca_error setup_port(int fd, int baudrate)
 	return CA_ERROR_SUCCESS;
 }
 
-ca_error uart_exchange_init(struct ca821x_dev *pDeviceRef)
-{
-	return uart_exchange_init_withhandler(NULL, pDeviceRef);
-}
-
-ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca821x_dev *pDeviceRef)
+ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = NULL;
 	struct uart_device *       uartdev;
-	ca_error                   error = 0;
+	struct uart_device *       path_uartdev = NULL;
+	char *                     path_dup     = NULL;
+	ca_error                   error        = 0;
 
-	if (!s_initialised)
-	{
-		error = init_statics();
-		if (error)
-			return error;
-	}
+	error = init_statics();
+	if (error)
+		return error;
 
 	if (pDeviceRef->exchange_context)
 		return CA_ERROR_ALREADY;
 
 	pthread_mutex_lock(&devs_mutex);
-	if (s_devcount >= UART_MAX_DEVICES)
+
+	pDeviceRef->exchange_context = calloc(1, sizeof(struct uart_exchange_priv));
+	priv                         = pDeviceRef->exchange_context;
+	if (!priv)
 	{
-		error = CA_ERROR_NOT_FOUND;
+		ca_log_warn("Failed to allocate exchange context.");
+		error = CA_ERROR_NO_BUFFER;
 		goto exit;
 	}
 
-	pDeviceRef->exchange_context  = calloc(1, sizeof(struct uart_exchange_priv));
-	priv                          = pDeviceRef->exchange_context;
 	priv->base.exchange_type      = ca821x_exchange_uart;
 	priv->base.error_callback     = callback;
 	priv->base.write_func         = &uart_try_write;
@@ -629,8 +645,27 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 	priv->fd                      = -1;
 	priv->offset                  = 0;
 
+	// Use the path if that is supplied, or environment variable if not
+	if (path)
+	{
+		size_t len = strlen(path) + 1;
+		path_dup   = malloc(len);
+		if (!path_dup)
+		{
+			error = CA_ERROR_NO_BUFFER;
+			goto exit;
+		}
+		memcpy(path_dup, path, len);
+		error   = fill_uartdev_ll(&path_uartdev, path_dup);
+		uartdev = path_uartdev;
+		if (error)
+			goto exit;
+	}
+	else
+	{
+		uartdev = s_uart_device_head;
+	}
 	//Open and set up file descriptor if available
-	uartdev = s_uart_device_head;
 	while (uartdev)
 	{
 		priv->fd = open(uartdev->device, O_RDWR | O_NOCTTY | O_SYNC);
@@ -679,14 +714,6 @@ ca_error uart_exchange_init_withhandler(ca821x_errorhandler callback, struct ca8
 	//Add the new device to the device list for io
 	s_devcount++;
 	pthread_cond_signal(&devs_cond);
-	for (int i = 0; i < UART_MAX_DEVICES; i++)
-	{
-		if (s_devs[i] == NULL)
-		{
-			s_devs[i] = pDeviceRef;
-			break;
-		}
-	}
 
 exit:
 	if (error && pDeviceRef->exchange_context)
@@ -694,7 +721,11 @@ exit:
 		free(pDeviceRef->exchange_context);
 		pDeviceRef->exchange_context = NULL;
 	}
+	if (s_devcount == 0)
+		deinit_statics();
 	pthread_mutex_unlock(&devs_mutex);
+	free_uartdev_ll(path_uartdev);
+	free(path_dup);
 	if (error == CA_ERROR_SUCCESS)
 		ca_log_info("Successfully started UART Exchange.");
 	return error;
@@ -712,18 +743,51 @@ void uart_exchange_deinit(struct ca821x_dev *pDeviceRef)
 	if (s_devcount == 0)
 		deinit_statics();
 	pthread_cond_signal(&devs_cond);
-	for (int i = 0; i < UART_MAX_DEVICES; i++)
-	{
-		if (s_devs[i] == pDeviceRef)
-		{
-			s_devs[i] = NULL;
-			break;
-		}
-	}
 	pthread_mutex_unlock(&devs_mutex);
 
 	free(priv);
 	pDeviceRef->exchange_context = NULL;
+}
+
+ca_error uart_exchange_enumerate(util_device_found aCallback, void *aContext)
+{
+	struct uart_device *uartdev;
+	ca_error            status = CA_ERROR_NOT_FOUND;
+
+	status = init_statics();
+	if (status)
+		return status;
+
+	pthread_mutex_lock(&devs_mutex);
+	//Increment the dev_count to prevent statics being deinitialised
+	s_devcount++;
+	pthread_mutex_unlock(&devs_mutex);
+
+	uartdev = s_uart_device_head;
+	while (uartdev)
+	{
+		struct ca_device_info devi    = {0};
+		char *                pathout = NULL;
+		size_t pathlen = strlen(uartdev->device) + 20; //+20 is for the baud rate integer and colon and null terminator
+
+		devi.exchange_type = ca821x_exchange_uart;
+		devi.path = pathout = malloc(pathlen);
+
+		snprintf(pathout, pathlen, "%s,%d", uartdev->device, uartdev->baud);
+
+		//Notify the caller
+		aCallback(&devi, aContext);
+
+		free(pathout);
+		uartdev = uartdev->next;
+	}
+
+	pthread_mutex_lock(&devs_mutex);
+	s_devcount--;
+	if (s_devcount == 0)
+		deinit_statics();
+	pthread_mutex_unlock(&devs_mutex);
+	return status;
 }
 
 int uart_exchange_reset(unsigned long resettime, struct ca821x_dev *pDeviceRef)

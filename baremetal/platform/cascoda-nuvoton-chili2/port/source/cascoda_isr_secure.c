@@ -26,7 +26,9 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdio.h>
+
 /* Platform */
 #include "M2351.h"
 #include "gpio.h"
@@ -190,14 +192,26 @@ void PDMA0_IRQHandler(void)
 {
 	/* Get PDMA interrupt status */
 	uint32_t u32Status = PDMA_GET_INT_STATUS(PDMA0);
+
 	if (u32Status & PDMA_INTSTS_ABTIF_Msk) /* Target Abort */
 	{
 		ca_log_crit("DMA ABORT");
 		PDMA0->ABTSTS = PDMA0->ABTSTS;
 		return;
 	}
-#if defined(USE_UART)
+
 	if (u32Status & PDMA_INTSTS_TDIF_Msk) /* Transfer Done */
-		CHILI_UARTDMAIRQHandler();
+	{
+#if defined(USE_UART)
+		if (PDMA_GET_TD_STS(PDMA0) & ((1 << UART_TX_DMA_CH) | (1 << UART_RX_DMA_CH)))
+			CHILI_UARTDMAIRQHandler();
 #endif /* USE_UART */
+		if (PDMA_GET_TD_STS(PDMA0) & ((1 << SPI_RX_DMA_CH)))
+		{
+			// We trigger off the RX interrupt because it always comes in later. Assertion is here for debug purposes.
+			assert(PDMA_GET_TD_STS(PDMA0) & ((1 << SPI_TX_DMA_CH)));
+
+			CHILI_SPIDMAIRQHandler();
+		}
+	}
 }

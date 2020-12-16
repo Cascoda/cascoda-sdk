@@ -160,6 +160,17 @@ bool SPI_IsFifoAlmostFull(void);
 bool SPI_IsFifoEmpty(void);
 
 /**
+ * \brief Query whether an SPI exchange operation is currently in progress.
+ *
+ * This is used in the DISPATCH_ReadCA821x function to determine whether a
+ * new read operation should be started. If an exchange is currently in
+ * progress, it should not be.
+ *
+ * @return True if an SPI exchange with the CA821x is already in progress. False if not.
+ */
+bool SPI_IsExchangeInProgress(void);
+
+/**
  * \brief Query whether the SPI driver is currently locked in a Sync chain.
  *
  * Not for application usage.
@@ -205,6 +216,11 @@ void SPI_StopSyncChain(struct ca821x_dev *pDeviceRef);
  *
  */
 void SPI_Initialise(void);
+
+/**
+ * Function to be called from the BSP when an exchange operation has been completed.
+ */
+void SPI_ExchangeComplete(void);
 
 #ifdef __cplusplus
 }
