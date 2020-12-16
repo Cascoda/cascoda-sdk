@@ -269,16 +269,16 @@ static inline void ApplyMixedDirectHotfix(struct ca821x_dev *pDeviceRef)
  * Check if MAC MLME SET/GET Command requires intervention (that isn't in the hard mac)
  *
  * @param msg - MAC message to process
+ * @param response - Response for synchronous messages
  * @param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *
  * @returns ca_error value
  * @retval  CA_ERROR_SUCCESS  Message was not consumed (should go to CA821x)
  * @retval  CA_ERROR_ALREADY  Message was consumed, and workaround already applied
  */
-static ca_error CheckSetGet(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
+static ca_error CheckSetGet(struct MAC_Message *msg, struct MAC_Message *response, struct ca821x_dev *pDeviceRef)
 {
-	uint8_t            status, val;
-	struct MAC_Message response;
+	uint8_t status, val;
 
 	if (msg->CommandId == SPI_MLME_SET_REQUEST)
 	{
@@ -286,12 +286,14 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct ca821x_dev *pDeviceR
 		                           msg->PData.SetReq.PIBAttributeLength,
 		                           msg->PData.SetReq.PIBAttributeValue))
 		{
-			response.CommandId                      = SPI_MLME_SET_CONFIRM;
-			response.Length                         = 3;
-			response.PData.SetCnf.Status            = MAC_INVALID_PARAMETER;
-			response.PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
-			response.PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
-			DispatchFromCa821x(&response, pDeviceRef);
+			if (response)
+			{
+				response->CommandId                      = SPI_MLME_SET_CONFIRM;
+				response->Length                         = 3;
+				response->PData.SetCnf.Status            = MAC_INVALID_PARAMETER;
+				response->PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
+				response->PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
+			}
 			return CA_ERROR_ALREADY;
 		}
 	}
@@ -299,26 +301,30 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct ca821x_dev *pDeviceR
 	// MLME set / get phyTransmitPower
 	if ((msg->CommandId == SPI_MLME_SET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
 	{
-		status                                  = TDME_SetTxPower(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
-		response.CommandId                      = SPI_MLME_SET_CONFIRM;
-		response.Length                         = 3;
-		response.PData.SetCnf.Status            = status;
-		response.PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
-		response.PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
-		DispatchFromCa821x(&response, pDeviceRef);
+		status = TDME_SetTxPower(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
+		if (response)
+		{
+			response->CommandId                      = SPI_MLME_SET_CONFIRM;
+			response->Length                         = 3;
+			response->PData.SetCnf.Status            = status;
+			response->PData.SetCnf.PIBAttribute      = msg->PData.SetReq.PIBAttribute;
+			response->PData.SetCnf.PIBAttributeIndex = msg->PData.SetReq.PIBAttributeIndex;
+		}
 		return CA_ERROR_ALREADY;
 	}
 	if ((msg->CommandId == SPI_MLME_GET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
 	{
-		status                                     = TDME_GetTxPower(&val, pDeviceRef);
-		response.CommandId                         = SPI_MLME_GET_CONFIRM;
-		response.Length                            = 5;
-		response.PData.GetCnf.Status               = status;
-		response.PData.GetCnf.PIBAttribute         = msg->PData.GetReq.PIBAttribute;
-		response.PData.GetCnf.PIBAttributeIndex    = msg->PData.GetReq.PIBAttributeIndex;
-		response.PData.GetCnf.PIBAttributeLength   = 1;
-		response.PData.GetCnf.PIBAttributeValue[0] = val;
-		DispatchFromCa821x(&response, pDeviceRef);
+		status = TDME_GetTxPower(&val, pDeviceRef);
+		if (response)
+		{
+			response->CommandId                         = SPI_MLME_GET_CONFIRM;
+			response->Length                            = 5;
+			response->PData.GetCnf.Status               = status;
+			response->PData.GetCnf.PIBAttribute         = msg->PData.GetReq.PIBAttribute;
+			response->PData.GetCnf.PIBAttributeIndex    = msg->PData.GetReq.PIBAttributeIndex;
+			response->PData.GetCnf.PIBAttributeLength   = 1;
+			response->PData.GetCnf.PIBAttributeValue[0] = val;
+		}
 		return CA_ERROR_ALREADY;
 	}
 
@@ -343,7 +349,7 @@ static inline void CheckChannel(struct MAC_Message *msg, struct ca821x_dev *pDev
 }
 
 /** Checks to run before sending a message to the CA821x */
-static ca_error PreCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDeviceRef)
+static ca_error PreCheckToCA821x(const uint8_t *buf, uint8_t *rsp, struct ca821x_dev *pDeviceRef)
 {
 	ca_error            Status = CA_ERROR_SUCCESS;
 	struct MAC_Message *msg    = (struct MAC_Message *)buf;
@@ -354,7 +360,7 @@ static ca_error PreCheckToCA821x(const uint8_t *buf, struct ca821x_dev *pDeviceR
 		goto exit;
 	}
 
-	if ((Status = CheckSetGet(msg, pDeviceRef)))
+	if ((Status = CheckSetGet(msg, (struct MAC_Message *)rsp, pDeviceRef)))
 		goto exit;
 
 	CheckChannel(msg, pDeviceRef);
@@ -496,7 +502,7 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 		response[0] = SPI_IDLE;
 
 	if (!Status)
-		Status = PreCheckToCA821x(buf, pDeviceRef);
+		Status = PreCheckToCA821x(buf, response, pDeviceRef);
 	if (!Status)
 		Status = SPI_Send(buf, len, response, pDeviceRef);
 	if (!Status)
