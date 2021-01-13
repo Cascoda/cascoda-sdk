@@ -6,4 +6,4 @@ add_executable(ocf-storage-test
 
 target_link_libraries(ocf-storage-test ca821x-openthread-bm-ftd iotivity-secure-server)
 cascoda_make_binary(ocf-storage-test)
-cascoda_put_subdir(ocf-storage-test test)
+cascoda_put_subdir(test ocf-storage-test)

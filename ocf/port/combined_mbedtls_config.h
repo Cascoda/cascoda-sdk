@@ -109,7 +109,7 @@ typedef void mbedtls_ecp_restart_ctx;
 #define MBEDTLS_DEBUG_C
 
 #undef MBEDTLS_SSL_MAX_CONTENT_LEN
-#define MBEDTLS_SSL_MAX_CONTENT_LEN (1700)
+#define MBEDTLS_SSL_MAX_CONTENT_LEN (1811)
 
 #define MBEDTLS_ECDSA_C
 #define MBEDTLS_PK_WRITE_C
@@ -117,6 +117,9 @@ typedef void mbedtls_ecp_restart_ctx;
 #define MBEDTLS_X509_CHECK_EXTENDED_KEY_USAGE
 #define MBEDTLS_X509_CSR_WRITE_C
 #define MBEDTLS_X509_CREATE_C
+
+#define MBEDTLS_HAVE_TIME
+#define MBEDTLS_HAVE_TIME_DATE
 
 #include "mbedtls/check_config.h"
 

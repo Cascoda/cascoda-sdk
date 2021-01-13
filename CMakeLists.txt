@@ -28,7 +28,7 @@ enable_language(ASM)
 if(BUILD_TESTING AND (UNIX OR MINGW))
 	enable_testing()
 	add_subdirectory(third-party/cmocka-1.1.3)
-	cascoda_put_subdir(cmocka test)
+	cascoda_put_subdir(test cmocka)
 endif()
 
 # Sub-project configuration ---------------------------------------------------
@@ -74,5 +74,11 @@ if(CASCODA_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	add_custom_target(format
 		COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/etc/clang-format.cmake
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+		)
+	
+	# Add longtest target
+	add_custom_target(longtest
+		COMMAND ${CMAKE_COMMAND} -D LONGTEST_CSV_PATH="${CMAKE_BINARY_DIR}/longtests.csv" -P ${PROJECT_SOURCE_DIR}/etc/run-longtests.cmake
+		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 		)
 endif()

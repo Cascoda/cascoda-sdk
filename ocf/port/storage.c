@@ -21,13 +21,16 @@
 #include "port/oc_log.h"
 #include "port/oc_storage.h"
 #include "cascoda_chili_config.h"
+#include "oc_config.h"
 #include "platform.h"
 
 #ifdef OC_SECURITY
 
-#define OC_STORAGE_READ_BUFFER_SIZE (CASCODA_CHILI_FLASH_PAGES * 1024)
+#define OC_STORAGE_CBOR_OVERHEAD (5)
 
 extern otInstance *OT_INSTANCE;
+
+static uint8_t write_buffer[8192];
 
 int oc_storage_config(const char *store)
 {
@@ -51,6 +54,9 @@ long oc_storage_read(const char *store, uint8_t *buf, size_t size)
 	// {"super-secure-password": "fas,opc0q-2=91,51"}.
 
 	OC_DBG("Getting stored data with the key %s...\n", store);
+	void *   read_buffer;
+	uint16_t read_buffer_size;
+
 	for (int i = 0;; ++i)
 	{
 		int        error;
@@ -60,9 +66,8 @@ long oc_storage_read(const char *store, uint8_t *buf, size_t size)
 
 		// The initial value of `read_buffer_size` is used by OpenThread as the maximum
 		// size of the buffer to write into.
-		uint8_t  read_buffer[OC_STORAGE_READ_BUFFER_SIZE];
-		uint16_t read_buffer_size = OC_STORAGE_READ_BUFFER_SIZE;
-		error                     = otPlatSettingsGet(OT_INSTANCE, OC_SETTINGS_KEY, i, read_buffer, &read_buffer_size);
+
+		error = otPlatSettingsGetAddress(OC_SETTINGS_KEY, i, &read_buffer, &read_buffer_size);
 
 		// No more settings
 		if (error)
@@ -89,8 +94,8 @@ long oc_storage_read(const char *store, uint8_t *buf, size_t size)
 			continue;
 
 		// Copy the contents to the output buffer
+		OC_DBG("Data of size %d found!\n", read_buffer_size);
 		cbor_value_copy_byte_string(&value, buf, &size, NULL);
-		OC_DBG("Data of size %d found!\n", size);
 		return size;
 	}
 
@@ -104,24 +109,34 @@ long oc_storage_write(const char *store, uint8_t *buf, size_t size)
 	// If you found the key, delete that entry and insert the new one.
 	// If you haven't found the key, add it anyways!
 
-	OC_DBG("Writing data at key %s with size %d\n", store, size);
+	OC_DBG("Writing data at key %s\n", store);
+	OC_DBG("Name Length: %d", strlen(store));
+	OC_DBG("Data Length: %d", size);
 	otError     error;
 	CborEncoder encoder, mapEncoder;
-	uint8_t *   write_buffer;
 	uint16_t    length;
-	uint8_t     read_buffer[OC_STORAGE_READ_BUFFER_SIZE];
+	void *      read_buffer;
+	size_t      read_buffer_size;
+
+	size_t write_buffer_max_size = strlen(store) + size + OC_STORAGE_CBOR_OVERHEAD;
+
+	if (!read_buffer)
+	{
+		OC_ERR("Could not allocate read buffer!");
+		return -1;
+	}
 
 	for (int i = 0;; ++i)
 	{
 		CborParser parser;
 		CborValue  key_found;
 		CborValue  value;
-		uint16_t   read_buffer_size = OC_STORAGE_READ_BUFFER_SIZE;
+		uint16_t   read_buffer_size;
 
 		// The CBOR code is essentialy identical to oc_storage_read, but we act differently
 		// depending on its results.
 
-		error = otPlatSettingsGet(OT_INSTANCE, OC_SETTINGS_KEY, i, read_buffer, &read_buffer_size);
+		error = otPlatSettingsGetAddress(OC_SETTINGS_KEY, i, &read_buffer, &read_buffer_size);
 
 		// We iterated through all the keys and the key to be added does not match.
 		// Break and add the new setting.
@@ -148,9 +163,12 @@ long oc_storage_write(const char *store, uint8_t *buf, size_t size)
 		}
 	}
 
-	// We're done with reading, so we reuse read_buffer for the new setting.
-	write_buffer = read_buffer;
-	cbor_encoder_init(&encoder, write_buffer, OC_STORAGE_READ_BUFFER_SIZE, 0);
+	if (write_buffer_max_size > sizeof(write_buffer))
+	{
+		OC_ERR("Stored data too large for write buffer!");
+		return -1;
+	}
+	cbor_encoder_init(&encoder, write_buffer, write_buffer_max_size, 0);
 
 	error = cbor_encoder_create_map(&encoder, &mapEncoder, 1);
 	if (error)
@@ -167,6 +185,8 @@ long oc_storage_write(const char *store, uint8_t *buf, size_t size)
 
 	length = cbor_encoder_get_buffer_size(&encoder, write_buffer);
 	error  = otPlatSettingsAdd(OT_INSTANCE, OC_SETTINGS_KEY, write_buffer, length);
+
+	OC_DBG("Encoded Length: %d", length);
 
 	if (error)
 		OC_DBG("Could not add new setting! otPlatSettingsAdd returned %d", error);

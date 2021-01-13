@@ -78,3 +78,8 @@
  * @brief Cross-Platform utilities not directly related to the CA-821x
  */
 
+/**
+ * @defgroup cascoda-ot-util Cascoda OpenThread utilities
+ * @brief Cross-Platform utilities built on top of OpenThread
+ */
+

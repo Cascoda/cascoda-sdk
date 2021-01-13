@@ -14,7 +14,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Main library config ---------------------------------------------------------
-add_library(ca821x-openthread-posix-plat
+add_library(ca821x-openthread-posix-plat OBJECT
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
 	${PROJECT_SOURCE_DIR}/platform/entropy.c
 	${PROJECT_SOURCE_DIR}/platform/flash.c
@@ -37,7 +37,7 @@ target_link_libraries(ca821x-openthread-posix-plat
 		openthread-plat-api
 	)
 
-target_include_directories( ca821x-openthread-posix-plat
+target_include_directories(ca821x-openthread-posix-plat
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/platform
 	PUBLIC
@@ -45,23 +45,28 @@ target_include_directories( ca821x-openthread-posix-plat
 		${PROJECT_BINARY_DIR}/platform/include
 	)
 
-# Add helper interface libraries to simplify the cyclic dependency between
-# the platform layer and the openthread core.
-add_library(ca821x-openthread-posix-ftd INTERFACE)
+# Create the user libraries that are actually used by applications
+add_library(ca821x-openthread-posix-ftd
+	$<TARGET_OBJECTS:ca821x-openthread-posix-plat>
+	$<TARGET_OBJECTS:openthread-ftd-obj>
+	$<TARGET_OBJECTS:ca-ot-util>
+	)
 target_link_libraries(ca821x-openthread-posix-ftd
-	INTERFACE
-		openthread-ftd
-		ca821x-openthread-posix-plat
-		openthread-ftd
+	PUBLIC
+		ca-ot-util
+		openthread-ftd-obj
 		ca821x-openthread-posix-plat
 	)
 
-add_library(ca821x-openthread-posix-mtd INTERFACE)
+add_library(ca821x-openthread-posix-mtd
+	$<TARGET_OBJECTS:ca821x-openthread-posix-plat>
+	$<TARGET_OBJECTS:openthread-mtd-obj>
+	$<TARGET_OBJECTS:ca-ot-util>
+	)
 target_link_libraries(ca821x-openthread-posix-mtd
-	INTERFACE
-		openthread-mtd
-		ca821x-openthread-posix-plat
-		openthread-mtd
+	PUBLIC
+		ca-ot-util
+		openthread-mtd-obj
 		ca821x-openthread-posix-plat
 	)
 

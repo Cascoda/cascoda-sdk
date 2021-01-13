@@ -54,7 +54,9 @@ add_cmocka_test(dispatch_test
 		-Wl,--wrap=BSP_Waiting,--wrap=SPI_Send
 	)
 
-cascoda_put_subdir(time_test test)
-cascoda_put_subdir(spi_test test)
-cascoda_put_subdir(wait_test test)
-cascoda_put_subdir(dispatch_test test)
+cascoda_put_subdir(test
+	time_test
+	spi_test
+	wait_test
+	dispatch_test
+)

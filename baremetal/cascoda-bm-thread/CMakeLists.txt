@@ -75,9 +75,11 @@ endif()
 add_library(ca821x-openthread-bm-ftd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-ftd-obj>
+	$<TARGET_OBJECTS:ca-ot-util>
 )
 target_link_libraries(ca821x-openthread-bm-ftd
 	PUBLIC
+		ca-ot-util
 		openthread-ftd-obj
 		ca821x-openthread-bm-plat
 	)
@@ -85,9 +87,11 @@ target_link_libraries(ca821x-openthread-bm-ftd
 add_library(ca821x-openthread-bm-mtd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-mtd-obj>
+	$<TARGET_OBJECTS:ca-ot-util>
 )
 target_link_libraries(ca821x-openthread-bm-mtd
 	PUBLIC
+		ca-ot-util
 		openthread-mtd-obj
 		ca821x-openthread-bm-plat
 	)

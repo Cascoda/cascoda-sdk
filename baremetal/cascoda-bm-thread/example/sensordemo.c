@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ca-ot-util/cascoda_dns.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
@@ -59,7 +60,7 @@ static const char *uriCascodaDiscover            = "ca/di";
 static const char *uriCascodaSensorDiscoverQuery = "t=sen";
 static const char *uriCascodaSensor              = "ca/se";
 
-static otCliCommand sCliCommands[3];
+static otCliCommand sCliCommands[4];
 static ca_tasklet   join_tasklet;
 
 enum sensordemo_state
@@ -80,6 +81,19 @@ static uint8_t      autostartEnabled = 0;
 static otCoapResource sSensorResource;
 static otCoapResource sDiscoverResource;
 static otCoapResource sDiscoverResponseResource;
+
+static void cli_print_address(const otIp6Address *aAddress)
+{
+	otCliOutputFormat("[%x:%x:%x:%x:%x:%x:%x:%x]",
+	                  GETBE16(aAddress->mFields.m8 + 0),
+	                  GETBE16(aAddress->mFields.m8 + 2),
+	                  GETBE16(aAddress->mFields.m8 + 4),
+	                  GETBE16(aAddress->mFields.m8 + 6),
+	                  GETBE16(aAddress->mFields.m8 + 8),
+	                  GETBE16(aAddress->mFields.m8 + 10),
+	                  GETBE16(aAddress->mFields.m8 + 12),
+	                  GETBE16(aAddress->mFields.m8 + 14));
+}
 
 /**
  * \brief Handle the response to the server discover, and register the server
@@ -334,15 +348,9 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 		otCliOutputFormat(" light level %d", (int)light_level);
 	}
 
-	otCliOutputFormat(" from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 6),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 8),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 10),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
+	otCliOutputFormat(" from ");
+	cli_print_address(&(aMessageInfo->mPeerAddr));
+	otCliOutputFormat("\r\n");
 
 	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
@@ -395,15 +403,9 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 	if (!valid_query)
 		return;
 
-	otCliOutputFormat("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 2),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 4),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 6),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 8),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 10),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
-	                  GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
+	otCliOutputFormat("Server received discover from ");
+	cli_print_address(&(aMessageInfo->mPeerAddr));
+	otCliOutputFormat("\r\n");
 
 	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
@@ -596,6 +598,32 @@ static void handle_cli_join(int argc, char *argv[])
 	}
 }
 
+static void handle_dns_callback(ca_error aError, const otIp6Address *aAddress, dns_index aIndex, void *aContext)
+{
+	if (aError)
+	{
+		otCliOutputFormat("Resolution error %s\n", ca_error_str(aError));
+		return;
+	}
+	otCliOutputFormat("Host resolved to ");
+	cli_print_address(aAddress);
+	otCliOutputFormat("\r\n");
+}
+
+static void handle_cli_dnsutil(int argc, char *argv[])
+{
+	if (argc == 1)
+	{
+		ca_error error = DNS_HostToIpv6(OT_INSTANCE, argv[0], &handle_dns_callback, NULL);
+		if (error)
+			otCliOutputFormat("Resolution error %s\n", ca_error_str(error));
+	}
+	else
+	{
+		otCliOutputFormat("Parse error, usage: dnsutil [host to resolve]\n");
+	}
+}
+
 ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 {
 	otError  error = OT_ERROR_NONE;
@@ -603,16 +631,20 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 	OT_INSTANCE = aInstance;
 
 	//CLI Commands
-	sCliCommands[0].mCommand = handle_cli_sensordemo;
+	sCliCommands[0].mCommand = &handle_cli_sensordemo;
 	sCliCommands[0].mName    = "sensordemo";
-	sCliCommands[1].mCommand = handle_cli_autostart;
+	sCliCommands[1].mCommand = &handle_cli_autostart;
 	sCliCommands[1].mName    = "autostart";
-	sCliCommands[2].mCommand = handle_cli_join;
+	sCliCommands[2].mCommand = &handle_cli_join;
 	sCliCommands[2].mName    = "join";
-	otCliSetUserCommands(sCliCommands, 3);
+	sCliCommands[3].mCommand = &handle_cli_dnsutil;
+	sCliCommands[3].mName    = "dnsutil";
+	otCliSetUserCommands(sCliCommands, 4);
 
 	TASKLET_Init(&join_tasklet, handle_join);
 	TASKLET_Init(&sensorTasklet, sensordemo_handler);
+
+	DNS_Init(aInstance);
 
 	otCoapStart(OT_INSTANCE, OT_DEFAULT_COAP_PORT);
 

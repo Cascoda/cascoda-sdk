@@ -89,11 +89,13 @@ function(cascoda_map var_in var_out)
 endfunction()
 
 # Helper function to put a target runtime into a subdirectory of the 'bin' dir
-# useful for tidying up tests, eg cascoda_put_subdir(mytarget test)
-function(cascoda_put_subdir target_in subdir)
-	get_target_property(RUN_DIRECTORY ${target_in} RUNTIME_OUTPUT_DIRECTORY)
-	set(RUN_DIRECTORY "${RUN_DIRECTORY}/${subdir}")
-	set_target_properties(${target_in} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${RUN_DIRECTORY})
+# useful for tidying up tests, eg cascoda_put_subdir(test mytarget mytarget2 ...)
+function(cascoda_put_subdir subdir)
+	foreach(target_in IN LISTS ARGN)
+		get_target_property(RUN_DIRECTORY ${target_in} RUNTIME_OUTPUT_DIRECTORY)
+		set(RUN_DIRECTORY "${RUN_DIRECTORY}/${subdir}")
+		set_target_properties(${target_in} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${RUN_DIRECTORY})
+	endforeach()
 endfunction()
 
 # Helper macro to make a target compile as trustzone secure, and generate
@@ -154,4 +156,18 @@ function(cascoda_configure_memory target_in stack_size heap_size)
 	target_sources(${target_in} PRIVATE ${CASCODA_STARTUP_ASM})
 	target_compile_definitions(${target_in} PRIVATE ${CASCODA_STACK_SIZE}=${stack_size})
 	target_compile_definitions(${target_in} PRIVATE ${CASCODA_HEAP_SIZE}=${heap_size})
+endfunction()
+
+file(WRITE "${CMAKE_BINARY_DIR}/longtests.csv.in" "")
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/longtests.csv" INPUT "${CMAKE_BINARY_DIR}/longtests.csv.in")
+# Helper function to add a long test to the 'longtest' target.
+# target_name is the target name of the test to run
+# timeout_val is the timeout in seconds to apply to the test
+# Additional parameters are arguments to pass to the test and "--gtest_list_tests" is a special arg which will expand all tests of a gtest enabled executable
+function(cascoda_add_longtest target_name timeout_val)
+	set(ARGLIST "")
+	foreach(argument IN LISTS ARGN)
+		set(ARGLIST "${ARGLIST},${argument}")
+	endforeach()
+	file(APPEND "${CMAKE_BINARY_DIR}/longtests.csv.in" "$<TARGET_FILE:${target_name}>,${timeout_val}${ARGLIST}\n")
 endfunction()

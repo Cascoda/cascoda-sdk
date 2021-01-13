@@ -189,6 +189,26 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
  */
 const char *PlatformGetJoinerCredential(otInstance *aInstance);
 
+/**
+ * @brief Get the address at which a setting is stored, so that it can be read without
+ * copying it, as would be necessary when using @ref otPlatSettingsGet().
+ *
+ *  @param[in]     aKey          The key associated with the requested setting.
+ *  @param[in]     aIndex        The index of the specific item to get.
+ *  @param[out]    aValue        A pointer to where the address of the setting should be written. May be set to NULL if
+ *                               just testing for the presence or length of a setting.
+ *  @param[inout]  aValueLength  A pointer to the length of the value. At return, will be overwritten with the length
+ * 	of the value.
+ * 
+ *  Note that the pointer written to aValue is not valid after a call to any other otPlatSettings* function, so
+ * it must be used immediately.
+ *
+ *  @retval OT_ERROR_NONE             The given setting was found and fetched successfully.
+ *  @retval OT_ERROR_NOT_FOUND        The given setting was not found in the setting store.
+ *  @retval OT_ERROR_NOT_IMPLEMENTED  This function is not implemented on this platform.
+ */
+otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint16_t *aValueLength);
+
 #endif /* CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_ */
 
 /**

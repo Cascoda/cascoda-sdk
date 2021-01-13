@@ -43,7 +43,9 @@ add_cmocka_test(blacklist_test
 		ca821x-api
 	)
 
-cascoda_put_subdir(ca821x-api-test test)
-cascoda_put_subdir(helper_test test)
-cascoda_put_subdir(endian_test test)
-cascoda_put_subdir(blacklist_test test)
+cascoda_put_subdir(test 
+	ca821x-api-test
+	helper_test
+	endian_test
+	blacklist_test
+)

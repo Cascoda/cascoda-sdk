@@ -13,14 +13,14 @@ if(NOT TARGET cascoda-chili2)
 endif()
 
 if(NOT CASCODA_IOTIVITY_REPO)
-    set(CASCODA_IOTIVITY_REPO https://github.com/iotivity/iotivity-lite.git)
+    set(CASCODA_IOTIVITY_REPO https://github.com/Cascoda/iotivity-lite.git)
 endif()
 
 # Download the Iotivity Lite source
 FetchContent_Declare(
     iotivitylite
     GIT_REPOSITORY ${CASCODA_IOTIVITY_REPO}
-    GIT_TAG 6d195d348ef2f0ad4993f7691c65a03b0f334ba5
+    GIT_TAG bd05ecbbeae032239794701ccad404c77dd6520d
     PATCH_COMMAND  ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/iotivity-patch.cmake
 )
 
@@ -57,6 +57,8 @@ target_include_directories(mbedcrypto PUBLIC
 target_compile_definitions(mbedcrypto
     PUBLIC
     MBEDTLS_CONFIG_FILE=\"combined_mbedtls_config.h\"
+    PRIVATE
+    OC_PKI
 )
 
 target_link_libraries(mbedcrypto PUBLIC mbedtls)
@@ -80,7 +82,7 @@ target_sources(iotivity-port INTERFACE
 )
 
 target_include_directories(iotivity-port INTERFACE
-    ${PROJECT_SOURCE_DIR}/port
+    ${PROJECT_SOURCE_DIR}/port/
 
     ${iotivitylite_SOURCE_DIR}/
     ${iotivitylite_SOURCE_DIR}/include
@@ -101,8 +103,8 @@ target_sources(iotivity-api INTERFACE
     ${iotivitylite_SOURCE_DIR}/api/oc_core_res.c
     ${iotivitylite_SOURCE_DIR}/api/oc_discovery.c
     ${iotivitylite_SOURCE_DIR}/api/oc_endpoint.c
+    ${iotivitylite_SOURCE_DIR}/api/oc_enums.c
     ${iotivitylite_SOURCE_DIR}/api/oc_helpers.c
-    ${iotivitylite_SOURCE_DIR}/api/oc_introspection.c
     ${iotivitylite_SOURCE_DIR}/api/oc_main.c
     ${iotivitylite_SOURCE_DIR}/api/oc_mnt.c
     ${iotivitylite_SOURCE_DIR}/api/oc_network_events.c
@@ -113,11 +115,17 @@ target_sources(iotivity-api INTERFACE
     ${iotivitylite_SOURCE_DIR}/api/oc_session_events.c
     ${iotivitylite_SOURCE_DIR}/api/oc_swupdate.c
     ${iotivitylite_SOURCE_DIR}/api/oc_uuid.c
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp/timestamp_compare.c
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp/timestamp_format.c
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp/timestamp_parse.c
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp/timestamp_tm.c
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp/timestamp_valid.c
 )
 
 target_include_directories(iotivity-api INTERFACE
     ${iotivitylite_SOURCE_DIR}/
     ${iotivitylite_SOURCE_DIR}/api
+    ${iotivitylite_SOURCE_DIR}/api/c-timestamp
     ${iotivitylite_SOURCE_DIR}/include
 )
 
@@ -135,6 +143,8 @@ target_sources(iotivity-common INTERFACE
     ${iotivitylite_SOURCE_DIR}/util/oc_timer.c
     # Security
     ${iotivitylite_SOURCE_DIR}/security/oc_acl.c
+    ${iotivitylite_SOURCE_DIR}/security/oc_ael.c
+    ${iotivitylite_SOURCE_DIR}/security/oc_audit.c
     ${iotivitylite_SOURCE_DIR}/security/oc_certs.c
     ${iotivitylite_SOURCE_DIR}/security/oc_cred.c
     ${iotivitylite_SOURCE_DIR}/security/oc_csr.c
@@ -148,6 +158,7 @@ target_sources(iotivity-common INTERFACE
     ${iotivitylite_SOURCE_DIR}/security/oc_pki.c
     ${iotivitylite_SOURCE_DIR}/security/oc_pstat.c
     ${iotivitylite_SOURCE_DIR}/security/oc_roles.c
+    ${iotivitylite_SOURCE_DIR}/security/oc_sdi.c
     ${iotivitylite_SOURCE_DIR}/security/oc_sp.c
     ${iotivitylite_SOURCE_DIR}/security/oc_store.c
     ${iotivitylite_SOURCE_DIR}/security/oc_svr.c

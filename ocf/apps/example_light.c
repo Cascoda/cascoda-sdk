@@ -1,6 +1,6 @@
 /*
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
- Copyright 2017-2019 Open Connectivity Foundation
+ Copyright 2017-2021 Open Connectivity Foundation
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@
 *  global resource variables (per path) for:
 *    the path in a variable:
 *      naming convention: g_<path>_RESOURCE_ENDPOINT
-*    array of interfaces, where by the first will be set as default interface
-*      naming convention g_<path>_RESOURCE_INTERFACE
 *
 *  handlers for the implemented methods (get/post)
 *   get_<path>
@@ -51,30 +49,39 @@
 *
 */
 /*
- tool_version          : 20171123
- input_file            : ../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json
- version of input_file : 20190222
- title of input_file   : server_lite_56903
+ tool_version          : 20200103
+ input_file            : ../device_output/out_codegeneration_merged.swagger.json
+ version of input_file : 2019-02-22
+ title of input_file   : server_lite_54881
 */
-#include <unistd.h>
 
-#include <openthread/cli.h>
-#include <openthread/diag.h>
-#include <openthread/tasklet.h>
-#include <openthread/thread.h>
-#include <platform.h>
-
-#include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_interface.h"
-#include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_types.h"
-#include "cascoda-util/cascoda_time.h"
-#include "ca821x_api.h"
-
-#include "port/oc_assert.h"
+#include <signal.h>
 #include "port/oc_clock.h"
 #include "oc_api.h"
-#include "oc_buffer_settings.h"
+
+#ifdef OC_CLOUD
+#include "oc_cloud.h"
+#endif
+#if defined(OC_IDD_API)
+#include "oc_introspection.h"
+#endif
+
+#ifdef __linux__
+/* linux specific code */
+#include <pthread.h>
+#ifndef NO_MAIN
+static pthread_mutex_t mutex;
+static pthread_cond_t  cv;
+static struct timespec ts;
+#endif /* NO_MAIN */
+#endif
+
+#ifdef WIN32
+/* windows specific code */
+#include <windows.h>
+static CONDITION_VARIABLE cv; /* event loop variable */
+static CRITICAL_SECTION   cs; /* event loop variable */
+#endif
 
 #define btoa(x) ((x) ? "true" : "false")
 
@@ -83,88 +90,99 @@
 #define MAX_ARRAY 10          /* max size of the array */
 /* Note: Magic numbers are derived from the resource definition, either from the example or the definition.*/
 
-otInstance *OT_INSTANCE;
+volatile int quit = 0; /* stop variable, used by handle_signal */
 
+/** Cascoda Additions */
+#include <openthread/cli.h>
+#include <openthread/diag.h>
+#include <openthread/tasklet.h>
+#include <openthread/thread.h>
+#include <platform.h>
+
+#include "cascoda-bm/cascoda_interface.h"
+
+otInstance *OT_INSTANCE;
 // Pin used by the relay, for the lamp demo
 #define RELAY_OUT_PIN 15
+/** End of Cascoda Additions */
 
 /* global property variables for path: "/binaryswitch" */
-static char g_binaryswitch_RESOURCE_PROPERTY_NAME_value[] = "value"; /* the name for the attribute */
-bool        g_binaryswitch_value = false; /* current value of property "value" The status of the switch. */
+static char *g_binaryswitch_RESOURCE_PROPERTY_NAME_value = "value"; /* the name for the attribute */
+bool         g_binaryswitch_value = false; /* current value of property "value" The status of the switch. */
 /* global property variables for path: "/dimming" */
-static char g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting[] = "dimmingSetting"; /* the name for the attribute */
-int         g_dimming_dimmingSetting                          = 30;
+static char *g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting = "dimmingSetting"; /* the name for the attribute */
+int          g_dimming_dimmingSetting                        = 30;
 /* current value of property "dimmingSetting" The current dimming value. */ /* registration data variables for the resources */
 
 /* global resource variables for path: /binaryswitch */
-static char g_binaryswitch_RESOURCE_ENDPOINT[]              = "/binaryswitch";         /* used path for this resource */
-static char g_binaryswitch_RESOURCE_TYPE[][MAX_STRING]      = {"oic.r.switch.binary"}; /* rt value (as an array) */
-int         g_binaryswitch_nr_resource_types                = 1;
-static char g_binaryswitch_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.baseline",
-                                                               "oic.if.a"}; /* interface if (as an array) */
-int         g_binaryswitch_nr_resource_interfaces           = 2;
-
+static char *g_binaryswitch_RESOURCE_ENDPOINT         = "/binaryswitch";         /* used path for this resource */
+static char *g_binaryswitch_RESOURCE_TYPE[MAX_STRING] = {"oic.r.switch.binary"}; /* rt value (as an array) */
+int          g_binaryswitch_nr_resource_types         = 1;
 /* global resource variables for path: /dimming */
-static char g_dimming_RESOURCE_ENDPOINT[]              = "/dimming";              /* used path for this resource */
-static char g_dimming_RESOURCE_TYPE[][MAX_STRING]      = {"oic.r.light.dimming"}; /* rt value (as an array) */
-int         g_dimming_nr_resource_types                = 1;
-static char g_dimming_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.baseline",
-                                                          "oic.if.a"}; /* interface if (as an array) */
-int         g_dimming_nr_resource_interfaces           = 2;
+static char *g_dimming_RESOURCE_ENDPOINT         = "/dimming";              /* used path for this resource */
+static char *g_dimming_RESOURCE_TYPE[MAX_STRING] = {"oic.r.light.dimming"}; /* rt value (as an array) */
+int          g_dimming_nr_resource_types         = 1;
 
-// Command for locally controlling the server
-static otCliCommand ocfCommand;
 /**
 * function to set up the device.
 *
 */
-static int app_init(void)
+int app_init(void)
 {
 	int ret = oc_init_platform("ocf", NULL, NULL);
 	/* the settings determine the appearance of the device on the network
-     can be OCF1.3.1 or OCF2.0.0 (or even higher)
+     can be ocf.2.2.0 (or even higher)
      supplied values are for OCF1.3.1 */
 	ret |= oc_add_device("/oic/d",
 	                     "oic.d.light",
-	                     "server_lite_56903",
-	                     "ocf.2.0.5",                   /* icv value */
+	                     "Cascoda Light Demo",
+	                     "ocf.2.2.0",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
 	                     NULL);
-	BSP_ModuleRegisterGPIOOutput(RELAY_OUT_PIN, MODULE_PIN_TYPE_GENERIC);
 
+#if defined(OC_IDD_API)
+	FILE *     fp;
+	uint8_t *  buffer;
+	size_t     buffer_size;
+	const char introspection_error[] = "\tERROR Could not read 'server_introspection.cbor'\n"
+	                                   "\tIntrospection data not set.\n";
+	fp = fopen("./server_introspection.cbor", "rb");
+	if (fp)
+	{
+		fseek(fp, 0, SEEK_END);
+		buffer_size = ftell(fp);
+		rewind(fp);
+
+		buffer           = (uint8_t *)malloc(buffer_size * sizeof(uint8_t));
+		size_t fread_ret = fread(buffer, buffer_size, 1, fp);
+		fclose(fp);
+
+		if (fread_ret == 1)
+		{
+			oc_set_introspection_data(0, buffer, buffer_size);
+			PRINT("\tIntrospection data set 'server_introspection.cbor': %d [bytes]\n", (int)buffer_size);
+		}
+		else
+		{
+			PRINT("%s", introspection_error);
+		}
+		free(buffer);
+	}
+	else
+	{
+		PRINT("%s", introspection_error);
+	}
+#else
+	PRINT("\t introspection via header file\n");
+#endif
 	return ret;
-}
-
-/**
-* helper function to convert the interface string definition to the constant defintion used by the stack.
-* @param interface_name the interface string e.g. "oic.if.a"
-* @return the stack constant for the interface
-*/
-static int convert_if_string(char *interface_name)
-{
-	if (strcmp(interface_name, "oic.if.baseline") == 0)
-		return OC_IF_BASELINE; /* baseline interface */
-	if (strcmp(interface_name, "oic.if.rw") == 0)
-		return OC_IF_RW; /* read write interface */
-	if (strcmp(interface_name, "oic.if.r") == 0)
-		return OC_IF_R; /* read interface */
-	if (strcmp(interface_name, "oic.if.s") == 0)
-		return OC_IF_S; /* sensor interface */
-	if (strcmp(interface_name, "oic.if.a") == 0)
-		return OC_IF_A; /* actuator interface */
-	if (strcmp(interface_name, "oic.if.b") == 0)
-		return OC_IF_B; /* batch interface */
-	if (strcmp(interface_name, "oic.if.ll") == 0)
-		return OC_IF_LL; /* linked list interface */
-	return OC_IF_A;
 }
 
 /**
 * helper function to check if the POST input document contains
 * the common readOnly properties or the resouce readOnly properties
 * @param name the name of the property
-* @param error_state the initial value of the error state
 * @return the error_status, e.g. if error_status is true, then the input document contains something illegal
 */
 static bool check_on_readonly_common_resource_properties(oc_string_t name, bool error_state)
@@ -227,10 +245,14 @@ static void get_binaryswitch(oc_request_t *request, oc_interface_mask_t interfac
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
-		/* fall through */
-	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
+
+		/* property (boolean) 'value' */
+		oc_rep_set_boolean(root, value, g_binaryswitch_value);
+		PRINT("   %s : %s\n", g_binaryswitch_RESOURCE_PROPERTY_NAME_value, btoa(g_binaryswitch_value));
+		break;
+	case OC_IF_A:
 
 		/* property (boolean) 'value' */
 		oc_rep_set_boolean(root, value, g_binaryswitch_value);
@@ -282,10 +304,14 @@ static void get_dimming(oc_request_t *request, oc_interface_mask_t interfaces, v
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
-		/* fall through */
-	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
+
+		/* property (integer) 'dimmingSetting' */
+		oc_rep_set_int(root, dimmingSetting, g_dimming_dimmingSetting);
+		PRINT("   %s : %d\n", g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting, g_dimming_dimmingSetting);
+		break;
+	case OC_IF_A:
 
 		/* property (integer) 'dimmingSetting' */
 		oc_rep_set_int(root, dimmingSetting, g_dimming_dimmingSetting);
@@ -375,7 +401,9 @@ static void post_binaryswitch(oc_request_t *request, oc_interface_mask_t interfa
 				/* assign "value" */
 				PRINT("  property 'value' : %s\n", btoa(rep->value.boolean));
 				g_binaryswitch_value = rep->value.boolean;
+				/* Cascoda Additions */
 				BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
+				/* End of Cascoda Additions */
 			}
 			rep = rep->next;
 		}
@@ -468,8 +496,8 @@ static void post_dimming(oc_request_t *request, oc_interface_mask_t interfaces, 
 			if (strcmp(oc_string(rep->name), g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting) == 0)
 			{
 				/* assign "dimmingSetting" */
-				PRINT("  property 'dimmingSetting' : %d\n", rep->value.integer);
-				g_dimming_dimmingSetting = rep->value.integer;
+				PRINT("  property 'dimmingSetting' : %d\n", (int)rep->value.integer);
+				g_dimming_dimmingSetting = (int)rep->value.integer;
 			}
 			rep = rep->next;
 		}
@@ -494,6 +522,7 @@ static void post_dimming(oc_request_t *request, oc_interface_mask_t interfaces, 
 	}
 	PRINT("-- End post_dimming\n");
 }
+
 /**
 * register all the resources to the stack
 * this function registers all application level resources:
@@ -502,9 +531,10 @@ static void post_dimming(oc_request_t *request, oc_interface_mask_t interfaces, 
 *   - secure
 *   - observable
 *   - discoverable
-*   - used interfaces (from the global variables).
+*   - used interfaces, including the default interface.
+*     default interface is the first of the list of interfaces as specified in the input file
 */
-static void register_resources(void)
+void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/binaryswitch\"\n");
 	oc_resource_t *res_binaryswitch =
@@ -515,12 +545,11 @@ static void register_resources(void)
 		PRINT("     Resource Type: \"%s\"\n", g_binaryswitch_RESOURCE_TYPE[a]);
 		oc_resource_bind_resource_type(res_binaryswitch, g_binaryswitch_RESOURCE_TYPE[a]);
 	}
-	for (int a = 0; a < g_binaryswitch_nr_resource_interfaces; a++)
-	{
-		oc_resource_bind_resource_interface(res_binaryswitch, convert_if_string(g_binaryswitch_RESOURCE_INTERFACE[a]));
-	}
-	oc_resource_set_default_interface(res_binaryswitch, convert_if_string(g_binaryswitch_RESOURCE_INTERFACE[0]));
-	PRINT("     Default OCF Interface: \"%s\"\n", g_binaryswitch_RESOURCE_INTERFACE[0]);
+
+	oc_resource_bind_resource_interface(res_binaryswitch, OC_IF_A);        /* oic.if.a */
+	oc_resource_bind_resource_interface(res_binaryswitch, OC_IF_BASELINE); /* oic.if.baseline */
+	oc_resource_set_default_interface(res_binaryswitch, OC_IF_A);
+	PRINT("     Default OCF Interface: 'oic.if.a'\n");
 	oc_resource_set_discoverable(res_binaryswitch, true);
 	/* periodic observable
      to be used when one wants to send an event per time slice
@@ -528,12 +557,20 @@ static void register_resources(void)
 	oc_resource_set_periodic_observable(res_binaryswitch, 1);
 	/* set observable
      events are send when oc_notify_observers(oc_resource_t *resource) is called.
-    this function must be called when the value changes, perferable on an interrupt when something is read from the hardware. */
+    this function must be called when the value changes, preferable on an interrupt when something is read from the hardware. */
 	/*oc_resource_set_observable(res_binaryswitch, true); */
 
 	oc_resource_set_request_handler(res_binaryswitch, OC_GET, get_binaryswitch, NULL);
 
+#ifdef OC_CLOUD
+	oc_cloud_add_resource(res_binaryswitch);
+#endif
+
 	oc_resource_set_request_handler(res_binaryswitch, OC_POST, post_binaryswitch, NULL);
+
+#ifdef OC_CLOUD
+	oc_cloud_add_resource(res_binaryswitch);
+#endif
 	oc_add_resource(res_binaryswitch);
 
 	PRINT("Register Resource with local path \"/dimming\"\n");
@@ -544,12 +581,11 @@ static void register_resources(void)
 		PRINT("     Resource Type: \"%s\"\n", g_dimming_RESOURCE_TYPE[a]);
 		oc_resource_bind_resource_type(res_dimming, g_dimming_RESOURCE_TYPE[a]);
 	}
-	for (int a = 0; a < g_dimming_nr_resource_interfaces; a++)
-	{
-		oc_resource_bind_resource_interface(res_dimming, convert_if_string(g_dimming_RESOURCE_INTERFACE[a]));
-	}
-	oc_resource_set_default_interface(res_dimming, convert_if_string(g_dimming_RESOURCE_INTERFACE[0]));
-	PRINT("     Default OCF Interface: \"%s\"\n", g_dimming_RESOURCE_INTERFACE[0]);
+
+	oc_resource_bind_resource_interface(res_dimming, OC_IF_A);        /* oic.if.a */
+	oc_resource_bind_resource_interface(res_dimming, OC_IF_BASELINE); /* oic.if.baseline */
+	oc_resource_set_default_interface(res_dimming, OC_IF_A);
+	PRINT("     Default OCF Interface: 'oic.if.a'\n");
 	oc_resource_set_discoverable(res_dimming, true);
 	/* periodic observable
      to be used when one wants to send an event per time slice
@@ -557,17 +593,21 @@ static void register_resources(void)
 	oc_resource_set_periodic_observable(res_dimming, 1);
 	/* set observable
      events are send when oc_notify_observers(oc_resource_t *resource) is called.
-    this function must be called when the value changes, perferable on an interrupt when something is read from the hardware. */
+    this function must be called when the value changes, preferable on an interrupt when something is read from the hardware. */
 	/*oc_resource_set_observable(res_dimming, true); */
 
 	oc_resource_set_request_handler(res_dimming, OC_GET, get_dimming, NULL);
 
-	oc_resource_set_request_handler(res_dimming, OC_POST, post_dimming, NULL);
-	oc_add_resource(res_dimming);
-}
+#ifdef OC_CLOUD
+	oc_cloud_add_resource(res_dimming);
+#endif
 
-static void signal_event_loop(void)
-{
+	oc_resource_set_request_handler(res_dimming, OC_POST, post_dimming, NULL);
+
+#ifdef OC_CLOUD
+	oc_cloud_add_resource(res_dimming);
+#endif
+	oc_add_resource(res_dimming);
 }
 
 #ifdef OC_SECURITY
@@ -584,34 +624,43 @@ void factory_presets_cb(size_t device, void *data)
 {
 	(void)device;
 	(void)data;
-	/*
 #if defined(OC_SECURITY) && defined(OC_PKI)
-// code to include an pki certificate and root trust anchor
+/* code to include an pki certificate and root trust anchor */
 #include "oc_pki.h"
 #include "pki_certs.h"
-  int credid =
-    oc_pki_add_mfg_cert(0, (const unsigned char *)my_cert, strlen(my_cert), (const unsigned char *)my_key, strlen(my_key));
-  if (credid < 0) {
-    PRINT("ERROR installing manufacturer certificate\n");
-  } else {
-    PRINT("Successfully installed manufacturer certificate\n");
-  }
+	int credid = oc_pki_add_mfg_cert(
+	    0, (const unsigned char *)my_cert, strlen(my_cert), (const unsigned char *)my_key, strlen(my_key));
+	if (credid < 0)
+	{
+		PRINT("ERROR installing PKI certificate\n");
+	}
+	else
+	{
+		PRINT("Successfully installed PKI certificate\n");
+	}
 
-  if (oc_pki_add_mfg_intermediate_cert(0, credid, (const unsigned char *)int_ca, strlen(int_ca)) < 0) {
-    PRINT("ERROR installing intermediate CA certificate\n");
-  } else {
-    PRINT("Successfully installed intermediate CA certificate\n");
-  }
+	if (oc_pki_add_mfg_intermediate_cert(0, credid, (const unsigned char *)int_ca, strlen(int_ca)) < 0)
+	{
+		PRINT("ERROR installing intermediate CA certificate\n");
+	}
+	else
+	{
+		PRINT("Successfully installed intermediate CA certificate\n");
+	}
 
-  if (oc_pki_add_mfg_trust_anchor(0, (const unsigned char *)root_ca, strlen(root_ca)) < 0) {
-    PRINT("ERROR installing root certificate\n");
-  } else {
-    PRINT("Successfully installed root certificate\n");
-  }
+	if (oc_pki_add_mfg_trust_anchor(0, (const unsigned char *)root_ca, strlen(root_ca)) < 0)
+	{
+		PRINT("ERROR installing root certificate\n");
+	}
+	else
+	{
+		PRINT("Successfully installed root certificate\n");
+	}
 
-  oc_pki_set_security_profile(0, OC_SP_BLACK, OC_SP_BLACK, credid);
-#endif // OC_SECURITY && OC_PKI
-*/
+	oc_pki_set_security_profile(0, OC_SP_BLACK, OC_SP_BLACK, credid);
+#else
+	PRINT("No PKI certificates installed\n");
+#endif /* OC_SECURITY && OC_PKI */
 }
 
 /**
@@ -630,37 +679,242 @@ void initialize_variables(void)
 	oc_set_con_res_announced(false);
 }
 
+#ifndef NO_MAIN
+
+#ifdef WIN32
 /**
- * Handle application specific commands.
- */
-static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+* signal the event loop (windows version)
+* wakes up the main function to handle the next callback
+*/
+static void signal_event_loop(void)
 {
-	int ret = 0;
+	WakeConditionVariable(&cv);
+}
+#endif /* WIN32 */
 
-	if (buf[0] == OT_SERIAL_DOWNLINK)
-	{
-		PlatformUartReceive(buf + 2, buf[1]);
-		ret = 1;
-	}
+#ifdef __linux__
+/**
+* signal the event loop (Linux)
+* wakes up the main function to handle the next callback
+*/
+static void signal_event_loop(void)
+{
+	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&cv);
+	pthread_mutex_unlock(&mutex);
+}
+#endif /* __linux__ */
 
-	// switch clock otherwise chip is locking up as it loses external clock
-	if (((buf[0] == EVBME_SET_REQUEST) && (buf[2] == EVBME_RESETRF)) || (buf[0] == EVBME_HOST_CONNECTED))
-	{
-		EVBME_SwitchClock(pDeviceRef, 0);
-	}
-	return ret;
+/**
+* handle Ctrl-C
+* @param signal the captured signal
+*/
+void handle_signal(int signal)
+{
+	(void)signal;
+	signal_event_loop();
+	quit = 1;
 }
 
-static void ot_state_changed(uint32_t flags, void *context)
+#ifdef OC_CLOUD
+/**
+* cloud status handler.
+* handler to print out the status of the cloud connection
+*/
+static void cloud_status_handler(oc_cloud_context_t *ctx, oc_cloud_status_t status, void *data)
 {
-	(void)context;
-
-	if (flags & OT_CHANGED_THREAD_ROLE)
+	(void)data;
+	PRINT("\nCloud Manager Status:\n");
+	if (status & OC_CLOUD_REGISTERED)
 	{
-		PRINT("Role: %d\n", otThreadGetDeviceRole(OT_INSTANCE));
+		PRINT("\t\t-Registered\n");
+	}
+	if (status & OC_CLOUD_TOKEN_EXPIRY)
+	{
+		PRINT("\t\t-Token Expiry: ");
+		if (ctx)
+		{
+			PRINT("%d\n", oc_cloud_get_token_expiry(ctx));
+		}
+		else
+		{
+			PRINT("\n");
+		}
+	}
+	if (status & OC_CLOUD_FAILURE)
+	{
+		PRINT("\t\t-Failure\n");
+	}
+	if (status & OC_CLOUD_LOGGED_IN)
+	{
+		PRINT("\t\t-Logged In\n");
+	}
+	if (status & OC_CLOUD_LOGGED_OUT)
+	{
+		PRINT("\t\t-Logged Out\n");
+	}
+	if (status & OC_CLOUD_DEREGISTERED)
+	{
+		PRINT("\t\t-DeRegistered\n");
+	}
+	if (status & OC_CLOUD_REFRESHED_TOKEN)
+	{
+		PRINT("\t\t-Refreshed Token\n");
 	}
 }
+#endif // OC_CLOUD
 
+/**
+* main application.
+* intializes the global variables
+* registers and starts the handler
+* handles (in a loop) the next event.
+* shuts down the stack
+*/
+int main(void)
+{
+	int             init;
+	oc_clock_time_t next_event;
+
+#ifdef WIN32
+	/* windows specific */
+	InitializeCriticalSection(&cs);
+	InitializeConditionVariable(&cv);
+	/* install Ctrl-C */
+	signal(SIGINT, handle_signal);
+#endif
+#ifdef __linux__
+	/* linux specific */
+	struct sigaction sa;
+	sigfillset(&sa.sa_mask);
+	sa.sa_flags   = 0;
+	sa.sa_handler = handle_signal;
+	/* install Ctrl-C */
+	sigaction(SIGINT, &sa, NULL);
+#endif
+
+	PRINT("Used input file : \"../device_output/out_codegeneration_merged.swagger.json\"\n");
+	PRINT("OCF Server name : \"server_lite_54881\"\n");
+
+	/*intialize the variables */
+	initialize_variables();
+
+/*
+ The storage folder depends on the build system
+ for Windows the projects simpleserver and cloud_server are overwritten, hence the folders should be the same as those targets.
+ for Linux (as default) the folder is created in the makefile, with $target as name with _cred as post fix.
+*/
+#ifdef OC_SECURITY
+	PRINT("Intialize Secure Resources\n");
+#ifdef WIN32
+#ifdef OC_CLOUD
+	PRINT("\t storage at './cloudserver_creds' \n");
+	oc_storage_config("./cloudserver_creds");
+#else
+	PRINT("\t storage at './simpleserver_creds' \n");
+	oc_storage_config("./simpleserver_creds/");
+#endif
+#else
+	PRINT("\t storage at './device_builder_server_creds' \n");
+	oc_storage_config("./device_builder_server_creds");
+#endif
+
+#endif /* OC_SECURITY */
+
+	/* initializes the handlers structure */
+	static const oc_handler_t handler = {.init               = app_init,
+	                                     .signal_event_loop  = signal_event_loop,
+	                                     .register_resources = register_resources
+#ifdef OC_CLIENT
+	                                     ,
+	                                     .requests_entry = 0
+#endif
+	};
+
+#ifdef OC_SECURITY
+	/* please comment out if the server:
+    - have no display capabilities to display the PIN value
+    - server does not require to implement RANDOM PIN (oic.sec.doxm.rdp) onboarding mechanism
+  */
+	oc_set_random_pin_callback(random_pin_cb, NULL);
+#endif /* OC_SECURITY */
+
+	oc_set_factory_presets_cb(factory_presets_cb, NULL);
+
+	/* start the stack */
+	init = oc_main_init(&handler);
+
+	if (init < 0)
+	{
+		PRINT("oc_main_init failed %d, exiting.\n", init);
+		return init;
+	}
+
+#ifdef OC_CLOUD
+	/* get the cloud context and start the cloud */
+	PRINT("Start Cloud Manager\n");
+	oc_cloud_context_t *ctx = oc_cloud_get_context(0);
+	if (ctx)
+	{
+		oc_cloud_manager_start(ctx, cloud_status_handler, NULL);
+	}
+#endif
+
+	PRINT("OCF server \"server_lite_54881\" running, waiting on incoming connections.\n");
+
+#ifdef WIN32
+	/* windows specific loop */
+	while (quit != 1)
+	{
+		next_event = oc_main_poll();
+		if (next_event == 0)
+		{
+			SleepConditionVariableCS(&cv, &cs, INFINITE);
+		}
+		else
+		{
+			oc_clock_time_t now = oc_clock_time();
+			if (now < next_event)
+			{
+				SleepConditionVariableCS(&cv, &cs, (DWORD)((next_event - now) * 1000 / OC_CLOCK_SECOND));
+			}
+		}
+	}
+#endif
+
+#ifdef __linux__
+	/* linux specific loop */
+	while (quit != 1)
+	{
+		next_event = oc_main_poll();
+		pthread_mutex_lock(&mutex);
+		if (next_event == 0)
+		{
+			pthread_cond_wait(&cv, &mutex);
+		}
+		else
+		{
+			ts.tv_sec  = (next_event / OC_CLOCK_SECOND);
+			ts.tv_nsec = (next_event % OC_CLOCK_SECOND) * 1.e09 / OC_CLOCK_SECOND;
+			pthread_cond_timedwait(&cv, &mutex, &ts);
+		}
+		pthread_mutex_unlock(&mutex);
+	}
+#endif
+
+	/* shut down the stack */
+#ifdef OC_CLOUD
+	PRINT("Stop Cloud Manager\n");
+	oc_cloud_manager_stop(ctx);
+#endif
+	oc_main_shutdown();
+	return 0;
+}
+#endif /* NO_MAIN */
+
+/** Cascoda Additions */
+
+/* Handle the set-switch and set-dimming arguments within the OpenThread CLI */
 void handle_ocf_light_server(int argc, char *argv[])
 {
 	if (strcmp(argv[0], "set-switch") == 0)
@@ -694,108 +948,4 @@ void handle_ocf_light_server(int argc, char *argv[])
 		otCliOutputFormat("Invalid argument!\n\r");
 	}
 	return;
-}
-
-/**
-* main application.
-* intializes the global variables
-* registers and starts the handler
-* handles (in a loop) the next event.
-* shuts down the stack
-*/
-int main(void)
-{
-	int               init;
-	oc_clock_time_t   next_event;
-	u8_t              StartupStatus;
-	struct ca821x_dev dev;
-	cascoda_serial_dispatch = ot_serial_dispatch;
-
-	ca821x_api_init(&dev);
-
-	// Initialisation of Chip and EVBME
-	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
-	PlatformRadioInitWithDev(&dev);
-
-	// OpenThread Configuration
-	OT_INSTANCE = otInstanceInitSingle();
-
-	otIp6SetEnabled(OT_INSTANCE, true);
-
-	otIp6Address address;
-	otIp6AddressFromString("fd00:db8::", &address);
-	otIp6SubscribeMulticastAddress(OT_INSTANCE, &address);
-
-	// Enable the OpenThread CLI and add a custom command.
-	otCliUartInit(OT_INSTANCE);
-	ocfCommand.mCommand = handle_ocf_light_server;
-	ocfCommand.mName    = "ocflight";
-	otCliSetUserCommands(&ocfCommand, 1);
-
-	if (otDatasetIsCommissioned(OT_INSTANCE))
-		otThreadSetEnabled(OT_INSTANCE, true);
-
-	oc_assert(OT_INSTANCE);
-
-#ifdef OC_RETARGET
-	oc_assert(otPlatUartEnable() == OT_ERROR_NONE);
-#endif
-
-	otSetStateChangedCallback(OT_INSTANCE, ot_state_changed, NULL);
-
-	PRINT("Used input file : \"../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json\"\n");
-	PRINT("OCF Server name : \"server_lite_53868\"\n");
-
-	/*intialize the variables */
-	initialize_variables();
-
-	/* initializes the handlers structure */
-	static const oc_handler_t handler = {.init               = app_init,
-	                                     .signal_event_loop  = signal_event_loop,
-	                                     .register_resources = register_resources
-#ifdef OC_CLIENT
-	                                     ,
-	                                     .requests_entry = 0
-#endif
-	};
-
-#ifdef OC_SECURITY
-	PRINT("Intialize Secure Resources\n");
-	oc_storage_config("./devicebuilderserver_creds");
-#endif /* OC_SECURITY */
-
-#ifdef OC_SECURITY
-	/* please comment out if the server:
-    - has no display capabilities to display the PIN value
-    - server does not require to implement RANDOM PIN (oic.sec.doxm.rdp) onboarding mechanism
-  */
-	//oc_set_random_pin_callback(random_pin_cb, NULL);
-#endif /* OC_SECURITY */
-
-	oc_set_factory_presets_cb(factory_presets_cb, NULL);
-
-	/* start the stack */
-	init = oc_main_init(&handler);
-
-	if (init < 0)
-	{
-		PRINT("oc_main_init failed %d, exiting.\n", init);
-		return init;
-	}
-
-	oc_set_max_app_data_size(4096);
-	oc_set_mtu_size(1210);
-
-	PRINT("OCF server \"server_lite_53868\" running, waiting on incoming connections.\n");
-
-	while (1)
-	{
-		cascoda_io_handler(&dev);
-		otTaskletsProcess(OT_INSTANCE);
-		oc_main_poll();
-	}
-
-	/* shut down the stack */
-	oc_main_shutdown();
-	return 0;
 }

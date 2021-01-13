@@ -40,6 +40,7 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
     - [openthread](#openthread)
     - [etc](#etc)
   - [CMake Library Targets](#cmake-library-targets)
+  - [Security information](#security-information)
 
 <!-- /TOC -->
 
@@ -259,3 +260,7 @@ Useful CMake target libraries to include:
 | openthread-ncp-ftd | OpenThread NCP library for FTDs |
 | openthread-ncp-mtd | OpenThread NCP library for MTDs |
 | freertos | The main FreeRTOS code |
+
+## Security information
+
+Information about security vulnerabilities can be found [here](SECURITY.md).

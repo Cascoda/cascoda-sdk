@@ -17,4 +17,4 @@ target_link_libraries(self-test cascoda-bm)
 
 # convert to bin file format
 cascoda_make_binary(self-test)
-cascoda_put_subdir(self-test test)
+cascoda_put_subdir(test self-test)

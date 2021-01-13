@@ -25,6 +25,9 @@
 extern "C" {
 #endif
 
+/* enable flash storage API */
+#define OC_STORAGE
+
 typedef uint64_t oc_clock_time_t;
 /* 1 clock tick = 1ms */
 #define OC_CLOCK_CONF_TICKS_PER_SECOND (1000)
@@ -40,13 +43,18 @@ typedef uint64_t oc_clock_time_t;
 /* Common paramters */
 /* Maximum size of request/response PDUs */
 #ifndef OC_DYNAMIC_ALLOCATION
-#define OC_MAX_APP_DATA_SIZE (4096)
+#define OC_MAX_APP_DATA_SIZE (8192)
 #endif // !OC_DYNAMIC_ALLOCATION
+
+#define OC_INOUT_BUFFER_POOL (1)
+#define OC_INOUT_BUFFER_SIZE (1232)
+
+#define OC_APP_DATA_BUFFER_POOL (1)
+#define OC_APP_DATA_BUFFER_SIZE (8192)
+#define OC_APP_DATA_STORAGE_BUFFER
 
 #define OC_BLOCK_WISE
 #define OC_BLOCK_WISE_SET_MTU (1200)
-
-#define MBEDTLS_SSL_MAX_CONTENT_LEN (OC_PDU_SIZE)
 
 /* Maximum number of concurrent requests */
 #define OC_MAX_NUM_CONCURRENT_REQUESTS (2)

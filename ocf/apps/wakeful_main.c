@@ -21,20 +21,7 @@
 
 #include "ocf_application.h"
 
-otInstance *OT_INSTANCE;
-
-static void signal_event_loop(void)
-{
-}
-
-void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
-{
-	(void)aBuf;
-	(void)aBufLength;
-}
-void otPlatUartSendDone(void)
-{
-}
+static otCliCommand ocfCommand;
 
 /**
  * Handle application specific commands.
@@ -57,79 +44,45 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 	return ret;
 }
 
-static void ot_state_changed(uint32_t flags, void *context)
+static void signal_event_loop(void)
 {
-	(void)context;
-
-	if (flags & OT_CHANGED_THREAD_ROLE)
-	{
-		PRINT("Role: %d\n", otThreadGetDeviceRole(OT_INSTANCE));
-	}
 }
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Checks current device status and goes to sleep if nothing is happening
- *******************************************************************************
- ******************************************************************************/
-static void sleep_if_possible(oc_clock_time_t timeToNextOcfEvent)
-{
-	uint32_t nextOcf = (uint32_t)timeToNextOcfEvent;
-
-	if (timeToNextOcfEvent > 0x7FFFFFFF || !timeToNextOcfEvent)
-		nextOcf = 0x7FFFFFFF;
-
-	if (PlatformCanSleep(OT_INSTANCE))
-	{
-		uint32_t taskletTimeLeft = nextOcf;
-
-		TASKLET_GetTimeToNext(&taskletTimeLeft);
-		if (taskletTimeLeft > nextOcf)
-			taskletTimeLeft = nextOcf;
-
-		if (taskletTimeLeft > 100)
-		{
-			PlatformSleep(taskletTimeLeft);
-		}
-	}
-}
-
+/**
+* main application.
+* intializes the global variables
+* registers and starts the handler
+* handles (in a loop) the next event.
+* shuts down the stack
+*/
 int main(void)
 {
 	int               init;
+	oc_clock_time_t   next_event;
+	u8_t              StartupStatus;
 	struct ca821x_dev dev;
-	otLinkModeConfig  linkMode = {0};
-
 	cascoda_serial_dispatch = ot_serial_dispatch;
 
 	ca821x_api_init(&dev);
 
 	// Initialisation of Chip and EVBME
-	EVBMEInitialise(CA_TARGET_NAME, &dev);
-	BSP_RTCInitialise();
+	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	PlatformRadioInitWithDev(&dev);
 
 	// OpenThread Configuration
 	OT_INSTANCE = otInstanceInitSingle();
 
-	// Print the joiner credentials, delaying for up to 5 seconds
-	PlatformPrintJoinerCredentials(&dev, OT_INSTANCE, 5000);
-	// Try to join network
-	do
-	{
-		otError otErr = PlatformTryJoin(&dev, OT_INSTANCE);
-		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
-			break;
+	otIp6SetEnabled(OT_INSTANCE, true);
 
-		PlatformSleep(30000);
-	} while (1);
+	// Enable the OpenThread CLI and add a custom command.
+	otCliUartInit(OT_INSTANCE);
+	ocfCommand.mCommand = handle_ocf_light_server;
+	ocfCommand.mName    = "ocflight";
+	otCliSetUserCommands(&ocfCommand, 1);
 
-	linkMode.mSecureDataRequests = true;
-	otLinkSetPollPeriod(OT_INSTANCE, 500);
-	otThreadSetLinkMode(OT_INSTANCE, linkMode);
-
-	otThreadSetEnabled(OT_INSTANCE, true);
+	if (otDatasetIsCommissioned(OT_INSTANCE))
+		otThreadSetEnabled(OT_INSTANCE, true);
 
 	oc_assert(OT_INSTANCE);
 
@@ -137,12 +90,9 @@ int main(void)
 	oc_assert(otPlatUartEnable() == OT_ERROR_NONE);
 #endif
 
-	otSetStateChangedCallback(OT_INSTANCE, ot_state_changed, NULL);
-
 	PRINT("Used input file : \"../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json\"\n");
 	PRINT("OCF Server name : \"server_lite_53868\"\n");
 
-	/*intialize the variables */
 	initialize_variables();
 
 	/* initializes the handlers structure */
@@ -162,7 +112,7 @@ int main(void)
 
 #ifdef OC_SECURITY
 	/* please comment out if the server:
-    - have no display capabilities to display the PIN value
+    - has no display capabilities to display the PIN value
     - server does not require to implement RANDOM PIN (oic.sec.doxm.rdp) onboarding mechanism
   */
 	//oc_set_random_pin_callback(random_pin_cb, NULL);
@@ -173,14 +123,13 @@ int main(void)
 	/* start the stack */
 	init = oc_main_init(&handler);
 
+	oc_set_max_app_data_size(CASCODA_MAX_APP_DATA_SIZE);
+	oc_set_mtu_size(1232);
+
 	if (init < 0)
 	{
-		PRINT("oc_main_init failed %d, exiting.\n", init);
-		return init;
+		PRINT("oc_main_init failed %d.\n", init);
 	}
-
-	oc_set_max_app_data_size(CASCODA_MAX_APP_DATA_SIZE);
-	oc_set_mtu_size(800);
 
 	PRINT("OCF server \"server_lite_53868\" running, waiting on incoming connections.\n");
 
@@ -188,10 +137,10 @@ int main(void)
 	{
 		cascoda_io_handler(&dev);
 		otTaskletsProcess(OT_INSTANCE);
-		sleep_if_possible(oc_main_poll());
+		oc_main_poll();
 	}
 
-	/* shut down the stack */
+	/* shut down the stack, should not get here */
 	oc_main_shutdown();
 	return 0;
 }

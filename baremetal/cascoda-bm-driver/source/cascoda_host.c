@@ -34,6 +34,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <sys/time.h>
 #include <time.h>
 
 #ifdef __NEWLIB__
@@ -193,10 +194,25 @@ int _getpid(void)
 {
 	return -1;
 }
+
+int _gettimeofday(struct timeval *tp, void *tzp)
+{
+	(void)tzp;
+	if (tp)
+	{
+		struct RTCDateAndTime dt;
+		BSP_RTCGetDateAndTime(&dt);
+		tp->tv_sec  = BSP_RTCConvertDateAndTimeToSeconds(&dt);
+		tp->tv_usec = 0;
+	}
+
+	return 0;
+}
+
 #else
 int fputc(int c, void *stream)
 {
 	(void)stream;
 	return putchar(c);
 }
-#endif
+#endif // defined(__NEWLIB__)

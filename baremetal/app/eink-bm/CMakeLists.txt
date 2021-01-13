@@ -21,4 +21,4 @@ target_link_libraries(eink-test test15-4 cascoda-bm sensorif)
 
 # convert to bin file format
 cascoda_make_binary(eink-test)
-cascoda_put_subdir(eink-test test)
+cascoda_put_subdir(test eink-test)

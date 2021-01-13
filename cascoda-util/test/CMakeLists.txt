@@ -18,4 +18,4 @@ add_cmocka_test(tasklet_test
 		cascoda-util
 	)
 
-cascoda_put_subdir(tasklet_test test)
+cascoda_put_subdir(test tasklet_test)

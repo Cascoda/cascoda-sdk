@@ -26,10 +26,12 @@ target_link_libraries(stress-test ca821x-posix)
 target_link_libraries(security-test ca821x-posix)
 target_link_libraries(serial-test ca821x-posix m)
 
-cascoda_put_subdir(rand-test test)
-cascoda_put_subdir(stress-test test)
-cascoda_put_subdir(security-test test)
-cascoda_put_subdir(serial-test test)
+cascoda_put_subdir(test
+	rand-test
+	stress-test
+	security-test
+	serial-test
+)
 
 install(
 	TARGETS

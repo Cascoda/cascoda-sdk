@@ -30,7 +30,7 @@ include(FetchContent)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG 10478ff9c00503d8e0fb2c9ff2d5ea0c359a8006)
+	set(OT_TAG ad187c5dece679278f9b156d4fc59c8d158d1e08)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
@@ -44,6 +44,23 @@ FetchContent_Declare(
   GIT_TAG        ${OT_TAG}
 )
 
+if(CASCODA_OPENTHREAD_FTD)
+	option(OT_BORDER_AGENT "enable border agent support" ON)
+	option(OT_BORDER_ROUTER "enable border router support" ON)
+	option(OT_COMMISSIONER "enable commissioner support" ON)
+	option(OT_JOINER "enable joiner support" ON)
+	option(OT_SERVICE "enable support for injecting Service entries into the Thread Network Data" ON)
+	option(OT_DHCP6_SERVER "enable DHCP6 server support" ON)
+	option(OT_MAC_FILTER "enable mac filter support" ON)
+	option(OT_UDP_FORWARD "enable UDP forward support" ON)
+	option(OT_SNTP_CLIENT "enable SNTP Client support" ON)
+	option(OT_DNS_CLIENT "enable DNS client support" ON)
+endif()
+
+option(OT_SLAAC "enable support for adding of auto-configured SLAAC addresses by OpenThread" ON)
+option(OT_COAP "enable coap api support" ON)
+option(OT_DHCP6_CLIENT "enable DHCP6 client support" ON)
+
 # Pre add-subdirectory config for openthread
 set(OPENTHREAD_USE_EXTERN_MAC ON)
 list(APPEND OT_PLATFORM_DEFINES
@@ -52,10 +69,6 @@ list(APPEND OT_PLATFORM_DEFINES
 	"OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_${CASCODA_LOG_LEVEL}"
 	"OPENTHREAD_CONFIG_PLATFORM_INFO=\"cascoda-sdk\""
 	"OPENTHREAD_CONFIG_NCP_TX_BUFFER_SIZE=4096"
-	"OPENTHREAD_CONFIG_NCP_UART_ENABLE=1"
-	"OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1"
-	"OPENTHREAD_CONFIG_COAP_API_ENABLE=1"
-	"OPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1"
 	"OPENTHREAD_CONFIG_NUM_MESSAGE_BUFFERS=${CASCODA_OPENTHREAD_MESSAGE_BUFS}"
 )
 
@@ -66,16 +79,6 @@ endif()
 
 if(CASCODA_OPENTHREAD_FTD)
 	list(APPEND OT_PLATFORM_DEFINES
-		"OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE=1"
-		"OPENTHREAD_CONFIG_BORDER_AGENT_ENABLE=1"
-		"OPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1"
-		"OPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
-		"OPENTHREAD_CONFIG_JOINER_ENABLE=1"
-		"OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE=1"
-		"OPENTHREAD_CONFIG_NCP_UART_ENABLE=1"
-		"OPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1"
-		"OPENTHREAD_CONFIG_MAC_FILTER_ENABLE=1"
-		"OPENTHREAD_CONFIG_UDP_FORWARD_ENABLE=1"
 		"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=7"
 	)
 endif()
@@ -138,3 +141,6 @@ if(${OT_BUILTIN_MBEDTLS})
 		)
 	endif()
 endif()
+
+# utils ----------------------------------------------------------
+add_subdirectory(ca-ot-util)

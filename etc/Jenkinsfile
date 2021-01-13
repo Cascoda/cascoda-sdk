@@ -10,7 +10,7 @@ pipeline {
 		SRC_DIR = "${WORKSPACE}/repo"
 		REPO_DIR = "${JENKINS_HOME}/repos"
 		OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
-		IOTIVITY_REPO = "${REPO_DIR}/iotivity-lite.git"
+		IOTIVITY_REPO = "${REPO_DIR}/ca-iotivity-lite.git"
 	}
 
 	stages {
@@ -41,7 +41,7 @@ pipeline {
 						else {
 							sh(
 								label: 'clone openthread',
-								script: 'git -C "${REPO_DIR}" clone https://github.com/Cascoda/openthread.git --mirror'
+								script: 'git -C "${REPO_DIR}" clone --mirror https://github.com/Cascoda/openthread.git '
 							)
 						}
 
@@ -55,7 +55,7 @@ pipeline {
 						else {
 							sh(
 								label: 'clone iotivity',
-								script: 'git -C "${REPO_DIR}" clone https://github.com/iotivity/iotivity-lite.git --mirror'
+								script: 'git -C "${REPO_DIR}" clone --mirror https://github.com/Cascoda/iotivity-lite.git ca-iotivity-lite.git'
 							)
 						}
 					}
@@ -147,7 +147,7 @@ pipeline {
 					steps {
 						/* Build and test for CA8210 */
 						cmake_build_helper(
-							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_BUILD_DUMMY=OFF -DCASCODA_USE_CLANG_TIDY=ON -DCASCODA_MAC_BLACKLIST=5'
+							cmakeArgs: '-DCASCODA_CA_VER=8210 -DCASCODA_BUILD_DUMMY=OFF -DCASCODA_USE_CLANG_TIDY=ON -DCASCODA_MAC_BLACKLIST=10'
 						)
 						ctest_helper()
 
@@ -156,11 +156,11 @@ pipeline {
 						ctest_helper()
 
 						/* Build for CA8211 */
-						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_LOG_LEVEL=DEBG -DCASCODA_BUILD_DUMMY=OFF')
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_LOG_LEVEL=DEBG')
 						ctest_helper()
 
-						/* Follow up with dummy baremetal for further tests */
-						cmake_build_helper(cmakeArgs: '-DCASCODA_BUILD_DUMMY=ON')
+						/* Follow up with dummy off for further tests */
+						cmake_build_helper(cmakeArgs: '-DCASCODA_BUILD_DUMMY=OFF')
 						ctest_helper()
 						
 						/* Build docs */
@@ -198,13 +198,37 @@ pipeline {
 
 						/* Build with Iotivity enabled */
 						cmake_build_helper(
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON -DCASCODA_LOG_LEVEL=CRIT',
 							steps: [[args: '']]
 						)
 					}
 				}
 			}
 		}
+
+		/**
+		 * Run the longer-running tests on posix, but only on master branch.
+		 */
+		stage('Long Tests') {
+			when {
+				branch(
+					pattern: "master",
+					comparator: "REGEXP"
+				)
+			}
+			environment {
+				BUILD_DIR = 'build-posix'
+			}
+			steps {
+				lock('long-test-lock') {
+					cmake_build_helper(
+						cmakeArgs: '',
+						steps: [[args: 'longtest']]
+					)
+				}
+			}
+		}
+
 
 		/** PostBuild Stage
 		 *  Process the generated artifacts.

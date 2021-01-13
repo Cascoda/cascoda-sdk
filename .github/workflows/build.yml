@@ -57,11 +57,21 @@ jobs:
     - name: configure chili build on windows
       run: |
         arm-none-eabi-gcc --version
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -DCASCODA_BUILD_OCF=ON -G "MinGW Makefiles"
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles"
 
     - name: build chili binaries on windows
       run: |
         mingw32-make.exe -C ${{ github.workspace }}\build-chili2-win -j4
+
+    - name: configure OCF chili build on windows
+      run: |
+        arm-none-eabi-gcc --version
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-ocf-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_OCF=ON -DCASCODA_LOG_LEVEL=CRIT
+
+    - name: build OCF chili binaries on windows
+      run: |
+        mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4 ocf-cli-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
+
 
   # Build artifacts for macos - for build testing only, no artifacts
   macos:
@@ -148,7 +158,7 @@ jobs:
     - name: build Chili2D-USB-OCF
       run: |
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON
-        make -C ${{ github.workspace }}/build-chili2 -j4
+        make -C ${{ github.workspace }}/build-chili2 -j4 ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
         cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-usb
 
     - name: Upload Chili2S-UART0-1Mbaud

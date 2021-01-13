@@ -1,0 +1,1 @@
+add_subdirectory(longtest_test)

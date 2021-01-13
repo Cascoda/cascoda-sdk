@@ -346,14 +346,11 @@ void otPlatSettingsDeinit(otInstance *aInstance)
 	OT_UNUSED_VARIABLE(aInstance);
 }
 
-otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
+static otError getRelativeAddress(uint16_t aKey, int aIndex, uint32_t *aAddress, uint16_t *aValueLength)
 {
-	otError  error       = OT_ERROR_NOT_FOUND;
-	uint32_t address     = sSettingsBaseAddress + kSettingsFlagSize;
-	uint16_t valueLength = 0;
-	int      index       = 0;
-
-	(void)aInstance;
+	otError  error   = OT_ERROR_NOT_FOUND;
+	uint32_t address = sSettingsBaseAddress + kSettingsFlagSize;
+	int      index   = 0;
 
 	while (address < (sSettingsBaseAddress + sSettingsUsedSize))
 	{
@@ -372,36 +369,66 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
 			{
 				if (index == aIndex)
 				{
-					uint16_t readLength = block.length;
-
-					// only perform read if an input buffer was passed in
-					if (aValue != NULL && aValueLength != NULL)
-					{
-						// adjust read length if input buffer length is smaller
-						if (readLength > *aValueLength)
-						{
-							readLength = *aValueLength;
-						}
-
-						utilsFlashRead(address + sizeof(struct settingsBlock), aValue, readLength);
-					}
-
-					valueLength = readLength;
-					error       = OT_ERROR_NONE;
+					*aAddress     = address + sizeof(struct settingsBlock);
+					*aValueLength = block.length;
+					return OT_ERROR_NONE;
 				}
 
 				index++;
 			}
 		}
-
 		address += (getAlignLength(block.length) + sizeof(struct settingsBlock));
+	}
+	return error;
+}
+
+otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
+{
+	otError  error;
+	uint32_t address;
+	uint16_t readLength;
+
+	(void)aInstance;
+
+	error = getRelativeAddress(aKey, aIndex, &address, &readLength);
+	if (error)
+		goto exit;
+
+	// only copy data if an input buffer was passed in
+	if (aValue != NULL && aValueLength != NULL)
+	{
+		// adjust read length if input buffer length is smaller
+		if (readLength > *aValueLength)
+		{
+			readLength = *aValueLength;
+		}
+
+		utilsFlashRead(address, aValue, readLength);
 	}
 
 	if (aValueLength != NULL)
 	{
-		*aValueLength = valueLength;
+		*aValueLength = readLength;
 	}
 
+exit:
+	return error;
+}
+
+otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint16_t *aValueLength)
+{
+	uint32_t         relative_address;
+	struct FlashInfo flash_info;
+	otError          error;
+
+	BSP_GetFlashInfo(&flash_info);
+
+	error = getRelativeAddress(aKey, aIndex, &relative_address, aValueLength);
+	if (error)
+		goto exit;
+
+	*aValue = (void *)(intptr_t)(relative_address + flash_info.dataFlashBaseAddr);
+exit:
 	return error;
 }
 

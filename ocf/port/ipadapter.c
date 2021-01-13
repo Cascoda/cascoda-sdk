@@ -217,12 +217,14 @@ int oc_send_buffer(oc_message_t *message)
 	if (!ot_message)
 	{
 		OC_ERR("No more buffer to send");
+		otMessageFree(ot_message);
 		return -1;
 	}
 
 	if (otMessageAppend(ot_message, message->data, message->length) != OT_ERROR_NONE)
 	{
 		OC_ERR("Can't append message");
+		otMessageFree(ot_message);
 		return -1;
 	}
 
@@ -247,6 +249,7 @@ int oc_send_buffer(oc_message_t *message)
 	if (otUdpSend(socket, ot_message, &message_info) != OT_ERROR_NONE)
 	{
 		OC_ERR("Can't send message");
+		otMessageFree(ot_message);
 		return -1;
 	}
 	return message->length;
@@ -266,15 +269,6 @@ int subscribe_mcast(void)
 	// Can't subscribe mcast address
 	assert(error == OT_ERROR_NONE);
 
-	// Link-local address
-	error = otIp6AddressFromString("ff02::158", &maddr);
-	// Can't convert mcast address
-	assert(error == OT_ERROR_NONE);
-
-	error = otIp6SubscribeMulticastAddress(OT_INSTANCE, &maddr);
-	// Can't subscribe mcast address
-	assert(error == OT_ERROR_NONE);
-
 	// Realm-local address
 	error = otIp6AddressFromString("ff03::158", &maddr);
 	// Can't convert mcast address
@@ -283,6 +277,18 @@ int subscribe_mcast(void)
 	error = otIp6SubscribeMulticastAddress(OT_INSTANCE, &maddr);
 	// Can't subscribe mcast address
 	assert(error == OT_ERROR_NONE);
+
+	// Link-local address
+	error = otIp6AddressFromString("ff02::158", &maddr);
+	// Can't convert mcast address
+	assert(error == OT_ERROR_NONE);
+
+	error = otIp6SubscribeMulticastAddress(OT_INSTANCE, &maddr);
+	// Can't subscribe mcast address
+	if (error != OT_ERROR_NONE)
+	{
+		OC_WRN("Could not subscribe to link local multicast address!");
+	}
 
 	return 0;
 }
