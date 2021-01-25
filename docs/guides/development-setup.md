@@ -49,12 +49,14 @@ Also optionally download the [plantuml jar](https://plantuml.com/download)
 ## Windows
 
 Install:
-- [git](https://gitforwindows.org/)
+- [git](https://gitforwindows.org/) (Add git to PATH when prompted)
 - [CMake](https://cmake.org/download/)
 - [mingw-w64](https://sourceforge.net/projects/mingw-w64/)
 - [arm-none-eabi-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
 
-Make sure the mingw ``bin`` directory and the arm-none-eabi-gcc ``bin`` directory are added to your PATH environment variable. To do this, take note of the installation directory during the install process. Then after installation:
+Note that if git was installed without adding to the PATH, then the build system will not be able to detect the version and will display 'unknown'. Add the git `cmd` directory to PATH using the same method as below to solve this.
+
+Make sure the mingw ``bin`` directory and the arm-none-eabi-gcc ``bin`` directory are added to your PATH environment variable. To add to path, take note of the installation directory during the install process. Then after installation:
 
 1. Open the start menu and search for 'path'
 2. Click on 'Edit the system environment variables'
