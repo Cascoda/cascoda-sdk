@@ -1,6 +1,7 @@
 .vscode
 .cproject
 .project
+.idea/
 .settings/
 /build/
 /Debug/

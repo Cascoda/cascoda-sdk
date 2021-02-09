@@ -30,7 +30,7 @@ include(FetchContent)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG ad187c5dece679278f9b156d4fc59c8d158d1e08)
+	set(OT_TAG 55cdf863d0d4c9af39351ca1b050a505a625dac3)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
@@ -101,14 +101,22 @@ target_include_directories(openthread-plat-api
 		${openthread_BINARY_DIR}/etc/cmake
 )
 
+target_compile_definitions(mbedcrypto PUBLIC MBEDTLS_USER_CONFIG_FILE="mbedtls_user_config.h")
+target_include_directories(mbedcrypto PUBLIC ${PROJECT_SOURCE_DIR}/mbedtls-user-config)
+
+if(CASCODA_BUILD_SECURE_LWM2M)
+	target_compile_definitions(mbedcrypto PUBLIC CASCODA_BUILD_SECURE_LWM2M)
+endif()
+if(CASCODA_BUILD_LWIP)
+	target_compile_definitions(mbedcrypto PUBLIC CASCODA_BUILD_LWIP)
+endif()
+
 if(${OT_BUILTIN_MBEDTLS})
 	target_include_directories(mbedcrypto
 		INTERFACE
-				${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include
-				${openthread_SOURCE_DIR}/third_party/mbedtls
+			${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include
+			${openthread_SOURCE_DIR}/third_party/mbedtls
 	)
-elseif()
-	set(MBEDTLS_DEFINITIONS "${MBEDTLS_DEFINITIONS} ${MBEDTLS_INCLUDES}")
 endif()
 
 target_link_libraries(openthread-cli-ftd PUBLIC openthread-ftd-obj)
@@ -132,14 +140,6 @@ if(${OT_BUILTIN_MBEDTLS})
 		PUBLIC
 			MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\"
 	)
-	if(CASCODA_BUILD_LWIP)
-		target_compile_definitions(mbedcrypto
-			PUBLIC
-				MBEDTLS_OID_C
-				MBEDTLS_X509_USE_C
-				MBEDTLS_X509_CRT_PARSE_C
-		)
-	endif()
 endif()
 
 # utils ----------------------------------------------------------

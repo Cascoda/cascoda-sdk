@@ -78,10 +78,12 @@ struct dnsServer
  */
 struct dns_context
 {
-	dns_index    server;  //!< Index of the DNS server used
-	void *       context; //!< User context to be provided to the callback
-	dns_callback callback;
-	char         hostname[]; //!< Variable length hostname
+	dns_index    server;      //!< Index of the DNS server used
+	void *       context;     //!< User context to be provided to the callback
+	otInstance * instance;    //!< Openthread instance
+	dns_callback callback;    //!< User callback to call upon completion
+	uint8_t      retry_count; //!< Number of retries left to attempt
+	char         hostname[];  //!< Variable length hostname
 };
 
 static struct dnsServer dns_servers[DNS_SERVER_COUNT];
@@ -181,8 +183,17 @@ static void dns_handle_response(void *              aContext,
 	else if (aResult == OT_ERROR_RESPONSE_TIMEOUT)
 	{
 		dns_register_timeout(context->server);
-		//TODO: Consider auto-retrying with a new server upon timeout
-		context->callback(CA_ERROR_TIMEOUT, NULL, context->server, context->context);
+		if (context->retry_count)
+		{
+			//Retry with new server
+			context->retry_count--;
+			dns_query_next_server(context->instance, context);
+			return;
+		}
+		else
+		{
+			context->callback(CA_ERROR_TIMEOUT, NULL, context->server, context->context);
+		}
 	}
 	else
 	{
@@ -358,8 +369,10 @@ ca_error DNS_HostToIpv6(otInstance *aInstance, char *host, dns_callback aCallbac
 			goto exit;
 		}
 		memcpy(context->hostname, host, hostlen);
-		context->context  = aContext;
-		context->callback = aCallback;
+		context->context     = aContext;
+		context->callback    = aCallback;
+		context->instance    = aInstance;
+		context->retry_count = DNS_SERVER_COUNT - 1;
 
 		error = dns_query_next_server(aInstance, context);
 

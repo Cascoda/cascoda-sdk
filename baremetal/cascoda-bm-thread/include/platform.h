@@ -61,6 +61,13 @@ enum openthread_message_codes
 	OT_SERIAL_UPLINK   = 0xB3,
 };
 
+/** Data structure for vectored I/O using otPlatSettingsAddVector */
+struct settingBuffer
+{
+	const uint8_t *value;  //!< Pointer to the data to write to settings
+	uint16_t       length; //!< Length of the data to write to settings
+};
+
 /** Flash settings key for joiner credential */
 static const uint16_t joiner_credential_key = 0xCA50;
 /** Flash settings key for autostart */
@@ -208,6 +215,35 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance);
  *  @retval OT_ERROR_NOT_IMPLEMENTED  This function is not implemented on this platform.
  */
 otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint16_t *aValueLength);
+
+/** This function adds the value to a setting
+ *  identified by aKey, without replacing any existing
+ *  values.
+ * 
+ *  This function differs from otPlatSettingsAdd in that it
+ *  takes a vector of buffers instead of a single one. Use this
+ *  function if you must write several non-contiguous buffers into a single 
+ *  setting without copying them into contiguous memory first.
+ *
+ *  Note that the underlying implementation is not required
+ *  to maintain the order of the items associated with a
+ *  specific key. The added value may be added to the end,
+ *  the beginning, or even somewhere in the middle. The order
+ *  of any pre-existing values may also change.
+ *
+ *  Calling this function successfully may cause unrelated
+ *  settings with multiple values to be reordered.
+ *
+ * @param[in]  aInstance     The OpenThread instance structure.
+ * @param[in]  aKey          The key associated with the setting to change.
+ * @param[in]  aVector       The array of buffers that will be written to the setting.
+ * @param[in]  aCount        The length of the aVector array.
+ *
+ * @retval OT_ERROR_NONE             The given setting was added or staged to be added.
+ * @retval OT_ERROR_NOT_IMPLEMENTED  This function is not implemented on this platform.
+ * @retval OT_ERROR_NO_BUFS          No space remaining to store the given setting.
+ */
+otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct settingBuffer *aVector, size_t aCount);
 
 #endif /* CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_ */
 

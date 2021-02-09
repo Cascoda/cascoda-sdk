@@ -225,15 +225,19 @@ exit:
 	return settingsSize - sSettingsUsedSize;
 }
 
-static otError addSetting(otInstance *   aInstance,
-                          uint16_t       aKey,
-                          bool           aIndex0,
-                          const uint8_t *aValue,
-                          uint16_t       aValueLength)
+static otError addSettingVector(otInstance *          aInstance,
+                                uint16_t              aKey,
+                                bool                  aIndex0,
+                                struct settingBuffer *aSetting,
+                                size_t                aSettingCnt)
 {
 	otError              error = OT_ERROR_NONE;
 	struct settingsBlock block;
 	struct FlashInfo     flash_info;
+	uint16_t             total_length = 0;
+
+	for (size_t i = 0; i < aSettingCnt; ++i) total_length += aSetting[i].length;
+
 	BSP_GetFlashInfo(&flash_info);
 	uint32_t settingsSize =
 	    flash_info.numPages > 1 ? flash_info.pageSize * flash_info.numPages / 2 : flash_info.pageSize;
@@ -249,7 +253,7 @@ static otError addSetting(otInstance *   aInstance,
 
 	//Mark this block as in progress and set the length
 	block.flag &= (~kBlockAddBeginFlag);
-	block.length = aValueLength;
+	block.length = total_length;
 
 	// Is there room for the new block?
 	if ((sSettingsUsedSize + getAlignLength(block.length) + sizeof(struct settingsBlock)) >= settingsSize)
@@ -261,7 +265,30 @@ static otError addSetting(otInstance *   aInstance,
 
 	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
 
-	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock), aValue, block.length);
+	uint32_t write_address = sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock);
+	for (size_t i = 0; i < aSettingCnt; ++i)
+	{
+		// buffers for holding padding bytes
+		// initialised to FF because writing FF to a byte in flash does not modify the data stored there
+		uint8_t headpad[sizeof(uint32_t)] = {0xff, 0xff, 0xff, 0xff};
+
+		// the amount of _padding_ bytes within the first word-aligned word of the write data
+		// FF FF 13 37 ...
+		// ~~ ~~       <- these ones
+		uint8_t headcnt = write_address % sizeof(uint32_t);
+
+		memcpy(headpad + headcnt, aSetting[i].value, sizeof(uint32_t) - headcnt);
+
+		// write ahead of your data, in case the start is misaligned & thus word-aligning write_address
+		write_address -= headcnt;
+		utilsFlashWrite(write_address, headpad, sizeof(headpad));
+		write_address += sizeof(headpad);
+		// write what you know is aligned
+		utilsFlashWrite(write_address,
+		                aSetting[i].value + sizeof(uint32_t) - headcnt,
+		                aSetting[i].length - sizeof(uint32_t) + headcnt);
+		write_address += aSetting[i].length - headcnt - sizeof(headpad);
+	}
 
 	block.flag &= (~kBlockAddCompleteFlag);
 	utilsFlashWrite(sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
@@ -435,17 +462,30 @@ exit:
 otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
 	//Add a setting, setting Index0 flag as we want this to overwrite all others.
-	return addSetting(aInstance, aKey, true, aValue, aValueLength);
+	struct settingBuffer setting = {aValue, aValueLength};
+	return addSettingVector(aInstance, aKey, true, &setting, 1);
 }
 
 otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
+	uint16_t             length;
+	bool                 index0;
+	struct settingBuffer setting;
+
+	//Set index0 flag if we don't have any other elements with same key
+	index0         = (otPlatSettingsGet(aInstance, aKey, 0, NULL, &length) == OT_ERROR_NOT_FOUND ? true : false);
+	setting.value  = aValue;
+	setting.length = aValueLength;
+	return addSettingVector(aInstance, aKey, index0, &setting, 1);
+}
+
+otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct settingBuffer *aVector, size_t aCount)
+{
 	uint16_t length;
 	bool     index0;
 
-	//Set index0 flag if we don't have any other elements with same key
 	index0 = (otPlatSettingsGet(aInstance, aKey, 0, NULL, &length) == OT_ERROR_NOT_FOUND ? true : false);
-	return addSetting(aInstance, aKey, index0, aValue, aValueLength);
+	return addSettingVector(aInstance, aKey, index0, aVector, aCount);
 }
 
 otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)

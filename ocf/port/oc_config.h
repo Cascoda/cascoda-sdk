@@ -46,7 +46,7 @@ typedef uint64_t oc_clock_time_t;
 #define OC_MAX_APP_DATA_SIZE (8192)
 #endif // !OC_DYNAMIC_ALLOCATION
 
-#define OC_INOUT_BUFFER_POOL (1)
+#define OC_INOUT_BUFFER_POOL (2)
 #define OC_INOUT_BUFFER_SIZE (1232)
 
 #define OC_APP_DATA_BUFFER_POOL (1)

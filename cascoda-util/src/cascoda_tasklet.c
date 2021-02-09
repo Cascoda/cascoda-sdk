@@ -116,6 +116,15 @@ ca_error TASKLET_GetScheduledTime(ca_tasklet *aTasklet, uint32_t *aTimeAbs)
 	return CA_ERROR_SUCCESS;
 }
 
+ca_error TASKLET_GetScheduledTimeDelta(ca_tasklet *aTasklet, uint32_t *aTimeDelta)
+{
+	if (!TASKLET_IsQueued(aTasklet))
+		return CA_ERROR_INVALID_STATE;
+
+	*aTimeDelta = GetTimeToEvent(TIME_ReadAbsoluteTime(), aTasklet->fireTime);
+	return CA_ERROR_SUCCESS;
+}
+
 ca_error TASKLET_Cancel(ca_tasklet *aTasklet)
 {
 	ca_tasklet * cur   = sTaskletHead;  //Current tasklet being processed

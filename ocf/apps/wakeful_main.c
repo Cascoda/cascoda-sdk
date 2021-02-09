@@ -7,6 +7,7 @@
 #include <platform.h>
 #include "cascoda-util/cascoda_tasklet.h"
 
+#include "ca-ot-util/cascoda_dns.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
@@ -18,6 +19,7 @@
 #include "port/oc_clock.h"
 #include "oc_api.h"
 #include "oc_buffer_settings.h"
+#include "sntp_helper.h"
 
 #include "ocf_application.h"
 
@@ -44,6 +46,21 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 	return ret;
 }
 
+static void ot_state_changed(uint32_t flags, void *context)
+{
+	(void)context;
+
+	if (flags & OT_CHANGED_THREAD_ROLE)
+	{
+		otDeviceRole role = otThreadGetDeviceRole(OT_INSTANCE);
+		PRINT("Role: %d\n", role);
+
+		bool must_update_rtc = (SNTP_GetState() == NO_TIME);
+		if ((role != OT_DEVICE_ROLE_DISABLED && role != OT_DEVICE_ROLE_DETACHED) && must_update_rtc)
+			SNTP_Update();
+	}
+}
+
 static void signal_event_loop(void)
 {
 }
@@ -67,6 +84,7 @@ int main(void)
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
+	BSP_RTCInitialise();
 
 	PlatformRadioInitWithDev(&dev);
 
@@ -86,9 +104,14 @@ int main(void)
 
 	oc_assert(OT_INSTANCE);
 
+	DNS_Init(OT_INSTANCE);
+	SNTP_Init();
+
 #ifdef OC_RETARGET
 	oc_assert(otPlatUartEnable() == OT_ERROR_NONE);
 #endif
+
+	otSetStateChangedCallback(OT_INSTANCE, ot_state_changed, NULL);
 
 	PRINT("Used input file : \"../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json\"\n");
 	PRINT("OCF Server name : \"server_lite_53868\"\n");

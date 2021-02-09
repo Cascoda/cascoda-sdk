@@ -196,9 +196,15 @@ pipeline {
 							steps: [[args: '']]
 						)
 
+						/* Build with secure LWM2M enabled */
+						cmake_build_helper(
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_SECURE_LWM2M=ON -DCASCODA_LOG_LEVEL=CRIT',
+							steps: [[args: '']]
+						)
+
 						/* Build with Iotivity enabled */
 						cmake_build_helper(
-							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON -DCASCODA_LOG_LEVEL=CRIT',
+							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_SECURE_LWM2M=OFF',
 							steps: [[args: '']]
 						)
 					}

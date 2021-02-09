@@ -54,15 +54,6 @@ jobs:
       run: |
         echo "${{ github.workspace }}\gcc-arm-none-eabi-9-2020-q2-update-win32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    - name: configure chili build on windows
-      run: |
-        arm-none-eabi-gcc --version
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles"
-
-    - name: build chili binaries on windows
-      run: |
-        mingw32-make.exe -C ${{ github.workspace }}\build-chili2-win -j4
-
     - name: configure OCF chili build on windows
       run: |
         arm-none-eabi-gcc --version
@@ -70,7 +61,7 @@ jobs:
 
     - name: build OCF chili binaries on windows
       run: |
-        mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4 ocf-cli-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
+        mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4
 
 
   # Build artifacts for macos - for build testing only, no artifacts
@@ -142,7 +133,7 @@ jobs:
     - name: configure Chili2D-USB
       run: |
         arm-none-eabi-gcc --version
-        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_SECURE_LWM2M=ON
         mkdir ${{ github.workspace }}/build-chili2/upload-usb
 
     - name: build Chili2D-USB
@@ -157,7 +148,7 @@ jobs:
 
     - name: build Chili2D-USB-OCF
       run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_SECURE_LWM2M=OFF
         make -C ${{ github.workspace }}/build-chili2 -j4 ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
         cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-usb
 

@@ -18,4 +18,12 @@ add_cmocka_test(tasklet_test
 		cascoda-util
 	)
 
-cascoda_put_subdir(test tasklet_test)
+add_cmocka_test(util_time_test
+	SOURCES
+	${PROJECT_SOURCE_DIR}/util_time_test.c
+	LINK_LIBRARIES
+	${CMOCKA_SHARED_LIBRARY}
+	cascoda-util
+	)
+
+cascoda_put_subdir(test tasklet_test util_time_test)

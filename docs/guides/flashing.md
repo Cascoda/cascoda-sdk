@@ -31,7 +31,7 @@ Hardware Requirements:
 - Connect J-Link to Chili2D via debug adapter
 - Power the Chili2D
 - Connect the J-Link to the the host PC
-- Run the SEGGER J-Link GDB Server
+- Run the SEGGER J-Flash Lite
 - Set the target device (M2351... For Chili2, NANO120... for Chili1)
 - Set the target interface to SWD
 - Click OK
@@ -69,3 +69,5 @@ Hardware Requirements:
 
 <p align="center"><img src="img/icp/main-notz.png" width="50%" align="center"></p>
 
+---
+_Copyright (c) 2021 Cascoda Ltd._

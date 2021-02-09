@@ -18,7 +18,7 @@ struct metadata
 	void * return_addr;
 };
 
-#define MAX_ALLOC_COUNT (30)
+#define MAX_ALLOC_COUNT (1)
 struct metadata allocs[MAX_ALLOC_COUNT];
 
 void print_top_allocs()

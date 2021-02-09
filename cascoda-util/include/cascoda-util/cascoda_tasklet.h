@@ -83,7 +83,7 @@ ca_error TASKLET_Init(ca_tasklet *aTasklet, ca_tasklet_callback aCallback);
 
 /**
  * Schedule a tasklet to be called in the future, by aTimeDelta milliseconds.
- * @param aTasklet A pointer to an initalised ca_tasklet struct
+ * @param aTasklet A pointer to an initialised ca_tasklet struct
  * @param aTimeDelta The number of milliseconds into the future that this tasklet should be called
  * @param aContext A user-defined context pointer which will be passed to the callback. Can be NULL.
  * @return status
@@ -95,7 +95,7 @@ ca_error TASKLET_ScheduleDelta(ca_tasklet *aTasklet, uint32_t aTimeDelta, void *
 
 /**
  * Schedule a tasklet to be called in the future, at aTimeAbs milliseconds.
- * @param aTasklet A pointer to an initalised ca_tasklet struct
+ * @param aTasklet A pointer to an initialised ca_tasklet struct
  * @param aTimeNow The current time used to schedule the event. Used to prevent race condition.
  * @param aTimeAbs The absolute time to schedule this tasklet.
  * @param aContext A user-defined context pointer which will be passed to the callback. Can be NULL.
@@ -108,7 +108,7 @@ ca_error TASKLET_ScheduleAbs(ca_tasklet *aTasklet, uint32_t aTimeNow, uint32_t a
 
 /**
  * Get the time that the tasklet is scheduled to be called
- * @param[in] aTasklet A pointer to an initalised ca_tasklet struct to query
+ * @param[in] aTasklet A pointer to an initialised ca_tasklet struct to query
  * @param[out] aTimeAbs Output parameter which will be filled with the absolute time that the tasklet is scheduled for.
  * @return status
  * @retval CA_ERROR_SUCCESS Tasklet is scheduled to be called at *aTimeAbs ms
@@ -117,8 +117,18 @@ ca_error TASKLET_ScheduleAbs(ca_tasklet *aTasklet, uint32_t aTimeNow, uint32_t a
 ca_error TASKLET_GetScheduledTime(ca_tasklet *aTasklet, uint32_t *aTimeAbs);
 
 /**
+ * Get the time delta until a tasklet is scheduled to be called. aTimeDelta will be set to 0 if event is still queued, but is due to happen now or in past.
+ * @param[in] aTasklet     A pointer to an initialised ca_tasklet struct to query
+ * @param[out] aTimeDelta  Output parameter which will be filled with the delta time in ms until tasklet is scheduled.
+ * @return status
+ * @retval CA_ERROR_SUCCESS Tasklet is scheduled to be called in *aTimeDelta ms
+ * @retval CA_ERROR_INVALID_STATE Tasklet is not currently scheduled. aTimeDelta has not been modified.
+ */
+ca_error TASKLET_GetScheduledTimeDelta(ca_tasklet *aTasklet, uint32_t *aTimeDelta);
+
+/**
  * Cancel a scheduled tasklet if it is scheduled.
- * @param aTasklet A pointer to an initalised ca_tasklet struct to cancel
+ * @param aTasklet A pointer to an initialised ca_tasklet struct to cancel
  * @return status
  * @retval CA_ERROR_SUCCESS Tasklet successfully cancelled
  * @retval CA_ERROR_ALREADY Tasklet is not currently scheduled
@@ -127,7 +137,7 @@ ca_error TASKLET_Cancel(ca_tasklet *aTasklet);
 
 /**
  * Query whether a tasklet is currently scheduled.
- * @param aTasklet A pointer to an initalised ca_tasklet struct to query
+ * @param aTasklet A pointer to an initialised ca_tasklet struct to query
  * @return True if the tasklet is scheduled, false if not
  */
 bool TASKLET_IsQueued(ca_tasklet *aTasklet);

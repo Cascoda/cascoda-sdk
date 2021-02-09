@@ -52,17 +52,8 @@ add_subdirectory(ocf)
 add_subdirectory(openthread)
 
 
-# UZLib, used for decompressing gzipped data
-add_subdirectory(third-party/uzlib EXCLUDE_FROM_ALL)
-# qrcodegen, used for building QR codes
-add_subdirectory(third-party/QR-Code-generator EXCLUDE_FROM_ALL)
-# hidapi, needed by the Windows build of ca821x-posix
-add_subdirectory(third-party/hidapi EXCLUDE_FROM_ALL)
-# tinycbor-master, used for CBOR encoding and decoding
-add_subdirectory(third-party/tinycbor-master EXCLUDE_FROM_ALL)
-# lwip, used for providing an expanded IP stack for Thread applications
-add_subdirectory(third-party/lwip EXCLUDE_FROM_ALL)
-
+# Third party
+add_subdirectory(third-party EXCLUDE_FROM_ALL)
 
 # Helper targets, only if Cascoda SDK is the root project ---------------------
 

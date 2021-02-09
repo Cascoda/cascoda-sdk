@@ -21,7 +21,7 @@ target_link_libraries(ocf-cli-light
 target_include_directories(ocf-cli-light BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include_light)
 
 target_compile_definitions(ocf-cli-light PRIVATE NO_MAIN CASCODA_MAX_APP_DATA_SIZE=8192)
-cascoda_configure_memory(ocf-cli-light 0x2600 0x5d00)
+cascoda_configure_memory(ocf-cli-light 0x2600 0x5000)
 cascoda_make_binary(ocf-cli-light)
 
 add_executable(ocf-cli-thermometer
@@ -53,7 +53,7 @@ target_link_libraries(ocf-sleepy-thermometer
 
 target_include_directories(ocf-sleepy-thermometer BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include_thermometer)
 
-cascoda_configure_memory(ocf-sleepy-thermometer 0x2600 0x6200)
+cascoda_configure_memory(ocf-sleepy-thermometer 0x2600 0x5000)
 target_compile_definitions(ocf-sleepy-thermometer PRIVATE CASCODA_MAX_APP_DATA_SIZE=8192)
 cascoda_make_binary(ocf-sleepy-thermometer)
 
@@ -88,7 +88,7 @@ target_link_libraries(ocf-sensorif
 
 target_include_directories(ocf-sensorif BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include_sensorif)
 
-cascoda_configure_memory(ocf-sensorif 0x2600 0x5d00)
+cascoda_configure_memory(ocf-sensorif 0x2600 0x5000)
 target_compile_definitions(ocf-sensorif PRIVATE CASCODA_MAX_APP_DATA_SIZE=8192)
 cascoda_make_binary(ocf-sensorif)
 
@@ -131,14 +131,6 @@ if(CASCODA_BUILD_OCF_DEV)
 
     target_compile_definitions(ocf-cli-pki-light PRIVATE NO_MAIN CASCODA_MAX_APP_DATA_SIZE=8192)
 
-    target_link_options(ocf-cli-pki-light
-        PRIVATE
-            LINKER:--wrap=malloc
-            LINKER:--wrap=calloc
-            LINKER:--wrap=free
-            LINKER:--wrap=mbedtls_calloc
-    )
-
-    cascoda_configure_memory(ocf-cli-pki-light 0x2600 0x7200)
+    cascoda_configure_memory(ocf-cli-pki-light 0x2600 0x8000)
     cascoda_make_binary(ocf-cli-pki-light)
 endif()

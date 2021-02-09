@@ -76,6 +76,7 @@ add_library(ca821x-openthread-bm-ftd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-ftd-obj>
 	$<TARGET_OBJECTS:ca-ot-util>
+	${PROJECT_SOURCE_DIR}/platform/sntp_helper.c
 )
 target_link_libraries(ca821x-openthread-bm-ftd
 	PUBLIC
@@ -88,6 +89,7 @@ add_library(ca821x-openthread-bm-mtd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-mtd-obj>
 	$<TARGET_OBJECTS:ca-ot-util>
+	${PROJECT_SOURCE_DIR}/platform/sntp_helper.c
 )
 target_link_libraries(ca821x-openthread-bm-mtd
 	PUBLIC
@@ -95,6 +97,11 @@ target_link_libraries(ca821x-openthread-bm-mtd
 		openthread-mtd-obj
 		ca821x-openthread-bm-plat
 	)
+
+# NTP server used by platform/sntp_helper.c
+set(CASCODA_NTP_SERVER "pool.ntp.org" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
+target_compile_definitions(ca821x-openthread-bm-ftd PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
+target_compile_definitions(ca821x-openthread-bm-mtd PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
 
 # Test app config -------------------------------------------------------------
 if(CASCODA_OPENTHREAD_FTD)

@@ -342,6 +342,9 @@ static void multi_init(ca_tasklet *testTasklet,
 	status = TASKLET_GetTimeToNext(&timeDelta);
 	assert_int_equal(status, CA_ERROR_SUCCESS);
 	assert_int_equal(timeDelta, 10);
+	status = TASKLET_GetScheduledTimeDelta(testTasklet2, &timeDelta);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+	assert_int_equal(timeDelta, 10);
 
 	//Schedule another tasklet for beforehand
 	status = TASKLET_ScheduleAbs(testTasklet, 0, 5, contextPtr);
@@ -536,6 +539,48 @@ static void past_test(void **state)
 	assert_int_equal(TASKLET_Process(), CA_ERROR_SUCCESS);
 }
 
+static void get_scheduled_delta_test(void **state)
+{
+	ca_error   status;
+	ca_tasklet testTasklet;
+	uint32_t   contextPtr = 54321;
+	uint32_t   timeDelta  = 0;
+
+	status = TASKLET_Init(&testTasklet, &verify_callback);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+
+	status = TASKLET_ScheduleDelta(&testTasklet, 10, &contextPtr);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+	assert_true(TASKLET_IsQueued(&testTasklet));
+	status = TASKLET_GetScheduledTimeDelta(&testTasklet, &timeDelta);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+	assert_int_equal(10, timeDelta);
+
+	FastForward(5);
+
+	//Assert that delta time is still correct after time passes
+	status = TASKLET_GetScheduledTimeDelta(&testTasklet, &timeDelta);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+	assert_int_equal(5, timeDelta);
+
+	FastForward(10);
+
+	//Assert that delta time is zero when tasklet should have happened in the past
+	status = TASKLET_GetScheduledTimeDelta(&testTasklet, &timeDelta);
+	assert_int_equal(status, CA_ERROR_SUCCESS);
+	assert_int_equal(0, timeDelta);
+
+	//Cause tasklet to be triggered
+	expect_value(verify_callback, *checkval, contextPtr);
+	assert_int_equal(TASKLET_Process(), CA_ERROR_SUCCESS);
+
+	//Assert that delta time is not modified when tasklet is not scheduled, and returns error
+	timeDelta = 12345;
+	status    = TASKLET_GetScheduledTimeDelta(&testTasklet, &timeDelta);
+	assert_int_equal(status, CA_ERROR_INVALID_STATE);
+	assert_int_equal(12345, timeDelta);
+}
+
 int main(void)
 {
 	const struct CMUnitTest tests[] = {cmocka_unit_test_setup(delta_test, testSetup),
@@ -547,7 +592,8 @@ int main(void)
 	                                   cmocka_unit_test_setup(multicancel_test, testSetup),
 	                                   cmocka_unit_test_setup(future_test, testSetup),
 	                                   cmocka_unit_test_setup(reschedule_test, testSetup),
-	                                   cmocka_unit_test_setup(past_test, testSetup)};
+	                                   cmocka_unit_test_setup(past_test, testSetup),
+	                                   cmocka_unit_test_setup(get_scheduled_delta_test, testSetup)};
 
 	//Any global init here
 

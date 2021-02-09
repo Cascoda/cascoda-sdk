@@ -9,5 +9,5 @@ target_include_directories(mbedcrypto-plat
 
 target_compile_definitions(mbedcrypto-plat
 	INTERFACE
-		MBEDTLS_USER_CONFIG_FILE=\"mbedtls_device.h\"
+		MBEDTLS_DEVICE_CONFIG_FILE=\"mbedtls_device.h\"
 )

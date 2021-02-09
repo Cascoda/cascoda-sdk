@@ -26,11 +26,7 @@
 
 #ifdef OC_SECURITY
 
-#define OC_STORAGE_CBOR_OVERHEAD (5)
-
 extern otInstance *OT_INSTANCE;
-
-static uint8_t write_buffer[8192];
 
 int oc_storage_config(const char *store)
 {
@@ -44,157 +40,79 @@ int oc_storage_config(const char *store)
 
 long oc_storage_read(const char *store, uint8_t *buf, size_t size)
 {
-	// Algorithm overview: iterate through the settings @ 0xe107 (magic number,
-	// looks like IoT and is high so as not to conflict with OpenThread) using
-	// otPlatSettingsGet. At every index you will find an object that looks like
-	// {"super-secure-password": "fas,opc0q-2=91,51"}. Compare `store` with the key
-	// and copy the value to buf.
-
-	// Assumption: the items stored in the settings are always of the format
-	// {"super-secure-password": "fas,opc0q-2=91,51"}.
-
 	OC_DBG("Getting stored data with the key %s...\n", store);
 	void *   read_buffer;
 	uint16_t read_buffer_size;
 
+	// Data structure we are looking for: null-terminated string containing
+	// the name of the "file" we are reading, followed by the data contained
+	// in said file up until read_buffer_size
+
 	for (int i = 0;; ++i)
 	{
-		int        error;
-		CborParser parser;
-		CborValue  key_found;
-		CborValue  value;
-
-		// The initial value of `read_buffer_size` is used by OpenThread as the maximum
-		// size of the buffer to write into.
-
+		int error;
 		error = otPlatSettingsGetAddress(OC_SETTINGS_KEY, i, &read_buffer, &read_buffer_size);
 
-		// No more settings
 		if (error)
 		{
 			OC_DBG("Could not find settings! Final otPlatSettingsGet returns %d\n", error);
 			return -error;
 		}
 
-		// You have the i-th setting - parse it as a CBOR object.
-		error = cbor_parser_init(read_buffer, read_buffer_size, 0, &parser, &key_found);
-
-		// The data is corrupt, or some other part of the code inserted a non-CBOR value
-		// into this key.
-		if (error)
+		if (strcmp(store, (char *)read_buffer) == 0)
 		{
-			OC_DBG("Corrupt data in OCF Storage!");
-			continue;
+			// we have found the key we are looking for, copy and return
+			uint16_t offset   = strlen(store) + 1;
+			uint16_t data_len = read_buffer_size - offset;
+
+			OC_DBG("Data of size %d found!\n", data_len);
+			memcpy(buf, read_buffer + offset, data_len);
+			return data_len;
 		}
-		// Check whether the key matches what the user supplied.
-		error = cbor_value_map_find_value(&key_found, store, &value);
-
-		// The key does not match - try the next setting
-		if (error || !cbor_value_is_valid(&value))
-			continue;
-
-		// Copy the contents to the output buffer
-		OC_DBG("Data of size %d found!\n", read_buffer_size);
-		cbor_value_copy_byte_string(&value, buf, &size, NULL);
-		return size;
 	}
-
 	return -OT_ERROR_NOT_FOUND;
 }
 
 long oc_storage_write(const char *store, uint8_t *buf, size_t size)
 {
-	// Algorithm overview: iterate through the settings @ 0xe107 until you
-	// either find the key or otPlatSettingsGet returns OT_ERROR_NOT_FOUND.
-	// If you found the key, delete that entry and insert the new one.
-	// If you haven't found the key, add it anyways!
-
+	// Write store to appropriate setting (including null terminator), followed by data
 	OC_DBG("Writing data at key %s\n", store);
 	OC_DBG("Name Length: %d", strlen(store));
 	OC_DBG("Data Length: %d", size);
-	otError     error;
-	CborEncoder encoder, mapEncoder;
-	uint16_t    length;
-	void *      read_buffer;
-	size_t      read_buffer_size;
-
-	size_t write_buffer_max_size = strlen(store) + size + OC_STORAGE_CBOR_OVERHEAD;
-
-	if (!read_buffer)
-	{
-		OC_ERR("Could not allocate read buffer!");
-		return -1;
-	}
+	otError  error;
+	void *   read_buffer;
+	uint16_t read_buffer_size;
 
 	for (int i = 0;; ++i)
 	{
-		CborParser parser;
-		CborValue  key_found;
-		CborValue  value;
-		uint16_t   read_buffer_size;
-
-		// The CBOR code is essentialy identical to oc_storage_read, but we act differently
-		// depending on its results.
-
+		// Check whether the file already exists
+		int error;
 		error = otPlatSettingsGetAddress(OC_SETTINGS_KEY, i, &read_buffer, &read_buffer_size);
 
-		// We iterated through all the keys and the key to be added does not match.
-		// Break and add the new setting.
 		if (error)
 		{
 			OC_DBG("Key was not found! Error code %d. Creating new entry...\n", error);
 			break;
 		}
 
-		error = cbor_parser_init(read_buffer, read_buffer_size, 0, &parser, &key_found);
-
-		if (error)
+		if (strcmp(store, (char *)read_buffer) == 0)
 		{
-			continue;
-		}
-		error = cbor_value_map_find_value(&key_found, store, &value);
-
-		// We found the key - delete it and add the new item.
-		if (cbor_value_is_valid(&value))
-		{
+			// We found the key - delete it and add the new item.
 			OC_DBG("Key already exists! Deleting...\n");
 			otPlatSettingsDelete(OT_INSTANCE, OC_SETTINGS_KEY, i);
 			break;
 		}
 	}
 
-	if (write_buffer_max_size > sizeof(write_buffer))
-	{
-		OC_ERR("Stored data too large for write buffer!");
-		return -1;
-	}
-	cbor_encoder_init(&encoder, write_buffer, write_buffer_max_size, 0);
+	// Writing new entry to flash
+	struct settingBuffer buffers[2] = {{store, strlen(store) + 1}, {buf, size}};
 
-	error = cbor_encoder_create_map(&encoder, &mapEncoder, 1);
-	if (error)
-		goto CBOR_ERROR;
-	error = cbor_encode_text_stringz(&mapEncoder, store);
-	if (error)
-		goto CBOR_ERROR;
-	error = cbor_encode_byte_string(&mapEncoder, buf, size);
-	if (error)
-		goto CBOR_ERROR;
-	error = cbor_encoder_close_container(&encoder, &mapEncoder);
-	if (error)
-		goto CBOR_ERROR;
+	error = otPlatSettingsAddVector(OT_INSTANCE, OC_SETTINGS_KEY, buffers, 2);
 
-	length = cbor_encoder_get_buffer_size(&encoder, write_buffer);
-	error  = otPlatSettingsAdd(OT_INSTANCE, OC_SETTINGS_KEY, write_buffer, length);
-
-	OC_DBG("Encoded Length: %d", length);
+	OC_DBG("Encoded Length: %d", size);
 
 	if (error)
 		OC_DBG("Could not add new setting! otPlatSettingsAdd returned %d", error);
-	return error ? -error : length;
-
-CBOR_ERROR:
-	OC_DBG("CBOR encoding error! Error code %d", error);
-	return -error;
+	return error ? -error : size;
 }
-
 #endif /* OC_SECURITY */

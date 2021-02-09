@@ -125,6 +125,7 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-cli-lwip | A demonstration of the Lightweight IP Stack running on top of OpenThread. [More information.](baremetal/app/ot-cli-lwip/README.md)
 | ot-cli-lwip-freertos | Same as above, but taking advantage of the POSIX socket API and FreeRTOS. [More information.](baremetal/app/ot-cli-lwip-freertos/README.md)
 | ot-cli-actuator | Similar to ot-cli, but also has actuator commands. [More information.](baremetal/app/ot-cli-actuator/README.md)
+| ot-cli-lwm2m | Similar to ot-cli, but with LWM2M client support using wakaama. [More information](baremetal/app/ot-cli-lwm2m/README.md)
 
 #### OpenThread Standalone Targets
 
@@ -210,6 +211,8 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 - [OCF New Application guide](docs/guides/create-custom-ocf-applications.md)
 - [Cross-compiling for the Raspberry Pi](docs/guides/cross-compile-for-the-raspberry-pi.md)
 - [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
+- [Border Router Setup Guide](docs/guides/border-router-setup.md)  
+- [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
 
 And also the following reference documents:
 

@@ -46,9 +46,22 @@
 /**
  * Get the number of milliseconds since program start.
  *
- * \returns The number of milliseconds since program start
+ * @returns The number of milliseconds since program start
  */
 uint32_t TIME_ReadAbsoluteTime(void);
+
+/**
+ * Compare the time arguments, including the loop-around nature of the time value.
+ * Note that this function will be inaccurate if there is more than 2^31 milliseconds difference.
+ *
+ * @param aT1 T1
+ * @param aT2 T2
+ *
+ * @retval 0  T1 == T2
+ * @retval 1  T1 > T2
+ * @retval -1 T1 < T2
+ */
+int TIME_Cmp(uint32_t aT1, uint32_t aT2);
 
 #endif /* INCLUDE_CASCODA_BM_CASCODA_TIME_H_ */
 
