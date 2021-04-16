@@ -151,12 +151,7 @@ ca_error Flash::print_help_string(const char *aArg)
 
 ca_error Flash::set_serialno_filter(const char *aArg)
 {
-	if (mSerialArg.GetCallCount() > 1)
-	{
-		fprintf(stderr, "Error: Multiple serialno args not currently supported");
-		return CA_ERROR_INVALID_ARGS;
-	}
-	mDeviceListFilter.SetSerialNo(aArg);
+	mDeviceListFilter.AddSerialNo(aArg);
 	return CA_ERROR_SUCCESS;
 }
 

@@ -390,6 +390,7 @@ static otError getRelativeAddress(uint16_t aKey, int aIndex, uint32_t *aAddress,
 			if (!(block.flag & kBlockIndex0Flag))
 			{
 				index = 0;
+				error = OT_ERROR_NOT_FOUND;
 			}
 
 			if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag))
@@ -398,7 +399,7 @@ static otError getRelativeAddress(uint16_t aKey, int aIndex, uint32_t *aAddress,
 				{
 					*aAddress     = address + sizeof(struct settingsBlock);
 					*aValueLength = block.length;
-					return OT_ERROR_NONE;
+					error         = OT_ERROR_NONE;
 				}
 
 				index++;
@@ -509,6 +510,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 			if (!(block.flag & kBlockIndex0Flag))
 			{
 				index = 0;
+				error = OT_ERROR_NOT_FOUND;
 			}
 
 			//If this block is both completed and not deleted, investigate

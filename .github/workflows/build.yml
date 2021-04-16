@@ -149,7 +149,7 @@ jobs:
     - name: build Chili2D-USB-OCF
       run: |
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_SECURE_LWM2M=OFF
-        make -C ${{ github.workspace }}/build-chili2 -j4 ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
+        make -C ${{ github.workspace }}/build-chili2 -j4 ocf-cli-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
         cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-usb
 
     - name: Upload Chili2S-UART0-1Mbaud

@@ -42,6 +42,7 @@
 #include "common/Args.hpp"
 #include "flash/Flash.hpp"
 #include "list/List.hpp"
+#include "pipe/Pipe.hpp"
 
 static ca::Args                   sArgParser;
 static std::vector<ca::Command *> sCommands;
@@ -130,8 +131,10 @@ int main(int argc, const char *argv[])
 
 	ca::Flash flashCmd{};
 	ca::List  listCmd{};
+	ca::Pipe  pipeCmd{};
 	sCommands.push_back(&listCmd);
 	sCommands.push_back(&flashCmd);
+	sCommands.push_back(&pipeCmd);
 
 	ca821x_util_start_downstream_dispatch_worker();
 

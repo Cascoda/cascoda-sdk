@@ -193,7 +193,7 @@ ca_error Flasher::reboot()
 		return CA_ERROR_SUCCESS;
 
 	dlf.SetAvailable(true);
-	dlf.SetSerialNo(mDeviceInfo.GetSerialNo());
+	dlf.AddSerialNo(mDeviceInfo.GetSerialNo());
 	if (mFlashType == APROM)
 		dlf.SetAppName("DFU");
 
@@ -295,7 +295,7 @@ ca_error Flasher::validate()
 		return CA_ERROR_SUCCESS;
 
 	dlf.SetAvailable(true);
-	dlf.SetSerialNo(mDeviceInfo.GetSerialNo());
+	dlf.AddSerialNo(mDeviceInfo.GetSerialNo());
 	if (mFlashType == DFU)
 		dlf.SetAppName("DFU");
 

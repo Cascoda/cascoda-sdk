@@ -7,6 +7,7 @@ add_executable(chilictl
 	${PROJECT_SOURCE_DIR}/flash/Flash.cpp
 	${PROJECT_SOURCE_DIR}/flash/Flasher.cpp
 	${PROJECT_SOURCE_DIR}/list/List.cpp
+	${PROJECT_SOURCE_DIR}/pipe/Pipe.cpp
 	${PROJECT_SOURCE_DIR}/chilictl.cpp
 	)
 

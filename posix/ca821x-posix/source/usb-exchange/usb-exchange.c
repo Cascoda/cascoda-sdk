@@ -794,20 +794,21 @@ ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext)
 		size_t                pathlen = strlen(hid_cur->path);
 
 		devi.exchange_type = ca821x_exchange_usb;
-		devi.path = devpath = malloc(pathlen + 1);
-		devi.device_name = devname = malloc(buf_size);
-		devi.serialno = serialno = malloc(buf_size);
+		devi.path = devpath = calloc(1, pathlen + 1);
+		devi.device_name = devname = calloc(1, buf_size);
+		devi.serialno = serialno = calloc(1, buf_size);
 		devi.available           = false;
-
-		//Null terminators
-		devpath[pathlen]       = '\0';
-		devname[buf_size - 1]  = '\0';
-		serialno[buf_size - 1] = '\0';
 
 		memcpy(devpath, hid_cur->path, pathlen);
 		//The '-1' below are because wcstombs does not safely null-terminate in case of overflow
-		wcstombs(devname, hid_cur->product_string, buf_size - 1);
-		wcstombs(serialno, hid_cur->serial_number, buf_size - 1);
+		if (hid_cur->product_string)
+		{
+			wcstombs(devname, hid_cur->product_string, buf_size - 1);
+		}
+		if (hid_cur->serial_number)
+		{
+			wcstombs(serialno, hid_cur->serial_number, buf_size - 1);
+		}
 
 		//Seperate the USB product string into app name and device name
 		for (size_t i = 0; i < strlen(devname); i++)

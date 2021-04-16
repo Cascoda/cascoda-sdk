@@ -101,6 +101,8 @@ volatile int quit = 0; /* stop variable, used by handle_signal */
 
 #include "cascoda-bm/cascoda_interface.h"
 
+#include "oc_ri.h"
+
 otInstance *OT_INSTANCE;
 // Pin used by the relay, for the lamp demo
 #define RELAY_OUT_PIN 15
@@ -136,7 +138,7 @@ int app_init(void)
 	ret |= oc_add_device("/oic/d",
 	                     "oic.d.light",
 	                     "Cascoda Light Demo",
-	                     "ocf.2.2.0",                   /* icv value */
+	                     "ocf.2.2.2",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
 	                     NULL);
@@ -554,11 +556,11 @@ void register_resources(void)
 	/* periodic observable
      to be used when one wants to send an event per time slice
      period is 1 second */
-	oc_resource_set_periodic_observable(res_binaryswitch, 1);
+	/* oc_resource_set_periodic_observable(res_binaryswitch, 1); */
 	/* set observable
      events are send when oc_notify_observers(oc_resource_t *resource) is called.
     this function must be called when the value changes, preferable on an interrupt when something is read from the hardware. */
-	/*oc_resource_set_observable(res_binaryswitch, true); */
+	oc_resource_set_observable(res_binaryswitch, true);
 
 	oc_resource_set_request_handler(res_binaryswitch, OC_GET, get_binaryswitch, NULL);
 
@@ -590,11 +592,11 @@ void register_resources(void)
 	/* periodic observable
      to be used when one wants to send an event per time slice
      period is 1 second */
-	oc_resource_set_periodic_observable(res_dimming, 1);
+	/* oc_resource_set_periodic_observable(res_dimming, 1); */
 	/* set observable
      events are send when oc_notify_observers(oc_resource_t *resource) is called.
     this function must be called when the value changes, preferable on an interrupt when something is read from the hardware. */
-	/*oc_resource_set_observable(res_dimming, true); */
+	//oc_resource_set_observable(res_dimming, true);
 
 	oc_resource_set_request_handler(res_dimming, OC_GET, get_dimming, NULL);
 
@@ -923,11 +925,15 @@ void handle_ocf_light_server(int argc, char *argv[])
 		{
 			g_binaryswitch_value = 0;
 			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
+			oc_notify_observers(oc_ri_get_app_resource_by_uri(
+			    g_binaryswitch_RESOURCE_ENDPOINT, strlen(g_binaryswitch_RESOURCE_ENDPOINT), 0));
 		}
 		else if (strcmp(argv[1], "1") == 0)
 		{
 			g_binaryswitch_value = 1;
 			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
+			oc_notify_observers(oc_ri_get_app_resource_by_uri(
+			    g_binaryswitch_RESOURCE_ENDPOINT, strlen(g_binaryswitch_RESOURCE_ENDPOINT), 0));
 		}
 		else
 		{
@@ -938,6 +944,8 @@ void handle_ocf_light_server(int argc, char *argv[])
 	else if (strcmp(argv[0], "set-dimming") == 0)
 	{
 		g_dimming_dimmingSetting = atoi(argv[1]);
+		oc_notify_observers(
+		    oc_ri_get_app_resource_by_uri(g_dimming_RESOURCE_ENDPOINT, strlen(g_dimming_RESOURCE_ENDPOINT), 0));
 	}
 	else if (strcmp(argv[0], "reset") == 0)
 	{

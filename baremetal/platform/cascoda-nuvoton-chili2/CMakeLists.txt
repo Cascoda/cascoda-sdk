@@ -13,8 +13,8 @@ endif()
 
 # Set configuration variables -------------------------------------------------
 cascoda_dropdown(CASCODA_CHILI2_REV
-	"The revision of the chili 2 hardware being used 2.x (2.0 is chili, use -1 for numaker devboard)"
-	0 -1
+	"The revision of the chili 2 hardware being used 2.x (2.0 is chili, use -1 or -2 for numaker devboard)"
+	0 -1 -2
 	)
 
 # Single or double sided config

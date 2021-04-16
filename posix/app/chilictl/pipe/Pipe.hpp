@@ -25,49 +25,49 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-#include <algorithm>
 
-#include "ca821x-posix/ca821x-posix.h"
+#ifndef POSIX_APP_CHILICTL_PIPE_PIPE_HPP_
+#define POSIX_APP_CHILICTL_PIPE_PIPE_HPP_
 
-#include "DeviceList.hpp"
+#include <mutex>
+#include <string>
+
+#include "ca821x_error.h"
+
+#include "common/Args.hpp"
+#include "common/Command.hpp"
+#include "common/DeviceList.hpp"
 
 namespace ca {
 
-bool DeviceListFilter::IsFilterPass(const DeviceInfo &aDeviceInfo) const
+class Pipe : public Command
 {
-	if (mAvailableFilterEnabled)
-	{
-		if (aDeviceInfo.IsAvailable() != mAvailableFilter)
-			return false;
-	}
-	if (!mSerialNoFilter.empty())
-	{
-		if (std::find(mSerialNoFilter.begin(), mSerialNoFilter.end(), aDeviceInfo.GetSerialNo()) ==
-		    mSerialNoFilter.end())
-		{
-			return false;
-		}
-	}
-	if (!mAppNameFilter.empty())
-	{
-		if (aDeviceInfo.GetAppName() != mAppNameFilter)
-			return false;
-	}
-	return true;
-}
+public:
+	Pipe();
 
-void DeviceList::Refresh(const DeviceListFilter &aFilter)
-{
-	mDevices.clear();
-	ca821x_util_enumerate(
-	    [](ca_device_info *aDeviceInfo, void *aContext) {
-		    static_cast<DeviceList *>(aContext)->mDevices.emplace_back(aDeviceInfo);
-	    },
-	    this);
-	mDevices.erase(std::remove_if(mDevices.begin(),
-	                              mDevices.end(),
-	                              [&](const DeviceInfo &di) { return !aFilter.IsFilterPass(di); }),
-	               mDevices.end());
-}
+	/**
+	 * @copydoc Command::Process
+	 */
+	ca_error Process(int argc, const char *argv[]);
+
+private:
+	Args             mArgParser;
+	ArgOpt           mHelpArg;
+	ArgOpt           mSerialArg;
+	ArgOpt           mAnyArg;
+	DeviceList       mDeviceList;
+	DeviceListFilter mDeviceListFilter;
+	std::mutex       mIoMutex;
+
+	ca_error print_help_string(const char *aArg);
+	ca_error set_serialno_filter(const char *aArg);
+
+	static ca_error exchange_callback(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+	ca_error        exchange_callback(const uint8_t *buf, size_t len);
+
+	ca_error run_pipe(const DeviceInfo &di);
+};
 
 } /* namespace ca */
+
+#endif /* POSIX_APP_CHILICTL_PIPE_PIPE_HPP_ */

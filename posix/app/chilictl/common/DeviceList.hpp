@@ -67,10 +67,11 @@ public:
 	void ClearAvailable() { mAvailableFilterEnabled = false; }
 
 	/**
-	 * Set the serial number filter. An empty string means no filter.
+	 * Add serial number to filter. If none are added then there is no filter.
+	 * If multiple are added, then the filter passes if any match.
 	 * @param aSerialNo The desired serial number
 	 */
-	void SetSerialNo(const char *aSerialNo) { mSerialNoFilter = aSerialNo; }
+	void AddSerialNo(const char *aSerialNo) { mSerialNoFilter.push_back(aSerialNo); }
 
 	/**
 	 * Set the app name filter. An empty string means no filter.
@@ -86,9 +87,9 @@ public:
 	bool IsFilterPass(const DeviceInfo &aDeviceInfo) const;
 
 private:
-	bool        mAvailableFilter;
-	std::string mSerialNoFilter;
-	std::string mAppNameFilter;
+	bool                     mAvailableFilter;
+	std::vector<std::string> mSerialNoFilter;
+	std::string              mAppNameFilter;
 
 	bool mAvailableFilterEnabled;
 

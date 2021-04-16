@@ -48,82 +48,10 @@
 OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
 	va_list ap;
-	u8_t *  pLevel = "??? ", *pRegion = "??? ";
+	(void)aLogLevel;
+	(void)aLogRegion;
 
-	switch (aLogLevel)
-	{
-	case OT_LOG_LEVEL_NONE:
-		pLevel = "NONE ";
-		break;
-
-	case OT_LOG_LEVEL_CRIT:
-		pLevel = "CRIT ";
-		break;
-
-	case OT_LOG_LEVEL_WARN:
-		pLevel = "WARN ";
-		break;
-
-	case OT_LOG_LEVEL_INFO:
-		pLevel = "INFO ";
-		break;
-
-	case OT_LOG_LEVEL_DEBG:
-		pLevel = "DEBG ";
-		break;
-	}
-
-	switch (aLogRegion)
-	{
-	case OT_LOG_REGION_API:
-		pRegion = "API  ";
-		break;
-
-	case OT_LOG_REGION_MLE:
-		pRegion = "MLE  ";
-		break;
-
-	case OT_LOG_REGION_ARP:
-		pRegion = "ARP  ";
-		break;
-
-	case OT_LOG_REGION_NET_DATA:
-		pRegion = "NETD ";
-		break;
-
-	case OT_LOG_REGION_IP6:
-		pRegion = "IPV6 ";
-		break;
-
-	case OT_LOG_REGION_ICMP:
-		pRegion = "ICMP ";
-		break;
-
-	case OT_LOG_REGION_MAC:
-		pRegion = "MAC  ";
-		break;
-
-	case OT_LOG_REGION_MEM:
-		pRegion = "MEM  ";
-		break;
-
-	case OT_LOG_REGION_NCP:
-		pRegion = "NCP  ";
-		break;
-
-	case OT_LOG_REGION_MESH_COP:
-		pRegion = "MCOP ";
-		break;
-
-	case OT_LOG_REGION_NET_DIAG:
-		pRegion = "DIAG ";
-		break;
-
-	default:
-		pRegion = "XXXX ";
-		break;
-	}
-	printf("%04dms: %s %s ", TIME_ReadAbsoluteTime(), pLevel, pRegion);
+	printf("%04dms: ", TIME_ReadAbsoluteTime());
 
 	va_start(ap, aFormat);
 	vprintf(aFormat, ap);

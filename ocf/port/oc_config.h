@@ -51,7 +51,14 @@ typedef uint64_t oc_clock_time_t;
 
 #define OC_APP_DATA_BUFFER_POOL (1)
 #define OC_APP_DATA_BUFFER_SIZE (8192)
-#define OC_APP_DATA_STORAGE_BUFFER
+
+// The maximum size of a response to an OBSERVE request, in bytes.
+#define OC_MAX_OBSERVE_SIZE 512
+
+// Deduplicate CoAP messages
+#define OC_REQUEST_HISTORY
+
+//#define OC_APP_DATA_STORAGE_BUFFER
 
 #define OC_BLOCK_WISE
 #define OC_BLOCK_WISE_SET_MTU (1200)

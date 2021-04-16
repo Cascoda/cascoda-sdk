@@ -7,6 +7,12 @@ if(NOT ${CASCODA_BUILD_OCF})
     return()
 endif()
 
+option(CASCODA_BUILD_OCF_DEV "Build in-development OCF targets. These are
+    unsuitable for production and may be incompatible with certain OpenThread
+    configurations" OFF)
+
+mark_as_advanced(CASCODA_BUILD_OCF_DEV)
+
 # Only the Chili 2 has enough memory and flash to run Iotivity
 if(NOT TARGET cascoda-chili2)
 	message(FATAL_ERROR "OCF is currently only supported for the Chili2 target")
@@ -20,7 +26,7 @@ endif()
 FetchContent_Declare(
     iotivitylite
     GIT_REPOSITORY ${CASCODA_IOTIVITY_REPO}
-    GIT_TAG 98382caa10af679489bbf2bf8a3b1fc18544f5c2
+    GIT_TAG 8572d440aea81afbbabb7411b2754d99c45911a9
     PATCH_COMMAND  ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/iotivity-patch.cmake
 )
 
@@ -57,11 +63,12 @@ target_include_directories(mbedcrypto PUBLIC
 target_compile_definitions(mbedcrypto
     PUBLIC
     MBEDTLS_CONFIG_FILE=\"combined_mbedtls_config.h\"
-    PRIVATE
-    OC_PKI
 )
 
 target_link_libraries(mbedcrypto PUBLIC mbedtls)
+if(TARGET mbedcrypto-plat)
+	target_link_libraries(mbedcrypto PUBLIC mbedcrypto-plat)
+endif()
 
 if(OC_DYNAMIC_ALLOCATION_ENABLED)
     target_compile_definitions(mbedcrypto PUBLIC OC_DYNAMIC_ALLOCATION)
@@ -235,15 +242,9 @@ target_link_libraries(iotivity-secure-server PRIVATE iotivity-server)
 target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat)
 target_compile_definitions(iotivity-secure-server PUBLIC OC_SERVER OC_SECURITY)
 
-add_library(iotivity-pki-server)
-target_link_libraries(iotivity-pki-server PRIVATE iotivity-server)
-target_link_libraries(iotivity-pki-server PUBLIC ca821x-openthread-bm-plat)
-target_compile_definitions(iotivity-pki-server PUBLIC OC_SERVER OC_SECURITY OC_PKI)
-
-add_library(iotivity-pki-client)
-target_link_libraries(iotivity-pki-client PRIVATE iotivity-client)
-target_link_libraries(iotivity-pki-client PUBLIC ca821x-openthread-bm-plat)
-target_compile_definitions(iotivity-pki-client PUBLIC OC_CLIENT OC_SECURITY OC_PKI)
+if(CASCODA_BUILD_OCF_DEV)
+    target_compile_definitions(mbedcrypto PUBLIC OC_PKI)
+endif()
 
 # Build instructions for Iotivity-Lite demo apps can be found here
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps)

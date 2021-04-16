@@ -146,7 +146,7 @@ int main(void)
 	/* start the stack */
 	init = oc_main_init(&handler);
 
-	oc_set_max_app_data_size(CASCODA_MAX_APP_DATA_SIZE);
+	oc_set_max_app_data_size(OC_MAX_APP_DATA_SIZE);
 	oc_set_mtu_size(1232);
 
 	if (init < 0)

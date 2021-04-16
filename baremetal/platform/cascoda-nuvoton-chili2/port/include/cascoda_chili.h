@@ -329,10 +329,14 @@ void cascoda_isr_chili_init(void);
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
-#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
+#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 #define SPI SPI1
 #define SPI_MODULE SPI1_MODULE
 #define SPI_NUM 1
+#elif (CASCODA_CHILI2_REV == -2) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#define SPI SPI0
+#define SPI_MODULE SPI0_MODULE
+#define SPI_NUM 0
 #else
 #error "Unsupported Chili 2 Revision"
 #endif /* CASCODA_CHILI2_REV */

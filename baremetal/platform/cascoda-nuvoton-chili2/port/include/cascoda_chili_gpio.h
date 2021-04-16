@@ -74,8 +74,10 @@ typedef enum enPortnum
 #define PMFP_ADC 1
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 #define PMFP_SPI 4
-#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
+#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 #define PMFP_SPI 6
+#elif (CASCODA_CHILI2_REV == -2) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#define PMFP_SPI 5
 #endif /* CASCODA_CHILI2_REV */
 #define PMFP_UART 6
 #define PMFP_X32 10
@@ -124,7 +126,7 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_A
 #define SPI_CS_PIN 3
 #define SPI_CS_PVAL PA3
-#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout */
+#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 /* ZIG_RESET: PC.10 */
 #define ZIG_RESET_PORT PC
 #define ZIG_RESET_PNUM PN_C
@@ -156,6 +158,38 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_H
 #define SPI_CS_PIN 9
 #define SPI_CS_PVAL PH9
+#elif (CASCODA_CHILI2_REV == -2) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+/* ZIG_RESET: PC.10 */
+#define ZIG_RESET_PORT PC
+#define ZIG_RESET_PNUM PN_C
+#define ZIG_RESET_PIN 10
+#define ZIG_RESET_PVAL PC10
+/* ZIG_IRQB: PC.9 */
+#define ZIG_IRQB_PORT PC
+#define ZIG_IRQB_PNUM PN_C
+#define ZIG_IRQB_PIN 9
+#define ZIG_IRQB_PVAL PC9
+#define ZIG_IRQB_IRQn GPC_IRQn
+/* SPI_MOSI: PF.6 */
+#define SPI_MOSI_PORT PF
+#define SPI_MOSI_PNUM PN_F
+#define SPI_MOSI_PIN 6
+#define SPI_MOSI_PVAL PF6
+/* SPI_MISO: PF.7 */
+#define SPI_MISO_PORT PF
+#define SPI_MISO_PNUM PN_F
+#define SPI_MISO_PIN 7
+#define SPI_MISO_PVAL PF7
+/* SPI_SCLK: PF.8 */
+#define SPI_SCLK_PORT PF
+#define SPI_SCLK_PNUM PN_F
+#define SPI_SCLK_PIN 8
+#define SPI_SCLK_PVAL PF8
+/* SPI_CS: PF.9 */
+#define SPI_CS_PORT PF
+#define SPI_CS_PNUM PN_F
+#define SPI_CS_PIN 9
+#define SPI_CS_PVAL PF9
 #endif /* CASCODA_CHILI2_REV */
 /* CHARGE_STAT: PB.0 */
 #define CHARGE_STAT_PORT PB

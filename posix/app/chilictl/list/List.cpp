@@ -147,7 +147,7 @@ ca_error List::set_available(const char *aArg)
 
 ca_error List::set_serialno_filter(const char *aArg)
 {
-	mDeviceListFilter.SetSerialNo(aArg);
+	mDeviceListFilter.AddSerialNo(aArg);
 	return CA_ERROR_SUCCESS;
 }
 

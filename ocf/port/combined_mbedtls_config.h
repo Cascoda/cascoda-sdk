@@ -108,8 +108,7 @@ typedef void mbedtls_ecp_restart_ctx;
 #define MBEDTLS_ERROR_C
 #define MBEDTLS_DEBUG_C
 
-#undef MBEDTLS_SSL_MAX_CONTENT_LEN
-#define MBEDTLS_SSL_MAX_CONTENT_LEN (1811)
+#define MBEDTLS_SSL_MAX_CONTENT_LEN (1820)
 
 #define MBEDTLS_ECDSA_C
 #define MBEDTLS_PK_WRITE_C

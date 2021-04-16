@@ -179,7 +179,7 @@ int main(void)
 		return init;
 	}
 
-	oc_set_max_app_data_size(CASCODA_MAX_APP_DATA_SIZE);
+	oc_set_max_app_data_size(OC_MAX_APP_DATA_SIZE);
 	oc_set_mtu_size(800);
 
 	PRINT("OCF server \"server_lite_53868\" running, waiting on incoming connections.\n");

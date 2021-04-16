@@ -58,6 +58,8 @@ OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const 
 	unsigned int   offset;
 	int            charsWritten;
 	va_list        args;
+	(void)aLogLevel;
+	(void)aLogRegion;
 
 	offset = 0;
 
@@ -65,96 +67,6 @@ OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const 
 	strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
 
 	LOG_PRINTF("%s.%03d ", timeString, (uint32_t)tv.tv_usec / 1000);
-
-	switch (aLogLevel)
-	{
-	case OT_LOG_LEVEL_NONE:
-		LOG_PRINTF("NONE ");
-		break;
-
-	case OT_LOG_LEVEL_CRIT:
-		LOG_PRINTF("CRIT ");
-		break;
-
-	case OT_LOG_LEVEL_WARN:
-		LOG_PRINTF("WARN ");
-		break;
-
-	case OT_LOG_LEVEL_INFO:
-		LOG_PRINTF("INFO ");
-		break;
-
-	case OT_LOG_LEVEL_DEBG:
-		LOG_PRINTF("DEBG ");
-		break;
-	}
-
-	switch (aLogRegion)
-	{
-	case OT_LOG_REGION_API:
-		LOG_PRINTF("API  ");
-		break;
-
-	case OT_LOG_REGION_MLE:
-		LOG_PRINTF("MLE  ");
-		break;
-
-	case OT_LOG_REGION_ARP:
-		LOG_PRINTF("ARP  ");
-		break;
-
-	case OT_LOG_REGION_NET_DATA:
-		LOG_PRINTF("NETD ");
-		break;
-
-	case OT_LOG_REGION_IP6:
-		LOG_PRINTF("IPV6 ");
-		break;
-
-	case OT_LOG_REGION_ICMP:
-		LOG_PRINTF("ICMP ");
-		break;
-
-	case OT_LOG_REGION_MAC:
-		LOG_PRINTF("MAC  ");
-		break;
-
-	case OT_LOG_REGION_MEM:
-		LOG_PRINTF("MEM  ");
-		break;
-
-	case OT_LOG_REGION_NCP:
-		LOG_PRINTF("NCP  ");
-		break;
-
-	case OT_LOG_REGION_COAP:
-		LOG_PRINTF("COAP ");
-		break;
-
-	case OT_LOG_REGION_MESH_COP:
-		LOG_PRINTF("MCOP ");
-		break;
-
-	case OT_LOG_REGION_NET_DIAG:
-		LOG_PRINTF("NDG  ");
-		break;
-
-	case OT_LOG_REGION_CLI:
-		LOG_PRINTF("CLI  ");
-		break;
-
-	case OT_LOG_REGION_PLATFORM:
-		LOG_PRINTF("PLAT ");
-		break;
-
-	case OT_LOG_REGION_CORE:
-		LOG_PRINTF("CORE ");
-		break;
-
-	case OT_LOG_REGION_UTIL:
-		LOG_PRINTF("UTIL ");
-		break;
-	}
 
 	va_start(args, aFormat);
 	charsWritten = vsnprintf(&logString[offset], sizeof(logString) - offset, aFormat, args);

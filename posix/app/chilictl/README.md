@@ -27,6 +27,8 @@ COMMANDS
                 Utility for listing connected chili devices
         flash
                 Utility for flashing new binaries to connected chili devices
+        pipe
+                Utility for piping binary commands to/from a connected chili device
 ```
 
 ## Listing
@@ -131,4 +133,36 @@ Flasher [FBC647CDB300A0DA]: ERASE -> FLASH
 Flasher [FBC647CDB300A0DA]: FLASH -> VERIFY
 Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
 Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
+```
+
+## Piping
+
+The ``pipe`` subcommand can be used to pipe binary data to and from a connected chili device.
+
+### Pipe help page
+
+```bash
+# Check the output of --help for the latest help page
+$ ./chilictl.exe pipe -h
+--- Chili Control: Binary piping Sub-Application ---
+SYNOPSIS
+        chilictl [options] pipe [command options]
+COMMAND OPTIONS
+        -h, --help
+                Print this message to stdout
+        -s <serialno>, --serialno=<serialno>
+                Pipe the device with the given serial number.
+        -a, --any
+                Pick any matching device, rather than throwing error if more than one match.
+```
+
+### Pipe example: MLME Get
+
+The pipe subcommand is intended to be used in a binary pipeline such as a script or host program.
+
+```bash
+# Note: xxd converts between binary and hexadecimal
+$ echo '45020000' | xxd -r -p | ./chilictl.exe pipe -s FBE1D029210B662B | xxd -p
+2021-04-12 19:03:11.661 NOTE:  Host Cascoda SDK v0.16-56-g16333291-dirty Apr 12 2021
+68050000000112
 ```
