@@ -91,6 +91,8 @@ public:
 	 */
 	Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType aFlashType);
 
+	~Flasher();
+
 	/**
 	 * Process the internal state, returning an error if no more processing can be done
 	 * @retval CA_ERROR_SUCCESS       Processing successful, not yet complete

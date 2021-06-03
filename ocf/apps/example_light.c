@@ -101,6 +101,7 @@ volatile int quit = 0; /* stop variable, used by handle_signal */
 
 #include "cascoda-bm/cascoda_interface.h"
 
+#include "oc_core_res.h"
 #include "oc_ri.h"
 
 otInstance *OT_INSTANCE;
@@ -133,12 +134,12 @@ int app_init(void)
 {
 	int ret = oc_init_platform("ocf", NULL, NULL);
 	/* the settings determine the appearance of the device on the network
-     can be ocf.2.2.0 (or even higher)
+     can be ocf.2.2.3 (or even higher)
      supplied values are for OCF1.3.1 */
 	ret |= oc_add_device("/oic/d",
 	                     "oic.d.light",
 	                     "Cascoda Light Demo",
-	                     "ocf.2.2.2",                   /* icv value */
+	                     "ocf.2.2.3",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
 	                     NULL);
@@ -556,11 +557,11 @@ void register_resources(void)
 	/* periodic observable
      to be used when one wants to send an event per time slice
      period is 1 second */
-	/* oc_resource_set_periodic_observable(res_binaryswitch, 1); */
+	oc_resource_set_periodic_observable(res_binaryswitch, 1);
 	/* set observable
      events are send when oc_notify_observers(oc_resource_t *resource) is called.
     this function must be called when the value changes, preferable on an interrupt when something is read from the hardware. */
-	oc_resource_set_observable(res_binaryswitch, true);
+	// oc_resource_set_observable(res_binaryswitch, true);
 
 	oc_resource_set_request_handler(res_binaryswitch, OC_GET, get_binaryswitch, NULL);
 
@@ -610,6 +611,11 @@ void register_resources(void)
 	oc_cloud_add_resource(res_dimming);
 #endif
 	oc_add_resource(res_dimming);
+
+	// Cascoda addition: disable observe on PSTAT resurce to save on peak
+	// memory consumption
+	oc_resource_t *device_resource = oc_core_get_resource_by_index(OCF_SEC_PSTAT, 0);
+	oc_resource_set_observable(device_resource, false);
 }
 
 #ifdef OC_SECURITY
@@ -913,47 +919,3 @@ int main(void)
 	return 0;
 }
 #endif /* NO_MAIN */
-
-/** Cascoda Additions */
-
-/* Handle the set-switch and set-dimming arguments within the OpenThread CLI */
-void handle_ocf_light_server(int argc, char *argv[])
-{
-	if (strcmp(argv[0], "set-switch") == 0)
-	{
-		if (strcmp(argv[1], "0") == 0)
-		{
-			g_binaryswitch_value = 0;
-			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
-			oc_notify_observers(oc_ri_get_app_resource_by_uri(
-			    g_binaryswitch_RESOURCE_ENDPOINT, strlen(g_binaryswitch_RESOURCE_ENDPOINT), 0));
-		}
-		else if (strcmp(argv[1], "1") == 0)
-		{
-			g_binaryswitch_value = 1;
-			BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, g_binaryswitch_value);
-			oc_notify_observers(oc_ri_get_app_resource_by_uri(
-			    g_binaryswitch_RESOURCE_ENDPOINT, strlen(g_binaryswitch_RESOURCE_ENDPOINT), 0));
-		}
-		else
-		{
-			otCliOutputFormat("Invalid argument!\n\r");
-			return;
-		}
-	}
-	else if (strcmp(argv[0], "set-dimming") == 0)
-	{
-		g_dimming_dimmingSetting = atoi(argv[1]);
-		oc_notify_observers(
-		    oc_ri_get_app_resource_by_uri(g_dimming_RESOURCE_ENDPOINT, strlen(g_dimming_RESOURCE_ENDPOINT), 0));
-	}
-	else if (strcmp(argv[0], "reset") == 0)
-	{
-		oc_reset();
-	}
-	else
-	{
-		otCliOutputFormat("Invalid argument!\n\r");
-	}
-	return;
-}

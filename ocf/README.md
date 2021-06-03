@@ -12,14 +12,14 @@ create a custom application,
 The `apps` subdirectory contains a collection of OCF based example
 applications.
 
-`ocf-cli-light` is an OCF light server that can be used to control a lamp.
+`ocf-light` is an OCF light server that can be used to control a lamp.
 Pin 15 is mapped to the value of the `oic.r.switch.binary` resource hosted at
 `/binaryswitch`. The application also presents a `oic.r.light.dimming`
 resource hosted at `/dimming`. This resource does not control anything, it is
 there strictly to help with certification. The application is compiled with
 OCF security enabled, and it can be onboarded using JustWorks.
 
-Besides the standard OpenThread CLI, `ocf-cli-light` also has several custom
+Besides the standard OpenThread CLI, `ocf-light` also has several custom
 commands used to control the application.
 
 - `ocflight set-switch`, followed

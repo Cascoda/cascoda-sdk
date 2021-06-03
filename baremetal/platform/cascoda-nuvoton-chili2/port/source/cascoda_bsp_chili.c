@@ -423,6 +423,7 @@ void BSP_SPIInit(void)
  *---------------------------------------------------------------------------*/
 void BSP_SystemReset(sysreset_mode resetMode)
 {
+	__disable_irq();
 	if (resetMode == SYSRESET_DFU)
 	{
 		CHILI_SetLDROMBoot();
@@ -433,6 +434,7 @@ void BSP_SystemReset(sysreset_mode resetMode)
 	}
 
 	NVIC_SystemReset();
+	__enable_irq(); // Should never be hit
 }
 
 /*---------------------------------------------------------------------------*

@@ -42,6 +42,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_usbhid.h"
+#include "cascoda_chili_config.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_chili_usb.h"
 #include "cascoda_secure.h"
@@ -615,6 +616,9 @@ __NONSECURE_ENTRY uint32_t HardFault_Handler(uint32_t lr, uint32_t msp, uint32_t
 	(void)msp;
 	(void)psp;
 
+#ifdef CASCODA_HF_REBOOT
+	BSP_SystemReset(SYSRESET_APROM);
+#endif
 	while (1)
 		;
 
@@ -623,6 +627,9 @@ __NONSECURE_ENTRY uint32_t HardFault_Handler(uint32_t lr, uint32_t msp, uint32_t
 
 __NONSECURE_ENTRY void ProcessHardFault()
 {
+#ifdef CASCODA_HF_REBOOT
+	BSP_SystemReset(SYSRESET_APROM);
+#endif
 	while (1)
 		;
 }

@@ -32,25 +32,17 @@ typedef uint64_t oc_clock_time_t;
 /* 1 clock tick = 1ms */
 #define OC_CLOCK_CONF_TICKS_PER_SECOND (1000)
 
-#define OC_BYTES_POOL_SIZE (16 * 1024)
-#define OC_INTS_POOL_SIZE (16)
-#define OC_DOUBLES_POOL_SIZE (16)
-
 /* Server-side parameters */
 /* Maximum number of server resources */
 #define OC_MAX_APP_RESOURCES (1)
 
 /* Common paramters */
-/* Maximum size of request/response PDUs */
-#ifndef OC_DYNAMIC_ALLOCATION
-#define OC_MAX_APP_DATA_SIZE (8192)
-#endif // !OC_DYNAMIC_ALLOCATION
 
 #define OC_INOUT_BUFFER_POOL (2)
 #define OC_INOUT_BUFFER_SIZE (1232)
 
 #define OC_APP_DATA_BUFFER_POOL (1)
-#define OC_APP_DATA_BUFFER_SIZE (8192)
+#define OC_APP_DATA_BUFFER_SIZE (7168)
 
 // The maximum size of a response to an OBSERVE request, in bytes.
 #define OC_MAX_OBSERVE_SIZE 512
@@ -63,23 +55,14 @@ typedef uint64_t oc_clock_time_t;
 #define OC_BLOCK_WISE
 #define OC_BLOCK_WISE_SET_MTU (1200)
 
-/* Maximum number of concurrent requests */
-#define OC_MAX_NUM_CONCURRENT_REQUESTS (2)
-
-/* Maximum number of nodes in a payload tree structure */
-#define OC_MAX_NUM_REP_OBJECTS (70)
-
-/* Number of devices on the OCF platform */
 #define OC_MAX_NUM_DEVICES (1)
-
-#define OC_MAX_NUM_ENDPOINTS (2)
 
 /* Security layer */
 /* Maximum number of authorized clients */
 #define OC_MAX_NUM_SUBJECTS (1)
 
-/* Maximum number of concurrent DTLS sessions */
-#define OC_MAX_DTLS_PEERS (1)
+/* Maximum number of concurrent (D)TLS sessions */
+#define OC_MAX_TLS_PEERS (1)
 
 /* Max inactivity timeout before tearing down DTLS connection */
 #define OC_DTLS_INACTIVITY_TIMEOUT (604800)

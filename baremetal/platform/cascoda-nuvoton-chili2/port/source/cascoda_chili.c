@@ -189,14 +189,6 @@ void CHILI_GPIOInit(void)
 	CHILI_GPIOInitClock();
 
 	/* basic initialisation: re-configure all GPIOs to input with pull-up */
-	PA->MODE  = 0x00000000;
-	PB->MODE  = 0x00000000;
-	PC->MODE  = 0x00000000;
-	PD->MODE  = 0x00000000;
-	PE->MODE  = 0x00000000;
-	PF->MODE  = 0x00000000;
-	PG->MODE  = 0x00000000;
-	PH->MODE  = 0x00000000;
 	PA->PUSEL = 0x55555555;
 	PB->PUSEL = 0x55555555;
 	PC->PUSEL = 0x55555555;
@@ -205,6 +197,14 @@ void CHILI_GPIOInit(void)
 	PF->PUSEL = 0x55555555;
 	PG->PUSEL = 0x55555555;
 	PH->PUSEL = 0x55555555;
+	PA->MODE  = 0x00000000;
+	PB->MODE  = 0x00000000;
+	PC->MODE  = 0x00000000;
+	PD->MODE  = 0x00000000;
+	PE->MODE  = 0x00000000;
+	PF->MODE  = 0x00000000;
+	PG->MODE  = 0x00000000;
+	PH->MODE  = 0x00000000;
 
 	/* pull-ups are re-configured for each used GPIO regardless of default */
 
@@ -236,6 +236,13 @@ void CHILI_GPIOInit(void)
 	VOLTS_TEST_PVAL = 0; /* VOLTS_TEST is active high, so switch off to avoid unecessary power consumption */
 #endif
 
+#if CASCODA_CHILI_DISABLE_CA821x
+	/* Disable internal CA821x - output, no pull-up, set to 1 */
+	GPIO_SetMode(ZIG_INTERNAL_RESET_PORT, BITMASK(ZIG_INTERNAL_RESET_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(ZIG_INTERNAL_RESET_PORT, BITMASK(ZIG_INTERNAL_RESET_PIN), GPIO_PUSEL_DISABLE);
+	ZIG_INTERNAL_RESET_PVAL = 1; /* RSTB is HIGH */
+#endif
+
 	/* ZIG_RESET */
 	/* output, no pull-up, set to 1 */
 	GPIO_SetMode(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_MODE_OUTPUT);
@@ -261,6 +268,12 @@ void CHILI_GPIOInit(void)
 	GPIO_SetPullCtl(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PUSEL_DISABLE);
 	SPI_CS_PVAL = 1;
 
+#if CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT
+	GPIO_SetMode(EXTERNAL_SPI_FLASH_CS_PORT, BITMASK(EXTERNAL_SPI_FLASH_CS_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(EXTERNAL_SPI_FLASH_CS_PORT, BITMASK(EXTERNAL_SPI_FLASH_CS_PIN), GPIO_PUSEL_DISABLE);
+	EXTERNAL_SPI_FLASH_CS_PVAL = 1;
+#endif
+
 #if (CASCODA_CHILI2_CONFIG == 1)
 	/* CHARGE_STAT */
 	/* input, pull-up, debounced */
@@ -269,9 +282,6 @@ void CHILI_GPIOInit(void)
 	    CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN), GPIO_PUSEL_PULL_UP); /* CHARGE_STAT is low or tri-state */
 	GPIO_ENABLE_DEBOUNCE(CHARGE_STAT_PORT, BITMASK(CHARGE_STAT_PIN));
 #endif
-
-	/* PROGRAM Pin */
-	/* currently nor implemented */
 
 	/* X32I / X32O MFP */
 	CHILI_ModuleSetMFP(X32I_PNUM, X32I_PIN, PMFP_X32);

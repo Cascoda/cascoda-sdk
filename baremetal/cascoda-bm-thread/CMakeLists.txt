@@ -11,6 +11,7 @@ add_library(ca821x-openthread-bm-plat OBJECT
 	${PROJECT_SOURCE_DIR}/platform/radio.c
 	${PROJECT_SOURCE_DIR}/platform/serial.c
 	${PROJECT_SOURCE_DIR}/platform/settings.c
+	${PROJECT_SOURCE_DIR}/platform/sntp_helper.c
 	)
 
 target_link_libraries(ca821x-openthread-bm-plat
@@ -20,7 +21,15 @@ target_link_libraries(ca821x-openthread-bm-plat
 		m
 		openthread-plat-api
 		mbedcrypto
+		ca-ot-util
 	)
+
+# NTP server used by platform/sntp_helper.c
+set(CASCODA_NTP_SERVER "pool.ntp.org" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
+set(CASCODA_SNTP_INTERVAL 2880 CACHE STRING "The interval beween SNTP requests, in minutes. Default is two days (2880 minutes).")
+mark_as_advanced(CASCODA_SNTP_INTERVAL)
+target_compile_definitions(ca821x-openthread-bm-plat PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
+target_compile_definitions(ca821x-openthread-bm-plat PRIVATE CASCODA_SNTP_INTERVAL=${CASCODA_SNTP_INTERVAL})
 
 target_include_directories(ca821x-openthread-bm-plat
 	PRIVATE
@@ -53,7 +62,7 @@ if(CASCODA_OT_FORCE_CREDS)
 		message(FATAL_ERROR "CASCODA_OT_FORCE_MASTERKEY invalid format (16 bytes, 32 hex characters)")
 	endif()
 
-	# Convert the masterkey string to a C array 
+	# Convert the masterkey string to a C array
 	STRING(REGEX REPLACE "([0-9A-Fa-f][0-9A-Fa-f])" "0x\\1," CASCODA_OT_FORCE_MASTERKEY_ARR ${CASCODA_OT_FORCE_MASTERKEY})
 	STRING(SUBSTRING ${CASCODA_OT_FORCE_MASTERKEY_ARR} 0 79 CASCODA_OT_FORCE_MASTERKEY_ARR)
 
@@ -76,8 +85,8 @@ add_library(ca821x-openthread-bm-ftd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-ftd-obj>
 	$<TARGET_OBJECTS:ca-ot-util>
-	${PROJECT_SOURCE_DIR}/platform/sntp_helper.c
 )
+
 target_link_libraries(ca821x-openthread-bm-ftd
 	PUBLIC
 		ca-ot-util
@@ -89,19 +98,14 @@ add_library(ca821x-openthread-bm-mtd
 	$<TARGET_OBJECTS:ca821x-openthread-bm-plat>
 	$<TARGET_OBJECTS:openthread-mtd-obj>
 	$<TARGET_OBJECTS:ca-ot-util>
-	${PROJECT_SOURCE_DIR}/platform/sntp_helper.c
 )
+
 target_link_libraries(ca821x-openthread-bm-mtd
 	PUBLIC
 		ca-ot-util
 		openthread-mtd-obj
 		ca821x-openthread-bm-plat
 	)
-
-# NTP server used by platform/sntp_helper.c
-set(CASCODA_NTP_SERVER "pool.ntp.org" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
-target_compile_definitions(ca821x-openthread-bm-ftd PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
-target_compile_definitions(ca821x-openthread-bm-mtd PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
 
 # Test app config -------------------------------------------------------------
 if(CASCODA_OPENTHREAD_FTD)

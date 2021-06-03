@@ -591,7 +591,8 @@ static ca_error lock_device(wchar_t *serial, struct ca821x_dev *pDeviceRef)
 	char                      path[40];
 	DWORD                     rval = 0;
 
-	snprintf(path, sizeof(path), "Global\\casc-%ws", serial);
+	snprintf(path, sizeof(path), "Global\\casc-%ls", serial);
+	ca_log_debg("Locking device %ls", serial);
 	priv->hid_mutex = CreateMutex(NULL, FALSE, path);
 
 	if (priv->hid_mutex == NULL)
@@ -620,6 +621,7 @@ static ca_error unlock_device(struct ca821x_dev *pDeviceRef)
 	if (priv->hid_mutex == NULL)
 		return CA_ERROR_NOT_FOUND;
 
+	ca_log_debg("Unlocking device %ls", priv->serial_number);
 	ReleaseMutex(priv->hid_mutex);
 	CloseHandle(priv->hid_mutex);
 	priv->hid_mutex = NULL;
@@ -701,6 +703,7 @@ ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struc
 
 		if (dev == NULL)
 		{
+			ca_log_debg("Failed to claim usb device %s. Error %s", hid_cur->path, ca_error_str(error));
 			unlock_device(pDeviceRef);
 			hid_cur = get_next_hid(hid_cur->next);
 		}
@@ -822,6 +825,7 @@ ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext)
 		}
 
 		//Notify the caller
+		ca_log_debg("Enumerating usb device %s, %s, %s", devname, serialno, devpath);
 		aCallback(&devi, aContext);
 
 		free(devpath);

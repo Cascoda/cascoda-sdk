@@ -23,7 +23,10 @@
 
 #include "ocf_application.h"
 
-static otCliCommand ocfCommand;
+#define OCF_COMMAND (0xB0)
+#define OCF_COMMAND_RFOTM (0x00)
+#define OCF_COMMAND_POWER (0x01)
+#define OCF_COMMAND_FACTORY (0x02)
 
 /**
  * Handle application specific commands.
@@ -32,10 +35,23 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 {
 	int ret = 0;
 
-	if (buf[0] == OT_SERIAL_DOWNLINK)
+	// OCF Commands, to be used with the "ocfctl" POSIX application
+	if (buf[0] == OCF_COMMAND)
 	{
-		PlatformUartReceive(buf + 2, buf[1]);
-		ret = 1;
+		switch (buf[2])
+		{
+		case OCF_COMMAND_RFOTM:
+			oc_reset();
+			break;
+		case OCF_COMMAND_POWER:
+			BSP_SystemReset(SYSRESET_APROM);
+			break;
+		case OCF_COMMAND_FACTORY:
+			otInstanceFactoryReset(OT_INSTANCE);
+			break;
+		default:
+			break;
+		}
 	}
 
 	// switch clock otherwise chip is locking up as it loses external clock
@@ -79,6 +95,7 @@ int main(void)
 	u8_t              StartupStatus;
 	struct ca821x_dev dev;
 	cascoda_serial_dispatch = ot_serial_dispatch;
+	otError otErr           = OT_ERROR_NONE;
 
 	ca821x_api_init(&dev);
 
@@ -93,16 +110,25 @@ int main(void)
 
 	otIp6SetEnabled(OT_INSTANCE, true);
 
-	// Enable the OpenThread CLI and add a custom command.
-	otCliUartInit(OT_INSTANCE);
-	ocfCommand.mCommand = handle_ocf_light_server;
-	ocfCommand.mName    = "ocflight";
-	otCliSetUserCommands(&ocfCommand, 1);
-
 	if (otDatasetIsCommissioned(OT_INSTANCE))
 		otThreadSetEnabled(OT_INSTANCE, true);
 
 	oc_assert(OT_INSTANCE);
+
+	// Print the joiner credentials, delaying for up to 5 seconds
+	PlatformPrintJoinerCredentials(&dev, OT_INSTANCE, 5000);
+
+	// Try to join network
+	do
+	{
+		otErr = PlatformTryJoin(&dev, OT_INSTANCE);
+		if (otErr == OT_ERROR_NONE || otErr == OT_ERROR_ALREADY)
+			break;
+
+		BSP_WaitTicks(30000);
+	} while (1);
+
+	otThreadSetEnabled(OT_INSTANCE, true);
 
 	DNS_Init(OT_INSTANCE);
 	SNTP_Init();

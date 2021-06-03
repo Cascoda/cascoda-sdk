@@ -91,6 +91,11 @@ Flasher::Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType
 	}
 }
 
+Flasher::~Flasher()
+{
+	ca821x_util_deinit(&mDeviceRef);
+}
+
 ca_error Flasher::Process()
 {
 	std::lock_guard<std::mutex> guard(mMutex);

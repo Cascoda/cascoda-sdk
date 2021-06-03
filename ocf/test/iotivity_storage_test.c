@@ -62,7 +62,9 @@ int main(void)
 
 		// Change the next thing to write to flash
 		letter_to_write++;
-		memset(changing_data, letter_to_write, ITEM_SIZE);
+		for (int j = 0; j < ITEM_SIZE; ++j) changing_data[j] = ++letter_to_write;
+
+		memset(read_data, 0, ITEM_SIZE);
 	}
 
 	while (1)

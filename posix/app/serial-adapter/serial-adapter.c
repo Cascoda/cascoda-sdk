@@ -297,7 +297,6 @@ int main(int argc, const char *argv[])
 	while (ca821x_util_init(pDeviceRef, NULL))
 	{
 		return -1;
-		sleep(1);
 	}
 	configure_io();
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;

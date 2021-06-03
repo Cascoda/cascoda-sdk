@@ -270,24 +270,24 @@ static otError addSettingVector(otInstance *          aInstance,
 	{
 		// buffers for holding padding bytes
 		// initialised to FF because writing FF to a byte in flash does not modify the data stored there
-		uint8_t headpad[sizeof(uint32_t)] = {0xff, 0xff, 0xff, 0xff};
+		uint8_t headPad[sizeof(uint32_t)] = {0xff, 0xff, 0xff, 0xff};
 
 		// the amount of _padding_ bytes within the first word-aligned word of the write data
 		// FF FF 13 37 ...
-		// ~~ ~~       <- these ones
-		uint8_t headcnt = write_address % sizeof(uint32_t);
+		// ~~ ~~       <- these ones are headPadCount
+		//       ~~ ~~ <- these ones are headDataCount
+		uint8_t headPadCount  = write_address % sizeof(uint32_t);
+		uint8_t headDataCount = sizeof(uint32_t) - headPadCount;
 
-		memcpy(headpad + headcnt, aSetting[i].value, sizeof(uint32_t) - headcnt);
+		memcpy(headPad + headPadCount, aSetting[i].value, headDataCount);
 
 		// write ahead of your data, in case the start is misaligned & thus word-aligning write_address
-		write_address -= headcnt;
-		utilsFlashWrite(write_address, headpad, sizeof(headpad));
-		write_address += sizeof(headpad);
+		write_address -= headPadCount;
+		utilsFlashWrite(write_address, headPad, sizeof(headPad));
+		write_address += sizeof(headPad);
 		// write what you know is aligned
-		utilsFlashWrite(write_address,
-		                aSetting[i].value + sizeof(uint32_t) - headcnt,
-		                aSetting[i].length - sizeof(uint32_t) + headcnt);
-		write_address += aSetting[i].length - headcnt - sizeof(headpad);
+		utilsFlashWrite(write_address, aSetting[i].value + headDataCount, aSetting[i].length - headDataCount);
+		write_address += aSetting[i].length - headDataCount;
 	}
 
 	block.flag &= (~kBlockAddCompleteFlag);

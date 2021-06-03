@@ -95,11 +95,24 @@ typedef enum enPortnum
  */
 
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
+#if (CASCODA_CHILI_DISABLE_CA821x == 0)
 /* ZIG_RESET: PC.1 */
 #define ZIG_RESET_PORT PC
 #define ZIG_RESET_PNUM PN_C
 #define ZIG_RESET_PIN 1
 #define ZIG_RESET_PVAL PC1
+#else
+/* ZIG_INTERNAL_RESET: PC.1 */
+#define ZIG_INTERNAL_RESET_PORT PC
+#define ZIG_INTERNAL_RESET_PNUM PN_C
+#define ZIG_INTERNAL_RESET_PIN 1
+#define ZIG_INTERNAL_RESET_PVAL PC1
+/* ZIG_RESET: PB.5 */
+#define ZIG_RESET_PORT PB
+#define ZIG_RESET_PNUM PN_B
+#define ZIG_RESET_PIN 5
+#define ZIG_RESET_PVAL PB5
+#endif
 /* ZIG_IRQB: PC.0 */
 #define ZIG_IRQB_PORT PC
 #define ZIG_IRQB_PNUM PN_C
@@ -275,6 +288,13 @@ typedef enum enPortnum
 #define VBUS_CONNECTED_PNUM PN_B
 #define VBUS_CONNECTED_PIN 12
 #define VBUS_CONNECTED_PVAL PB12
+/* EXTERNAL_SPI_FLASH_CS */
+#if CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT
+#define EXTERNAL_SPI_FLASH_CS_PORT PA
+#define EXTERNAL_SPI_FLASH_CS_PNUM PN_A
+#define EXTERNAL_SPI_FLASH_CS_PIN 15
+#define EXTERNAL_SPI_FLASH_CS_PVAL PA15
+#endif
 
 /******************************************************************************/
 /****** Functions                                                        ******/

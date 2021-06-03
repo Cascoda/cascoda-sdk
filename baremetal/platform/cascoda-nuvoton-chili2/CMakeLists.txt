@@ -26,14 +26,29 @@ cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
 	ONE_SIDED 0
 	TWO_SIDED 1
 	)
+cascoda_mark_important("CASCODA_CHILI2_CONFIG_STRING")
+
+set(CASCODA_HF_REBOOT OFF CACHE BOOL "Reboot the device after a hard fault. If false, the device will freeze inside the hard fault handler, which is only useful for debugging.")
 
 # Enable trustzone
 set(CASCODA_CHILI2_TRUSTZONE OFF CACHE BOOL "Enable the Chili2 armv8-m CSME build (TrustZone)")
 
 # Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
-
 cascoda_mark_important("CASCODA_CHILI_FLASH_PAGES")
+
+
+# Disable onboard CA-821x if we're using an external one - reconfigure nreset to PB5 (pin 31)
+set(CASCODA_CHILI_DISABLE_CA821x OFF CACHE BOOL "Disable the onboard CA-821x, and use pin 31 (PB5) as external reset instead.")
+mark_as_advanced(CASCODA_CHILI_DISABLE_CA821x)
+
+# External flash (shares SPI Bus with CA-821x & uses PA15 as /CS)
+if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "TWO_SIDED")
+	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS." FORCE)
+else()
+	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT OFF CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
+endif()
+
 # UART Baud config
 if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL

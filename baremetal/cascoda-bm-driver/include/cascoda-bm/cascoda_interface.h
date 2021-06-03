@@ -309,6 +309,9 @@ u8_t BSP_ModuleIsGPIOPinRegistered(u8_t mpin);
 
 /**
  * \brief Sets Module Pin GPIO Output Value
+ * 
+ * Output pins must be registered before they can be used. See BSP_ModuleRegisterGPIOOutput().
+ *
  * \param mpin  - module pin
  * \param val - output value
  * \return status
@@ -318,6 +321,9 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val);
 
 /**
  * \brief Senses GPIO Input Value of Module Pin
+ *
+ * Input pins must be registered before they can be used. See BSP_ModuleRegisterGPIOInput().
+ *
  * \param mpin  - module pin
  * \param val - value read
  * \return status
@@ -327,6 +333,9 @@ ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val);
 
 /**
  * \brief Reads ADC Conversion Value on Module Pin
+ *
+ * Pins must NOT be registered if used with this function.
+ *
  * \param mpin  - module pin
  * \param val - 32-bit conversion value
  * \return status

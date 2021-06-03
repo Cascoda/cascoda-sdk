@@ -45,10 +45,10 @@
 enum time_constants
 {
 	// The time between retries, if a SNTP or a DNS query fails
-	REQUEST_TIMEOUT_MS = 60 * 1000, // one minute
+	REQUEST_TIMEOUT_MS = 30 * 1000, // thirty seconds
 	// After a successful SNTP query, the clock must be refreshed in order to mitigate clock drift.
 	// This constant defines the time between such refreshes.
-	REFRESH_MS = 48 * 60 * 60 * 1000, // fourty eight hours
+	REFRESH_MS = CASCODA_SNTP_INTERVAL * 60 * 1000,
 };
 
 static enum sntp_query_state state = NO_TIME;
@@ -86,16 +86,23 @@ void do_dns_query()
 	otDeviceRole  role = otThreadGetDeviceRole(OT_INSTANCE);
 
 	if (role == OT_DEVICE_ROLE_DETACHED || role == OT_DEVICE_ROLE_DISABLED)
+	{
+		ca_log_warn("SNTP: Cannot send DNS query, invalid state!");
 		error = CA_ERROR_INVALID_STATE;
+	}
 	else
+	{
 		error = DNS_HostToIpv6(OT_INSTANCE, NTP_SERVER, dns_response_handler, NULL);
+	}
 
 	if (error == CA_ERROR_SUCCESS)
 	{
 		state = WAITING_FOR_DNS;
+		ca_log_info("SNTP: Succesfully sent DNS query");
 	}
 	else
 	{
+		ca_log_warn("SNTP: Cannot send DNS query, error %d", error);
 		state = RETRYING;
 		TASKLET_Cancel(&tasklet);
 		TASKLET_ScheduleDelta(&tasklet, REQUEST_TIMEOUT_MS, NULL);
@@ -110,12 +117,14 @@ void dns_response_handler(ca_error aError, const otIp6Address *aAddress, dns_ind
 	{
 		do_sntp_query(*aAddress);
 		state = WAITING_FOR_SNTP;
+		ca_log_info("SNTP: DNS query succesful, performing SNTP query...");
 	}
 	else
 	{
 		state = RETRYING;
 		TASKLET_Cancel(&tasklet);
 		TASKLET_ScheduleDelta(&tasklet, REQUEST_TIMEOUT_MS, NULL);
+		ca_log_warn("SNTP: DNS query failed, error %d!", aError);
 	}
 }
 
@@ -137,6 +146,8 @@ static void do_sntp_query(const otIp6Address aAddress)
 		state = RETRYING;
 		TASKLET_Cancel(&tasklet);
 		TASKLET_ScheduleDelta(&tasklet, REQUEST_TIMEOUT_MS, NULL);
+
+		ca_log_warn("SNTP: SNTP query failed, error %d!", error);
 	}
 }
 
@@ -152,12 +163,16 @@ static void sntp_response_handler(void *aContext, uint64_t aTime, otError aResul
 		TASKLET_Cancel(&tasklet);
 		TASKLET_ScheduleDelta(&tasklet, REFRESH_MS, NULL);
 		state = HAVE_TIME;
+
+		ca_log_note("SNTP: SNTP query successful, the time is %02d:%02d!", dt.hour, dt.min);
 	}
 	else
 	{
 		TASKLET_Cancel(&tasklet);
 		TASKLET_ScheduleDelta(&tasklet, REQUEST_TIMEOUT_MS, NULL);
 		state = RETRYING;
+
+		ca_log_warn("SNTP: SNTP response returned error %d!", aResult);
 	}
 }
 

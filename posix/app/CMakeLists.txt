@@ -1,4 +1,5 @@
 add_subdirectory(chilictl)
+add_subdirectory(ocfctl)
 add_subdirectory(ot-eink-server)
 add_subdirectory(ot-sensordemo-server)
 add_subdirectory(serial-adapter)

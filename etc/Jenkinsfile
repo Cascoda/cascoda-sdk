@@ -252,7 +252,8 @@ pipeline {
 				/* Break if any new errors are introduced.*/
 				recordIssues(
 					qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false]],
-					tools: [doxygen(pattern: '**/doxyerr.txt')]
+					tools: [doxygen(pattern: '**/doxyerr.txt')],
+					filters: [excludeMessage(pattern:'Included by graph for .* not generated, too many nodes')]
 				)
 
 				plottarget('all')

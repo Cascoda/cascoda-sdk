@@ -140,7 +140,7 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 
 | CMake Target Name | Description |
 | :--- | :--- |
-| ocf-cli-light | Use a Chili as a controller for an OCF-over-Thread smart lightbulb. [More information.](ocf/README.md)
+| ocf-light | Use a Chili as a controller for an OCF-over-Thread smart lightbulb. [More information.](ocf/README.md)
 | ocf-sensorif | Use a Chili as a OCF-over-Thread device connected to various I2C and SPI sensors.
 | ocf-sensorif-unsecure  | The same as the above target, but without OCF security
 | ocf-cli-thermometer  | Use a Chili as a OCF-over-Thread smart thermometer. This demo uses the in-built thermometer of the M2351, so no external hardware is required.
@@ -169,6 +169,7 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 | :--- | :--- |
 | chilictl | Generic Chili control application allowing listing and reflashing of any connected Chili2 devices. [More information.](posix/app/chilictl/README.md)
 | serial-adapter | Exposes the serial interface of examples such as: ot-cli*, ocf-*, ot-ncp. [More information.](posix/app/serial-adapter/README.md)
+| ocfctl | Control application for OCF devices, useful mainly for certification. [More information.](posix/app/ocfctl/README.md) |
 | ot-cli-posix-ftd | The OpenThread command line application, running on a host. Requires a mac-dongle Chili to be connected to the host.
 | ot-cli-posix-mtd | Same as above, but acts as a Minimal Thread Device. Requires a mac-dongle Chili to be connected to the host.
 | ot-ncp-posix | Enable a computer to act as a Thread Border Router. Requires a mac-dongle Chili to be connected to the host.
@@ -211,7 +212,7 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 - [OCF New Application guide](docs/guides/create-custom-ocf-applications.md)
 - [Cross-compiling for the Raspberry Pi](docs/guides/cross-compile-for-the-raspberry-pi.md)
 - [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
-- [Border Router Setup Guide](docs/guides/border-router-setup.md)  
+- [Border Router Setup Guide](docs/guides/border-router-setup.md)
 - [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
 
 And also the following reference documents:

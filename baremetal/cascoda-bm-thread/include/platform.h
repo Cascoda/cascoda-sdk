@@ -78,6 +78,8 @@ static const uint16_t sensordemo_key = 0xCA5C;
 static const uint16_t actuatordemo_key = 0xCA5D;
 /** Flash settings key used for storing OCF data */
 static const uint16_t OC_SETTINGS_KEY = 0xe107;
+/** Flash settings key used for storing OCF encryption private key */
+static const uint16_t OC_ENCRYPTION_KEY_KEY = 0xe108;
 
 /**
  * Following Initialisation, this can be used to obtain the pDeviceRef that
@@ -206,7 +208,7 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance);
  *                               just testing for the presence or length of a setting.
  *  @param[inout]  aValueLength  A pointer to the length of the value. At return, will be overwritten with the length
  * 	of the value.
- * 
+ *
  *  Note that the pointer written to aValue is not valid after a call to any other otPlatSettings* function, so
  * it must be used immediately.
  *
@@ -219,10 +221,10 @@ otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint1
 /** This function adds the value to a setting
  *  identified by aKey, without replacing any existing
  *  values.
- * 
+ *
  *  This function differs from otPlatSettingsAdd in that it
  *  takes a vector of buffers instead of a single one. Use this
- *  function if you must write several non-contiguous buffers into a single 
+ *  function if you must write several non-contiguous buffers into a single
  *  setting without copying them into contiguous memory first.
  *
  *  Note that the underlying implementation is not required

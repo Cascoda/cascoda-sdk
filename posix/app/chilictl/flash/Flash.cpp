@@ -94,9 +94,9 @@ ca_error Flash::Process(int argc, const char *argv[])
 
 	devcount = mDeviceList.Get().size();
 
+	fprintf(stderr, "%d devices found.\n", devcount);
 	if (devcount == 0)
 	{
-		fprintf(stderr, "No devices found.");
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
@@ -128,6 +128,7 @@ ca_error Flash::Process(int argc, const char *argv[])
 		else
 		{
 			//Exit early if fail
+			fprintf(stderr, "Error: Early termination - %s\n", ca_error_str(error));
 			goto exit;
 		}
 	}

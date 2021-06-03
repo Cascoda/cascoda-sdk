@@ -61,15 +61,9 @@
 /****** Dynamically configurable Ports / Pins                            ******/
 /******************************************************************************/
 
-/* number of dynamically available module i/o pins */
 enum
 {
 	PIN_USB_PRESENT = 103,
-#if (CASCODA_CHILI2_CONFIG == 0)
-	NUM_MODULEPINS = 12,
-#else
-	NUM_MODULEPINS = 6,
-#endif
 };
 
 struct pinlist
@@ -93,10 +87,7 @@ struct pinstatus
 /******************************************************************************/
 /****** Static Variables                                                 ******/
 /******************************************************************************/
-static struct pinstatus ModulePinStatus[NUM_MODULEPINS] = {0};
-static int (*ModulePinCallbacks[NUM_MODULEPINS])(void);
-
-static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
+static const struct pinlist ModulePinList[] = {
 /* module pin */
 /* port PX.Y */
 /* adc channel */
@@ -107,20 +98,33 @@ static const struct pinlist ModulePinList[NUM_MODULEPINS] = {
     {12, PN_A, 14, P_NA}, /* PA.14 */
 #else
     {PIN_USB_PRESENT, PN_B, 12, P_NA}, /* PB.12:(USB_PRESENT), virtual */
-#endif                    /* CASCODA_CHILI2_CONFIG */
+#endif /* CASCODA_CHILI2_CONFIG */
+#if (CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT == 0)
     {15, PN_A, 15, P_NA}, /* PA.15 */
+#endif
 #if (CASCODA_CHILI2_CONFIG == 0)
     {17, PN_A, 12, P_NA}, /* PA.12 */
 #endif                    /* CASCODA_CHILI2_CONFIG */
-    {31, PN_B, 5, 5},     /* PB.5 */
-    {32, PN_B, 4, 4},     /* PB.4 */
-    {33, PN_B, 3, 3},     /* PB.3 */
-    {34, PN_B, 2, 2},     /* PB.2 */
+#if CASCODA_CHILI_DISABLE_CA821x
+    {31, PN_B, 5, 5}, /* PB.5 */
+#endif
+    {32, PN_B, 4, 4}, /* PB.4 */
+    {33, PN_B, 3, 3}, /* PB.3 */
+    {34, PN_B, 2, 2}, /* PB.2 */
 #if (CASCODA_CHILI2_CONFIG == 0)
     {35, PN_B, 1, 1}, /* PB.1 */
     {36, PN_B, 0, 0}, /* PB.0 */
 #endif                /* CASCODA_CHILI2_CONFIG */
 };
+
+/* number of dynamically available module i/o pins */
+enum
+{
+	NUM_MODULEPINS = sizeof(ModulePinList) / sizeof(ModulePinList[0]),
+};
+
+static struct pinstatus ModulePinStatus[NUM_MODULEPINS] = {0};
+static int (*ModulePinCallbacks[NUM_MODULEPINS])(void);
 
 struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
 {

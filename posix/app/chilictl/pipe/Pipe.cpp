@@ -46,6 +46,7 @@ Pipe::Pipe()
     , mHelpArg('h', "help")
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
     , mAnyArg('a', "any")
+    , mResetArg('r', "reset")
 
 {
 	mHelpArg.SetHelpString("Print this message to stdout");
@@ -59,6 +60,9 @@ Pipe::Pipe()
 
 	mAnyArg.SetHelpString("Pick any matching device, rather than throwing error if more than one match.");
 	mArgParser.AddOption(mAnyArg);
+
+	mResetArg.SetHelpString("Reset the device with a software reset before piping.");
+	mArgParser.AddOption(mResetArg);
 }
 
 ca_error Pipe::Process(int argc, const char *argv[])
@@ -94,7 +98,7 @@ ca_error Pipe::Process(int argc, const char *argv[])
 		goto exit;
 	}
 
-	if (devcount > 1 && mAnyArg.GetCallCount())
+	if (devcount > 1 && !mAnyArg.GetCallCount())
 	{
 		fprintf(stderr, "Error: Multiple devices found but any flag not specified.\n");
 		error = CA_ERROR_INVALID_STATE;
@@ -142,11 +146,15 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 	dev.context             = this;
 	exchange_register_user_callback(&exchange_callback, &dev);
 
+	if (mResetArg.GetCallCount() > 0)
+	{
+		status = EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &dev);
+	}
+
 #ifdef WIN32
 	setmode(STDOUT_FILENO, O_BINARY);
 	setmode(STDIN_FILENO, O_BINARY);
 #endif
-
 	while (status == CA_ERROR_SUCCESS)
 	{
 		// Read the command bytes
@@ -198,6 +206,11 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 			}
 		}
 	}
+
+	if (status == CA_ERROR_SUCCESS)
+		status = exchange_wait_send_complete(1, &dev);
+
+	ca821x_util_deinit(&dev);
 	return status;
 }
 
@@ -216,11 +229,6 @@ ca_error Pipe::print_help_string(const char *aArg)
 
 ca_error Pipe::set_serialno_filter(const char *aArg)
 {
-	if (mSerialArg.GetCallCount() > 1)
-	{
-		fprintf(stderr, "Error: Multiple serialno args not currently supported\n");
-		return CA_ERROR_INVALID_ARGS;
-	}
 	mDeviceListFilter.AddSerialNo(aArg);
 	return CA_ERROR_SUCCESS;
 }

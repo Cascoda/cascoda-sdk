@@ -26,7 +26,7 @@ endif()
 FetchContent_Declare(
     iotivitylite
     GIT_REPOSITORY ${CASCODA_IOTIVITY_REPO}
-    GIT_TAG 8572d440aea81afbbabb7411b2754d99c45911a9
+    GIT_TAG 7962d1a15a586964ef81b4bcd4d7f932901994aa
     PATCH_COMMAND  ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/iotivity-patch.cmake
 )
 
@@ -234,12 +234,12 @@ endif()
 
 add_library(iotivity-unsecure-server)
 target_link_libraries(iotivity-unsecure-server PRIVATE iotivity-server)
-target_link_libraries(iotivity-unsecure-server PUBLIC ca821x-openthread-bm-plat)
+target_link_libraries(iotivity-unsecure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
 target_compile_definitions(iotivity-unsecure-server PUBLIC OC_SERVER)
 
 add_library(iotivity-secure-server)
 target_link_libraries(iotivity-secure-server PRIVATE iotivity-server)
-target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat)
+target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
 target_compile_definitions(iotivity-secure-server PUBLIC OC_SERVER OC_SECURITY)
 
 if(CASCODA_BUILD_OCF_DEV)
