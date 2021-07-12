@@ -39,7 +39,7 @@ jobs:
           git clone git@github.com:Cascoda/cascoda-sdk-doxygen.git
           cd cascoda-sdk-doxygen
           rm -rf *
-          cp -r /home/runner/work/cascoda-sdk-priv/cascoda-sdk-priv/build-doxygen/docs/docs/html .
+          cp -r ${{ github.workspace }}/build-doxygen/docs/docs/html .
           #Rename to "docs"
           mv html docs
           
