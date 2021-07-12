@@ -30,7 +30,7 @@ include(FetchContent)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG 55cdf863d0d4c9af39351ca1b050a505a625dac3)
+	set(OT_TAG 8b4518581e4fd4d3daebd03ac264ebe8eee1bfe3)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)

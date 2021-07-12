@@ -187,7 +187,7 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 		rsp.CommandId = 0xFF;
 
 		// Send the read command
-		status = ca821x_api_downstream(&msg.CommandId, msg.Length + 2, &rsp.CommandId, &dev);
+		status = ca821x_api_downstream(&msg.CommandId, &rsp.CommandId, &dev);
 		if (status)
 		{
 			fprintf(stderr, "Error: Downstream error %s.\n", ca_error_str(status));

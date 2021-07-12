@@ -519,11 +519,10 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 	return status;
 }
 
-ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error SPI_Send(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	ca_error Status = CA_ERROR_SUCCESS;
 	bool     sync   = (buf[0] & SPI_SYN) && (buf[0] != SPI_IDLE);
-	(void)len;
 
 	BSP_DisableRFIRQ();
 	if (sync)

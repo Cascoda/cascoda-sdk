@@ -591,6 +591,9 @@ static ca_error lock_device(wchar_t *serial, struct ca821x_dev *pDeviceRef)
 	char                      path[40];
 	DWORD                     rval = 0;
 
+	if (serial == NULL)
+		return CA_ERROR_INVALID_ARGS;
+
 	snprintf(path, sizeof(path), "Global\\casc-%ls", serial);
 	ca_log_debg("Locking device %ls", serial);
 	priv->hid_mutex = CreateMutex(NULL, FALSE, path);

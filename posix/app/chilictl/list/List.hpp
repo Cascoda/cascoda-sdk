@@ -52,6 +52,7 @@ private:
 	ArgOpt           mHelpArg;
 	ArgOpt           mAvailableArg;
 	ArgOpt           mSerialArg;
+	ArgOpt           mMinVersionArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 
@@ -62,6 +63,7 @@ private:
 	ca_error print_help_string(const char *aArg);
 	ca_error set_available(const char *aArg);
 	ca_error set_serialno_filter(const char *aArg);
+	ca_error set_versionno_filter(const char *aArg);
 };
 
 } /* namespace ca */

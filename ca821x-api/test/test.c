@@ -714,9 +714,9 @@ ca_error verify_command(const uint8_t *buf, size_t len, uint8_t *response, struc
 	return 0;
 }
 
-ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_api_downstream(const uint8_t *buf, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
-	return verify_command(buf, len, response, pDeviceRef);
+	return verify_command(buf, buf[1] + 2, response, pDeviceRef);
 }
 
 /******************************************************************************/

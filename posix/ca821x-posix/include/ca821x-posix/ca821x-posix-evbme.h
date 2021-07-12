@@ -60,6 +60,13 @@ struct EVBME_callbacks
 	EVBME_Message_callback EVBME_DFU_cmd;
 };
 
+//Structure to store version numbers in a convenient format
+struct ca_version_number
+{
+	int major_version;
+	int minor_version;
+};
+
 /**
  * Get the mutable callback structure for the given device. Modify this to add EVBME callback handlers.
  * Do not modify the EVBME callback handlers while the downstream dispatch worker is running asynchronously
@@ -247,6 +254,42 @@ ca_error EVBME_GET_request_sync(enum evbme_attribute aAttrId,
                                 uint8_t *            aAttrData,
                                 uint8_t *            aAttrLen,
                                 struct ca821x_dev *  pDeviceRef);
+
+/**
+ * Compares two input version strings and returns the result.
+ *
+ * @param aVersion1 The first version string of the comparison
+ * @param aVersion2 The second version string of the comparison
+ * @param[out] aVersion1Number (Optional, can be set to NULL) Stores the aVersion1 string into
+ * 							   a 'ca_version_number' structure
+ * @param[out] aVersion2Number (Optional, can be set to NULL) Stores the aVersion2 string into
+ * 							   a 'ca_version_number' structure
+ *
+ * @return Result of the comparison
+ * @retval 0     The versions compared are the same
+ * @retval 1     aVersion1 is newer (i.e. the version number is higher) than aVersion2
+ * @retval -1	 aVersion1 is older (i.e. the version number is lower) than aVersion2
+ */
+int EVBME_CompareVersions(const char *              aVersion1,
+                          const char *              aVersion2,
+                          struct ca_version_number *aVersion1Number,
+                          struct ca_version_number *aVersion2Number);
+
+/**
+ * Check the EVBME version of the device and compare it to the SDK version of the application.
+ * This function should be called in posix applications that communicate with a Chili device
+ * in order to warn the user if there is a version mismatch, and potentially exit from the application.
+ *
+ * @param aMinVerString The string containing the minimum version number allowed. This should be in the form of "x.y",
+ * 						where x is the integer part of the version number and y is the fractional part, e.g. "0.18".
+ * 						NULL if no version requirement, in which case the function always returns CA_ERROR_SUCCESS.
+ * @param pDeviceRef    The device struct for the device this message is to be sent to
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS    Success - EVBME and host versions compatible
+ * @retval CA_ERROR_FAIL  EVBME and host versions are not compatible
+ */
+ca_error EVBME_CheckVersion(const char *aMinVerString, struct ca821x_dev *pDeviceRef);
 
 #ifdef __cplusplus
 }

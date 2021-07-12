@@ -2,6 +2,7 @@
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
+#include <openthread/platform/settings.h>
 #include <openthread/tasklet.h>
 #include <openthread/thread.h>
 #include <platform.h>

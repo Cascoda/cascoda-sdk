@@ -4,7 +4,7 @@
 
 The Cascoda SDK includes a comprehensive set of tools for developing systems integrating Cascoda hardware. The SDK is designed to be cross platform and flexible, enabling designing on one system and porting to another with ease. Many [example applications](#example-applications) are included in order to demonstrate use of the systems.
 
-The SDK contains a general API which abstracts the functionality of the CA-8210 or CA-8211, and can be run on baremetal or Linux systems. It also contains a collection of custom and third-party helper libraries, which have been integrated for development convenience.
+The SDK contains a general API which abstracts the functionality of the CA-8210 or CA-8211, and can be run on baremetal or Linux systems. It also contains a collection of custom and third-party helper libraries, which have been integrated for development convenience. A complete reference of the Cascoda SDK API can be found [here](https://cascoda.github.io/cascoda-sdk-doxygen/).
 
 The Bare-Metal BSPs provide a portable abstraction for baremetal platforms, and a useful set of libraries that can be used to bootstrap development. The Linux platform takes advantage of the extra functionality to enable control of multiple devices at a time, and dynamic selection of SPI/UART/USB Cascoda devices.
 
@@ -18,6 +18,9 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 
 - [Cascoda SDK](#cascoda-sdk)
   - [Contents](#contents)
+  - [Guides](#guides)
+    - [How-To Guides](#how-to-guides)
+    - [Other Guides](#other-guides)
   - [Building](#building)
     - [Instructions](#instructions)
       - [Linux/MacOS](#linuxmacos)
@@ -43,6 +46,24 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
   - [Security information](#security-information)
 
 <!-- /TOC -->
+
+## Guides
+
+### How-To Guides
+
+- [Getting Started with OCF and Thread](docs/how-to/README.md): This how-to will guide you through running pre-existing or creating new OCF applications that run on the Chili module.
+
+### Other Guides
+- [Development Environment Setup](docs/guides/development-setup.md)
+- [Thread Commissioning](docs/guides/thread-commissioning.md)
+- [Flashing binaries to hardware](docs/guides/flashing.md)
+- [Debugging with a SEGGER J-Link](docs/guides/debug-with-segger-jlink.md)
+- [Debugging with a NuLink Pro](docs/guides/debug-with-a-nu-link-pro.md)
+- [OCF New Application guide](docs/guides/create-custom-ocf-applications.md)
+- [Cross-compiling for the Raspberry Pi](docs/guides/cross-compile-for-the-raspberry-pi.md)
+- [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
+- [Border Router Setup Guide](docs/guides/border-router-setup.md)
+- [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
 
 ## Building
 
@@ -202,7 +223,11 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 
 ### docs
 
-`docs` contains the following guides:
+`docs` contains the following high-level guide:
+
+- [Getting Started with OCF and Thread](docs/how-to/README.md)
+
+It also contains the following low-level guides:
 
 - [Development Environment Setup](docs/guides/development-setup.md)
 - [Thread Commissioning](docs/guides/thread-commissioning.md)

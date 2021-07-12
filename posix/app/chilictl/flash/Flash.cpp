@@ -45,7 +45,7 @@ Flash::Flash()
     , mBatchArg('b', "batch")
     , mFileArg('f', "file", ArgOpt::MANDATORY)
     , mDfuUpdateArg('d', "dfu-update")
-
+    , mIgnoreVersionArg('\0', "ignore-version")
 {
 	mHelpArg.SetHelpString("Print this message to stdout");
 	mHelpArg.SetCallback(&Flash::print_help_string, *this);
@@ -66,6 +66,10 @@ Flash::Flash()
 
 	mDfuUpdateArg.SetHelpString("Update the DFU region itself, rather than the application.");
 	mArgParser.AddOption(mDfuUpdateArg);
+
+	mIgnoreVersionArg.SetHelpString(
+	    "Ignore the version check on the device to be flashed. Warning: Flashing will not work if device firmware is older than v0.14.");
+	mArgParser.AddOption(mIgnoreVersionArg);
 }
 
 ca_error Flash::Process(int argc, const char *argv[])
@@ -114,6 +118,10 @@ ca_error Flash::Process(int argc, const char *argv[])
 		Flasher::FlashType flashType =
 		    mDfuUpdateArg.GetCallCount() ? Flasher::FlashType::DFU : Flasher::FlashType::APROM;
 		Flasher f{mFilePath.c_str(), di, flashType};
+
+		if (mIgnoreVersionArg.GetCallCount())
+			f.SetIgnoreVersion(true);
+
 		do
 		{
 			error = f.Process();

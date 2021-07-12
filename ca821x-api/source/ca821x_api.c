@@ -42,8 +42,6 @@
  * Shorthand for MLME-GET Confirm parameter set
  * \def ORPHANRSP
  * Shorthand for MLME-ORPHAN Response parameter set
- * \def SIMPLEREQ
- * Shorthand for the raw parameter data of a request
  *
  * Usually used for requests with a single-byte payload etc.
  * \def SIMPLECNF
@@ -178,7 +176,7 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
 		Command.Length += sizeof(struct SecSpec);
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -187,12 +185,18 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
 
 ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId     = SPI_MCPS_PURGE_REQUEST;
-	Command.Length        = 1;
-	Command.PData.u8Param = *MsduHandle;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t CommandId;
+		uint8_t Length;
+		uint8_t MsduHandle;
+	} Command;
+	Command.CommandId  = SPI_MCPS_PURGE_REQUEST;
+	Command.Length     = 1;
+	Command.MsduHandle = *MsduHandle;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MCPS_PURGE_CONFIRM)
@@ -223,7 +227,7 @@ ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
 	memcpy(DATAREQ.Psdu, pPsdu, PsduLength);
 	Command.Length = PsduLength + sizeof(struct PCPS_DATA_request_pset) - aMaxPHYPacketSize;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -255,7 +259,7 @@ ca_mac_status MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
 		ASSOCREQ.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -286,7 +290,7 @@ ca_mac_status MLME_ASSOCIATE_response(uint8_t *          pDeviceAddress,
 		ASSOCRSP.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -317,7 +321,7 @@ ca_mac_status MLME_DISASSOCIATE_request(struct FullAddr    DevAddr,
 		Command.PData.DisassocReq.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -329,8 +333,15 @@ ca_mac_status MLME_GET_request_sync(uint8_t            PIBAttribute,
                                     void *             pPIBAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-#define GETREQ (Command.PData.GetReq)
+	struct MAC_Message Response;
+
+	struct cmd
+	{
+		uint8_t                      CommandId;
+		uint8_t                      Length;
+		struct MLME_GET_request_pset GetReq;
+	} Command;
+#define GETREQ (Command.GetReq)
 #define GETCNF (Response.PData.GetCnf)
 
 	Command.CommandId        = SPI_MLME_GET_REQUEST;
@@ -338,7 +349,7 @@ ca_mac_status MLME_GET_request_sync(uint8_t            PIBAttribute,
 	GETREQ.PIBAttribute      = PIBAttribute;
 	GETREQ.PIBAttributeIndex = PIBAttributeIndex;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_GET_CONFIRM)
@@ -379,7 +390,7 @@ ca_mac_status MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
 		ORPHANRSP.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -389,14 +400,20 @@ ca_mac_status MLME_ORPHAN_response(uint8_t *          pOrphanAddress,
 ca_mac_status MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t            status;
-	struct MAC_Message Command, Response;
-#define SIMPLEREQ (Command.PData)
-#define SIMPLECNF (Response.PData)
-	Command.CommandId = SPI_MLME_RESET_REQUEST;
-	Command.Length    = 1;
-	SIMPLEREQ.u8Param = SetDefaultPIB;
+	struct MAC_Message Response;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	struct cmd
+	{
+		uint8_t CommandId;
+		uint8_t Length;
+		uint8_t SetDefaultPib;
+	} Command;
+#define SIMPLECNF (Response.PData)
+	Command.CommandId     = SPI_MLME_RESET_REQUEST;
+	Command.Length        = 1;
+	Command.SetDefaultPib = SetDefaultPIB;
+
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_RESET_CONFIRM)
@@ -421,22 +438,28 @@ ca_mac_status MLME_RX_ENABLE_request_sync(uint8_t            DeferPermit,
                                           uint32_t           RxOnDuration,
                                           struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                            CommandId;
+		uint8_t                            Length;
+		struct MLME_RX_ENABLE_request_pset RxEnableReq;
+	} Command;
+
 	Command.CommandId = SPI_MLME_RX_ENABLE_REQUEST;
 	Command.Length    = sizeof(struct MLME_RX_ENABLE_request_pset);
-	;
 
-	Command.PData.RxEnableReq.DeferPermit     = DeferPermit;
-	Command.PData.RxEnableReq.RxOnTime[0]     = LS0_BYTE(RxOnTime);
-	Command.PData.RxEnableReq.RxOnTime[1]     = LS1_BYTE(RxOnTime);
-	Command.PData.RxEnableReq.RxOnTime[2]     = LS2_BYTE(RxOnTime);
-	Command.PData.RxEnableReq.RxOnTime[3]     = LS3_BYTE(RxOnTime);
-	Command.PData.RxEnableReq.RxOnDuration[0] = LS0_BYTE(RxOnDuration);
-	Command.PData.RxEnableReq.RxOnDuration[1] = LS1_BYTE(RxOnDuration);
-	Command.PData.RxEnableReq.RxOnDuration[2] = LS2_BYTE(RxOnDuration);
-	Command.PData.RxEnableReq.RxOnDuration[3] = LS3_BYTE(RxOnDuration);
+	Command.RxEnableReq.DeferPermit     = DeferPermit;
+	Command.RxEnableReq.RxOnTime[0]     = LS0_BYTE(RxOnTime);
+	Command.RxEnableReq.RxOnTime[1]     = LS1_BYTE(RxOnTime);
+	Command.RxEnableReq.RxOnTime[2]     = LS2_BYTE(RxOnTime);
+	Command.RxEnableReq.RxOnTime[3]     = LS3_BYTE(RxOnTime);
+	Command.RxEnableReq.RxOnDuration[0] = LS0_BYTE(RxOnDuration);
+	Command.RxEnableReq.RxOnDuration[1] = LS1_BYTE(RxOnDuration);
+	Command.RxEnableReq.RxOnDuration[2] = LS2_BYTE(RxOnDuration);
+	Command.RxEnableReq.RxOnDuration[3] = LS3_BYTE(RxOnDuration);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_RX_ENABLE_CONFIRM)
@@ -471,7 +494,7 @@ ca_mac_status MLME_SCAN_request(uint8_t            ScanType,
 		SCANREQ.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, NULL, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	return MAC_SUCCESS;
@@ -484,8 +507,15 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
                                     const void *       pPIBAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-#define SETREQ (Command.PData.SetReq)
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                      CommandId;
+		uint8_t                      Length;
+		struct MLME_SET_request_pset SetReq;
+	} Command;
+
+#define SETREQ (Command.SetReq)
 #define SIMPLECNF (Response.PData)
 
 	Command.CommandId         = SPI_MLME_SET_REQUEST;
@@ -495,7 +525,7 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
 	SETREQ.PIBAttributeLength = PIBAttributeLength;
 	memcpy(SETREQ.PIBAttributeValue, pPIBAttributeValue, PIBAttributeLength);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_SET_CONFIRM)
@@ -532,8 +562,14 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       struct ca821x_dev *pDeviceRef)
 {
 	struct SecSpec *   pBS;
-	struct MAC_Message Command, Response;
-#define STARTREQ (Command.PData.StartReq)
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                        CommandId;
+		uint8_t                        Length;
+		struct MLME_START_request_pset StartReq;
+	} Command;
+#define STARTREQ (Command.StartReq)
 
 	Command.CommandId             = SPI_MLME_START_REQUEST;
 	Command.Length                = sizeof(struct MLME_START_request_pset);
@@ -566,7 +602,7 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
 		*pBS = *pBeaconSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_START_CONFIRM)
@@ -585,8 +621,14 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-#define POLLREQ (Command.PData.PollReq)
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                       CommandId;
+		uint8_t                       Length;
+		struct MLME_POLL_request_pset PollReq;
+	} Command;
+#define POLLREQ (Command.PollReq)
 	Command.CommandId    = SPI_MLME_POLL_REQUEST;
 	Command.Length       = sizeof(struct MLME_POLL_request_pset);
 	POLLREQ.CoordAddress = CoordAddress;
@@ -604,7 +646,7 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 		POLLREQ.Security = *pSecurity;
 	}
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_MLME_POLL_CONFIRM)
@@ -619,14 +661,20 @@ ca_mac_status HWME_SET_request_sync(uint8_t            HWAttribute,
                                     uint8_t *          pHWAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                          = SPI_HWME_SET_REQUEST;
-	Command.Length                             = 2 + HWAttributeLength;
-	Command.PData.HWMESetReq.HWAttribute       = HWAttribute;
-	Command.PData.HWMESetReq.HWAttributeLength = HWAttributeLength;
-	memcpy(Command.PData.HWMESetReq.HWAttributeValue, pHWAttributeValue, HWAttributeLength);
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                      CommandId;
+		uint8_t                      Length;
+		struct HWME_SET_request_pset HWMESetReq;
+	} Command;
+	Command.CommandId                    = SPI_HWME_SET_REQUEST;
+	Command.Length                       = 2 + HWAttributeLength;
+	Command.HWMESetReq.HWAttribute       = HWAttribute;
+	Command.HWMESetReq.HWAttributeLength = HWAttributeLength;
+	memcpy(Command.HWMESetReq.HWAttributeValue, pHWAttributeValue, HWAttributeLength);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_HWME_SET_CONFIRM)
@@ -645,12 +693,18 @@ ca_mac_status HWME_GET_request_sync(uint8_t            HWAttribute,
                                     uint8_t *          pHWAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                    = SPI_HWME_GET_REQUEST;
-	Command.Length                       = 1;
-	Command.PData.HWMEGetReq.HWAttribute = HWAttribute;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                      CommandId;
+		uint8_t                      Length;
+		struct HWME_GET_request_pset HWMEGetReq;
+	} Command;
+	Command.CommandId              = SPI_HWME_GET_REQUEST;
+	Command.Length                 = 1;
+	Command.HWMEGetReq.HWAttribute = HWAttribute;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_HWME_GET_CONFIRM)
@@ -667,13 +721,19 @@ ca_mac_status HWME_GET_request_sync(uint8_t            HWAttribute,
 
 ca_mac_status HWME_HAES_request_sync(uint8_t HAESMode, uint8_t *pHAESData, struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                  = SPI_HWME_HAES_REQUEST;
-	Command.Length                     = 17;
-	Command.PData.HWMEHAESReq.HAESMode = HAESMode;
-	memcpy(Command.PData.HWMEHAESReq.HAESData, pHAESData, 16);
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                       CommandId;
+		uint8_t                       Length;
+		struct HWME_HAES_request_pset HWMEHAESReq;
+	} Command;
+	Command.CommandId            = SPI_HWME_HAES_REQUEST;
+	Command.Length               = 17;
+	Command.HWMEHAESReq.HAESMode = HAESMode;
+	memcpy(Command.HWMEHAESReq.HAESData, pHAESData, 16);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_HWME_HAES_CONFIRM)
@@ -690,14 +750,20 @@ ca_mac_status TDME_SETSFR_request_sync(uint8_t            SFRPage,
                                        uint8_t            SFRValue,
                                        struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                      = SPI_TDME_SETSFR_REQUEST;
-	Command.Length                         = 3;
-	Command.PData.TDMESetSFRReq.SFRPage    = SFRPage;
-	Command.PData.TDMESetSFRReq.SFRAddress = SFRAddress;
-	Command.PData.TDMESetSFRReq.SFRValue   = SFRValue;
-	Response.CommandId                     = 0xFF;
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                         CommandId;
+		uint8_t                         Length;
+		struct TDME_SETSFR_request_pset TDMESetSFRReq;
+	} Command;
+	Command.CommandId                = SPI_TDME_SETSFR_REQUEST;
+	Command.Length                   = 3;
+	Command.TDMESetSFRReq.SFRPage    = SFRPage;
+	Command.TDMESetSFRReq.SFRAddress = SFRAddress;
+	Command.TDMESetSFRReq.SFRValue   = SFRValue;
+	Response.CommandId               = 0xFF;
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_SETSFR_CONFIRM)
@@ -711,13 +777,19 @@ ca_mac_status TDME_GETSFR_request_sync(uint8_t            SFRPage,
                                        uint8_t *          SFRValue,
                                        struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                      = SPI_TDME_GETSFR_REQUEST;
-	Command.Length                         = 2;
-	Command.PData.TDMEGetSFRReq.SFRPage    = SFRPage;
-	Command.PData.TDMEGetSFRReq.SFRAddress = SFRAddress;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                         CommandId;
+		uint8_t                         Length;
+		struct TDME_GETSFR_request_pset TDMEGetSFRReq;
+	} Command;
+	Command.CommandId                = SPI_TDME_GETSFR_REQUEST;
+	Command.Length                   = 2;
+	Command.TDMEGetSFRReq.SFRPage    = SFRPage;
+	Command.TDMEGetSFRReq.SFRAddress = SFRAddress;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_GETSFR_CONFIRM)
@@ -730,12 +802,18 @@ ca_mac_status TDME_GETSFR_request_sync(uint8_t            SFRPage,
 
 ca_mac_status TDME_TESTMODE_request_sync(uint8_t TestMode, struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                      = SPI_TDME_TESTMODE_REQUEST;
-	Command.Length                         = 1;
-	Command.PData.TDMETestModeReq.TestMode = TestMode;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                           CommandId;
+		uint8_t                           Length;
+		struct TDME_TESTMODE_request_pset TDMETestModeReq;
+	} Command;
+	Command.CommandId                = SPI_TDME_TESTMODE_REQUEST;
+	Command.Length                   = 1;
+	Command.TDMETestModeReq.TestMode = TestMode;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_TESTMODE_CONFIRM)
@@ -749,15 +827,21 @@ ca_mac_status TDME_SET_request_sync(uint8_t            TestAttribute,
                                     void *             pTestAttributeValue,
                                     struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                      CommandId;
+		uint8_t                      Length;
+		struct TDME_SET_request_pset TDMESetReq;
+	} Command;
 
-	Command.CommandId                          = SPI_TDME_SET_REQUEST;
-	Command.Length                             = 2 + TestAttributeLength;
-	Command.PData.TDMESetReq.TDAttribute       = TestAttribute;
-	Command.PData.TDMESetReq.TDAttributeLength = TestAttributeLength;
-	memcpy(Command.PData.TDMESetReq.TDAttributeValue, pTestAttributeValue, TestAttributeLength);
+	Command.CommandId                    = SPI_TDME_SET_REQUEST;
+	Command.Length                       = 2 + TestAttributeLength;
+	Command.TDMESetReq.TDAttribute       = TestAttribute;
+	Command.TDMESetReq.TDAttributeLength = TestAttributeLength;
+	memcpy(Command.TDMESetReq.TDAttributeValue, pTestAttributeValue, TestAttributeLength);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_SET_CONFIRM)
@@ -772,7 +856,14 @@ ca_mac_status TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
                                       void *             pTestPacketData,
                                       struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                        CommandId;
+		uint8_t                        Length;
+		struct TDME_TXPKT_request_pset TDMETxPktReq;
+	} Command;
+
 	Command.CommandId = SPI_TDME_TXPKT_REQUEST;
 	if (TestPacketDataType == TDME_TXD_APPENDED)
 	{
@@ -783,14 +874,14 @@ ca_mac_status TDME_TXPKT_request_sync(uint8_t            TestPacketDataType,
 		Command.Length = 3;
 	}
 
-	Command.PData.TDMETxPktReq.TestPacketDataType       = TestPacketDataType;
-	Command.PData.TDMETxPktReq.TestPacketSequenceNumber = *TestPacketSequenceNumber;
-	Command.PData.TDMETxPktReq.TestPacketLength         = *TestPacketLength;
+	Command.TDMETxPktReq.TestPacketDataType       = TestPacketDataType;
+	Command.TDMETxPktReq.TestPacketSequenceNumber = *TestPacketSequenceNumber;
+	Command.TDMETxPktReq.TestPacketLength         = *TestPacketLength;
 
 	if (TestPacketDataType == TDME_TXD_APPENDED)
-		memcpy(Command.PData.TDMETxPktReq.TestPacketData, pTestPacketData, *TestPacketLength);
+		memcpy(Command.TDMETxPktReq.TestPacketData, pTestPacketData, *TestPacketLength);
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_TXPKT_CONFIRM)
@@ -813,13 +904,20 @@ ca_mac_status TDME_LOTLK_request_sync(uint8_t *          TestChannel,
                                       uint8_t *          TestLOTXCALValue,
                                       struct ca821x_dev *pDeviceRef)
 {
-	struct MAC_Message Command, Response;
-	Command.CommandId                      = SPI_TDME_LOTLK_REQUEST;
-	Command.Length                         = 2;
-	Command.PData.TDMELOTlkReq.TestChannel = *TestChannel;
-	Command.PData.TDMELOTlkReq.TestRxTxb   = *TestRxTxb;
+	struct MAC_Message Response;
+	struct cmd
+	{
+		uint8_t                        CommandId;
+		uint8_t                        Length;
+		struct TDME_LOTLK_request_pset TDMELOTlkReq;
+	} Command;
 
-	if (ca821x_api_downstream(&Command.CommandId, Command.Length + 2, &Response.CommandId, pDeviceRef))
+	Command.CommandId                = SPI_TDME_LOTLK_REQUEST;
+	Command.Length                   = 2;
+	Command.TDMELOTlkReq.TestChannel = *TestChannel;
+	Command.TDMELOTlkReq.TestRxTxb   = *TestRxTxb;
+
+	if (ca821x_api_downstream(&Command.CommandId, &Response.CommandId, pDeviceRef))
 		return MAC_SYSTEM_ERROR;
 
 	if (Response.CommandId != SPI_TDME_LOTLK_CONFIRM)

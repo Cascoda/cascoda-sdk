@@ -79,6 +79,8 @@ public:
 	 */
 	void SetAppName(const char *aAppName) { mAppNameFilter = aAppName; }
 
+	void SetMinVersion(const char *aMinVersion) { mMinVersionFilter = aMinVersion; }
+
 	/**
 	 * Run the filter on the given DeviceInfo
 	 * @param aDeviceInfo The DeviceInfo to filter
@@ -90,6 +92,7 @@ private:
 	bool                     mAvailableFilter;
 	std::vector<std::string> mSerialNoFilter;
 	std::string              mAppNameFilter;
+	std::string              mMinVersionFilter;
 
 	bool mAvailableFilterEnabled;
 

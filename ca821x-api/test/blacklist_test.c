@@ -39,7 +39,7 @@
 int received_data_indication;
 
 // Stubs, since tests are built without a platform layer that handles the actual IO
-ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_api_downstream(const uint8_t *buf, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	return CA_ERROR_SUCCESS;
 }

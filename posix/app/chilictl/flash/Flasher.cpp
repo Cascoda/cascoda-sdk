@@ -64,6 +64,7 @@ Flasher::Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType
     , mDeviceInfo(aDeviceInfo)
     , mState(INIT)
     , mFlashType(aFlashType)
+    , mIgnoreVersion(false)
 {
 	if (!mFile.is_open())
 	{
@@ -157,6 +158,20 @@ ca_error Flasher::init()
 	if (status)
 		goto exit;
 	mDeviceRef.context = this;
+
+	//Can't flash Chilis with a firmware version of less than 0.14 (except if in DFU mode)
+	if (!mIgnoreVersion && strcmp(mDeviceInfo.GetAppName(), "DFU") != 0)
+	{
+		if (EVBME_CheckVersion("0.14", &mDeviceRef) != CA_ERROR_SUCCESS)
+		{
+			fprintf(stderr,
+			        "Error: Chili version too old - must be v0.14 or above for USB reflash. Please use an external "
+			        "programmer. See --ignore-version flag if you want to attempt to override this check.\n");
+			status = CA_ERROR_INVALID;
+			set_state(FAIL);
+			goto exit;
+		}
+	}
 
 	if (mFlashType == APROM)
 	{

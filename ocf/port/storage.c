@@ -61,7 +61,7 @@ long oc_storage_read(const char *store, uint8_t *buf, size_t size)
 	{
 		error = otPlatSettingsGetAddress(OC_SETTINGS_KEY, i, &read_buffer, &read_buffer_size);
 
-		if (error || read_buffer_size != 16)
+		if (error)
 		{
 			OC_DBG("Could not find key! Final otPlatSettingsGet returns %d\n", error);
 			goto exit;

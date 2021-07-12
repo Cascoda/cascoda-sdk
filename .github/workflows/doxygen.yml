@@ -1,0 +1,53 @@
+name: BuildAndPublishDoxygen
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  doxygen:
+    if: ${{ github.repository == 'Cascoda/cascoda-sdk' }} 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: cascoda-sdk
+      
+      - uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.CASCODA_SDK_SSH_KEY }}
+        
+      - name: build-docs
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install doxygen
+          doxygen --version
+          sudo apt install graphviz
+          sudo apt-get install -y plantuml
+          cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-doxygen -DCASCODA_PLANTUML_JAR=/usr/share/plantuml/plantuml.jar
+          make -C ${{ github.workspace }}/build-doxygen docs
+          
+          # Just to check that it generated documents
+          cd build-doxygen/docs/docs/html
+          ls | wc -l
+          
+      - name: copy-docs
+        run: |
+          cd ~/work
+          git clone git@github.com:Cascoda/cascoda-sdk-doxygen.git
+          cd cascoda-sdk-doxygen
+          rm -rf *
+          cp -r /home/runner/work/cascoda-sdk-priv/cascoda-sdk-priv/build-doxygen/docs/docs/html .
+          #Rename to "docs"
+          mv html docs
+          
+      - name: push-changes
+        run: |
+          cd ~/work/cascoda-sdk-doxygen
+          git config --global user.name 'Elie El Khoury'
+          git config --global user.email 'e.khoury@cascoda.com'
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Automatic publish from github.com/Cascoda/cascoda-sdk"
+          git push

@@ -32,7 +32,7 @@ void __wrap_BSP_Waiting()
 	CHILI_FastForward(1);
 }
 
-ca_error __wrap_SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error __wrap_SPI_Send(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	if (buf[0] == SPI_MCPS_PURGE_REQUEST)
 	{

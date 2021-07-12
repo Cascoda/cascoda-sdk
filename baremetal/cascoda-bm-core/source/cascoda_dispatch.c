@@ -262,7 +262,7 @@ static inline void ApplyMixedDirectHotfix(struct ca821x_dev *pDeviceRef)
 {
 	const uint8_t hotfix[] = {0x4D, 0x01, 0x00};
 	uint8_t       reply[3];
-	SPI_Send(hotfix, 3, reply, pDeviceRef);
+	SPI_Send(hotfix, reply, pDeviceRef);
 }
 
 /**
@@ -494,7 +494,7 @@ void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef)
 	BSP_EnableRFIRQ();
 }
 
-ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error DISPATCH_ToCA821x(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDeviceRef)
 {
 	ca_error Status = CA_ERROR_SUCCESS;
 
@@ -504,7 +504,7 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 	if (!Status)
 		Status = PreCheckToCA821x(buf, response, pDeviceRef);
 	if (!Status)
-		Status = SPI_Send(buf, len, response, pDeviceRef);
+		Status = SPI_Send(buf, response, pDeviceRef);
 	if (!Status)
 		Status = PostCheckToCA821x(buf, response, pDeviceRef);
 
@@ -513,9 +513,9 @@ ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struc
 	return Status;
 }
 
-ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_api_downstream(const uint8_t *buf, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
-	return DISPATCH_ToCA821x(buf, len, response, pDeviceRef);
+	return DISPATCH_ToCA821x(buf, response, pDeviceRef);
 }
 
 ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)

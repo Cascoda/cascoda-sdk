@@ -76,6 +76,8 @@ static const uint16_t autostart_key = 0xCA51;
 static const uint16_t sensordemo_key = 0xCA5C;
 /** Flash settings key for actuatordemo mode */
 static const uint16_t actuatordemo_key = 0xCA5D;
+/** Flash settings key for the stack profiler */
+static const uint16_t stack_profiler_key = 0xCA5E;
 /** Flash settings key used for storing OCF data */
 static const uint16_t OC_SETTINGS_KEY = 0xe107;
 /** Flash settings key used for storing OCF encryption private key */

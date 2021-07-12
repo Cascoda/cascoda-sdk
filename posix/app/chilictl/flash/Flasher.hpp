@@ -120,6 +120,16 @@ public:
 	 */
 	State GetState() { return mState; }
 
+	/**
+	 * Enable/Disable the version check for the connected device.
+	 *
+	 * This is useful if the connected device's version number is broken for some reason, but the actual firmware
+	 * is up to date. Defaults to false (Version check is enabled)
+	 *
+	 * @param aIgnoreVersion Set to true to ignore the version check, Set to false to enable the version check
+	 */
+	void SetIgnoreVersion(bool aIgnoreVersion) { mIgnoreVersion = aIgnoreVersion; }
+
 private:
 	enum
 	{
@@ -139,6 +149,7 @@ private:
 	uint32_t      mCounter;
 	State         mState;
 	FlashType     mFlashType;
+	bool          mIgnoreVersion;
 
 	void     set_state(State aNextState);
 	ca_error init();

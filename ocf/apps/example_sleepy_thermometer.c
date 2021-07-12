@@ -104,7 +104,6 @@ static char g_temperature_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.a",
                                                               "oic.if.s"}; /* interface if (as an array) */
 int         g_temperature_nr_resource_interfaces           = 2;
 
-otInstance *OT_INSTANCE;
 /**
 * function to set up the device.
 *

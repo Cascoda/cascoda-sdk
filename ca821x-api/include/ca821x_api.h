@@ -760,15 +760,15 @@ ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *
  * constructed commands to the ca821x. The cascoda baremetal or posix  libraries
  * implement this for their respective platform.
  *******************************************************************************
- * \param buf - The buffer containing the command to send downstream
- * \param len - The length of the command in octets
+ * \param buf - The buffer containing the Cascoda TLV command to send downstream.
+ *               The length is encoded within the buffer.
  * \param response - The buffer to populate with a received synchronous
  *                    response
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
  * \return CA_ERROR_SUCCESS for success, anything else for failure
  ******************************************************************************/
-ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef);
+ca_error ca821x_api_downstream(const uint8_t *buf, uint8_t *response, struct ca821x_dev *pDeviceRef);
 
 #ifdef __cplusplus
 }

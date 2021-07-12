@@ -89,15 +89,14 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
  *
  * RFIRQ must be enabled when calling.
  *
- * \param buf - Message to transmit
- * \param len - Length of message in buf
+ * \param buf - Message to transmit, length is encoded in cascoda TLV form
  * \param response - Buffer to fill with response
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return Status
  *
  */
-ca_error SPI_Send(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef);
+ca_error SPI_Send(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Get a MAC_Message buffer containing a received SPI Message

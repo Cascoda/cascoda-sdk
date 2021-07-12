@@ -56,6 +56,7 @@ private:
 	ArgOpt           mBatchArg;
 	ArgOpt           mFileArg;
 	ArgOpt           mDfuUpdateArg;
+	ArgOpt           mIgnoreVersionArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	std::string      mFilePath;

@@ -456,7 +456,7 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 		return CA_ERROR_TIMEOUT;
 }
 
-ca_error ca821x_api_downstream(const uint8_t *buf, size_t len, uint8_t *response, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_api_downstream(const uint8_t *buf, uint8_t *response, struct ca821x_dev *pDeviceRef)
 {
-	return ca821x_exchange_commands(buf, len, response, pDeviceRef);
+	return ca821x_exchange_commands(buf, buf[1] + 2, response, pDeviceRef);
 }

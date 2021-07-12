@@ -53,6 +53,13 @@ bool DeviceListFilter::IsFilterPass(const DeviceInfo &aDeviceInfo) const
 		if (aDeviceInfo.GetAppName() != mAppNameFilter)
 			return false;
 	}
+	if (!mMinVersionFilter.empty())
+	{
+		if (!aDeviceInfo.GetVersion())
+			return false;
+		if (EVBME_CompareVersions(aDeviceInfo.GetVersion(), mMinVersionFilter.c_str(), NULL, NULL) < 0)
+			return false;
+	}
 	return true;
 }
 

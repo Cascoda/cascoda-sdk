@@ -25,7 +25,7 @@ target_link_libraries(ca821x-openthread-bm-plat
 	)
 
 # NTP server used by platform/sntp_helper.c
-set(CASCODA_NTP_SERVER "pool.ntp.org" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
+set(CASCODA_NTP_SERVER "time.google.com" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
 set(CASCODA_SNTP_INTERVAL 2880 CACHE STRING "The interval beween SNTP requests, in minutes. Default is two days (2880 minutes).")
 mark_as_advanced(CASCODA_SNTP_INTERVAL)
 target_compile_definitions(ca821x-openthread-bm-plat PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")

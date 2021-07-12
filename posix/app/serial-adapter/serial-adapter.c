@@ -299,6 +299,10 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 	configure_io();
+
+	if (EVBME_CheckVersion(NULL, pDeviceRef) != CA_ERROR_SUCCESS)
+		exit(1);
+
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
 	exchange_register_user_callback(handle_user_command, pDeviceRef);
 	ca821x_util_start_downstream_dispatch_worker();

@@ -47,8 +47,6 @@ const char *uriCascodaActuatorDiscoverQuery = "t=act";
 const char *uriCascodaActuator              = "ca/ac";
 const char *uriCascodaKeepAlive             = "ca/ka";
 
-otInstance *OT_INSTANCE;
-
 enum actuatordemo_state
 {
 	ACTUATORDEMO_STOPPED    = 0,

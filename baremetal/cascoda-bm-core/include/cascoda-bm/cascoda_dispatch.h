@@ -57,15 +57,14 @@ extern "C" {
  * transmits a SAP command and if applicable, waits for a synchronous confirm and
  * stores it in the 'response' buffer.
  *
- * \param buf - Message to transmit
- * \param len - Length of message in buf
+ * \param buf - Message to transmit, length is encoded in Cascoda TLV format
  * \param response - Buffer to fill with response
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return Status
  *
  */
-ca_error DISPATCH_ToCA821x(const uint8_t *buf, size_t len, u8_t *response, struct ca821x_dev *pDeviceRef);
+ca_error DISPATCH_ToCA821x(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief process and dispatch on any received SPI messages from the ca821x

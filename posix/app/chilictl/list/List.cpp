@@ -41,6 +41,7 @@ List::List()
     , mHelpArg('h', "help")
     , mAvailableArg('\0', "available", ArgOpt::OPTIONAL)
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
+    , mMinVersionArg('v', "min-version", ArgOpt::MANDATORY)
     , mDeviceList()
     , mDeviceListFilter()
     , mExitBeforeWork(false)
@@ -58,6 +59,12 @@ List::List()
 	mSerialArg.SetHelpString("Filter the list to only include the device with the given serial number.");
 	mSerialArg.SetCallback(&List::set_serialno_filter, *this);
 	mArgParser.AddOption(mSerialArg);
+
+	mMinVersionArg.SetArgHint("version-no");
+	mMinVersionArg.SetHelpString(
+	    "Filter the list to only include devices with a version greater or equal to the provided version. eg: 0.18");
+	mMinVersionArg.SetCallback(&List::set_versionno_filter, *this);
+	mArgParser.AddOption((mMinVersionArg));
 }
 
 static const char *or_default(const char *val, const char *default_val)
@@ -148,6 +155,12 @@ ca_error List::set_available(const char *aArg)
 ca_error List::set_serialno_filter(const char *aArg)
 {
 	mDeviceListFilter.AddSerialNo(aArg);
+	return CA_ERROR_SUCCESS;
+}
+
+ca_error List::set_versionno_filter(const char *aArg)
+{
+	mDeviceListFilter.SetMinVersion(aArg);
 	return CA_ERROR_SUCCESS;
 }
 

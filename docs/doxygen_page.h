@@ -35,12 +35,30 @@
  *
  * For browsing the code documentation, see the respective modules:
  *
- * | Module              | Description              |
- * | ------------------- | ------------------------ |
- * | @ref baremetal      | @copybrief baremetal     |
- * | @ref posix          | @copybrief posix         |
- * | @ref ca821x-api     | @copybrief ca821x-api    |
- * | @ref cascoda-util   | @copybrief cascoda-util  |
+<table>
+<tr>
+  <th>Module</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <td>@ref baremetal</td>
+  <td>@copybrief baremetal </td>
+</tr>
+<tr>
+  <td>@ref posix</td>
+  <td>@copybrief posix </td>
+</tr>
+<tr>
+  <td>@ref ca821x-api</td>
+  <td>@copybrief ca821x-api </td>
+</tr>
+<tr>
+  <td>@ref cascoda-util</td>
+  <td>@copybrief cascoda-util </td>
+</tr>
+<tr>
+</tr>
+</table>
  *
  * (These can also be accessed in the sidebar, or the 'modules' tab at the top of the page.)
  *

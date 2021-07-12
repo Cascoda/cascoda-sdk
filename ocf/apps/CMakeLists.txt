@@ -105,8 +105,8 @@ target_compile_definitions(ocf-sensorif-unsecure PRIVATE)
 cascoda_make_binary(ocf-sensorif-unsecure)
 
 if(CASCODA_BUILD_OCF_DEV)
-    if(${CASCODA_CHILI_FLASH_PAGES} LESS 16)
-        message(WARNING "CASCODA_CHILI_FLASH_PAGES is set to " ${CASCODA_CHILI_FLASH_PAGES} ". The recommended value is 16. Other values may not be OCF compliant.")
+    if(${CASCODA_CHILI_FLASH_PAGES} LESS 14)
+        message(WARNING "CASCODA_CHILI_FLASH_PAGES is set to " ${CASCODA_CHILI_FLASH_PAGES} ". The recommended value is 14 or greater. Other values may not be OCF compliant.")
     endif()
 
     add_executable(ocf-pki-light
@@ -161,7 +161,7 @@ if(CASCODA_BUILD_OCF_DEV)
 
     target_compile_definitions(ocf-pki-module PRIVATE NO_MAIN)
 
-    cascoda_configure_memory(ocf-pki-module 0x2600 0xce00)
+    cascoda_configure_memory(ocf-pki-module 0x2000 0xc400)
     cascoda_make_binary(ocf-pki-module)
 
     add_executable(ocf-pki-reed-module
@@ -179,7 +179,7 @@ if(CASCODA_BUILD_OCF_DEV)
 
     target_compile_definitions(ocf-pki-reed-module PRIVATE NO_MAIN)
 
-    cascoda_configure_memory(ocf-pki-reed-module 0x1000 0xc400)
+    cascoda_configure_memory(ocf-pki-reed-module 0x1700 0xb800)
     cascoda_make_binary(ocf-pki-reed-module)
 
 endif()

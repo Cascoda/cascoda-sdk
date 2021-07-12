@@ -41,6 +41,12 @@ static void handle_user_commands()
 	{
 		*cmd = OCF_COMMAND_FACTORY;
 	}
+	else if (strcmp(in_buf, "poke") == 0)
+	{
+		uint64_t serialno;
+		EVBME_GET_request_sync(EVBME_SERIALNO, sizeof(serialno), (uint8_t *)&serialno, NULL, pDeviceRef);
+		(void)serialno;
+	}
 	else if (strcmp(in_buf, "help") == 0)
 	{
 		printf("Available commands:\n");
@@ -48,6 +54,7 @@ static void handle_user_commands()
 		printf("rfotm - Clear ownership data & put device in Ready for Ownership Transfer Method state.\n");
 		printf("power - Power cycle the attached device.\n");
 		printf("factory - Reset the device to its factory default state.\n");
+		printf("poke - Send a dummy EVBME command, to ensure serial comms are up.\n");
 	}
 	else
 	{

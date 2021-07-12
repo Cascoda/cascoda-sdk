@@ -80,7 +80,7 @@ static void     EVBME_WakeUpRF(void);
 #if defined(USE_USB) || defined(USE_UART)
 static void     EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf);
 static int      EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef);
-static void     EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
+static void     EVBMESendDownStream(const uint8_t *buf, struct ca821x_dev *pDeviceRef);
 static void     EVBME_Disconnect(void);
 static ca_error EVBME_GET_request(struct EVBME_GET_request *req);
 static ca_error EVBME_SET_request(struct EVBME_SET_request *req, struct ca821x_dev *pDeviceRef);
@@ -252,17 +252,16 @@ static int EVBMEUpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca8
 /***************************************************************************/ /**
  * \brief Sends UpStream Command from Serial DownStream to SPI
  *******************************************************************************
- * \param buf - Message to send DownStream
- * \param len - Length of buf
+ * \param buf - Message to send DownStream, Length is encoded in Cascoda TLV format
  * \param pDeviceRef - Device reference
  *******************************************************************************
  ******************************************************************************/
-static void EVBMESendDownStream(const uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+static void EVBMESendDownStream(const uint8_t *buf, struct ca821x_dev *pDeviceRef)
 {
 	struct MAC_Message response;
 	ca_error           status;
 
-	status = DISPATCH_ToCA821x(buf, len, &response.CommandId, pDeviceRef);
+	status = DISPATCH_ToCA821x(buf, &response.CommandId, pDeviceRef);
 
 	if (status == CA_ERROR_SUCCESS)
 	{
@@ -757,7 +756,7 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 			handled = true;
 		if (!handled)
 		{
-			EVBMESendDownStream(&SerialRxBuffer.CmdId, SerialRxBuffer.CmdLen + 2, pDeviceRef);
+			EVBMESendDownStream(&SerialRxBuffer.CmdId, pDeviceRef);
 		}
 #if defined(USE_UART)
 		/* send RX_RDY */
