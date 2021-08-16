@@ -1,13 +1,13 @@
 # ocfctl
 
-`ocfctl` is a terminal application used to control a Chili device programmed with an OCF target such as `ocf-pki-light`. The main purpose of this application is to provide a convenient way of interacting with the device during OCF certification whilst using as few resources as possible on the embedded device.
+`ocfctl` is a terminal application used to control a Chili device programmed with an OCF target such as `ocf-light`. The main purpose of this application is to provide a convenient way of interacting with the device during OCF certification whilst using as few resources as possible on the embedded device.
 
 ## Basic Usage
 
-Flash a Chili2D with an `ocf-pki-light` binary that has been configured with the USB interface. Then, connect the Chili to a computer via USB and run `ocfctl` on the host computer. On first launch, `ocfctl` will display information about the connected device:
+Flash a Chili2D with an `ocf-light` binary that has been configured with the USB interface. Then, connect the Chili to a computer via USB and run `ocfctl` on the host computer. On first launch, `ocfctl` will display information about the connected device:
 
 ```
-Rx: 1ms NOTE: EVBME connected, ocf-pki-light, v0.17-11-geea8d7d5-dirty Apr 29 2021
+Rx: 1ms NOTE: EVBME connected, ocf-light, v0.17-11-geea8d7d5-dirty Apr 29 2021
 Rx: 2ms NOTE: Device ID: 588cac70a197e8f5
 Rx: 2322ms: [NOTE]-MLE-----: Role Disabled -> Detached
 Rx: Used input file : "../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json"
@@ -55,7 +55,7 @@ Upon running the `power` command, you should see a message about the HID device 
 ```
 power
 2021-04-29 16:07:25.901 WARN:  Hid device dropped... attempting reload
-Rx: 1ms NOTE: EVBME connected, ocf-pki-light, v0.17-11-geea8d7d5-dirty Apr 29 2021
+Rx: 1ms NOTE: EVBME connected, ocf-light, v0.17-11-geea8d7d5-dirty Apr 29 2021
 Rx: 2ms NOTE: Device ID: 588cac70a197e8f5
 Rx: 2322ms: [NOTE]-MLE-----: Role Disabled -> Detached
 Rx: Used input file : "../iotivity-lite-lightdevice/out_codegeneration_merged.swagger.json"

@@ -365,3 +365,13 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	(void)plen;
 	return SENSORIF_I2C_ST_NOT_IMPLEMENTED;
 }
+
+ca_error SENSORIF_SPI_Write(u8_t out_data)
+{
+	(void)out_data;
+	return CA_ERROR_NOT_FOUND;
+}
+
+void SENSORIF_SPI_Init(void)
+{
+}

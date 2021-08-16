@@ -44,7 +44,7 @@ mark_as_advanced(CASCODA_CHILI_DISABLE_CA821x)
 
 # External flash (shares SPI Bus with CA-821x & uses PA15 as /CS)
 if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "TWO_SIDED")
-	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS." FORCE)
+	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
 else()
 	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT OFF CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
 endif()

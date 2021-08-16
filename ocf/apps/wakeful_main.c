@@ -1,6 +1,5 @@
 #include <unistd.h>
 
-#include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/platform/settings.h>
 #include <openthread/tasklet.h>
@@ -20,6 +19,8 @@
 #include "port/oc_clock.h"
 #include "oc_api.h"
 #include "oc_buffer_settings.h"
+#include "oc_core_res.h"
+#include "oc_uuid.h"
 #include "sntp_helper.h"
 
 #include "ocf_application.h"
@@ -28,6 +29,25 @@
 #define OCF_COMMAND_RFOTM (0x00)
 #define OCF_COMMAND_POWER (0x01)
 #define OCF_COMMAND_FACTORY (0x02)
+#define OCF_COMMAND_GET_UUID (0x03)
+
+/**
+ * @file
+ *  Example of wakeful main
+ */
+/**
+ * @ingroup ocf
+ * @defgroup ocf-wakeful-main example ocf wakeful main
+ * @brief  Example of wakeful main
+ *
+ * @{
+ * 
+ * ## Application Main
+ * This file contains the functionality and main function of the OCF application.
+ * main is using the bare metal module to run on the chili.
+ *
+ * \include wakeful_main.c
+ */
 
 /**
  * Handle application specific commands.
@@ -49,6 +69,12 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 			break;
 		case OCF_COMMAND_FACTORY:
 			otInstanceFactoryReset(OT_INSTANCE);
+			break;
+		case OCF_COMMAND_GET_UUID:;
+			char uuid[38];
+			uuid[0] = OCF_COMMAND_GET_UUID;
+			oc_uuid_to_str(oc_core_get_device_id(0), uuid + 1, sizeof(uuid) - 1);
+			MAC_Message(OCF_COMMAND, sizeof(uuid), uuid);
 			break;
 		default:
 			break;
@@ -194,3 +220,7 @@ int main(void)
 	oc_main_shutdown();
 	return 0;
 }
+
+/**
+ * @}
+ */

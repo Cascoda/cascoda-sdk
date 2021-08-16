@@ -281,6 +281,7 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 	int64_t     humidity;
 	int64_t     pir_counter;
 	int64_t     light_level;
+	int64_t     voltage;
 
 	CborParser parser;
 	CborValue  value;
@@ -288,11 +289,13 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 	CborValue  h_result;
 	CborValue  c_result;
 	CborValue  l_result;
+	CborValue  v_result;
 
 	unsigned char *temp_key     = "t";
 	unsigned char *humidity_key = "h";
 	unsigned char *counter_key  = "c";
 	unsigned char *light_key    = "l";
+	unsigned char *voltage_key  = "v";
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_POST)
 		return;
@@ -312,7 +315,7 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 	SuccessOrExit(cbor_value_map_find_value(&value, humidity_key, &h_result));
 	SuccessOrExit(cbor_value_map_find_value(&value, counter_key, &c_result));
 	SuccessOrExit(cbor_value_map_find_value(&value, light_key, &l_result));
-
+	SuccessOrExit(cbor_value_map_find_value(&value, voltage_key, &v_result));
 	//Retrieve and print the sensor values
 	otCliOutputFormat("Server received");
 
@@ -346,6 +349,13 @@ static void handleSensorData(void *aContext, otMessage *aMessage, const otMessag
 			otCliOutputFormat(",");
 		SuccessOrExit(cbor_value_get_int64(&l_result, &light_level));
 		otCliOutputFormat(" light level %d", (int)light_level);
+	}
+	if (cbor_value_get_type(&v_result) != CborInvalidType)
+	{
+		if (!first_print)
+			otCliOutputFormat(",");
+		SuccessOrExit(cbor_value_get_int64(&v_result, &voltage));
+		otCliOutputFormat(" voltage reading %d.%03dV", (int)voltage / 1000, voltage % 1000);
 	}
 
 	otCliOutputFormat(" from ");

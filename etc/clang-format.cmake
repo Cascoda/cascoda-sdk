@@ -8,8 +8,8 @@ list(FILTER cascoda_allsource EXCLUDE REGEX "(/vendor/|third-party/|build/)")
 # Find clang-format
 find_program(
 	CLANG_FORMAT_EXE
-	NAMES "clang-format"
-	      "clang-format-6.0"
+	NAMES "clang-format-6.0"
+	      "clang-format"
 	DOC "Path to clang-format executable"
 	)
 if(NOT CLANG_FORMAT_EXE)

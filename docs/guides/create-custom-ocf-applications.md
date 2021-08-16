@@ -68,30 +68,3 @@ must match the device type of the server in order to pass OCF certification.
 A list of the mandatory resources for each standard OCF device type can be
 found within the [OCF Device
 Specification](https://openconnectivity.org/developer/specifications/).
-
-## Optimising Flash and RAM utilisation ##
-
-There are several features of OpenThread that can be disabled for
-further resource gains. These are controlled by variables within the
-CMakeCache.txt file, also accessible through the `ccmake .` command, to be
-called inside your build directory.
-
-To free up as much memory and flash as possible, the variables that should be
-set to `OFF` are as follows:
-
-- `OT_BORDER_AGENT`
-- `OT_BORDER_ROUTER`
-- `OT_COAP`
-- `OT_COMMISSIONER`
-- `OT_DHCP6_SERVER`
-- `OT_MAC_FILTER`
-- `OT_SERVICE`
-- `OT_UDP_FORWARD`
-
-Note that other targets within the Cascoda SDK may not build if the
-OpenThread configuration is changed from the default one.
-
-Additionally, you can gain more RAM by reducing the number of 128-byte
-buffers used by OpenThread. `OPENTHREAD_CONFIG_NUM_MESSAGE_BUFFERS` is the
-CMake Cache variable that controls this. Note that this will reduce network
-performance, and it must not be set lower than 44.

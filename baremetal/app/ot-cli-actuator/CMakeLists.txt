@@ -1,6 +1,10 @@
 # Global config ---------------------------------------------------------------
 project (ca821x-thread-actuatordemo)
 
+if(NOT OT_COAP)
+	return()
+endif()
+
 #Only build the actuator demo on the chili2
 if(TARGET cascoda-chili2)
 	add_executable(ot-cli-actuator

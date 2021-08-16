@@ -24,20 +24,20 @@
 /* PKI certificate data
  input file = pki_certs.zip
  prefix = pki_certs
- date 2020-09-30 15:10:29
+ date 2021-07-19 12:48:16
 */
 
 const char *my_cert = "-----BEGIN CERTIFICATE-----\r\n"
-                      "MIID/DCCA6OgAwIBAgIJAI0K+3tTsk93MAoGCCqGSM49BAMCMFsxDDAKBgNVBAoM\r\n"
+                      "MIID/DCCA6OgAwIBAgIJAI0K+3tTslL5MAoGCCqGSM49BAMCMFsxDDAKBgNVBAoM\r\n"
                       "A09DRjEiMCAGA1UECwwZS3lyaW8gVGVzdCBJbmZyYXN0cnVjdHVyZTEnMCUGA1UE\r\n"
-                      "AwweS3lyaW8gVEVTVCBJbnRlcm1lZGlhdGUgQ0EwMDAyMB4XDTIwMDkzMDE1MTAy\r\n"
-                      "OFoXDTIwMTAzMDE1MTAyOFowRjEMMAoGA1UECgwDT0NGMSIwIAYDVQQLDBlLeXJp\r\n"
+                      "AwweS3lyaW8gVEVTVCBJbnRlcm1lZGlhdGUgQ0EwMDAyMB4XDTIxMDcxOTEyNDgx\r\n"
+                      "NloXDTIxMDgxODEyNDgxNlowRjEMMAoGA1UECgwDT0NGMSIwIAYDVQQLDBlLeXJp\r\n"
                       "byBUZXN0IEluZnJhc3RydWN0dXJlMRIwEAYDVQQDDAlwa2lfY2VydHMwWTATBgcq\r\n"
-                      "hkjOPQIBBggqhkjOPQMBBwNCAASgD/pAz3Ktl0+CWlMmj2FtkAmKnyJ+fXQHr2q0\r\n"
-                      "H28N1pE2bUvoUj5PY5olR0GagIDwX3KuXvA33YrCsAbYneepo4ICYzCCAl8wCQYD\r\n"
+                      "hkjOPQIBBggqhkjOPQMBBwNCAARNV02+gTQBeP2wgM8roC/EaD23m92vT0fg989O\r\n"
+                      "UqSwcnmkpET7r1qyBKZePULo2TJtDf8lFCbx2SXjs5+sXvfxo4ICYzCCAl8wCQYD\r\n"
                       "VR0TBAIwADAOBgNVHQ8BAf8EBAMCA4gwKQYDVR0lBCIwIAYIKwYBBQUHAwIGCCsG\r\n"
-                      "AQUFBwMBBgorBgEEAYLefAEGMB0GA1UdDgQWBBQIIMbQPe/Cyo6Ok/aA+OpsYHov\r\n"
-                      "KDAfBgNVHSMEGDAWgBQZc2oEGgsHcE9TeVM2h/wMunyuCzCBlgYIKwYBBQUHAQEE\r\n"
+                      "AQUFBwMBBgorBgEEAYLefAEGMB0GA1UdDgQWBBT+KJjt+tLAPptDcaWRUNlQ1HEE\r\n"
+                      "HTAfBgNVHSMEGDAWgBQZc2oEGgsHcE9TeVM2h/wMunyuCzCBlgYIKwYBBQUHAQEE\r\n"
                       "gYkwgYYwXQYIKwYBBQUHMAKGUWh0dHA6Ly90ZXN0cGtpLmt5cmlvLmNvbS9vY2Yv\r\n"
                       "Y2FjZXJ0cy9CQkU2NEY5QTdFRTM3RDI5QTA1RTRCQjc3NTk1RjMwOEJFNDFFQjA3\r\n"
                       "LmNydDAlBggrBgEFBQcwAYYZaHR0cDovL3Rlc3RvY3NwLmt5cmlvLmNvbTBfBgNV\r\n"
@@ -47,18 +47,18 @@ const char *my_cert = "-----BEGIN CERTIFICATE-----\r\n"
                       "AgEAMDYMGTEuMy42LjEuNC4xLjUxNDE0LjAuMC4xLjAMGTEuMy42LjEuNC4xLjUx\r\n"
                       "NDE0LjAuMC4yLjAMC0RldmljZU5hbWUxDANPQ0YwKgYKKwYBBAGDkVYBAQQcMBoG\r\n"
                       "CysGAQQBg5FWAQEABgsrBgEEAYORVgEBATAwBgorBgEEAYORVgECBCIwIAwOMS4z\r\n"
-                      "LjYuMS40LjEuNzEMCURpc2NvdmVyeQwDMS4wMAoGCCqGSM49BAMCA0cAMEQCIFmr\r\n"
-                      "tOYdhnMLo9fe53gV3WQozFCgxD2l/D5P2CoZAs4zAiB2vftwgn62G10/4t5q/SRJ\r\n"
-                      "3xu+YhK63gM/gO8Xqe+8dA==\r\n"
+                      "LjYuMS40LjEuNzEMCURpc2NvdmVyeQwDMS4wMAoGCCqGSM49BAMCA0cAMEQCIH/v\r\n"
+                      "NvRPvb4CDA1N9aZsTWOYRZg6h6TrD80qG62L/GprAiAP8mIntHGKSPoH9Yqviqn0\r\n"
+                      "B/e7ZnvY1d4XKNCF3qqqYA==\r\n"
                       "-----END CERTIFICATE-----\r\n";
 
 const char *my_key = "-----BEGIN EC PARAMETERS-----\r\n"
                      "BggqhkjOPQMBBw==\r\n"
                      "-----END EC PARAMETERS-----\r\n"
                      "-----BEGIN EC PRIVATE KEY-----\r\n"
-                     "MHcCAQEEIER4+HJ/OrsooGKEkvS71tzjDFpTg0vESlue3xUhFwc1oAoGCCqGSM49\r\n"
-                     "AwEHoUQDQgAEoA/6QM9yrZdPglpTJo9hbZAJip8ifn10B69qtB9vDdaRNm1L6FI+\r\n"
-                     "T2OaJUdBmoCA8F9yrl7wN92KwrAG2J3nqQ==\r\n"
+                     "MHcCAQEEIFrwsbj2zVRB8RR+a1OKVQ4OguI1VSSYUwChZYZuuO2yoAoGCCqGSM49\r\n"
+                     "AwEHoUQDQgAETVdNvoE0AXj9sIDPK6AvxGg9t5vdr09H4PfPTlKksHJ5pKRE+69a\r\n"
+                     "sgSmXj1C6NkybQ3/JRQm8dkl47OfrF738Q==\r\n"
                      "-----END EC PRIVATE KEY-----\r\n";
 
 const char *int_ca = "-----BEGIN CERTIFICATE-----\r\n"

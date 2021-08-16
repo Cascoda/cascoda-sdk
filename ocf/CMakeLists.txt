@@ -2,16 +2,13 @@ project (iotivity)
 
 include(FetchContent)
 
+
 # Cannot build Iotivity without its patched mbedtls
 if(NOT ${CASCODA_BUILD_OCF})
     return()
 endif()
 
-option(CASCODA_BUILD_OCF_DEV "Build in-development OCF targets. These are
-    unsuitable for production and may be incompatible with certain OpenThread
-    configurations" OFF)
-
-mark_as_advanced(CASCODA_BUILD_OCF_DEV)
+option(CASCODA_BUILD_OCF_PKI "Enable PKI security in all secure OCF targets" ON)
 
 # Only the Chili 2 has enough memory and flash to run Iotivity
 if(NOT TARGET cascoda-chili2)
@@ -242,7 +239,7 @@ target_link_libraries(iotivity-secure-server PRIVATE iotivity-server)
 target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
 target_compile_definitions(iotivity-secure-server PUBLIC OC_SERVER OC_SECURITY)
 
-if(CASCODA_BUILD_OCF_DEV)
+if(CASCODA_BUILD_OCF_PKI)
     target_compile_definitions(mbedcrypto PUBLIC OC_PKI)
 endif()
 

@@ -10,13 +10,13 @@ The purpose of this document is to provide the reader with all the required know
 - [Getting Started with OCF and Thread](#getting-started-with-ocf-and-thread)
     - [Contents](#contents)
     - [Important references](#important-references)
-    - [Step 0 - Building the Cascoda SDK (optional)](#step-0-building-the-cascoda-sdk-optional)
-    - [Step 1 - Prerequisite Knowledge](#step-1-prerequisite-knowledge)
-    - [Step 2 - Getting Started](#step-2-getting-started)
-    - [Step 3 - Creating OCF Applications over Thread](#step-3-creating-ocf-applications-over-thread)
-    - [Step 4 - Thread Network Set-Up and Configuration](#step-4-thread-network-set-up-and-configuration)
-    - [Step 5 - OCF Device Spy Configuration](#step-5-ocf-device-spy-configuration)
-    - [Step 6 - Interact with your OCF server using OCF Device Spy](#step-6-interact-with-your-ocf-server-using-ocf-device-spy)
+    - [Step 0 - Building the Cascoda SDK (optional)](#step-0---building-the-cascoda-sdk-optional)
+    - [Step 1 - Prerequisite Knowledge](#step-1---prerequisite-knowledge)
+    - [Step 2 - Getting Started](#step-2---getting-started)
+    - [Step 3 - Creating OCF Applications over Thread](#step-3---creating-ocf-applications-over-thread)
+    - [Step 4 - Thread Network Set-Up and Configuration](#step-4---thread-network-set-up-and-configuration)
+    - [Step 5 - OCF Device Spy Configuration](#step-5---ocf-device-spy-configuration)
+    - [Step 6 - Interact with your OCF server using OCF Device Spy](#step-6---interact-with-your-ocf-server-using-ocf-device-spy)
 
 <!-- /TOC -->
 
@@ -48,7 +48,7 @@ On the other hand, if you only intend to run pre-existing OCF applications, then
 - Have a look at this README file [here](../../ocf/README.md) for a list of all the existing OCF applications currently available in the Cascoda SDK, which have been generated in the exact same way as was described in the previous bullet point.
 
 ## Step 4 - Thread Network Set-Up and Configuration
-The OCF applications mentioned in [Step 3](#step-3-creating-ocf-applications-over-thread) run over Thread, which is a low-power wireless protocol based on IPv6. For that reason, some setting up and configuration will be necessary in order to get the Thread network running and get the Chili module to join that network. The following points will guide you through this process.
+The OCF applications mentioned in [Step 3](#step-3---creating-ocf-applications-over-thread) run over Thread, which is a low-power wireless protocol based on IPv6. For that reason, some setting up and configuration will be necessary in order to get the Thread network running and get the Chili module to join that network. The following points will guide you through this process.
 
 - First, gather the necessary hardware, as pictured below (ignore the USB to Ethernet dongle, it isn't needed for the purposes of this guide):
     - A Cascoda Chili 2D module - This is where the OCF application/server will run.
@@ -79,7 +79,7 @@ The OCF applications mentioned in [Step 3](#step-3-creating-ocf-applications-ove
 - Once you've verified that the Chili module has successfully joined the Thread network, you can move on to the next step.
 
 ## Step 5 - OCF Device Spy Configuration
-A few more configurations need to be made on OCF Device Spy before it can discover your OCF server. This is because unlike in [Step 2](#step-2-getting-started) where OCF Device Spy was communicating with the OCF server over Ethernet, here it is communicating with the server indirectly via the border router. The messages that OCF Device Spy sends out are received by the border router over Wi-Fi, and then are routed to the OCF server over Thread. To achieve that, do the following.
+A few more configurations need to be made on OCF Device Spy before it can discover your OCF server. This is because unlike in [Step 2](#step-2---getting-started) where OCF Device Spy was communicating with the OCF server over Ethernet, here it is communicating with the server indirectly via the border router. The messages that OCF Device Spy sends out are received by the border router over Wi-Fi, and then are routed to the OCF server over Thread. To achieve that, do the following.
 
 - Connect your Windows PC running OCF Device Spy to the Border Router's Wi-Fi. This should give you access to the Internet.
 - Open OCF Device Spy, and select Wi-Fi as the network interface, as shown in the picture below.
@@ -93,6 +93,6 @@ A few more configurations need to be made on OCF Device Spy before it can discov
 <p align="center"><img src="imgs/multicast.PNG" width="600"></p>
 
 ## Step 6 - Interact with your OCF server using OCF Device Spy
-- Now, OCF Device Spy should be ready to discover, onboard, and interact with the OCF server running on the Chili 2D module, in the exact same way as you would have done in [Step 2](#step-2-getting-started).
+- Now, OCF Device Spy should be ready to discover, onboard, and interact with the OCF server running on the Chili 2D module, in the exact same way as you would have done in [Step 2](#step-2---getting-started).
 
 

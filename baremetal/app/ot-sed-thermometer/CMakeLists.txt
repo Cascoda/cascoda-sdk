@@ -6,6 +6,10 @@ if (NOT CASCODA_OPENTHREAD_FTD)
 	return()
 endif()
 
+if (NOT OT_COAP)
+	return()
+endif()
+
 add_executable(ot-sed-thermometer
 	${PROJECT_SOURCE_DIR}/source/sed_standalone.c
 )

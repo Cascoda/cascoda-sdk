@@ -15,38 +15,61 @@
  limitations under the License.
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 */
+#ifndef DOXYGEN
+// Force doxygen to document static inline
+#define STATIC static
+#endif
 
-/* Application Design
+/**
+ * @file
+ *  example of OCF light
+ */
+/**
+ * @ingroup ocf
+ * @defgroup ocf-examples-light example ocf light 
+ * @brief  example of OCF light
+ *
+ * @{
+ *
+*
+* ## Application Design
 *
 * support functions:
-* app_init
-*  initializes the oic/p and oic/d values.
-* register_resources
-*  function that registers all endpoints, e.g. sets the RETRIEVE/UPDATE handlers for each end point
+* - app_init
+*   initializes the oic/p and oic/d values.
+* - register_resources
+*   function that registers all endpoints, e.g. sets the RETRIEVE/UPDATE handlers for each end point
 *
-* main
+* ## main
+*
 *  starts the stack, with the registered resources.
+*  can use either:
+*  - sleepy_main
+*  - wakeful_main 
+*
+* as main application.
 *
 * Each resource has:
-*  global property variables (per resource path) for:
-*    the property name
-*       naming convention: g_<path>_RESOURCE_PROPERTY_NAME_<propertyname>
-*    the actual value of the property, which is typed from the json data type
-*      naming convention: g_<path>_<propertyname>
-*  global resource variables (per path) for:
+* - global property variables (per resource path) for:
+*   - the property name
+*       naming convention: g_[path]_RESOURCE_PROPERTY_NAME_[propertyname]
+*   - the actual value of the property, which is typed from the json data type
+*      naming convention: g_[path]_<propertyname>
+* - global resource variables (per path) for:
 *    the path in a variable:
-*      naming convention: g_<path>_RESOURCE_ENDPOINT
+*      naming convention: g_[path]_RESOURCE_ENDPOINT
 *
-*  handlers for the implemented methods (get/post)
-*   get_<path>
-*     function that is being called when a RETRIEVE is called on <path>
+*  handlers for the implemented methods (get/post):
+*  - get_[path]
+*     function that is being called when a RETRIEVE is called on [path]
 *     set the global variables in the output
-*   post_<path>
-*     function that is being called when a UPDATE is called on <path>
+*  - post_[path]
+*     function that is being called when a UPDATE is called on [path]
 *     checks the input data
 *     if input data is correct
 *       updates the global variables
 *
+* \include example_light.c
 */
 /*
  tool_version          : 20200103
@@ -79,18 +102,14 @@ static struct timespec ts;
 #ifdef WIN32
 /* windows specific code */
 #include <windows.h>
-static CONDITION_VARIABLE cv; /* event loop variable */
-static CRITICAL_SECTION   cs; /* event loop variable */
+STATIC CONDITION_VARIABLE cv; /**< event loop variable */
+STATIC CRITICAL_SECTION cs;   /**< event loop variable */
 #endif
 
 #define btoa(x) ((x) ? "true" : "false")
-
-#define MAX_STRING 30         /* max size of the strings. */
-#define MAX_PAYLOAD_STRING 65 /* max size strings in the payload */
-#define MAX_ARRAY 10          /* max size of the array */
 /* Note: Magic numbers are derived from the resource definition, either from the example or the definition.*/
 
-volatile int quit = 0; /* stop variable, used by handle_signal */
+volatile int quit = 0; /**< stop variable, used by handle_signal */
 
 /** Cascoda Additions */
 #include <openthread/cli.h>
@@ -109,26 +128,34 @@ otInstance *OT_INSTANCE;
 #define RELAY_OUT_PIN 15
 /** End of Cascoda Additions */
 
-/* global property variables for path: "/binaryswitch" */
-static char *g_binaryswitch_RESOURCE_PROPERTY_NAME_value = "value"; /* the name for the attribute */
-bool         g_binaryswitch_value = false; /* current value of property "value" The status of the switch. */
+/** global property variables for path: "/binaryswitch" */
+STATIC char *g_binaryswitch_RESOURCE_PROPERTY_NAME_value = "value"; /**< the name for the attribute */
+bool         g_binaryswitch_value = false; /**< current value of property "value" The status of the switch. */
 /* global property variables for path: "/dimming" */
-static char *g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting = "dimmingSetting"; /* the name for the attribute */
+STATIC char *g_dimming_RESOURCE_PROPERTY_NAME_dimmingSetting = "dimmingSetting"; /**< the name for the attribute */
 int          g_dimming_dimmingSetting                        = 30;
-/* current value of property "dimmingSetting" The current dimming value. */ /* registration data variables for the resources */
+/**< current value of property "dimmingSetting" The current dimming value. */
 
-/* global resource variables for path: /binaryswitch */
-static char *g_binaryswitch_RESOURCE_ENDPOINT         = "/binaryswitch";         /* used path for this resource */
-static char *g_binaryswitch_RESOURCE_TYPE[MAX_STRING] = {"oic.r.switch.binary"}; /* rt value (as an array) */
-int          g_binaryswitch_nr_resource_types         = 1;
+/**< registration data variables for the resources */
+
+/**< global resource variables for path: /binaryswitch */
+STATIC char *      g_binaryswitch_RESOURCE_ENDPOINT = "/binaryswitch";         /**< used path for this resource */
+STATIC const char *g_binaryswitch_RESOURCE_TYPE[]   = {"oic.r.switch.binary"}; /**< rt value (as an array) */
+int                g_binaryswitch_nr_resource_types = 1;                       /**< amount of resource type entries */
+
 /* global resource variables for path: /dimming */
-static char *g_dimming_RESOURCE_ENDPOINT         = "/dimming";              /* used path for this resource */
-static char *g_dimming_RESOURCE_TYPE[MAX_STRING] = {"oic.r.light.dimming"}; /* rt value (as an array) */
-int          g_dimming_nr_resource_types         = 1;
+STATIC char *      g_dimming_RESOURCE_ENDPOINT = "/dimming";              /**< used path for this resource */
+STATIC const char *g_dimming_RESOURCE_TYPE[]   = {"oic.r.light.dimming"}; /**< rt value (as an array) */
+int                g_dimming_nr_resource_types = 1;                       /**< amount of resource type entries */
 
 /**
 * function to set up the device.
-*
+* 
+* sets the:
+* - OCF device_type
+* - friendly device name
+* - OCF version
+* - introspection device data
 */
 int app_init(void)
 {
@@ -186,9 +213,10 @@ int app_init(void)
 * helper function to check if the POST input document contains
 * the common readOnly properties or the resouce readOnly properties
 * @param name the name of the property
+* @param error_state the current (input) error state
 * @return the error_status, e.g. if error_status is true, then the input document contains something illegal
 */
-static bool check_on_readonly_common_resource_properties(oc_string_t name, bool error_state)
+STATIC bool check_on_readonly_common_resource_properties(oc_string_t name, bool error_state)
 {
 	if (strcmp(oc_string(name), "n") == 0)
 	{
@@ -232,7 +260,7 @@ static bool check_on_readonly_common_resource_properties(oc_string_t name, bool 
 * @param interfaces the interface used for this call
 * @param user_data the user data.
 */
-static void get_binaryswitch(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void get_binaryswitch(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)user_data; /* variable not used */
 	/* TODO: SENSOR add here the code to talk to the HW if one implements a sensor.
@@ -291,7 +319,7 @@ static void get_binaryswitch(oc_request_t *request, oc_interface_mask_t interfac
 * @param interfaces the interface used for this call
 * @param user_data the user data.
 */
-static void get_dimming(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void get_dimming(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)user_data; /* variable not used */
 	/* TODO: SENSOR add here the code to talk to the HW if one implements a sensor.
@@ -347,7 +375,7 @@ static void get_dimming(oc_request_t *request, oc_interface_mask_t interfaces, v
 * @param interfaces the used interfaces during the request.
 * @param user_data the supplied user data.
 */
-static void post_binaryswitch(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void post_binaryswitch(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)interfaces;
 	(void)user_data;
@@ -444,7 +472,7 @@ static void post_binaryswitch(oc_request_t *request, oc_interface_mask_t interfa
 * @param interfaces the used interfaces during the request.
 * @param user_data the supplied user data.
 */
-static void post_dimming(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void post_dimming(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)interfaces;
 	(void)user_data;
@@ -694,7 +722,7 @@ void initialize_variables(void)
 * signal the event loop (windows version)
 * wakes up the main function to handle the next callback
 */
-static void signal_event_loop(void)
+STATIC void signal_event_loop(void)
 {
 	WakeConditionVariable(&cv);
 }
@@ -705,7 +733,7 @@ static void signal_event_loop(void)
 * signal the event loop (Linux)
 * wakes up the main function to handle the next callback
 */
-static void signal_event_loop(void)
+STATIC void signal_event_loop(void)
 {
 	pthread_mutex_lock(&mutex);
 	pthread_cond_signal(&cv);
@@ -729,7 +757,7 @@ void handle_signal(int signal)
 * cloud status handler.
 * handler to print out the status of the cloud connection
 */
-static void cloud_status_handler(oc_cloud_context_t *ctx, oc_cloud_status_t status, void *data)
+STATIC void cloud_status_handler(oc_cloud_context_t *ctx, oc_cloud_status_t status, void *data)
 {
 	(void)data;
 	PRINT("\nCloud Manager Status:\n");
@@ -919,3 +947,7 @@ int main(void)
 	return 0;
 }
 #endif /* NO_MAIN */
+
+/**
+ * @}
+ */

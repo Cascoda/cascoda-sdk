@@ -17,6 +17,10 @@ if (NOT TARGET sensorif)
 	return()
 endif()
 
+if (NOT OT_COAP)
+	return()
+endif()
+
 add_executable(ot-sed-sensorif
 	${PROJECT_SOURCE_DIR}/source/ot_sed_sensorif.c
 	)

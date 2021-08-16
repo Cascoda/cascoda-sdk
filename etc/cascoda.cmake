@@ -171,3 +171,15 @@ function(cascoda_add_longtest target_name timeout_val)
 	endforeach()
 	file(APPEND "${CMAKE_BINARY_DIR}/longtests.csv.in" "$<TARGET_FILE:${target_name}>,${timeout_val}${ARGLIST}\n")
 endfunction()
+
+# Track whether a cache variable has changed since the last configure.
+# var_name is the name of the variable to track
+# has_changed is the name of the variable to set to true if the variable has changed
+macro(cascoda_has_changed var_name has_changed)
+	if("${${var_name}}" STREQUAL "${${var_name}_internal_value}")
+		set("${has_changed}" OFF)
+	else()
+		set("${has_changed}" ON)
+		set("${var_name}_internal_value" "${${var_name}}" CACHE INTERNAL "")
+	endif()
+endmacro()

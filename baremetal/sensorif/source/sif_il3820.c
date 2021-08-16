@@ -231,10 +231,8 @@ ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut)
 	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
 	/* RST - Pin 15 */
 	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_RST_PIN, MODULE_PIN_TYPE_GENERIC);
-	/* D/C - Pin 5 */
+	/* D/C - Pin 34 */
 	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_DC_PIN, MODULE_PIN_TYPE_GENERIC);
-	/* CS - Pin 34 */
-	//BSP_ModuleRegisterGPIOOutput(SIF_IL3820_CS_PIN, MODULE_PIN_TYPE_GENERIC);
 
 	/*****************************************/
 	/*** Initialise the SPI communication  ***/
@@ -378,4 +376,14 @@ ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x,
 		return CA_ERROR_SUCCESS;
 	}
 	return CA_ERROR_FAIL;
+}
+
+void SIF_IL3820_ClearAndDisplayImage(uint8_t *image)
+{
+	SIF_IL3820_ClearDisplay();
+	WAIT_ms(500);
+	SIF_IL3820_Display(image);
+	WAIT_ms(1000);
+	WAIT_ms(1000);
+	SIF_IL3820_DeepSleep();
 }

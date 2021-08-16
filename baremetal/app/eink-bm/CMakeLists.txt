@@ -9,7 +9,6 @@ endif()
 # Main library config ---------------------------------------------------------
 add_executable(eink-test
 	${PROJECT_SOURCE_DIR}/source/eink_main.c
-	${PROJECT_SOURCE_DIR}/source/eink_image.c
 	)
 
 target_include_directories(eink-test

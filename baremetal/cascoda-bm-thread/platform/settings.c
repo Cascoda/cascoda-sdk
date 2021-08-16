@@ -84,6 +84,8 @@ struct settingsBlock
 #define SETTINGS_CONFIG_BASE_ADDRESS 0
 #endif // SETTINGS_CONFIG_BASE_ADDRESS
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
 static uint32_t sSettingsBaseAddress;
 static uint32_t sSettingsUsedSize;
 
@@ -276,9 +278,9 @@ static otError addSettingVector(otInstance *          aInstance,
 		// FF FF 13 37 ...
 		// ~~ ~~       <- these ones are headPadCount
 		//       ~~ ~~ <- these ones are headDataCount
-		uint8_t headPadCount  = write_address % sizeof(uint32_t);
-		uint8_t headDataCount = sizeof(uint32_t) - headPadCount;
+		uint8_t headPadCount = write_address % sizeof(uint32_t);
 
+		uint8_t headDataCount = MIN(sizeof(uint32_t) - headPadCount, aSetting[i].length);
 		memcpy(headPad + headPadCount, aSetting[i].value, headDataCount);
 
 		// write ahead of your data, in case the start is misaligned & thus word-aligning write_address

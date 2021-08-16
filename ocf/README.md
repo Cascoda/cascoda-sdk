@@ -7,35 +7,104 @@ This document describes the existing OCF applications. If you would like to
 create a custom application,
 [there is a separate guide](../docs/guides/create-custom-ocf-applications.md#) for this.
 
+The applications in this directory are compiled only if the `CASCODA_BUILD_OCF`
+CMake cache variable is set to `ON`. Note that this will disable several other
+targets vithin the SDK. If these are required, they must be built in a separate
+binary directory.
+
 ## apps
 
 The `apps` subdirectory contains a collection of OCF based example
 applications.
 
+### ocf-light
+
 `ocf-light` is an OCF light server that can be used to control a lamp.
-Pin 15 is mapped to the value of the `oic.r.switch.binary` resource hosted at
-`/binaryswitch`. The application also presents a `oic.r.light.dimming`
-resource hosted at `/dimming`. This resource does not control anything, it is
-there strictly to help with certification. The application is compiled with
-OCF security enabled, and it can be onboarded using JustWorks.
+The application is using:
 
-Besides the standard OpenThread CLI, `ocf-light` also has several custom
-commands used to control the application.
+- wakeful_main.c, as main application
+- example_light.c, as code for setting up IoTivity
 
-- `ocflight set-switch`, followed
-by "0" or "1" is used to turn the light on or off from the command-line,
-without having to access the resource through OCF. These changes are visible
-from OCF: if you type `ocflight set-switch 0`, the light will turn off, and a
-GET request at `/binaryswitch` will show that the switch is turned off.
+The application can be compiled with the following command:
+`make ocf-light`
 
-- `ocflight set-dimming`, followed by an integer controls the value of the
-`/dimming` resource. This change is only visible through OCF, and does not
-affect any other outputs of the device.
+This server contains the following resources:
 
-`ocf-cli-thermometer` is an OCF server that has a `oic.r.temperature`
-resource. The temperature value is taken from the Chili's internal
-thermometer. It can be controlled using the standard OpenThread command line
-interface, and it does not feature any application-specific commands.
+- `oic.r.switch.binary` with url `/binaryswitch`.
+- `oic.r.light.dimming` with url `/dimming`.
+
+Pin 15 is mapped to the value of the `oic.r.switch.binary`.
+The `oic.r.light.dimming` resource does not control anything.
+
+The application is compiled with OCF security enabled, and it can be onboarded using JustWorks or PKI.
+
+#### ocf-reed-light
+
+`ocf-reed-light` is an OCF light server that can double as an OpenThread Router or Leader, as it is
+a Router-enabled end device.
+
+### ocf-sensorif
+
+`ocf-sensorif` is an OCF sensor.
+The application is using:
+
+- wakeful_main.c, as main application
+- example_sensorif.c, as code for setting up IoTivity
+
+The application can be compiled with the following command:
+`make ocf-sensorif`
+
+This server contains the following resources:
+
+- `oic.r.humidity` with url `/humidity`.
+- `oic.r.sensor.illuminance` with url `/illuminance`.
+- `oic.r.temperature` with url `/temperature`.
+
+The humidity value is read from I2C using the supplied sensor interface.
+The illuminance value is read from I2C using the supplied sensor interface.
+The temperature value is read from I2C using the supplied sensor interface.
+
+The application is compiled with
+OCF security enabled, and it can be onboarded using JustWorks or PKI.
+
+### ocf-cli-thermometer
+
+`ocf-cli-thermometer` is an OCF sensor.
+
+The application is using:
+
+- wakeful_main.c, as main application
+- example_thermometer.c, as code for setting up IoTivity
+
+The application can be compiled with the following command:
+`make ocf-cli-thermometer`
+
+This server contains the following resources:
+
+- `oic.r.temperature` with url `/temperature`.
+
+The temperature value is read from chili module using the Board Support Package.
+
+The application is compiled with
+OCF security enabled, and it can be onboarded using JustWorks or PKI.
+
+### ocf-sleepy-thermometer
+
+`ocf-sleepy-thermometer` is an OCF sensor.
+
+The application is using:
+
+- sleepy_main.c, as main application
+- example_thermometer.c, as code for setting up IoTivity
+
+The application can be compiled with the following command:
+`make ocf-sleepy-thermometer`
+
+This server contains the following resources:
+
+- `oic.r.temperature` with url `/temperature`.
+
+The temperature value is read from chili module using the Board Support Package.
 
 `ocf-sleepy-thermometer` is similar to `ocf-cli-thermometer`, except that it
 is a Thread sleepy end device which turns off its radio when not in use in
@@ -43,18 +112,8 @@ order to conserve power. Consequently, this target takes longer to respond to
 requests & updates - it has higher latency because the data is not sent until
 the device wakes up and requests it from its parent.
 
-`ocf-sleepy-thermometer-unsecure` is similar to `ocf-sleepy-thermometer`, but
-it does not employ OCF security. Therefore it does not need to be onboarded
-and its resources can be accessed directly, by anyone.
-
-`ocf-sensorif` pairs the OCF application layer with Cascoda's I2C sensor
-interface. When connected to the appropriate devices, it enables measurements
-of temperature, humidity and illuminance. It does not feature any
-application-specific commands.
-
-`ocf-sensorif-unsecure` is similar to `ocf-sensorif`, but it does not employ
-OCF security. Therefore it does not need to be onboarded and its resources
-can be accessed directly, by anyone.
+The application is compiled with
+OCF security enabled, and it can be onboarded using JustWorks or PKI.
 
 ## include_*
 

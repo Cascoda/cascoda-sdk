@@ -23,15 +23,43 @@
 
 otInstance *OT_INSTANCE;
 
+/**
+ * @file
+ *  Example of sleepy main
+ */
+/**
+ * @ingroup ocf
+ * @defgroup ocf-sleepy-main example ocf sleepy main
+ * @brief  Example of sleepy main
+ *
+ * @{
+ * 
+ * ## Application Main
+ * This file contains the functionality and main function of the OCF application.
+ * main is using the bare metal module to run on the chili.
+ *
+ * \include sleepy_main.c
+ */
+
+/**
+ * the signal event loop, stub implemenation for IoTivity
+ */
 static void signal_event_loop(void)
 {
 }
 
+/**
+ * the signal event loop, stub implemenation for openthread
+ */
 void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
 {
 	(void)aBuf;
 	(void)aBufLength;
 }
+
+/**
+ * the signal event loop, stub implemenation for openthread
+ */
 void otPlatUartSendDone(void)
 {
 }
@@ -94,6 +122,10 @@ static void sleep_if_possible(oc_clock_time_t timeToNextOcfEvent)
 	}
 }
 
+/**
+ * the main application.
+ * uses functions from the examples.
+ */
 int main(void)
 {
 	int               init;
@@ -195,3 +227,7 @@ int main(void)
 	oc_main_shutdown();
 	return 0;
 }
+
+/**
+ * @}
+ */

@@ -57,14 +57,19 @@
   <td>@copybrief cascoda-util </td>
 </tr>
 <tr>
+  <td>@ref ocf </td>
+  <td>@copybrief ocf </td>
+</tr>
+
+<tr>
 </tr>
 </table>
  *
  * (These can also be accessed in the sidebar, or the 'modules' tab at the top of the page.)
  *
- * The Cascoda SDK also contains integrations for [OpenThread](https://github.com/openthread/openthread.git),
+ * The Cascoda SDK also contains integrations for [OpenThread](https://github.com/openthread/openthread),
  * [LwIP](https://www.nongnu.org/lwip/), [IoTivity Lite](https://github.com/iotivity/iotivity-lite),
  * [FreeRTOS](www.freertos.org) and other third-party tools.
  *
- * For further documentation, guides and reference material, please see the [Cascoda GitHub page](https://github.com/Cascoda/cascoda-sdk.git).
+ * For further documentation, guides and reference material, please see the [Cascoda GitHub page](https://github.com/Cascoda/cascoda-sdk).
  */

@@ -8,6 +8,8 @@ It can run on Windows or Posix and can be used for:
 - Flashing new applications to connected chili devices over USB
 - Flashing new DFU (Device Firmware Update) firmware to connected chili devices over USB
 
+Please make sure that you have set up the USB exchange [as detailed in the development setup guide.](/../../../docs/guides/development-setup.md)
+
 Note that this tool is still under development, so may have undiscovered issues.
 
 Run ./chilictl with the ``--help`` argument to print the help page. This option is also available on the sub-commands.

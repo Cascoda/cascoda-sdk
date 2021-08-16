@@ -46,7 +46,7 @@ set(CASCODA_OT_FORCE_CHANNEL 20 CACHE STRING "Force a channel (integer 11-26) to
 set(CASCODA_OT_FORCE_PANID 0x1234 CACHE STRING "Force a panid (hex 0x0000 - 0xFFFE) to be used to bootstrap an openthread node - used with CASCODA_OT_FORCE_CREDS")
 set(CASCODA_OT_FORCE_MASTERKEY 00112233445566778899aabbccddeeff CACHE STRING "Force a masterkey (16 byte hex string) to be used to bootstrap an openthread node - used with CASCODA_OT_FORCE_CREDS")
 if(CASCODA_OT_FORCE_CREDS)
-	message(WARNING "CASCODA_OT_FORCE_CREDS is not secure or reliable, and is for development purposes only. Should never be used for real applications!")
+	message(WARNING "CASCODA_OT_FORCE_CREDS is not secure or reliable, and is for development purposes only. Should never be used for real applications! Consider using CASCODA_OT_JOINER_CREDENTIAL instead!")
 	cascoda_mark_important(CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_MASTERKEY)
 	mark_as_advanced(CLEAR CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_MASTERKEY)
 
@@ -76,9 +76,26 @@ if(CASCODA_OT_FORCE_CREDS)
 		INJECT_PANID=${CASCODA_OT_FORCE_PANID}
 		INJECT_CHANNEL=${CASCODA_OT_FORCE_CHANNEL}
 	)
+
 else()
 	mark_as_advanced(FORCE CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_MASTERKEY)
 endif()
+
+#Hardcode Joiner Credentials
+set(CASCODA_OT_JOINER_CREDENTIAL "" CACHE STRING "DEVELOPMENT ONLY: Hardcode a Joiner Credential - useful for developing applications with no serial interface.")
+if (CASCODA_OT_JOINER_CREDENTIAL)
+	message(WARNING "CASCODA_OT_JOINER_CREDENTIAL is not secure, and is for development purposes only. Production applications should use a different credential for every device!")
+
+	#Application joins network with configured CMake value
+	set_property(
+			SOURCE ${PROJECT_SOURCE_DIR}/platform/misc.c
+			APPEND
+			PROPERTY COMPILE_DEFINITIONS
+			CASCODA_OT_JOINER_CRED=\"${CASCODA_OT_JOINER_CREDENTIAL}\"
+	)
+endif ()
+
+
 
 # Inject platform into openthread library to resolve cyclic dependency
 add_library(ca821x-openthread-bm-ftd
@@ -108,7 +125,7 @@ target_link_libraries(ca821x-openthread-bm-mtd
 	)
 
 # Test app config -------------------------------------------------------------
-if(CASCODA_OPENTHREAD_FTD)
+if(CASCODA_OPENTHREAD_FTD AND OT_COAP)
 	add_executable(ot-cli
 		${PROJECT_SOURCE_DIR}/example/thread_bm.c
 		${PROJECT_SOURCE_DIR}/example/sensordemo.c

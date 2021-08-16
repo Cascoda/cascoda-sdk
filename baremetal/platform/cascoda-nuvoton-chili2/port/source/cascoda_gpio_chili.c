@@ -105,7 +105,7 @@ static const struct pinlist ModulePinList[] = {
 #if (CASCODA_CHILI2_CONFIG == 0)
     {17, PN_A, 12, P_NA}, /* PA.12 */
 #endif                    /* CASCODA_CHILI2_CONFIG */
-#if CASCODA_CHILI_DISABLE_CA821x
+#if (!CASCODA_CHILI_DISABLE_CA821x)
     {31, PN_B, 5, 5}, /* PB.5 */
 #endif
     {32, PN_B, 4, 4}, /* PB.4 */
@@ -291,7 +291,7 @@ ca_error BSP_ModuleRegisterGPIOInput(struct gpio_input_args *args)
 	else
 	{
 		GPIO_DisableInt(port, ModulePinList[index].portbit);
-		/* don't disable NVIC otherwise other interupts might be compromised */
+		/* don't disable NVIC otherwise other interrupts might be compromised */
 	}
 
 	ModulePinStatus[index].blocked  = 1;

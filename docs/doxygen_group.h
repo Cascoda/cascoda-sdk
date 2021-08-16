@@ -83,3 +83,8 @@
  * @brief Cross-Platform utilities built on top of OpenThread
  */
 
+/**
+ * @defgroup ocf OCF examples
+ * @brief OCF examples
+ */
+

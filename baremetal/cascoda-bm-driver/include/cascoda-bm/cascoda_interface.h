@@ -337,7 +337,7 @@ ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val);
  * Pins must NOT be registered if used with this function.
  *
  * \param mpin  - module pin
- * \param val - 32-bit conversion value
+ * \param val - 32-bit conversion value (12-bit resolution ADC: 0-4095)
  * \return status
  *
  */

@@ -21,6 +21,7 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
   - [Guides](#guides)
     - [How-To Guides](#how-to-guides)
     - [Other Guides](#other-guides)
+    - [Complete API Reference](#complete-api-reference)
   - [Building](#building)
     - [Instructions](#instructions)
       - [Linux/MacOS](#linuxmacos)
@@ -64,6 +65,9 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 - [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
 - [Border Router Setup Guide](docs/guides/border-router-setup.md)
 - [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
+
+### Complete API Reference
+- [Cascoda SDK API Reference](https://cascoda.github.io/cascoda-sdk-doxygen/)
 
 ## Building
 
@@ -162,11 +166,10 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | CMake Target Name | Description |
 | :--- | :--- |
 | ocf-light | Use a Chili as a controller for an OCF-over-Thread smart lightbulb. [More information.](ocf/README.md)
+| ocf-reed-light | Use a Router Enabled Chili as a controller for an OCF-over-Thread smart lightbulb.
 | ocf-sensorif | Use a Chili as a OCF-over-Thread device connected to various I2C and SPI sensors.
-| ocf-sensorif-unsecure  | The same as the above target, but without OCF security
 | ocf-cli-thermometer  | Use a Chili as a OCF-over-Thread smart thermometer. This demo uses the in-built thermometer of the M2351, so no external hardware is required.
 | ocf-sleepy-thermometer  | Same as above, but the device sleeps between temperature readings.
-| ocf-sleepy-thermometer-unsecure  | Same as above, but without OCF security.
 | ocf-storage-test  | Test the flash storage API of Iotivity-Lite. Useful for developers.
 
 #### Miscellaneous Targets

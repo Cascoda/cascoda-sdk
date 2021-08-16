@@ -16,39 +16,65 @@
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 */
 
-/* Application Design
+#ifndef DOXYGEN
+// Force doxygen to document static inline
+#define STATIC static
+#endif
+
+/**
+ * @file
+ *  Example of an OCF sensor using the bare metal sensor interface
+ * 
+ */
+/**
+ * @ingroup ocf
+ * @defgroup ocf-examples-sensor example ocf sensor
+ * @brief  example of OCF sensor using the bare metal sensor interface
+ *
+ * @{
+ *
+*
+* @brief example application for a sensor
+*
+* ## Application Design
 *
 * support functions:
-* app_init
+* - app_init
 *  initializes the oic/p and oic/d values.
-* register_resources
+* - register_resources
 *  function that registers all endpoints, e.g. sets the RETRIEVE/UPDATE handlers for each end point
 *
-* main
+* ## main
 *  starts the stack, with the registered resources.
+*  can use either:
+*  - sleepy_main
+*  - wakeful_main 
+*
+* as main application.
 *
 * Each resource has:
-*  global property variables (per resource path) for:
-*    the property name
-*       naming convention: g_<path>_RESOURCE_PROPERTY_NAME_<propertyname>
-*    the actual value of the property, which is typed from the json data type
-*      naming convention: g_<path>_<propertyname>
-*  global resource variables (per path) for:
-*    the path in a variable:
-*      naming convention: g_<path>_RESOURCE_ENDPOINT
-*    array of interfaces, where by the first will be set as default interface
-*      naming convention g_<path>_RESOURCE_INTERFACE
+*  - global property variables (per resource path) for:
+*    - the property name
+*       naming convention: g_[path]_RESOURCE_PROPERTY_NAME_[propertyname]
+*    - the actual value of the property, which is typed from the json data type
+*      naming convention: g_[path]_[propertyname]
+*  - global resource variables (per path) for:
+*    - the path in a variable:
+*      naming convention: g_[path]_RESOURCE_ENDPOINT
+*    - array of interfaces, where by the first will be set as default interface
+*      naming convention g_[path]_RESOURCE_INTERFACE
 *
-*  handlers for the implemented methods (get/post)
-*   get_<path>
-*     function that is being called when a RETRIEVE is called on <path>
+*  handlers for the implemented methods (get/post):
+*   - get_[path]
+*     function that is being called when a RETRIEVE is called on [path]
 *     set the global variables in the output
-*   post_<path>
-*     function that is being called when a UPDATE is called on <path>
+*   - post_[path]
+*     function that is being called when a UPDATE is called on [path]
 *     checks the input data
 *     if input data is correct
 *       updates the global variables
 *
+* \include example_sensorif.c
 */
 /*
  tool_version          : 20171123
@@ -58,10 +84,12 @@
 */
 
 #include <signal.h>
+/* Cascoda sensor interface */
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "port/oc_clock.h"
 #include "oc_api.h"
 
+/* Cascoda sensor hardware interface */
 #include "sif_ltr303als.h"
 #include "sif_si7021.h"
 
@@ -69,66 +97,74 @@
 /* linux specific code */
 #include <pthread.h>
 static pthread_mutex_t mutex;
-static pthread_cond_t  cv;
-static struct timespec ts;
+static pthread_cond_t  cv; /**< event loop variable */
+static struct timespec ts; /**< event loop variable */
 #endif
 
 #ifdef WIN32
 /* windows specific code */
 #include <windows.h>
-static CONDITION_VARIABLE cv; /* event loop variable */
-static CRITICAL_SECTION   cs; /* event loop variable */
+static CONDITION_VARIABLE cv; /**< event loop variable */
+static CRITICAL_SECTION   cs; /**< event loop variable */
 #endif
 
 #define btoa(x) ((x) ? "true" : "false")
 
-#define MAX_STRING 30         /* max size of the strings. */
-#define MAX_PAYLOAD_STRING 65 /* max size strings in the payload */
-#define MAX_ARRAY 10          /* max size of the array */
+#define MAX_PAYLOAD_STRING 65 /**< max size strings in the coap payload */
 /* Note: Magic numbers are derived from the resource definition, either from the example or the definition.*/
 
-volatile int quit = 0; /* stop variable, used by handle_signal */
+volatile int quit = 0; /**< stop variable, used by handle_signal */
 
-/* global property variables for path: "/humidity" */
-static char g_humidity_RESOURCE_PROPERTY_NAME_humidity[] = "humidity"; /* the name for the attribute */
-int         g_humidity_humidity = 40; /* current value of property "humidity" The current sensed value for humidity. */
-/* global property variables for path: "/illuminance" */
-static char g_illuminance_RESOURCE_PROPERTY_NAME_illuminance[] = "illuminance"; /* the name for the attribute */
+/** global property variables for path: "/humidity" */
+STATIC char g_humidity_RESOURCE_PROPERTY_NAME_humidity[] = "humidity"; /**< the name for the attribute */
+int g_humidity_humidity = 40; /**< current value of property "humidity" The current sensed value for humidity. */
+
+/**< global property variables for path: "/illuminance" */
+STATIC char g_illuminance_RESOURCE_PROPERTY_NAME_illuminance[] = "illuminance"; /**< the name for the attribute */
 double      g_illuminance_illuminance                          = 450.0;
-/* current value of property "illuminance"  The sensed luminous flux per unit area in lux. */ /* registration data variables for the resources */
-/* global property variables for path: "/temperature" */
-static char g_temperature_RESOURCE_PROPERTY_NAME_temperature[] = "temperature"; /* the name for the attribute */
+/**< current value of property "illuminance"  The sensed luminous flux per unit area in lux. */
+
+/** registration data variables for the resources */
+
+/** global property variables for path: "/temperature" */
+STATIC char g_temperature_RESOURCE_PROPERTY_NAME_temperature[] = "temperature"; /**< the name for the attribute */
 double      g_temperature_temperature =
-    20.0; /* current value of property "temperature"  The current temperature setting or measurement. */
-static char g_temperature_RESOURCE_PROPERTY_NAME_units[] = "units"; /* the name for the attribute */
+    20.0; /**< current value of property "temperature"  The current temperature setting or measurement. */
+STATIC char g_temperature_RESOURCE_PROPERTY_NAME_units[] = "units"; /**< the name for the attribute */
 char        g_temperature_units[MAX_PAYLOAD_STRING]      = "C";
-/* current value of property "units" The unit for the conveyed temperature value, Note that when doing an UPDATE, the unit on the device does NOT change, it only indicates the unit of the conveyed value during the UPDATE operation. */ /* registration data variables for the resources */
+/**< current value of property "units" The unit for the conveyed temperature value, Note that when doing an UPDATE, the unit on the device does NOT change, it only indicates the unit of the conveyed value during the UPDATE operation. */ /* registration data variables for the resources */
 
-/* global resource variables for path: /humidity */
-static char g_humidity_RESOURCE_ENDPOINT[]              = "/humidity";        /* used path for this resource */
-static char g_humidity_RESOURCE_TYPE[][MAX_STRING]      = {"oic.r.humidity"}; /* rt value (as an array) */
-int         g_humidity_nr_resource_types                = 1;
-static char g_humidity_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.s",
-                                                           "oic.if.baseline"}; /* interface if (as an array) */
-int         g_humidity_nr_resource_interfaces           = 2;
+/** global resource variables for path: /humidity */
+STATIC char        g_humidity_RESOURCE_ENDPOINT[]  = "/humidity";        /**< used path for this resource */
+STATIC const char *g_humidity_RESOURCE_TYPE[]      = {"oic.r.humidity"}; /**< rt value (as an array) */
+int                g_humidity_nr_resource_types    = 1;
+STATIC const char *g_humidity_RESOURCE_INTERFACE[] = {"oic.if.s", "oic.if.baseline"}; /**< interface if (as an array) */
+int                g_humidity_nr_resource_interfaces = 2; /**< amount of resource type entries */
 
-/* global resource variables for path: /illuminance */
-static char g_illuminance_RESOURCE_ENDPOINT[]              = "/illuminance"; /* used path for this resource */
-static char g_illuminance_RESOURCE_TYPE[][MAX_STRING]      = {"oic.r.sensor.illuminance"}; /* rt value (as an array) */
-int         g_illuminance_nr_resource_types                = 1;
-static char g_illuminance_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.s",
-                                                              "oic.if.baseline"}; /* interface if (as an array) */
-int         g_illuminance_nr_resource_interfaces           = 2;
+/** global resource variables for path: /illuminance */
+STATIC char        g_illuminance_RESOURCE_ENDPOINT[]    = "/illuminance"; /**< used path for this resource */
+STATIC const char *g_illuminance_RESOURCE_TYPE[]        = {"oic.r.sensor.illuminance"}; /**< rt value (as an array) */
+int                g_illuminance_nr_resource_types      = 1;
+STATIC const char *g_illuminance_RESOURCE_INTERFACE[]   = {"oic.if.s",
+                                                         "oic.if.baseline"}; /**< interface if (as an array) */
+int                g_illuminance_nr_resource_interfaces = 2;                   /**< amount of resource type entries */
 
-/* global resource variables for path: /temperature */
-static char g_temperature_RESOURCE_ENDPOINT[]              = "/temperature";        /* used path for this resource */
-static char g_temperature_RESOURCE_TYPE[][MAX_STRING]      = {"oic.r.temperature"}; /* rt value (as an array) */
-int         g_temperature_nr_resource_types                = 1;
-static char g_temperature_RESOURCE_INTERFACE[][MAX_STRING] = {"oic.if.s",
-                                                              "oic.if.baseline"}; /* interface if (as an array) */
-int         g_temperature_nr_resource_interfaces           = 2;
+/** global resource variables for path: /temperature */
+STATIC char        g_temperature_RESOURCE_ENDPOINT[]    = "/temperature";        /**< used path for this resource */
+STATIC const char *g_temperature_RESOURCE_TYPE[]        = {"oic.r.temperature"}; /**< rt value (as an array) */
+int                g_temperature_nr_resource_types      = 1;
+STATIC const char *g_temperature_RESOURCE_INTERFACE[]   = {"oic.if.s",
+                                                         "oic.if.baseline"}; /**< interface if (as an array) */
+int                g_temperature_nr_resource_interfaces = 2;                   /**< amount of resource type entries */
+
 /**
 * function to set up the device.
+*
+* sets the:
+* - OCF device_type
+* - friendly device name
+* - OCF version
+* - introspection device data
 *
 */
 int app_init(void)
@@ -152,7 +188,7 @@ int app_init(void)
 * @param interface_name the interface string e.g. "oic.if.a"
 * @return the stack constant for the interface
 */
-static int convert_if_string(char *interface_name)
+STATIC int convert_if_string(char *interface_name)
 {
 	if (strcmp(interface_name, "oic.if.baseline") == 0)
 		return OC_IF_BASELINE; /* baseline interface */
@@ -178,7 +214,7 @@ static int convert_if_string(char *interface_name)
 * @param error_state whether there was previously an error
 * @return the error_status, e.g. if error_status is true, then the input document contains something illegal
 */
-static bool check_on_readonly_common_resource_properties(oc_string_t name, bool error_state)
+STATIC bool check_on_readonly_common_resource_properties(oc_string_t name, bool error_state)
 {
 	if (strcmp(oc_string(name), "n") == 0)
 	{
@@ -220,7 +256,7 @@ static bool check_on_readonly_common_resource_properties(oc_string_t name, bool 
 * @param interfaces the interface used for this call
 * @param user_data the user data.
 */
-static void get_humidity(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void get_humidity(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)user_data; /* variable not used */
 	uint32_t humidity;
@@ -278,7 +314,7 @@ static void get_humidity(oc_request_t *request, oc_interface_mask_t interfaces, 
 * @param interfaces the interface used for this call
 * @param user_data the user data.
 */
-static void get_illuminance(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void get_illuminance(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)user_data; /* variable not used */
 	uint16_t lightLevel0, lightLevel1;
@@ -345,7 +381,7 @@ static void get_illuminance(oc_request_t *request, oc_interface_mask_t interface
 * @param interfaces the interface used for this call
 * @param user_data the user data.
 */
-static void get_temperature(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
+STATIC void get_temperature(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
 	(void)user_data; /* variable not used */
 	SENSORIF_I2C_Init();
@@ -434,9 +470,9 @@ void register_resources(void)
 	}
 	for (int a = 0; a < g_humidity_nr_resource_interfaces; a++)
 	{
-		oc_resource_bind_resource_interface(res_humidity, convert_if_string(g_humidity_RESOURCE_INTERFACE[a]));
+		oc_resource_bind_resource_interface(res_humidity, convert_if_string((char *)g_humidity_RESOURCE_INTERFACE[a]));
 	}
-	oc_resource_set_default_interface(res_humidity, convert_if_string(g_humidity_RESOURCE_INTERFACE[0]));
+	oc_resource_set_default_interface(res_humidity, convert_if_string((char *)g_humidity_RESOURCE_INTERFACE[0]));
 	PRINT("     Default OCF Interface: \"%s\"\n", g_humidity_RESOURCE_INTERFACE[0]);
 	oc_resource_set_discoverable(res_humidity, true);
 	/* periodic observable
@@ -463,9 +499,10 @@ void register_resources(void)
 	}
 	for (int a = 0; a < g_illuminance_nr_resource_interfaces; a++)
 	{
-		oc_resource_bind_resource_interface(res_illuminance, convert_if_string(g_illuminance_RESOURCE_INTERFACE[a]));
+		oc_resource_bind_resource_interface(res_illuminance,
+		                                    convert_if_string((char *)g_illuminance_RESOURCE_INTERFACE[a]));
 	}
-	oc_resource_set_default_interface(res_illuminance, convert_if_string(g_illuminance_RESOURCE_INTERFACE[0]));
+	oc_resource_set_default_interface(res_illuminance, convert_if_string((char *)g_illuminance_RESOURCE_INTERFACE[0]));
 	PRINT("     Default OCF Interface: \"%s\"\n", g_illuminance_RESOURCE_INTERFACE[0]);
 	oc_resource_set_discoverable(res_illuminance, true);
 	/* periodic observable
@@ -491,9 +528,10 @@ void register_resources(void)
 	}
 	for (int a = 0; a < g_temperature_nr_resource_interfaces; a++)
 	{
-		oc_resource_bind_resource_interface(res_temperature, convert_if_string(g_temperature_RESOURCE_INTERFACE[a]));
+		oc_resource_bind_resource_interface(res_temperature,
+		                                    convert_if_string((char *)g_temperature_RESOURCE_INTERFACE[a]));
 	}
-	oc_resource_set_default_interface(res_temperature, convert_if_string(g_temperature_RESOURCE_INTERFACE[0]));
+	oc_resource_set_default_interface(res_temperature, convert_if_string((char *)g_temperature_RESOURCE_INTERFACE[0]));
 	PRINT("     Default OCF Interface: \"%s\"\n", g_temperature_RESOURCE_INTERFACE[0]);
 	oc_resource_set_discoverable(res_temperature, true);
 	/* periodic observable
@@ -583,3 +621,7 @@ void initialize_variables(void)
 	/* set the flag for NO oic/con resource. */
 	oc_set_con_res_announced(false);
 }
+
+/**
+ * @}
+ */

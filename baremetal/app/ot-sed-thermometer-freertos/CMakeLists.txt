@@ -5,6 +5,11 @@ if(NOT TARGET freertos)
 	return()
 endif()
 
+if (NOT OT_COAP)
+	return()
+endif()
+
+
 add_executable(ot-sed-thermometer-freertos
 	${PROJECT_SOURCE_DIR}/source/sed_freertos.c
 )

@@ -57,7 +57,7 @@ jobs:
     - name: configure OCF chili build on windows
       run: |
         arm-none-eabi-gcc --version
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-ocf-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_OCF=ON -DCASCODA_LOG_LEVEL=CRIT
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-ocf-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_LOG_LEVEL=CRIT
 
     - name: build OCF chili binaries on windows
       run: |
@@ -86,6 +86,8 @@ jobs:
   # Build artifacts for the chili2
   chili2:
     runs-on: ubuntu-latest
+    env:
+      OCF_TARGETS: 'ocf-light ocf-reed-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sensorif ocf-sensorif-unsecure ocf-reed-module'
 
     steps:
     - uses: actions/checkout@v2
@@ -112,6 +114,7 @@ jobs:
       run: |
         echo "${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin" >> $GITHUB_PATH
 
+    # We configure non-ocf chili build first because building OCF adds bloat to MBedTls, which increases all openthread binary sizes.
     - name: configure Chili2S-UART0-1Mbaud
       run: |
         arm-none-eabi-gcc --version
@@ -129,11 +132,17 @@ jobs:
         cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/build-chili2/upload-uart
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/build-chili2/upload-uart/readme.txt
 
+    - name: build Chili2S-UART0-1Mbaud-OCF
+      run: |
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
+        make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
+        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-uart
+
     # We configure non-ocf chili build first because building OCF adds bloat to MBedTls, which increases all openthread binary sizes.
     - name: configure Chili2D-USB
       run: |
         arm-none-eabi-gcc --version
-        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_SECURE_LWM2M=ON
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=OFF -DCASCODA_BUILD_SECURE_LWM2M=ON
         mkdir ${{ github.workspace }}/build-chili2/upload-usb
 
     - name: build Chili2D-USB
@@ -148,8 +157,8 @@ jobs:
 
     - name: build Chili2D-USB-OCF
       run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
-        make -C ${{ github.workspace }}/build-chili2 -j4 ocf-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sleepy-thermometer-unsecure ocf-sensorif ocf-sensorif-unsecure
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
+        make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
         cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-usb
 
     - name: Upload Chili2S-UART0-1Mbaud

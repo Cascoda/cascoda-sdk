@@ -45,7 +45,6 @@
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
-#include "eink_image.h"
 #include "sif_il3820.h"
 #include "test15_4_evbme.h"
 
@@ -88,22 +87,17 @@ int main(void)
 	/* in case there is no UpStream Communications Channel available */
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
-	/* Insert Application-Specific Initialisation Routines here */
+	/* Application-Specific Initialisation Routines */
 	TEST15_4_Initialise(&dev);
 	SIF_IL3820_Initialise(&lut_full_update);
-	SIF_IL3820_ClearDisplay();
-	WAIT_ms(500);
-	SIF_IL3820_Display(cascoda_img_2in9);
-	WAIT_ms(1000);
-	WAIT_ms(1000);
-	SIF_IL3820_DeepSleep();
+	SIF_IL3820_ClearAndDisplayImage(cascoda_img_2in9);
 
 	/* Endless Polling Loop */
 	while (1)
 	{
 		cascoda_io_handler(&dev);
 
-		/* Insert Application-Specific Event Handlers here */
+		/* Application-Specific Event Handler */
 		TEST15_4_Handler(&dev);
 
 	} /* while(1) */

@@ -188,6 +188,10 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance)
 	if (joiner_credential[0])
 		return joiner_credential; //Already cached
 
+#ifdef CASCODA_OT_JOINER_CRED
+	return CASCODA_OT_JOINER_CRED;
+#endif
+
 	//Generate or get the joiner credential
 	if (otPlatSettingsGet(aInstance, joiner_credential_key, 0, joiner_credential, &cred_len) != OT_ERROR_NONE ||
 	    !isValidJoinerCred(joiner_credential, cred_len))
@@ -284,6 +288,7 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
 		}
 	}
 #endif
+	return OT_ERROR_NONE;
 }
 
 ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, uint8_t *aOutBuf)
@@ -322,6 +327,37 @@ ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, 
 	{
 		*aOutBufLen = 0;
 	}
+
+	return error;
+}
+
+otError PlatformGetQRString(char *aBufOut, size_t bufferSize, otInstance *aInstance)
+{
+	otError      error = OT_ERROR_NONE;
+	otExtAddress eui64;
+	size_t       bufferLen;
+
+	bufferLen = strlen("v=1&&eui=") + sizeof(eui64.m8) * 2 + strlen("&&cc=") +
+	            strlen(PlatformGetJoinerCredential(OT_INSTANCE)) + sizeof('\0');
+
+	if (bufferSize < bufferLen)
+	{
+		error = OT_ERROR_NO_BUFS;
+		return error;
+	}
+
+	otLinkGetFactoryAssignedIeeeEui64(aInstance, &eui64);
+	strcpy(aBufOut, "v=1&&eui=");
+	bufferLen = strlen(aBufOut);
+
+	for (int i = 0; i < sizeof(eui64); i++)
+	{
+		sprintf(aBufOut + bufferLen, "%02x", eui64.m8[i]);
+		bufferLen += 2;
+	}
+
+	strcat(aBufOut, "&&cc=");
+	strcat(aBufOut, PlatformGetJoinerCredential(OT_INSTANCE));
 
 	return error;
 }

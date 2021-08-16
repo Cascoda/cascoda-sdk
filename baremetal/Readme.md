@@ -5,6 +5,7 @@ This directory contains the Baremetal-specific code, including drivers, platform
 ## Directory structure
 
 ### app
+
 Example applications. This folder includes examples for using the OpenThread CLI (`ot-cli-*`), using Thread Sleepy End Devices (`ot-sed-*`), interfacing with I2C or SPI sensors (`ot-sed-sensorif`), interfacing with actuators over UART (`ot-cli-actuator`), and interfacing with a host application over USB or UART (see `CASCODA_BM_INTERFACE` CMake configuration variable).
 
 ### cascoda-bm-driver

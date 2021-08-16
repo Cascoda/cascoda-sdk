@@ -28,7 +28,7 @@ The network credentials are stored in non-volatile storage of the device, so Com
 
 ## How to Commission with the Cascoda SDK
 
-In the Cascoda-SDK, there are many ways to perform the joining/commissioning procedure, based on the capabilities of the device. These can be used together in any combination - select one commissioning method and one joining method.
+In the Cascoda-SDK, there are many ways to perform the joining/commissioning procedure, based on the capabilities of the device. These can be used together in any combination - select one commissioning method and one joining method. It should be noted that a network must be formed either via the [OpenThread CLI](https://github.com/Cascoda/openthread/blob/master/src/cli/README_DATASET.md) or the [OpenThread Web GUI](border-router-setup.md), before commissioning can take place.
 
 - [Commissioning](#commissioning)
     - [CLI Commissioning](#cli-commissioning)
@@ -126,7 +126,7 @@ CLI Joining uses the OpenThread CLI in order to join a device to the network. It
 
 - Device has joined the network!
 
-#### Automatic Joining
+#### Automatic Joining 
 
 Automatic Joining is used with some of the demos in the Cascoda SDK that do not have CLI interfaces, such as ``ot-sed-sensorif``. This kind of joining is suitable for real-world products, and sleepy devices that do not have a user interface.
 
@@ -150,3 +150,13 @@ In the case of our examples, we make use of the ``evbme-get`` utility to extract
       - OR It has been 30 seconds since the last join attempt.
 - Wait until the commissioner confirms the device has been commissioned.
 - The device will automatically attach to the network and begin operation!
+
+#### Automatic Joining with Hardcoded Credentials
+
+Using `CASCODA_OT_JOINER_CRED` it is possible to assign a hardcoded joiner credential to a device, eliminating the need to force full network credentials to devices that don’t have serial interfaces, which is useful for development purposes.
+- Provide a joiner credential value to the CMake cache variable `CASCODA_OT_JOINER_CRED`.  Further details can be found in [CMake’s documentation](https://cmake.org/cmake/help/v3.19/manual/cmake.1.html#options).
+- For modules that do not support a serial interface power cycling the device will cause it to attempt to join with the hardcoded credential.
+- For modules that do support a serial interface, such as `ot-cli`:
+    - Run the `ifconfig up` command.
+    - Then run the `join` command
+        - Similar to above, it should take some time to run, and returns `Join success` on success, or `Join failed` upon an error.

@@ -43,6 +43,8 @@
 		}                         \
 	} while (0)
 
+#define TCQR_BUFFER_SIZE 50
+
 /******************************************************************************/
 /****** Power Consumption Configuration                                  ******/
 /******************************************************************************/
@@ -381,7 +383,8 @@ static void CommsTask(void *unused)
 void initialise_communications()
 {
 	u8_t             StartupStatus;
-	otLinkModeConfig linkMode = {0};
+	otLinkModeConfig linkMode               = {0};
+	char             tcQR[TCQR_BUFFER_SIZE] = {};
 
 	ca821x_api_init(&sDeviceRef);
 
@@ -392,6 +395,15 @@ void initialise_communications()
 	App_Initialise(StartupStatus, &sDeviceRef);
 	PlatformRadioInitWithDev(&sDeviceRef);
 	OT_INSTANCE = otInstanceInitSingle();
+
+	if (!otDatasetIsCommissioned(OT_INSTANCE))
+	{
+		// If not commissioned, print the commissioning QR code to the display
+		SIF_IL3820_Initialise(&lut_full_update);
+		PlatformGetQRString(tcQR, TCQR_BUFFER_SIZE, OT_INSTANCE);
+		SIF_IL3820_overlay_qr_code(tcQR, cascoda_img_2in9, 90, 20);
+		SIF_IL3820_ClearAndDisplayImage(cascoda_img_2in9);
+	}
 
 	// Print the joiner credentials, delaying for up to 5 seconds
 	PlatformPrintJoinerCredentials(&sDeviceRef, OT_INSTANCE, 5000);

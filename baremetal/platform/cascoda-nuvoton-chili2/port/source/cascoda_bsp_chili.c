@@ -80,9 +80,6 @@ struct device_link device_list[NUM_DEVICES];
  */
 CRPT_T *CRPT_dyn = CRPT;
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef)
 {
 	u32_t timeout_sec;
@@ -149,9 +146,6 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_
 		DISPATCH_ReadCA821x(pDeviceRef);
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_ResetRF(u8_t ms)
 {
 	u32_t ticks;
@@ -168,17 +162,11 @@ void BSP_ResetRF(u8_t ms)
 	BSP_WaitTicks(50);
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 u8_t BSP_SenseRFIRQ(void)
 {
 	return ZIG_IRQB_PVAL;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_DisableRFIRQ()
 {
 	/* note that this is temporarily disabling all GPIO C ports */
@@ -186,9 +174,6 @@ void BSP_DisableRFIRQ()
 	__ASM volatile("" : : : "memory");
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_EnableRFIRQ()
 {
 	/* note that this is re-enabling all GPIO C ports */
@@ -196,25 +181,16 @@ void BSP_EnableRFIRQ()
 	__ASM volatile("" : : : "memory");
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SetRFSSBHigh(void)
 {
 	SPI_CS_PVAL = 1;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SetRFSSBLow(void)
 {
 	SPI_CS_PVAL = 0;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_EnableSerialIRQ(void)
 {
 #if defined(USE_USB)
@@ -225,9 +201,6 @@ void BSP_EnableSerialIRQ(void)
 	__ASM volatile("" : : : "memory");
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_DisableSerialIRQ(void)
 {
 #if defined(USE_USB)
@@ -240,9 +213,6 @@ void BSP_DisableSerialIRQ(void)
 
 #if defined(USE_USB)
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_USBSerialWrite(u8_t *pBuffer)
 {
 	int i = 0;
@@ -264,9 +234,6 @@ void BSP_USBSerialWrite(u8_t *pBuffer)
 
 #if defined(USE_UART)
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SerialWriteAll(u8_t *pBuffer, u32_t BufferSize)
 {
 	if (BufferSize < UART_FIFOSIZE)
@@ -275,9 +242,6 @@ void BSP_SerialWriteAll(u8_t *pBuffer, u32_t BufferSize)
 		CHILI_UARTDMAWrite(pBuffer, BufferSize);
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 {
 	u32_t numBytes = 0;
@@ -292,9 +256,6 @@ u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize)
 
 #endif /* USE_UART */
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 u64_t BSP_GetUniqueId(void)
 {
 	u64_t rval = 0;
@@ -306,17 +267,11 @@ u64_t BSP_GetUniqueId(void)
 	return rval;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 const char *BSP_GetPlatString(void)
 {
 	return "Chili2";
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 i32_t BSP_GetTemperature(void)
 {
 	u32_t adcval;
@@ -342,9 +297,6 @@ i32_t BSP_GetTemperature(void)
 	return tempval;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 #if (CASCODA_CHILI2_CONFIG == 1)
 u8_t BSP_GetChargeStat(void)
 {
@@ -368,9 +320,6 @@ u8_t BSP_GetChargeStat(void)
 }
 #endif
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 #if (CASCODA_CHILI2_CONFIG == 1)
 u32_t BSP_ADCGetVolts(void)
 {
@@ -400,9 +349,6 @@ u32_t BSP_ADCGetVolts(void)
 }
 #endif
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SPIInit(void)
 {
 	CHILI_EnableSpiModuleClock();
@@ -418,9 +364,6 @@ void BSP_SPIInit(void)
 	SPI_SetFIFO(SPI, 7, 7);
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SystemReset(sysreset_mode resetMode)
 {
 	__disable_irq();
@@ -437,9 +380,6 @@ void BSP_SystemReset(sysreset_mode resetMode)
 	__enable_irq(); // Should never be hit
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	struct device_link *device;
@@ -473,9 +413,6 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 	pDeviceRef->exchange_context = device;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_EnableUSB(void)
 {
 #if defined(USE_USB)
@@ -486,9 +423,6 @@ void BSP_EnableUSB(void)
 #endif /* USE_USB */
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_DisableUSB(void)
 {
 #if defined(USE_USB)
@@ -499,17 +433,11 @@ void BSP_DisableUSB(void)
 #endif /* USE_USB */
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 u8_t BSP_IsUSBPresent(void)
 {
 	return USBPresent;
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_UseExternalClock(u8_t useExternalClock)
 {
 	if (CHILI_GetUseExternalClock() == useExternalClock)
@@ -534,9 +462,6 @@ void BSP_UseExternalClock(u8_t useExternalClock)
 	}
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 {
 	if (enable_comms)
@@ -575,9 +500,6 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 	cascoda_isr_secure_init();
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 bool BSP_IsInsideInterrupt(void)
 {
 	return SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk;

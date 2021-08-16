@@ -33,6 +33,33 @@ sudo apt install clang-tidy-8 doxygen graphviz ninja-build default-jre
 
 Also optionally download the [plantuml jar](https://plantuml.com/download)
 
+### USB Exchange
+In order to not require sudo to access Chili devices over USB, the permissions for cascoda devices should be loosened. This can be done by running the commands:
+
+```bash
+echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0416", ATTRS{idProduct}=="5020", ACTION=="add", MODE="0666"' | sudo tee /etc/udev/rules.d/99-cascoda.rules > /dev/null
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+### UART Exchange
+UART can be used for any posix serial ports. In order to use UART, the environment variable ``CASCODA_UART`` must be configured with a list of available UART ports that are connected to a supported Cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
+eg: ``CASCODA_UART=/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,4000000``
+
+For example, on the Raspberry Pi 3 running Raspberry Pi OS, you can set up the UART as follows (this overrides the UART terminal):
+
+```bash
+# Prevent the UART being used as a Linux terminal, and enable it
+sudo sed -i 's/console=serial0,115200 //g' /boot/cmdline.txt
+echo "enable_uart=1" | sudo tee -a /boot/config.txt
+# Reboot so changes take effect
+sudo reboot
+# Then add environment variable 
+# (warning, will not persist reboots unless you add to a startup script)
+export CASCODA_UART=/dev/serial0,1000000
+```
+
+Warning: UART has not currently been implemented for windows.
+
 ## macOS
 
 Using [Homebrew](https://brew.sh/), you can set up the required development environment with:

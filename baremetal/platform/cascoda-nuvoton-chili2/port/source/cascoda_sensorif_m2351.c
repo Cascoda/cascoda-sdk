@@ -237,6 +237,8 @@ ca_error SENSORIF_SPI_Write(u8_t out_data)
 	if (!SPI_GET_TX_FIFO_FULL_FLAG(SENSORIF_SPIIF))
 	{
 		SPI_WRITE_TX(SENSORIF_SPIIF, out_data);
+		while (!SPI_GET_TX_FIFO_EMPTY_FLAG(SENSORIF_SPIIF))
+			;
 		return CA_ERROR_SUCCESS;
 	}
 	return CA_ERROR_FAIL;

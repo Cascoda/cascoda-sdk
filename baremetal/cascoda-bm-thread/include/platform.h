@@ -42,6 +42,7 @@
 
 #include <stdint.h>
 #include "openthread/instance.h"
+#include "openthread/platform/radio.h"
 #include "ca821x_api.h"
 
 extern otInstance *OT_INSTANCE;
@@ -248,6 +249,18 @@ otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint1
  * @retval OT_ERROR_NO_BUFS          No space remaining to store the given setting.
  */
 otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct settingBuffer *aVector, size_t aCount);
+
+/**
+ * @brief Get the QR text string format to be read as a Thread Connect QR Code, enabling
+ * external commissioning via the Thread Commissioning App.
+ * @param aBufOut           A string buffer which stores the QR string format
+ * @param bufferSize        String buffer size
+ * @param aInstance         openThread struct for retrieving Eui64 value.
+ * @return                  Thread Connect QR commissioning null-terminated string of the form:
+ *                          v=1&&eui=0000b57fffe15d68&&cc=J01NU5
+ *                          source: https://openthread.io/guides/border-router/external-commissioning?comm=ot-commissioner-app#commission-the-joiner_1
+ */
+otError PlatformGetQRString(char *aBufOut, size_t bufferSize, otInstance *aInstance);
 
 #endif /* CA821X_OPENTHREAD_PLATFORM_PLATFORM_H_ */
 

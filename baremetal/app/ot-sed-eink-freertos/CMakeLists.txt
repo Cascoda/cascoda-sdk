@@ -5,6 +5,10 @@ if(NOT TARGET freertos)
 	return()
 endif()
 
+if(NOT OT_COAP)
+	return()
+endif()
+
 add_executable(ot-sed-eink-freertos
 	${PROJECT_SOURCE_DIR}/source/sed_eink.c
 )

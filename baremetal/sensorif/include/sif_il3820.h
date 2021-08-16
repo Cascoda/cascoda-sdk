@@ -37,6 +37,7 @@
 #define SIF_SIF_IL3820_H
 
 #include <stdint.h>
+#include "ca821x_error.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,7 @@ extern "C" {
 /********************* Pin connections *********************/
 /***********************************************************/
 /*
-
+    Pin config for M2351:
     |---+- BUSY - Pin 31 (GPIO PB.5)
     |---+- RST  - Pin 15 (GPIO PA.15)
     |---+- DC   - Pin 34 (GPIO PB.2)
@@ -94,6 +95,16 @@ extern const struct SIF_IL3820_lut lut_full_update;
  *********************************************************************************************
  ********************************************************************************************/
 extern const struct SIF_IL3820_lut lut_partial_update;
+
+/* Example Images */
+/** Shelf edge display example */
+extern uint8_t lanpo_a1_img_2in9[];
+/** Shelf edge display example */
+extern uint8_t lanpo_a2_img_2in9[];
+/** Shelf edge display example */
+extern uint8_t lanpo_a4_img_2in9[];
+/** Cascoda Logo */
+extern uint8_t cascoda_img_2in9[];
 
 /* functions */
 
@@ -147,6 +158,15 @@ void SIF_IL3820_DeepSleep(void);
  *******************************************************************************
  ******************************************************************************/
 ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Follows Routines for clearing, waiting and displaying the image.
+  *******************************************************************************
+ * \param image - The image to be overlaid on the eink screen.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_IL3820_ClearAndDisplayImage(uint8_t *image);
 
 #ifdef __cplusplus
 }

@@ -663,7 +663,7 @@ struct M_KeyDescriptor
 	struct M_KeyTableEntryFixed Fixed;
 	struct M_KeyIdLookupDesc    KeyIdLookupList[LOOKUP_DESC_TABLE_SIZE];
 	struct M_KeyDeviceDesc      KeyDeviceList[KEY_DEVICE_TABLE_SIZE];
-	struct M_KeyUsageDesc       KeyUsageList[SECURITY_LEVEL_TABLE_SIZE];
+	struct M_KeyUsageDesc       KeyUsageList[KEY_USAGE_TABLE_SIZE];
 };
 
 /***************************************************************************/ /**

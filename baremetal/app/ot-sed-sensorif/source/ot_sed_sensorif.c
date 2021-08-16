@@ -35,6 +35,7 @@ static const char *  uriCascodaDiscover            = "ca/di";
 static const char *  uriCascodaSensorDiscoverQuery = "t=sen";
 static const char *  uriCascodaSensor              = "ca/se";
 static const uint8_t ledPin                        = 34;
+static const uint8_t voltagePin                    = 35;
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
@@ -246,12 +247,19 @@ static otError sendSensorData(void)
 	otMessageInfo messageInfo;
 	int32_t       temperature;
 	uint32_t      humidity;
+	uint32_t      voltage;
 	uint16_t      lightLevel0, lightLevel1;
 	uint32_t      counter_copy = isr_counter;
 	uint8_t       buffer[32];
 	CborError     err;
 	CborEncoder   encoder, mapEncoder;
 
+	//reading voltage from ADC
+	//voltage is between 0-4095
+	//we want it between 0-3300
+	//ADC to voltage reading factor = (voltage*3300)/4095
+	BSP_ModuleReadVoltsPin(voltagePin, &voltage);
+	voltage = (voltage * 3300) / 4095;
 	BSP_ModuleSetGPIOPin(ledPin, LED_ON);
 
 	//allocate message buffer
@@ -283,7 +291,7 @@ static otError sendSensorData(void)
 	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
 
 	//Create and populate the CBOR map
-	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 4));
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 5));
 	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "t"));
 	SuccessOrExit(err = cbor_encode_int(&mapEncoder, temperature));
 	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "h"));
@@ -292,6 +300,9 @@ static otError sendSensorData(void)
 	SuccessOrExit(err = cbor_encode_int(&mapEncoder, counter_copy));
 	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "l"));
 	SuccessOrExit(err = cbor_encode_int(&mapEncoder, lightLevel0));
+
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "v"));
+	SuccessOrExit(err = cbor_encode_int(&mapEncoder, voltage));
 	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
 
 	size_t length = cbor_encoder_get_buffer_size(&encoder, buffer);

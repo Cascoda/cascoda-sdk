@@ -61,9 +61,6 @@ __NONSECURE_ENTRY void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
 	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
 }
 
-/*---------------------------------------------------------------------------*
- * See cascoda-bm/cascoda_interface.h for docs                               *
- *---------------------------------------------------------------------------*/
 static u8_t isValidFlashAddr(u32_t flashaddr)
 {
 	u8_t rval = 1;
@@ -76,8 +73,9 @@ static u8_t isValidFlashAddr(u32_t flashaddr)
 			rval = 0;
 
 	if (!rval)
-		ca_log_crit("Invalid Flash Address");
-
+	{
+		ca_log_crit("Invalid Flash Address 0x%x", flashaddr);
+	}
 	return rval;
 }
 
@@ -86,6 +84,7 @@ static u8_t isValidFlashAddr(u32_t flashaddr)
  *---------------------------------------------------------------------------*/
 __NONSECURE_ENTRY ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize)
 {
+	ca_log_debg("BSP_FlashWriteInitial addr: 0x%x, len: %d", startaddr, datasize);
 	if (!isValidFlashAddr(startaddr) || !isValidFlashAddr(startaddr + datasize))
 	{
 		return CA_ERROR_INVALID_ARGS;

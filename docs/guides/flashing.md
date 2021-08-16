@@ -66,6 +66,7 @@ Hardware Requirements:
 - Click the 'APROM' button to browse to the APROM binary file
 - Ensure that only the 'APROM' checkbox is selected
 - Click 'Start' to program the device
+- Click 'No' on the batch programming prompt
 
 <p align="center"><img src="img/icp/main-notz.png" width="50%" align="center"></p>
 
