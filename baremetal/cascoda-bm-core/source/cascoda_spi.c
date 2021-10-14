@@ -54,6 +54,9 @@ static uint32_t    highWaterMark  = 0; //!< Actual worst fifo level
 
 static volatile bool ExchangeInProgress = false; //!< SPI Exchange currently in progress (possibly dma)
 static volatile bool FinalExchange      = false; //!< If true, the RFSS pin will be set to high upon exchange completion
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+static volatile bool SpiExternallyInUse = false; //!< SPI is currently in use by an external device
+#endif
 
 // Sync chaining system
 static volatile bool syncChainActive   = false; //!< Sync chaining is currently active
@@ -63,6 +66,10 @@ static const uint8_t syncChainMessage[] = {0x45, 0x02, 0x40, 0x00};
 
 /** Pointer to buffer to be used to store synchronous responses */
 static struct MAC_Message *SPI_Wait_Buf;
+
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+static void (*SPI_External_Complete_callback)(void);
+#endif
 
 /******************************************************************************/
 /****** Static function declarations for cascoda_spi.c                   ******/
@@ -131,7 +138,7 @@ bool SPI_IsFifoAlmostFull()
 	return false;
 }
 
-bool SPI_IsExchangeInProgress()
+bool SPI_IsExchangeWithCA821xInProgress()
 {
 	return ExchangeInProgress;
 }
@@ -504,7 +511,7 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 	do
 	{
 		//TODO: This is perhaps a bit aggressive, as we don't need to wait for every exchange to finish, just the sync one.
-		if (SPI_Wait_Buf->CommandId == rspid && !SPI_IsExchangeInProgress())
+		if (SPI_Wait_Buf->CommandId == rspid && !SPI_IsExchangeWithCA821xInProgress())
 		{
 			status = CA_ERROR_SUCCESS;
 			break;
@@ -567,6 +574,13 @@ static void SPI_Error(ca_error errcode)
 
 void SPI_ExchangeComplete()
 {
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+	if (SpiExternallyInUse)
+	{
+		SPI_External_Complete_callback();
+		return;
+	}
+#endif
 	if (FinalExchange)
 	{
 		BSP_SetRFSSBHigh(); // end access
@@ -583,3 +597,40 @@ void SPI_Initialise(void)
 	SPI_FIFO_End   = 0;
 	BSP_EnableRFIRQ();
 }
+
+bool SPI_GetExternallyInUseStatus(void)
+{
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+	return SpiExternallyInUse;
+#else
+	return false;
+#endif
+}
+
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+ca_error SPI_SetExternallyInUseStatus(bool status, void (*callback)(void))
+{
+	if (!status)
+	{
+		SpiExternallyInUse = status;
+	}
+	else
+	{
+		BSP_DisableRFIRQ();
+
+		if (SPI_IsExchangeWithCA821xInProgress())
+		{
+			BSP_EnableRFIRQ();
+			return CA_ERROR_BUSY;
+		}
+
+		SpiExternallyInUse = status;
+
+		SPI_External_Complete_callback = callback;
+
+		BSP_EnableRFIRQ();
+	}
+
+	return CA_ERROR_SUCCESS;
+}
+#endif

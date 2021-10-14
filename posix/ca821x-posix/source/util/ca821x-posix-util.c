@@ -30,6 +30,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "ca821x-posix/ca821x-posix.h"
@@ -197,10 +198,11 @@ static void enumerate_callback(struct ca_device_info *aDeviceInfo, void *aContex
 	struct dev_info_context *context = aContext;
 	struct ca821x_dev        tDevice;
 
-	char *devNameBuf = NULL;
-	char *appNameBuf = NULL;
-	char *verBuf     = NULL;
-	char *serBuf     = NULL;
+	char *devNameBuf           = NULL;
+	char *appNameBuf           = NULL;
+	char *verBuf               = NULL;
+	char *serBuf               = NULL;
+	char *extFlashAvailableBuf = NULL;
 
 	// Try to open the device to extract evbme info
 	status = ca821x_util_init_path(&tDevice, NULL, aDeviceInfo->exchange_type, aDeviceInfo->path);
@@ -209,6 +211,10 @@ static void enumerate_callback(struct ca_device_info *aDeviceInfo, void *aContex
 	if (status == CA_ERROR_SUCCESS)
 	{
 		aDeviceInfo->available = true;
+
+		if (evbme_getprop_alloc(&extFlashAvailableBuf, EVBME_EXTERNAL_FLASH_AVAILABLE, &tDevice))
+			aDeviceInfo->external_flash_available = extFlashAvailableBuf[0];
+
 		if (!aDeviceInfo->device_name)
 		{
 			evbme_getprop_alloc(&devNameBuf, EVBME_PLATSTRING, &tDevice);
@@ -235,6 +241,7 @@ static void enumerate_callback(struct ca_device_info *aDeviceInfo, void *aContex
 				aDeviceInfo->serialno = serBuf;
 			}
 		}
+
 		ca821x_util_deinit(&tDevice);
 	}
 

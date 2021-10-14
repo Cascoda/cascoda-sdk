@@ -2,12 +2,66 @@
 
 For flashing binaries built for embedded targets, or downloaded from the [GitHub releases page](https://github.com/Cascoda/cascoda-sdk/releases) there are multiple approaches.
 
-1. Using a [SEGGER J-Link](https://www.segger.com/products/debug-probes/j-link/)
-2. Using a [Nu-Link Pro](https://direct.nuvoton.com/en/nu-link-pro)
+1. Using the [chilictl](../../posix/app/chilictl) command line application to flash over USB
+2. Using a [SEGGER J-Link](https://www.segger.com/products/debug-probes/j-link/)
+3. Using a [Nu-Link Pro](https://direct.nuvoton.com/en/nu-link-pro)
 
 For flashing the Chili 2D with TrustZone (CSME) binaries, please refer to the [TrustZone development guide](M2351-TrustZone-development-guide.md#flashing-trustzone). This guide is only for non-TrustZone binaries.
 
 ** Warning: If a device has previously been flashed with a TrustZone binary, it must be fully erased using the Nu-Link Pro and the ICP tool. **
+
+## USB Flashing with chilictl
+
+For simple evaluation and reflashing of Chili devices over USB, the [chilictl](../../posix/app/chilictl) application can be used.
+This is a command line application, that allows high level control of connected Chili devices, including listing, inspecting, flashing and issuing them commands. More detailed information is available [here.](../../posix/app/chilictl)
+
+In order to flash a connected USB Chili, it must have a version of the Cascoda SDK firmware on it of v0.14 or later, with USB enabled. The new firmware has the same requirement, which is met by every example application that isn't sleepy.
+
+Chilictl is failsafe, so if anything goes wrong during flashing, simply power cycle the device, and it will reboot into DFU mode where it can be reflashed.
+
+Software requirements:
+
+- A version of chilictl for your platform. For windows, it is in the ``Windows-SDK.zip`` folder on the [releases page](https://github.com/Cascoda/cascoda-sdk/releases).
+  - For other platforms, the Cascoda SDK can be built natively from source, as [detailed in the build guide.](../../README.md#building)
+- The chilictl DFU firmware 'ldrom_hid.bin' and a USB enabled binary to flash, available in the ``Chili2D-USB.zip`` folder on the [releases page](https://github.com/Cascoda/cascoda-sdk/releases).
+
+Hardware requirements:
+
+- A USB Chili2, and a cable to connect it to a PC
+
+### Procedure
+
+Chilictl is currently a command line only application.
+
+The first time that chilictl is used with a device, it must be updated with the correct DFU bootloader using the ``-d`` flag, as follows:
+
+```
+# The -s argument is optional, and specifies the specific chili to flash (by serial number)
+# Replace the ldrom_hid.bin path with the your own path to the binary
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -df "../Chili2D-USB/ldrom-hid.bin"
+2020-12-16 12:56:46.510 NOTE:  Cascoda SDK v0.14 Dec 16 2020
+Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
+Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE
+Flasher [FBC647CDB300A0DA]: ERASE -> FLASH
+Flasher [FBC647CDB300A0DA]: FLASH -> VERIFY
+Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
+Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
+```
+
+Following this, the chilictl program can be used to replace the application firmware on a device as follows:
+
+```
+# The -s argument is optional, and specifies the specific chili to flash (by serial number)
+# Replace the path with the your own path to the desired binary
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -f "../Chili2D-USB/ldrom-hid.bin"
+2020-12-16 12:59:12.130 NOTE:  Cascoda SDK v0.14 Dec 16 2020
+Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
+Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE
+Flasher [FBC647CDB300A0DA]: ERASE -> FLASH
+Flasher [FBC647CDB300A0DA]: FLASH -> VERIFY
+Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
+Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
+```
 
 ## SEGGER J-Link
 
@@ -28,18 +82,18 @@ Hardware Requirements:
 
 ### Procedure
 
-- Connect J-Link to Chili2D via debug adapter
-- Power the Chili2D
-- Connect the J-Link to the the host PC
-- Run the SEGGER J-Flash Lite
-- Set the target device (M2351... For Chili2, NANO120... for Chili1)
-- Set the target interface to SWD
-- Click OK
+1. Connect J-Link to Chili2D via debug adapter
+2. Power the Chili2D
+3. Connect the J-Link to the the host PC
+4. Run the SEGGER J-Flash Lite
+5. Set the target device (M2351... For Chili2, NANO120... for Chili1)
+6. Set the target interface to SWD
+7. Click OK
 
 <p align="center"><img src="img/jlink/jflashlite.png" align="center"></p>
 
-- Browse to the desired binary file using the [...] button, and then click 'Program Device'.
-- Verify that there are no errors in the Log pane
+8. Browse to the desired binary file using the [...] button, and then click 'Program Device'.
+9. Verify that there are no errors in the Log pane
 
 ## Nu-Link Pro
 
@@ -58,15 +112,15 @@ Hardware Requirements:
 
 ### Procedure
 
-- Connect the Nu-Link Pro to the Chili2D via debug adapter
-- Do NOT power the Chili2D (It is powered by the Nu-Link Pro)
-- Start the Nuvoton NuMicro Programming Tool
-- Select M2351 Series target chip
-- Click 'Connect' to connect to M2351
-- Click the 'APROM' button to browse to the APROM binary file
-- Ensure that only the 'APROM' checkbox is selected
-- Click 'Start' to program the device
-- Click 'No' on the batch programming prompt
+1. Connect the Nu-Link Pro to the Chili2D via debug adapter
+2. Do NOT power the Chili2D (It is powered by the Nu-Link Pro)
+3. Start the Nuvoton NuMicro Programming Tool
+4. Select M2351 Series target chip
+5. Click 'Connect' to connect to M2351
+6. Click the 'APROM' button to browse to the APROM binary file
+7. Ensure that only the 'APROM' checkbox is selected
+8. Click 'Start' to program the device
+9. Click 'No' on the batch programming prompt
 
 <p align="center"><img src="img/icp/main-notz.png" width="50%" align="center"></p>
 

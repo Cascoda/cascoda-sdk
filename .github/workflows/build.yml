@@ -119,59 +119,64 @@ jobs:
       run: |
         arm-none-eabi-gcc --version
         cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_UART_BAUDRATE=1000000 -DCASCODA_CHILI2_UART_CHANNEL=0 -DCASCODA_CHILI2_CONFIG_STRING=ONE_SIDED
-        mkdir ${{ github.workspace }}/build-chili2/upload-uart
+        mkdir ${{ github.workspace }}/upload-uart
 
     - name: build Chili2S-UART0-1Mbaud
       run: |
         make -C ${{ github.workspace }}/build-chili2 clean
         make -C ${{ github.workspace }}/build-chili2 -j4
         pushd ${{ github.workspace }}/build-chili2/bin
-        find . -name '*.bin' | cpio -pdm ${{ github.workspace }}/build-chili2/upload-uart
+        find . -name '*.bin' | cpio -pdm ${{ github.workspace }}/upload-uart
         find . -name '*.bin' -delete
         popd
-        cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/build-chili2/upload-uart
-        echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/build-chili2/upload-uart/readme.txt
+        cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/upload-uart
+        echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/upload-uart/readme.txt
 
     - name: build Chili2S-UART0-1Mbaud-OCF
       run: |
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
         make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
-        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-uart
+        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-uart
 
     # We configure non-ocf chili build first because building OCF adds bloat to MBedTls, which increases all openthread binary sizes.
     - name: configure Chili2D-USB
       run: |
         arm-none-eabi-gcc --version
+        #TODO: Temporary workaround, shouldnt need to do this
+        rm -rf ${{ github.workspace }}/build-chili2
+        mkdir ${{ github.workspace }}/build-chili2
         cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=OFF -DCASCODA_BUILD_SECURE_LWM2M=ON
-        mkdir ${{ github.workspace }}/build-chili2/upload-usb
+        #TODO: Temporary workaround, shouldn't need to configure twice.
+        cmake ${{ github.workspace }}/build-chili2
+        mkdir ${{ github.workspace }}/upload-usb
 
     - name: build Chili2D-USB
       run: |
         make -C ${{ github.workspace }}/build-chili2 -j4
         pushd ${{ github.workspace }}/build-chili2/bin
-        find . -name '*.bin' | cpio -pdm ${{ github.workspace }}/build-chili2/upload-usb
+        find . -name '*.bin' | cpio -pdm ${{ github.workspace }}/upload-usb
         find . -name '*.bin' -delete
         popd
-        cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/build-chili2/upload-usb
-        echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/build-chili2/upload-usb/readme.txt
+        cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/upload-usb
+        echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/upload-usb/readme.txt
 
     - name: build Chili2D-USB-OCF
       run: |
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
         make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
-        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/build-chili2/upload-usb
+        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-usb
 
     - name: Upload Chili2S-UART0-1Mbaud
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Chili2S-UART0-1Mbaud
-        path: ${{ github.workspace }}/build-chili2/upload-uart
+        path: ${{ github.workspace }}/upload-uart
 
     - name: Upload Chili2D-USB
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Chili2D-USB
-        path: ${{ github.workspace }}/build-chili2/upload-usb
+        path: ${{ github.workspace }}/upload-usb
 
   # If we're on master, make a release
   makerelease:

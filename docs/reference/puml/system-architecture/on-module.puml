@@ -1,0 +1,35 @@
+@startuml
+
+rectangle "Host Operating System (e.g. Linux)"  as host{
+    artifact "serial-adapter" as serial
+    artifact "ocfctl" as ocfctl
+}
+
+node "Chili2" as c1{
+    artifact "ot-cli" as otcli {
+        component "EVBME" as e1
+        component OpenThread as o1
+        component "OpenThread CLI" as cli
+        cli - e1
+        o1 - cli
+    }
+    rectangle "Radio" as r1
+    otcli -- r1 : spi
+}
+
+node "Chili2" as c2{
+    artifact "ocf-light" as ocflight {
+        component "EVBME" as e2
+        component OCF
+        component OpenThread as o2
+        OCF - e2
+        o2 - OCF
+    }
+    rectangle "Radio" as r2
+    ocflight -- r2 : spi
+}
+
+serial -- e1 : USB/UART
+ocfctl -- e2 : UART/USB
+
+@enduml

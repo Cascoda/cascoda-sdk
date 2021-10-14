@@ -32,6 +32,9 @@ typedef uint64_t oc_clock_time_t;
 /* 1 clock tick = 1ms */
 #define OC_CLOCK_CONF_TICKS_PER_SECOND (1000)
 
+/* jitter added to response to some multicast requests */
+#define OC_MULTICAST_RESPONSE_JITTER_MS (2000)
+
 /* Server-side parameters */
 /* Maximum number of server resources */
 #define OC_MAX_APP_RESOURCES (1)

@@ -1,0 +1,21 @@
+@startuml
+
+rectangle "Host Operating System (e.g. Linux)"  as host{
+    artifact "ot-cli-posix" as otcli {
+        component OpenThread as o1
+        component "OpenThread CLI" as cli
+        cli - o1
+    }
+}
+
+node "Chili2" as c1{
+    artifact "mac-dongle" as mac {
+        component "EVBME" as e1
+    }
+    rectangle "Radio" as r1
+    mac -- r1 : spi
+}
+
+o1 -- e1 : USB/UART
+
+@enduml

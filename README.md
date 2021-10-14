@@ -32,7 +32,7 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
       - [OpenThread Standalone Targets](#openthread-standalone-targets)
       - [OCF Targets](#ocf-targets)
       - [Miscellaneous Targets](#miscellaneous-targets)
-      - [Hosted Targets](#hosted-targets)
+    - [Hosted Targets](#hosted-targets)
   - [Debugging](#debugging)
   - [Directory layout](#directory-layout)
     - [ca821x-api](#ca821x-api)
@@ -52,10 +52,13 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 
 ### How-To Guides
 
-- [Getting Started with OCF and Thread](docs/how-to/README.md): This how-to will guide you through running pre-existing or creating new OCF applications that run on the Chili module.
+- [Getting Started with the Cascoda Thread Evaluation Kit](docs/how-to/howto-thread.md): This how-to will guide you through setting up a Thread network and testing simple communication.
+- [Getting Started with OCF and Thread](docs/how-to/howto-ocf-thread.md): This how-to will guide you through running pre-existing or creating new OCF applications that run on the Chili module.
 
 ### Other Guides
+
 - [Development Environment Setup](docs/guides/development-setup.md)
+- [Thread Network Formation](docs/guides/thread-network-formation.md)
 - [Thread Commissioning](docs/guides/thread-commissioning.md)
 - [Flashing binaries to hardware](docs/guides/flashing.md)
 - [Debugging with a SEGGER J-Link](docs/guides/debug-with-segger-jlink.md)
@@ -67,7 +70,16 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 - [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
 
 ### Complete API Reference
+
 - [Cascoda SDK API Reference](https://cascoda.github.io/cascoda-sdk-doxygen/)
+
+### Reference Documents
+
+- [The Cascoda TLV message format](docs/reference/cascoda-tlv-message.md)
+- [The Cascoda UART interface](docs/reference/cascoda-uart-if.md)
+- [Configuring with CMake](docs/reference/cmake-configuration.md)
+- [Possible system architectures](docs/reference/system-architecture.md)
+- [Evaluation Board Management Entity](docs/reference/evbme.md)
 
 ## Building
 
@@ -79,8 +91,10 @@ To build the Cascoda SDK, first configure your environment as detailed [here](do
 
 #### Linux/MacOS
 
+Either type, or copy and paste the following into a bash terminal:
+
 ```Bash
-# Make a working directory
+# Make a working directory (this can be anywhere, named anything)
 mkdir cascoda
 cd cascoda
 # Clone the Cascoda SDK
@@ -103,11 +117,26 @@ cmake ../cascoda-sdk -DCMAKE_TOOLCHAIN_FILE="toolchain/arm_gcc_m2351.cmake"
 make -j12
 # Built for Chili 2! To change configuration, the 'ccmake .' command can be used
 ```
+Constructed directory layout:
+```bash
+cascoda #Working directory
+|-cascoda-sdk # Source directory, shared by both build directories. see 'Directory Layout' section below
+|-sdk-posix   # Native build directory of SDK.
+| |-lib        # Static libraries are built in here for native use.
+| |-bin        # Executables are built in here for native use. See 'hosted targets' below
+|-sdk-chili2  # Chili2 build directory of SDK
+| |-lib        # Static libraries are built in here for Chili2 use.
+| |-bin        # Firmware binaries are built in here for the Chili2. See 'Embedded Targets' section.
+```
 
 #### Windows
 
+Either type, or copy and paste the following into a git bash terminal:
+
+(Make sure that the path is set up correctly, as explained in [the development setup guide.](docs/guides/development-setup.md))
+
 ```Bash
-# Make a working directory
+# Make a working directory (this can be anywhere, named anything)
 mkdir cascoda
 cd cascoda
 # Clone the Cascoda SDK (This must be done in git bash)
@@ -131,8 +160,24 @@ cmake.exe ../cascoda-sdk -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE="toolchain/
 mingw32-make.exe -j8
 # Built for Chili 2! To change configuration, the 'cmake-gui.exe .' command can be used
 ```
+Constructed directory layout:
+```bash
+cascoda #Working directory
+|-cascoda-sdk # Source directory, shared by both build directories. see 'Directory Layout' section below
+|-sdk-win     # Native build directory of SDK.
+| |-lib        # Static libraries are built in here for native use.
+| |-bin        # Executables are built in here for native use. See 'hosted targets' below
+|-sdk-chili2  # Chili2 build directory of SDK
+| |-lib        # Static libraries are built in here for Chili2 use.
+| |-bin        # Firmware binaries are built in here for the Chili2. See 'Embedded Targets' section.
+```
 
 Libraries will be built into the ``lib/`` directory, while application binaries will be built into the ``bin/`` directory. For the Chili platforms, both elf format and binary .bin format files will be created.
+These can then be flashed to the device by following the [flashing guide.](docs/guides/flashing.md)
+
+For a description of the different built binaries & executables, see [the embedded targets section](#embedded-targets) for chili platforms, and [the hosted targets](#hosted-targets) for Windows/Linux/macOS.
+
+
 
 In order to compile for the Chili 1, or to use a different compiler, the CMAKE_TOOLCHAIN_FILE argument can be pointed to a different configuration file in the toolchain directory.
 
@@ -146,7 +191,7 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 
 | CMake Target Name | Description |
 | :--- | :--- |
-| ot-cli | The OpenThread command line interface running on a Chili. Interfaces with the Cascoda sensordemo application layer. Works with the serial-adapter POSIX application.
+| ot-cli | The OpenThread command line interface running on a Chili. Interfaces with the Cascoda sensordemo application layer. Works with the serial-adapter POSIX application. [More information.](baremetal/cascoda-bm-thread/example/README.md)
 | ot-cli-lwip | A demonstration of the Lightweight IP Stack running on top of OpenThread. [More information.](baremetal/app/ot-cli-lwip/README.md)
 | ot-cli-lwip-freertos | Same as above, but taking advantage of the POSIX socket API and FreeRTOS. [More information.](baremetal/app/ot-cli-lwip-freertos/README.md)
 | ot-cli-actuator | Similar to ot-cli, but also has actuator commands. [More information.](baremetal/app/ot-cli-actuator/README.md)
@@ -185,7 +230,7 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-barebone-ftd | The FTD version of ot-barebone-mtd. [More information.](baremetal/app/ot-barebone/README.md)
 | chili2-default-secure | The basic secure FreeRTOS & TrustZone binary, containing FreeRTOS secure code and the secure parts of the BSP. [More information.](baremetal/platform/cascoda-nuvoton-chili2/chili2-default-secure/README.md)
 
-#### Hosted Targets
+### Hosted Targets
 
 These applications run on POSIX, Windows or OSX systems. They interface with Chili devices connected by USB or UART. [More information.](posix/ca821x-posix/README.md).
 
@@ -226,27 +271,7 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 
 ### docs
 
-`docs` contains the following high-level guide:
-
-- [Getting Started with OCF and Thread](docs/how-to/README.md)
-
-It also contains the following low-level guides:
-
-- [Development Environment Setup](docs/guides/development-setup.md)
-- [Thread Commissioning](docs/guides/thread-commissioning.md)
-- [Flashing binaries to hardware](docs/guides/flashing.md)
-- [Debugging with a SEGGER J-Link](docs/guides/debug-with-segger-jlink.md)
-- [Debugging with a NuLink Pro](docs/guides/debug-with-a-nu-link-pro.md)
-- [OCF New Application guide](docs/guides/create-custom-ocf-applications.md)
-- [Cross-compiling for the Raspberry Pi](docs/guides/cross-compile-for-the-raspberry-pi.md)
-- [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
-- [Border Router Setup Guide](docs/guides/border-router-setup.md)
-- [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
-
-And also the following reference documents:
-
-- [The Cascoda TLV message format](docs/reference/cascoda-tlv-message.md)
-- [The Cascoda UART interface](docs/reference/cascoda-uart-if.md)
+`docs` contains the guides [outlined above.](#guides)
 
 ### toolchain
 

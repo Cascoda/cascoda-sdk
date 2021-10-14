@@ -27,6 +27,8 @@ _Note: The Pi may lose connectivity during the setup process, so ideally don't r
 After installing the border router and rebooting the Pi, a new Thread network can be formed by navigating to the OpenThread Web GUI.
 The URL of the Web GUI is printed during the final stage of the setup script. (It's hosted on port 80 of the Raspberry Pi)
 
+[More information on network formation is available here.](thread-network-formation.md)
+
 <p align="center"><img src="img/border-router/form-network.png" width="80%" align="center"></p>
 
 ## Commissioning New Nodes on to Network

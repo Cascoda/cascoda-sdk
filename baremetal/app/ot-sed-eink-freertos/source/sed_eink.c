@@ -31,6 +31,7 @@
 #include "semphr.h"
 #include "task.h"
 
+#include "cbor.h"
 #include "sif_il3820.h"
 #include "uzlib.h"
 
@@ -49,7 +50,7 @@
 /****** Power Consumption Configuration                                  ******/
 /******************************************************************************/
 // How long to wait between discover request retries
-const int DISCOVER_FAIL_RETRY_MS = 300;
+const int DISCOVER_FAIL_RETRY_MS = 3000;
 // How long to put the device to sleep if it cannot establish a connection at all
 // Not currently implemented
 const int DISCOVER_TIMEOUT_SLEEP_MS = 30 * 1000;
@@ -59,12 +60,12 @@ const int IMAGE_OK_SLEEP_MS = 8 * 1000;
 // Devices sleep for IMAGE_OK_SLEEP_MS + [0, IMAGE_RANDOM_SLEEP_MS)
 const int IMAGE_RANDOM_SLEEP_MS = 4 * 1000;
 // How long to wait between resending image GET requests
-const int IMAGE_FAIL_RETRY_MS = 5 * 1000;
+const int IMAGE_FAIL_RETRY_MS = 10 * 1000;
 
 const char *uriCascodaDiscover    = "ca/di";
 const char *uriCascodaTemperature = "ca/te";
 const char *uriCascodaImage       = "ca/img";
-const char *uriCascodaQueryOption = "id=004.gz";
+char        uriCascodaImageRequestQuery[10];
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
@@ -75,6 +76,7 @@ struct ca821x_dev sDeviceRef;
 static bool         isConnected  = false;
 static int          timeoutCount = 0;
 static otIp6Address serverIp;
+static int          deviceID;
 
 /******************************************************************************/
 /****** FreeRTOS-related globals                                         ******/
@@ -134,19 +136,50 @@ static void handleServerDiscoverResponse(void *               aContext,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
+	//Cbor Variables
+	CborError  err;
+	CborParser parser;
+	CborValue  value;
+	CborValue  ip_result;
+	CborValue  id_result;
+
+	uint16_t      length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+	uint16_t      offset = otMessageGetOffset(aMessage);
+	unsigned char buffer[40];
+
 	if (aError != OT_ERROR_NONE)
 		return;
 	if (isConnected)
 		return;
-
-	uint16_t length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-
 	if (length < sizeof(otIp6Address))
 		return;
 
-	otMessageRead(aMessage, otMessageGetOffset(aMessage), &serverIp, sizeof(otIp6Address));
+	//Store the received serialized CBOR message into it
+	otMessageRead(aMessage, offset, buffer, length);
+	//Initialise the CBOR parser
+	SuccessOrExit(cbor_parser_init(buffer, length, 0, &parser, &value));
+
+	//Extract the values corresponding to the keys from the CBOR map
+	SuccessOrExit(cbor_value_map_find_value(&value, "ip", &ip_result));
+	SuccessOrExit(cbor_value_map_find_value(&value, "devID", &id_result));
+	//Retrieve IP and assigned ID
+
+	if (cbor_value_get_type(&ip_result) != CborInvalidType)
+	{
+		size_t len = sizeof(otIp6Address);
+		SuccessOrExit(cbor_value_copy_byte_string(&ip_result, serverIp.mFields.m8, &len, NULL));
+	}
+	if (cbor_value_get_type(&id_result) != CborInvalidType)
+	{
+		SuccessOrExit(cbor_value_get_int(&id_result, &deviceID));
+		snprintf(uriCascodaImageRequestQuery, sizeof(uriCascodaImageRequestQuery), "id=%d", deviceID);
+	}
+
 	isConnected  = true;
 	timeoutCount = 0;
+
+exit:
+	return;
 }
 
 /******************************************************************************/
@@ -162,6 +195,10 @@ static otError sendServerDiscover(void)
 	otMessage *   message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
+	otExtAddress  eui64;
+	uint8_t       buffer[64];
+	CborError     err;
+	CborEncoder   encoder, mapEncoder;
 
 	//allocate message buffer
 	message = otCoapNewMessage(OT_INSTANCE, NULL);
@@ -171,26 +208,43 @@ static otError sendServerDiscover(void)
 		goto exit;
 	}
 
+	otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &eui64);
+
 	//Build CoAP header
 	//Realm local all-nodes multicast - this of course generates some traffic, so shouldn't be overused
 	SuccessOrExit(error = otIp6AddressFromString("FF03::1", &coapDestinationIp));
 	otCoapMessageInit(message, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_GET);
 	otCoapMessageGenerateToken(message, 2);
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaDiscover));
+	otCoapMessageAppendContentFormatOption(message, OT_COAP_OPTION_CONTENT_FORMAT_CBOR);
+	otCoapMessageSetPayloadMarker(message);
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr = coapDestinationIp;
 	messageInfo.mPeerPort = OT_DEFAULT_COAP_PORT;
 
+	//CBOR initialisation
+	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 1));
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "eui"));
+	SuccessOrExit(err = cbor_encode_byte_string(&mapEncoder, eui64.m8, sizeof(otExtAddress)));
+	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
+	size_t length = cbor_encoder_get_buffer_size(&encoder, buffer);
+	SuccessOrExit(error = otMessageAppend(message, buffer, length));
+
 	//send
 	error = otCoapSendRequest(OT_INSTANCE, message, &messageInfo, &handleServerDiscoverResponse, NULL);
 
 exit:
-	if (error && message)
+	if ((err || error) && message)
 	{
 		//error, we have to free
 		otMessageFree(message);
 	}
+
+	if (err && !error)
+		error = OT_ERROR_FAILED;
+
 	return error;
 }
 
@@ -244,16 +298,22 @@ void decompress_data()
 
 static void handleImageResponse(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo, otError aError)
 {
+	//CBOR variables
+	CborError  err;
+	CborParser parser;
+	CborValue  value;
+	CborValue  result;
+	CborValue  id_result;
+
 	if (aError == OT_ERROR_RESPONSE_TIMEOUT && timeoutCount++ > 3)
-	{
 		isConnected = false;
-	}
 	else if (aError == OT_ERROR_NONE)
-	{
 		timeoutCount = 0;
-	}
 
 	if (aError != OT_ERROR_NONE)
+		return;
+
+	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_CONTENT)
 		return;
 
 	isConnected = true;
@@ -261,6 +321,25 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 	// Put the data in the message buffer
 	message_length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	otMessageRead(aMessage, otMessageGetOffset(aMessage), &message_buffer, message_length);
+
+	//Initialise the CBOR parser
+	SuccessOrExit(err = cbor_parser_init(message_buffer, message_length, 0, &parser, &value));
+
+	//Extract the values corresponding to the keys from the CBOR map
+	SuccessOrExit(err = cbor_value_map_find_value(&value, "img", &result));
+	SuccessOrExit(err = cbor_value_map_find_value(&value, "devID", &id_result));
+
+	if (cbor_value_get_type(&result) != CborInvalidType)
+	{
+		size_t len = sizeof(message_buffer);
+		SuccessOrExit(err = cbor_value_copy_byte_string(&result, message_buffer, &len, NULL));
+	}
+
+	if (cbor_value_get_type(&id_result) != CborInvalidType)
+	{
+		SuccessOrExit(err = cbor_value_get_int(&id_result, &deviceID));
+		snprintf(uriCascodaImageRequestQuery, sizeof(uriCascodaImageRequestQuery), "id=%d", deviceID);
+	}
 
 	// Turn off the radio if you have successfully received an image
 	otInstanceFinalize(OT_INSTANCE);
@@ -281,6 +360,9 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 	int random_delay_ms = random % IMAGE_RANDOM_SLEEP_MS;
 	EVBME_PowerDown(PDM_DPD, IMAGE_OK_SLEEP_MS + random_delay_ms, &sDeviceRef);
 
+exit:
+	if (err)
+		return;
 	// Should not get here
 	for (;;)
 		;
@@ -305,8 +387,8 @@ static otError sendImageRequest(void)
 	otCoapMessageGenerateToken(message, 2);
 	SuccessOrExit(error = otCoapMessageAppendUriPathOptions(message, uriCascodaImage));
 
-	//Append URI option that identifies which image to display
-	SuccessOrExit(error = otCoapMessageAppendUriQueryOption(message, uriCascodaQueryOption));
+	//Append URI option that identifies the device's ID
+	SuccessOrExit(error = otCoapMessageAppendUriQueryOption(message, uriCascodaImageRequestQuery));
 
 	memset(&messageInfo, 0, sizeof(messageInfo));
 	messageInfo.mPeerAddr = serverIp;

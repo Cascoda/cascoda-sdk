@@ -40,6 +40,11 @@ bool DeviceListFilter::IsFilterPass(const DeviceInfo &aDeviceInfo) const
 		if (aDeviceInfo.IsAvailable() != mAvailableFilter)
 			return false;
 	}
+	if (mExtFlashAvailableFilterEnabled)
+	{
+		if (aDeviceInfo.IsExternalFlashChipAvailable() != mExtFlashAvailableFilter)
+			return false;
+	}
 	if (!mSerialNoFilter.empty())
 	{
 		if (std::find(mSerialNoFilter.begin(), mSerialNoFilter.end(), aDeviceInfo.GetSerialNo()) ==

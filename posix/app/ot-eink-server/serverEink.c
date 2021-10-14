@@ -42,6 +42,8 @@
 #include "openthread/tasklet.h"
 #include "openthread/thread.h"
 
+#include "cbor.h"
+
 #include "ca821x-posix-thread/posix-platform.h"
 
 #define SuccessOrExit(aCondition) \
@@ -52,6 +54,7 @@
 			goto exit;            \
 		}                         \
 	} while (0)
+#define FILENAME_SIZE (255)
 
 static int            isRunning;
 static otCoapResource sDiscoverResource;
@@ -59,18 +62,23 @@ static otCoapResource sImageResource;
 static const char *   sDiscoverUri = "ca/di";
 static const char *   sImageUri    = "ca/img";
 
-static char imageBuffer[1024] = {0};
+static char         imageBuffer[1024] = {0};
+static otCliCommand sCliCommands[2];
 
 struct connected_device
 {
 	uint8_t        ip[16];
+	otExtAddress   eui64;
+	int            deviceID;
+	bool           isConnected;
 	struct timeval last_wakeup;
+	char *         fileName;
 };
 
-#define MAX_CONNECTED_DEVICES_LIST 255
-static time_t                  TIMEOUT_S                                     = 600;
-static int                     free_device_idx                               = 0;
-static struct connected_device connected_devices[MAX_CONNECTED_DEVICES_LIST] = {};
+#define MAX_CONNECTED_DEVICES_LIST 50
+static time_t                  TIMEOUT_S                           = 600;
+static int                     num_of_connected_devices            = 0;
+static struct connected_device devices[MAX_CONNECTED_DEVICES_LIST] = {};
 
 void printf_time(const char *format, ...)
 {
@@ -87,14 +95,72 @@ void printf_time(const char *format, ...)
 	va_end(args);
 }
 
+static bool ipAddressEqual(otIp6Address address1, uint8_t deviceAddress[])
+{
+	bool ipValue;
+	if (memcmp(address1.mFields.m8, deviceAddress, 16) == 0)
+		ipValue = true;
+	else
+		ipValue = false;
+
+	return ipValue;
+}
+
+static struct connected_device *getDevice(otIp6Address deviceIP)
+{
+	for (int i = 0; i < MAX_CONNECTED_DEVICES_LIST; i++)
+	{
+		if (ipAddressEqual(deviceIP, devices[i].ip))
+			return &devices[i];
+	}
+	return NULL;
+}
+
+static int getDeviceID(struct connected_device *device)
+{
+	return device - devices;
+}
+
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
-	otInstance *OT_INSTANCE     = aContext;
+	otError      error           = OT_ERROR_NONE;
+	otMessage *  responseMessage = NULL;
+	otInstance * OT_INSTANCE     = aContext;
+	otExtAddress eui64;
+	//including CBOR variables
+	uint8_t    buffer[64];
+	uint16_t   messageLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+	uint16_t   messageOffset = otMessageGetOffset(aMessage);
+	CborParser parser;
+	CborValue  value;
+	CborValue  eui64_result;
+	CborValue  result;
+
+	CborError   err;
+	CborEncoder encoder, mapEncoder;
+	//Cbor Parser Variables
+	uint16_t length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+	uint16_t offset = otMessageGetOffset(aMessage);
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
+
+	if (messageLength > sizeof(buffer))
+		return;
+
+	otMessageRead(aMessage, messageOffset, buffer, messageLength);
+
+	//Initialise the CBOR parser
+	SuccessOrExit(cbor_parser_init(buffer, messageLength, 0, &parser, &value));
+	//Extract the values corresponding to the keys from the CBOR map
+	SuccessOrExit(cbor_value_map_find_value(&value, "eui", &eui64_result));
+
+	//Retrieve and store the device's Eui64 value
+	if (cbor_value_get_type(&eui64_result) != CborInvalidType)
+	{
+		size_t len = sizeof(otExtAddress);
+		SuccessOrExit(cbor_value_copy_byte_string(&eui64_result, devices->eui64.m8, &len, NULL));
+	}
 
 	printf_time("Server received discover from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 0),
@@ -106,49 +172,81 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
-	bool           is_connected      = false;
-	struct timeval time_now          = {0};
-	int            timed_out_devices = 0;
+	bool           is_already_connected = false;
+	int            connected_device_id;
+	struct timeval time_now = {0};
 	gettimeofday(&time_now, NULL);
 
-	for (int i = 0; i < free_device_idx; ++i)
+	// Check if the device that sent the request is already connected
+	for (int i = 0; i < MAX_CONNECTED_DEVICES_LIST; ++i)
 	{
-		// Check if the device that sent the request has previously connected
-		if (memcmp(connected_devices[i].ip, aMessageInfo->mPeerAddr.mFields.m8, 16) == 0)
+		if (ipAddressEqual(aMessageInfo->mPeerAddr, devices[i].ip) && devices[i].isConnected)
 		{
-			is_connected = true;
-			// Update the last wakeup time
-			connected_devices[i].last_wakeup = time_now;
+			is_already_connected   = true;
+			connected_device_id    = i;
+			devices[i].last_wakeup = time_now;
+			break;
 		}
+	}
 
-		// Have any devices timed out?
-		time_t last_wakeup_s = connected_devices[i].last_wakeup.tv_sec;
+	// Check if any device has timed out
+	for (int i = 0; i < MAX_CONNECTED_DEVICES_LIST; ++i)
+	{
+		time_t last_wakeup_s = devices[i].last_wakeup.tv_sec;
 
 		if ((time_now.tv_sec > last_wakeup_s + TIMEOUT_S) && last_wakeup_s != 0)
 		{
-			printf_time("[%x:%x:%x:%x:%x:%x:%x:%x] timed out!\r\n",
-			            GETBE16(connected_devices[i].ip + 0),
-			            GETBE16(connected_devices[i].ip + 2),
-			            GETBE16(connected_devices[i].ip + 4),
-			            GETBE16(connected_devices[i].ip + 6),
-			            GETBE16(connected_devices[i].ip + 8),
-			            GETBE16(connected_devices[i].ip + 10),
-			            GETBE16(connected_devices[i].ip + 12),
-			            GETBE16(connected_devices[i].ip + 14));
-			printf_time("Last seen %ds ago.\r\n", time_now.tv_sec - last_wakeup_s);
+			devices[i].isConnected = false;
+			devices[i].fileName    = "none";
+			num_of_connected_devices--;
 
-			timed_out_devices++;
+			printf_time("[%x:%x:%x:%x:%x:%x:%x:%x] timed out!\r\n",
+			            GETBE16(devices[i].ip + 0),
+			            GETBE16(devices[i].ip + 2),
+			            GETBE16(devices[i].ip + 4),
+			            GETBE16(devices[i].ip + 6),
+			            GETBE16(devices[i].ip + 8),
+			            GETBE16(devices[i].ip + 10),
+			            GETBE16(devices[i].ip + 12),
+			            GETBE16(devices[i].ip + 14));
+			printf_time("Last seen %ds ago.\r\n", time_now.tv_sec - last_wakeup_s);
 		}
 	}
 
-	if (!is_connected)
+	if (!is_already_connected)
 	{
-		memcpy(connected_devices[free_device_idx].ip, aMessageInfo->mPeerAddr.mFields.m8, 16);
-		printf_time("New device connected!\r\n");
-		free_device_idx++;
-	}
+		// Add the new device to the list of connected devices if possible
+		int i;
+		for (i = 0; i < MAX_CONNECTED_DEVICES_LIST; i++)
+		{
+			if (!devices[i].isConnected)
+				break;
+			if (i == MAX_CONNECTED_DEVICES_LIST - 1)
+			{
+				//TODO: Respond to the client with a coap error 5.03 Service Unavailable instead of ignoring
+				printf_time("Capacity full, couldn't connect the new device.\r\n");
+				return;
+			}
+		}
 
-	printf_time("Connected devices: %d\r\n", free_device_idx - timed_out_devices);
+		devices[i].isConnected = true;
+		memcpy(devices[i].ip, aMessageInfo->mPeerAddr.mFields.m8, 16);
+		devices[i].fileName = "none";
+		num_of_connected_devices++;
+		printf_time("New device connected!\r\n");
+
+		printf_time("Connected devices: %d\r\n", num_of_connected_devices);
+		gettimeofday(&time_now, NULL);
+		devices[i].last_wakeup = time_now;
+	}
+	else
+	{
+		memcpy(devices[connected_device_id].ip, aMessageInfo->mPeerAddr.mFields.m8, 16);
+
+		printf_time("Connected devices: %d\r\n", num_of_connected_devices);
+		gettimeofday(&time_now, NULL);
+		devices[connected_device_id].last_wakeup = time_now;
+	}
 
 	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
@@ -157,16 +255,53 @@ static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageI
 		goto exit;
 	}
 
+	//Initialise CBOR parser
+	SuccessOrExit(cbor_parser_init(buffer, length, 0, &parser, &value));
+
+	//Extract values corresponding to the keys from the CBOR map
+	SuccessOrExit(cbor_value_map_find_value(&value, "eui", &result));
+	if (cbor_value_get_type(&result) != CborInvalidType)
+	{
+		size_t len = sizeof(otExtAddress);
+		SuccessOrExit(cbor_value_copy_byte_string(&result, devices->eui64.m8, &len, NULL));
+	}
+
 	otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_CONTENT);
 	otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
 
 	otCoapMessageSetPayloadMarker(responseMessage);
 
-	SuccessOrExit(error = otMessageAppend(responseMessage, otThreadGetMeshLocalEid(OT_INSTANCE), sizeof(otIp6Address)));
+	//get and send Device ID back to the client.
+	struct connected_device *devicePtr = getDevice(aMessageInfo->mPeerAddr);
+
+	if (devicePtr == NULL)
+	{
+		error = OT_ERROR_NO_BUFS;
+		goto exit;
+	}
+
+	devicePtr->deviceID = getDeviceID(devicePtr);
+
+	//Sending back IP and Device ID
+	//Initialise CBOR encoder
+	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
+
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 2));
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "ip"));
+	SuccessOrExit(err = cbor_encode_byte_string(
+	                  &mapEncoder, otThreadGetMeshLocalEid(OT_INSTANCE)->mFields.m8, sizeof(otIp6Address)));
+
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "devID"));
+	SuccessOrExit(err = cbor_encode_int(&mapEncoder, devices->deviceID));
+
+	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
+	size_t len = cbor_encoder_get_buffer_size(&encoder, buffer);
+	SuccessOrExit(error = otMessageAppend(responseMessage, buffer, len));
+
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 
 exit:
-	if (error != OT_ERROR_NONE && responseMessage != NULL)
+	if ((err || error) && responseMessage != NULL)
 	{
 		printf("Discover response failed: Error %d: %s\r\n", error, otThreadErrorToString(error));
 		otMessageFree(responseMessage);
@@ -178,6 +313,16 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 	otError     error           = OT_ERROR_NONE;
 	otMessage * responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
+	//including CBOR variables
+	uint8_t     buffer[1024] = {0};
+	CborError   err;
+	CborEncoder encoder, mapEncoder;
+
+	char                filename[FILENAME_SIZE] = {0};
+	char                deviceIdString[10];
+	char                uri_query[10];
+	bool                valid_query = false;
+	const otCoapOption *option;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
@@ -192,6 +337,19 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
+	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	{
+		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength < sizeof(uri_query))
+		{
+			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+			valid_query = true;
+			break;
+		}
+	}
+
+	if (!valid_query)
+		return;
+
 	responseMessage = otCoapNewMessage(OT_INSTANCE, NULL);
 	if (responseMessage == NULL)
 	{
@@ -199,27 +357,33 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 		goto exit;
 	}
 
-	// Find the URI Query option
-	const otCoapOption *option;
-	char                filename[255] = {0};
-
-	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	int i;
+	for (i = 0; i < MAX_CONNECTED_DEVICES_LIST; i++)
 	{
-		if (option->mNumber == OT_COAP_OPTION_URI_QUERY)
-		{
-			char uri_query[255] = {0};
-			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+		if (!devices[i].isConnected)
+			continue;
 
-			// URI query is of the form "id=001.gz". Check first three characters
-			// to ensure the query key is what we expect
-			if (memcmp(uri_query, "id=", 3) == 0)
-			{
-				// Copy from the third character of the query
-				// id=001.gz
-				//    ^ this one onwards
-				strcpy(filename, (uri_query + 3));
-			}
-		}
+		snprintf(deviceIdString, sizeof(deviceIdString), "id=%d", devices[i].deviceID);
+		break;
+	}
+
+	if (strncmp(uri_query, deviceIdString, sizeof(uri_query)) != 0)
+		return;
+
+	if (strncmp(devices[i].fileName, "none", sizeof(devices[i].fileName)) != 0)
+	{
+		strcpy(filename, devices[i].fileName);
+		otCliOutputFormat("File Added: %s\r\n", filename);
+	}
+	else
+	{
+		/*send response that the request was received but there are no images available.*/
+		otCliOutputFormat("No Image Available.\r\n");
+		// CoAP header
+		otCoapMessageInitResponse(responseMessage, aMessage, OT_COAP_TYPE_NON_CONFIRMABLE, OT_COAP_CODE_NOT_FOUND);
+		otCoapMessageSetToken(responseMessage, otCoapMessageGetToken(aMessage), otCoapMessageGetTokenLength(aMessage));
+		SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
+		return;
 	}
 
 	FILE *fin;
@@ -241,6 +405,7 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 		// TODO: handle this error more gracefully, by sending a server error
 		printf_time("Archive \"%s\" too large to transmit!\r\n", filename);
 		error = OT_ERROR_FAILED;
+		fclose(fin);
 		goto exit;
 	}
 
@@ -252,8 +417,23 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 
 	otCoapMessageSetPayloadMarker(responseMessage);
 
+	//Initialise CBOR encoder
+	cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
+
+	//use temp buffer instead of image buffer
+	SuccessOrExit(err = cbor_encoder_create_map(&encoder, &mapEncoder, 2));
+
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "img"));
+	SuccessOrExit(err = cbor_encode_byte_string(&mapEncoder, imageBuffer, filesize));
+
+	SuccessOrExit(err = cbor_encode_text_stringz(&mapEncoder, "devID"));
+	SuccessOrExit(err = cbor_encode_int(&mapEncoder, devices->deviceID));
+
+	SuccessOrExit(err = cbor_encoder_close_container(&encoder, &mapEncoder));
+	size_t length = cbor_encoder_get_buffer_size(&encoder, buffer);
+
 	// CoAP Payload: contents of the image buffer
-	SuccessOrExit(error = otMessageAppend(responseMessage, imageBuffer, filesize));
+	SuccessOrExit(error = otMessageAppend(responseMessage, buffer, length));
 	SuccessOrExit(error = otCoapSendResponse(OT_INSTANCE, responseMessage, aMessageInfo));
 
 	printf_time("Sent image titled \"%s\"\r\n", filename);
@@ -290,6 +470,116 @@ exit:
 	return;
 }
 
+static void listConnectedDevice(void)
+{
+	bool noneConnected = true;
+
+	otCliOutputFormat("\r\n");
+	for (int i = 0; i < MAX_CONNECTED_DEVICES_LIST; i++)
+	{
+		if (devices[i].isConnected)
+		{
+			noneConnected = false;
+			otCliOutputFormat("Device %d: ID %d \t", i + 1, devices[i].deviceID);
+			otCliOutputFormat("Eui64: %llx, ", GETBE64(devices[i].eui64.m8));
+			otCliOutputFormat("IP:[%x:%x:%x:%x:%x:%x:%x:%x] \r\n ",
+			                  GETBE16(devices[i].ip + 0),
+			                  GETBE16(devices[i].ip + 2),
+			                  GETBE16(devices[i].ip + 4),
+			                  GETBE16(devices[i].ip + 6),
+			                  GETBE16(devices[i].ip + 8),
+			                  GETBE16(devices[i].ip + 10),
+			                  GETBE16(devices[i].ip + 12),
+			                  GETBE16(devices[i].ip + 14));
+			otCliOutputFormat("Assigned Image: %s\r\n", devices[i].fileName);
+		}
+	}
+	if (noneConnected)
+		otCliOutputFormat("No Devices Visible. \r\n");
+}
+
+static void list_error(void)
+{
+	otCliOutputFormat("Parse error, usage: list devices\r\n");
+}
+
+static void handle_cli_list(int argc, char *argv[])
+{
+	if (argc == 1 && strcmp(argv[0], "devices") == 0)
+	{
+		listConnectedDevice();
+	}
+	else
+	{
+		list_error();
+		return;
+	}
+}
+
+static void assign_error(void)
+{
+	otCliOutputFormat("Parse error, usage: assign [Device ID] [image.gz]\r\n");
+}
+
+static void handle_cli_assign(int argc, char *argv[])
+{
+	if (argc != 2)
+	{
+		assign_error();
+		return;
+	}
+
+	else
+	{
+		//assign <ID> <filename>
+		char *      fileLabel = argv[1];
+		int         len       = strlen(fileLabel);
+		const char *gzip      = &fileLabel[len - 3];
+		int         inputId   = atoi(argv[0]);
+
+		bool deviceIDWithinLimits = (inputId >= 0 && inputId <= MAX_CONNECTED_DEVICES_LIST);
+
+		if (!deviceIDWithinLimits)
+		{
+			otCliOutputFormat("Error: Invalid Device ID. Please enter an ID between 0 and 50.\r\n");
+			return;
+		}
+		if (!devices[inputId].isConnected)
+		{
+			otCliOutputFormat("Device not connected. \r\n");
+			return;
+		}
+		else
+		{
+			if (memcmp(gzip, ".gz", 3) == 0)
+			{
+				devices[inputId].fileName = fileLabel;
+				otCliOutputFormat(
+				    "File Name: %s, assigned to device with ID: %d\r\n", fileLabel, devices[inputId].deviceID);
+			}
+			else
+			{
+				otCliOutputFormat("Error: Invalid Image type. Please try again.\r\n");
+				return;
+			}
+		}
+	}
+}
+
+ca_error init_sed_eink_commands(otInstance *aInstance)
+{
+	otError  error = OT_ERROR_NONE;
+	uint16_t stateLength;
+
+	//CLI Commands
+	sCliCommands[0].mCommand = &handle_cli_list;
+	sCliCommands[0].mName    = "list";
+	sCliCommands[1].mCommand = &handle_cli_assign;
+	sCliCommands[1].mName    = "assign";
+
+	otCliSetUserCommands(sCliCommands, 2);
+}
+
 static void quit(int sig)
 {
 	isRunning = 0;
@@ -318,6 +608,8 @@ int main(int argc, char *argv[])
 	registerCoapResources(OT_INSTANCE);
 
 	printf_time("Initialisation complete.\r\n");
+
+	init_sed_eink_commands(OT_INSTANCE);
 
 	while (isRunning)
 	{

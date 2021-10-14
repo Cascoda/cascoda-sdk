@@ -209,7 +209,9 @@ struct ca_device_info
 	const char *              app_name;      //!< Name of the application running on the device, eg 'ot-cli'
 	const char *              version;       //!< Version string of the device
 	const char *              serialno;      //!< Serial number of the device
-	bool                      available; //!< Is the device available for use (or not, eg. in use by other application)
+
+	bool external_flash_available; //!< Does the device have an external flash chip
+	bool available;                //!< Is the device available for use (or not, eg. in use by other application)
 };
 
 /**

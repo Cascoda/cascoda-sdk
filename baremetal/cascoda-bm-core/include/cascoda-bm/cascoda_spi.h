@@ -159,7 +159,7 @@ bool SPI_IsFifoAlmostFull(void);
 bool SPI_IsFifoEmpty(void);
 
 /**
- * \brief Query whether an SPI exchange operation is currently in progress.
+ * \brief Query whether an SPI exchange operation with the CA821x is currently in progress.
  *
  * This is used in the DISPATCH_ReadCA821x function to determine whether a
  * new read operation should be started. If an exchange is currently in
@@ -167,7 +167,7 @@ bool SPI_IsFifoEmpty(void);
  *
  * @return True if an SPI exchange with the CA821x is already in progress. False if not.
  */
-bool SPI_IsExchangeInProgress(void);
+bool SPI_IsExchangeWithCA821xInProgress(void);
 
 /**
  * \brief Query whether the SPI driver is currently locked in a Sync chain.
@@ -217,9 +217,35 @@ void SPI_StopSyncChain(struct ca821x_dev *pDeviceRef);
 void SPI_Initialise(void);
 
 /**
- * Function to be called from the BSP when an exchange operation has been completed.
+ * \brief Function to be called from the BSP when an exchange operation has been completed.
+ *
  */
 void SPI_ExchangeComplete(void);
+
+/**
+ * \brief Checks if the SPI is being used by something other than the RF chip.
+ *
+ * \retval true if SPI is being used externally, false otherwise.
+ */
+bool SPI_GetExternallyInUseStatus(void);
+
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+/**
+ * \brief Sets the variable SpiExternallyInUse, and assigns the completion callback for
+ * 	      the external flash chip if status is true.
+ *
+ *        If status is true, RFIRQ must be enabled when calling.
+ *
+ * \param status   The value that SpiExternallyInUse will be set to.
+ * \param callback The completion callback for the external flash chip.
+ *                 Set to NULL if status is false, otherwise must be present.
+ *
+ * \return Error status
+ * \retval CA_ERROR_SUCCESS Success.
+ * \retval CA_ERROR_BUSY    Aborted early, SPI is currently being used to communicate with the RF chip.
+ */
+ca_error SPI_SetExternallyInUseStatus(bool status, void (*callback)(void));
+#endif
 
 #ifdef __cplusplus
 }

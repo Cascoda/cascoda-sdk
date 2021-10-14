@@ -38,6 +38,10 @@ configure_file(
 	)
 
 # Main library config ---------------------------------------------------------
+if(CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
+	set(EXT_FLASH_SOURCE ${PROJECT_SOURCE_DIR}/source/cascoda_external_flash.c)
+endif()
+
 add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_evbme.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_host.c
@@ -45,6 +49,7 @@ add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_rand.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
+	${EXT_FLASH_SOURCE}
 	)
 
 target_link_libraries(cascoda-bm

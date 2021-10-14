@@ -473,11 +473,11 @@ void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef)
 	BSP_DisableRFIRQ();
 	rfirq = BSP_SenseRFIRQ();
 
-	if (SPI_IsExchangeInProgress())
+	if (SPI_IsExchangeWithCA821xInProgress())
 	{
 		//Do nothing...
 	}
-	else if (!rfirq && !SPI_IsFifoAlmostFull() && !SPI_IsSyncChainInFlight())
+	else if (!rfirq && !SPI_IsFifoAlmostFull() && !SPI_IsSyncChainInFlight() && !SPI_GetExternallyInUseStatus())
 	{
 		SPI_Exchange(NULLP, pDeviceRef);
 		isReadPending = 0;

@@ -88,7 +88,7 @@ void CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
 /** Enable internal temperature sensor */
 void CHILI_EnableTemperatureSensor();
 
-/** Disnable internal temperature sensor */
+/** Disable internal temperature sensor */
 void CHILI_DisableTemperatureSensor();
 
 /** Is chili currently asleep? */

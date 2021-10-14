@@ -1,6 +1,6 @@
 # chilictl
 
-An Chili control application for listing and flashing connected Chili devices.
+A Chili control application for listing and flashing connected Chili devices.
 
 It can run on Windows or Posix and can be used for:
 - Listing all connected chilis
@@ -8,7 +8,9 @@ It can run on Windows or Posix and can be used for:
 - Flashing new applications to connected chili devices over USB
 - Flashing new DFU (Device Firmware Update) firmware to connected chili devices over USB
 
-Please make sure that you have set up the USB exchange [as detailed in the development setup guide.](/../../../docs/guides/development-setup.md)
+Prebuilt Windows binaries of chilictl can be found in the [Windows release of the Cascoda SDK.](https://github.com/Cascoda/cascoda-sdk/releases/)
+
+Please make sure that you have set up the USB exchange [as detailed in the development setup guide.](../../../docs/guides/development-setup.md)
 
 Note that this tool is still under development, so may have undiscovered issues.
 
@@ -136,6 +138,17 @@ Flasher [FBC647CDB300A0DA]: FLASH -> VERIFY
 Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
 Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
 ```
+
+On a high level, the different phases are:
+
+| Phase    | Description |
+| -------- | ----------- |
+| INIT     | Finding a connected device to flash
+| REBOOT   | Rebooting the device into DFU mode, set bootmode as DFU
+| ERASE    | Erase the application flash
+| FLASH    | Write the application flash
+| VERIFY   | Verify that the flash was written correctly
+| VALIDATE | Validate that the device can successfully boot into application and communicate with chilictl. Set bootmode to application.
 
 ## Piping
 

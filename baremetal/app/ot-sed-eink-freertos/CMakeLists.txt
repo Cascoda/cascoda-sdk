@@ -19,6 +19,7 @@ target_link_libraries(ot-sed-eink-freertos
 	freertos
 	uzlib
 	sensorif
+	tinycbor-master
 )
 
 cascoda_configure_memory(ot-sed-eink-freertos 0x800 0x7000)

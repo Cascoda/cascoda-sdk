@@ -68,6 +68,31 @@ uint32_t HASH_fnv1a_32(const void *data_in, size_t num_bytes);
  */
 uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes);
 
+/**
+ * Calculate the CRC32 hash of a block of data.
+ *
+ * @param data    The data to hash
+ * @param dataLen The sizeof the data to be hashed (in bytes)
+ *
+ * @return 32-bit CRC hash
+ */
+uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen);
+
+/**
+ * Streaming version of HASH_CRC32.
+ *
+ * Usage notes: This function leaves out
+ *              1. The initialisation of the CRC to 0xFFFFFFFF at the beginning, and
+ *              2. the one's complement operation at the end.
+ *              So these two steps have to be handled outside of this function, by the code
+ *              that uses it. (For example, see HASH_CRC32, which uses HASH_CRC32_stream).
+ *
+ * @param data    The data to hash
+ * @param dataLen The sizeof the data to be hashed (in bytes)
+ * @param crc     Output variable into which the (partial) crc computation is stored
+ */
+void HASH_CRC32_stream(uint8_t *data, uint32_t dataLen, uint32_t *crc);
+
 #ifdef __cplusplus
 }
 #endif

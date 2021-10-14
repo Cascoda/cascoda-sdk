@@ -11,7 +11,7 @@ configure_file(
 if(CASCODA_PLANTUML_JAR AND EXISTS "${CASCODA_PLANTUML_JAR}")
 	# Add plantuml target (Yes, we build the results into source, because we want to distribute images as documentation)
 	add_custom_target(plantuml
-		COMMAND java -Djava.awt.headless=true -jar "${CASCODA_PLANTUML_JAR}" -nbthread auto -checkmetadata -o "png" -config "./cascoda.pu.conf" -r "./**.pu"
+		COMMAND java -Djava.awt.headless=true -jar "${CASCODA_PLANTUML_JAR}" -nbthread auto -checkmetadata -o "png" -config "./cascoda.pu.conf" -r "./**.puml"
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	)
 endif()

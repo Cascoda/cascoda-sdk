@@ -25,5 +25,13 @@ add_cmocka_test(util_time_test
 	${CMOCKA_SHARED_LIBRARY}
 	cascoda-util
 	)
+	
+add_cmocka_test(hash_test
+	SOURCES
+	${PROJECT_SOURCE_DIR}/hash_test.c
+	LINK_LIBRARIES
+	${CMOCKA_SHARED_LIBRARY}
+	cascoda-util
+	)
 
-cascoda_put_subdir(test tasklet_test util_time_test)
+cascoda_put_subdir(test tasklet_test util_time_test hash_test)

@@ -8,6 +8,7 @@ pipeline {
 
 	environment {
 		SRC_DIR = "${WORKSPACE}/repo"
+		STORAGE_DIR = "${WORKSPACE}/storage"
 		REPO_DIR = "${JENKINS_HOME}/repos"
 		OPENTHREAD_REPO = "${REPO_DIR}/openthread.git"
 		IOTIVITY_REPO = "${REPO_DIR}/ca-iotivity-lite.git"
@@ -105,16 +106,18 @@ pipeline {
 						)
 
 						/* Build for CA8211*/
-						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211')
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_EXTERNAL_FLASHCHIP_PRESENT=ON')
 
 						/* Collect binary size information for graphing using 'plot' calls in PostBuild stage*/
 						dir("build-chili2")
 						{
+							sh 'mkdir -p ${STORAGE_DIR}'
+							sh 'cp ./bin/mac-dongle.bin ${STORAGE_DIR}'
 							sh '${SRC_DIR}/etc/make_size_csvs.sh "mac-dongle" "ot-cli" "ot-sed-thermometer"'
 						}
 
 						/* Build with TrustZone*/
-						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON')
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON -DCASCODA_EXTERNAL_FLASHCHIP_PRESENT=OFF')
 
 						/* Build with UART instead of USB */
 						cmake_build_helper(cmakeArgs: '-DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_TRUSTZONE=OFF')
@@ -228,7 +231,7 @@ pipeline {
 			steps {
 				lock('long-test-lock') {
 					cmake_build_helper(
-						cmakeArgs: '',
+						cmakeArgs: " -DCASCODA_CHILICTL_TEST_SERIALNO=E5F3704A4A4D5391 -DCASCODA_CHILICTL_TEST_BINPATH=${STORAGE_DIR}/mac-dongle.bin",
 						steps: [[args: 'longtest']]
 					)
 				}

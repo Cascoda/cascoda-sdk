@@ -86,13 +86,13 @@ void BSP_ResetRF(u8_t ms);
 /**
  * \brief Sense whether SPI IRQ is high or low
  *
- * \return State of IRQ Pin  PA.10
+ * \return State of IRQ pin of the CA821x
  *
  */
 u8_t BSP_SenseRFIRQ(void);
 
 /**
- * \brief Inhibit SPI IRQ, supresses interrupt but still latches it
+ * \brief Inhibit SPI IRQ, suppresses interrupt but still latches it
  *
  */
 void BSP_DisableRFIRQ(void);

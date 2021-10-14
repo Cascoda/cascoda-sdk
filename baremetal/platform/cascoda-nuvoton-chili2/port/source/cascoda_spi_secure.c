@@ -53,12 +53,12 @@ static uint8_t               spi_nextLen   = 0;
 static uint8_t *             spi_nextptr;
 
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
-static void (*SPIComplete_callback)(void);
+static void (*SPI_Internal_Complete_callback)(void);
 
 static void Chili_SpiComplete()
 {
-	if (SPIComplete_callback)
-		SPIComplete_callback();
+	if (SPI_Internal_Complete_callback)
+		SPI_Internal_Complete_callback();
 }
 #else
 static void Chili_SpiComplete()
@@ -209,7 +209,7 @@ __NONSECURE_ENTRY void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uin
 __NONSECURE_ENTRY void CHILI_RegisterSPIComplete(void (*callback)(void))
 {
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
-	SPIComplete_callback = callback;
+	SPI_Internal_Complete_callback = callback;
 #else
 	(void)callback;
 #endif

@@ -99,7 +99,7 @@ static const struct pinlist ModulePinList[] = {
 #else
     {PIN_USB_PRESENT, PN_B, 12, P_NA}, /* PB.12:(USB_PRESENT), virtual */
 #endif /* CASCODA_CHILI2_CONFIG */
-#if (CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT == 0)
+#if (CASCODA_EXTERNAL_FLASHCHIP_PRESENT == 0)
     {15, PN_A, 15, P_NA}, /* PA.15 */
 #endif
 #if (CASCODA_CHILI2_CONFIG == 0)

@@ -46,8 +46,10 @@ public:
 	 */
 	DeviceListFilter()
 	    : mAvailableFilter()
+	    , mExtFlashAvailableFilter()
 	    , mSerialNoFilter()
 	    , mAvailableFilterEnabled()
+	    , mExtFlashAvailableFilterEnabled()
 	{
 	}
 
@@ -59,6 +61,16 @@ public:
 	{
 		mAvailableFilter        = aTarget;
 		mAvailableFilterEnabled = true;
+	}
+
+	/**
+	 * Enable the 'ext-flash-available' filter and set the parameters
+	 * @param aTarget The desired value of 'ExtFlashAvailable' in the results.
+	 */
+	void SetExtFlashAvailable(bool aTarget)
+	{
+		mExtFlashAvailableFilter        = aTarget;
+		mExtFlashAvailableFilterEnabled = true;
 	}
 
 	/**
@@ -90,11 +102,13 @@ public:
 
 private:
 	bool                     mAvailableFilter;
+	bool                     mExtFlashAvailableFilter;
 	std::vector<std::string> mSerialNoFilter;
 	std::string              mAppNameFilter;
 	std::string              mMinVersionFilter;
 
 	bool mAvailableFilterEnabled;
+	bool mExtFlashAvailableFilterEnabled;
 
 	static const DeviceListFilter sEmpty;
 };

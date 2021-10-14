@@ -1,6 +1,6 @@
 # PlantUML and Cascoda SDK
 
-Every file in this directory (and subdirectories) with a '.pu' extension will be converted into a .png image using plantUML by running:
+Every file in this directory (and subdirectories) with a '.puml' extension will be converted into a .png image using plantUML by running:
 
 ``make plantuml``
 

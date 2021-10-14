@@ -40,6 +40,7 @@
 #include "ca821x_log.h"
 
 #include "common/Args.hpp"
+#include "external-flash/ExternalFlash.hpp"
 #include "flash/Flash.hpp"
 #include "list/List.hpp"
 #include "pipe/Pipe.hpp"
@@ -129,12 +130,14 @@ int main(int argc, const char *argv[])
 	versOpt.SetCallback(&opt_print_version);
 	sArgParser.AddOption(versOpt);
 
-	ca::Flash flashCmd{};
-	ca::List  listCmd{};
-	ca::Pipe  pipeCmd{};
+	ca::Flash         flashCmd{};
+	ca::List          listCmd{};
+	ca::Pipe          pipeCmd{};
+	ca::ExternalFlash externalFlashCmd{};
 	sCommands.push_back(&listCmd);
 	sCommands.push_back(&flashCmd);
 	sCommands.push_back(&pipeCmd);
+	sCommands.push_back(&externalFlashCmd);
 
 	ca821x_util_start_downstream_dispatch_worker();
 

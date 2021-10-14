@@ -182,8 +182,40 @@ struct RTCDateAndTime
 	u32_t sec;   //!< Seconds (0-59)
 };
 
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+/****************************************************/
+/****** Variables for the external flash chip. ******/
+/****************************************************/
+
+/** Description of the external flash */
+struct ExternalFlashInfo
+{
+	u32_t baseAddress;    //!< Base address of the dataflash
+	u32_t readWriteLimit; //!< Maximum number of bytes that can be read/written in a single instruction
+	u16_t pageSize;       //!< Size of each flash page (in bytes)
+};
+
+/** Function pointer used to schedule callbacks for the next higher layer */
+typedef ca_error (*ExternalFlashCallback)(void *aContext);
+
+/** Structure for generic status information of the external flash chip */
+struct ExternalFlashStatus
+{
+	// Add more members to this structure in the future, as needed.
+	bool writeEnabled : 1; //!< Write enabled status
+};
+
+/** Types of partial erase */
+typedef enum ExternalFlashPartialEraseType
+{
+	SECTOR_4KB = 0,
+	BLOCK_32KB,
+	BLOCK_64KB
+} ExternalFlashPartialEraseType;
+#endif
+
 /*******************************************************************************/
-/****** REQUIRED Function Declarations for cascoda_bsp_*.c               ******/
+/****** REQUIRED Function Declarations for cascoda_bsp_*.c                ******/
 /*******************************************************************************/
 
 /**
@@ -576,6 +608,155 @@ i64_t BSP_RTCConvertDateAndTimeToSeconds(const struct RTCDateAndTime *dateandtim
  *
  */
 void BSP_RTCRegisterCallback(int (*callback)(void));
+
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+/**
+ * Initialise the external flash.
+ * Make sure to call this function directly (not through BSP_ExternalFlashScheduleCallback)
+ * at the initialisation stage of any application that uses the external flash chip.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ */
+void BSP_ExternalFlashInit(void);
+
+/**
+ * Program the external flash.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @param aStartAddress The start address of the page program instruction.
+ *                      Should be between 0x00000 and 0xFFFFF
+ * @param aNumOfBytes   The number of bytes to be sequentially programmed, starting from aStartAddress.
+ *                      Should be between 1 and 128 bytes.
+ * @param aTxData       The data to program
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS      Success
+ * @retval CA_ERROR_NO_ACCESS    This function wasn't called from a scheduled higher layer callback.
+ * @retval CA_ERROR_INVALID_ARGS aStartAddress and/or aNumOfBytes are invalid.
+ */
+ca_error BSP_ExternalFlashProgram(uint32_t aStartAddress, uint8_t aNumOfBytes, uint8_t *aTxData);
+
+/**
+ * Read up to 128 bytes into aRxData sequentially from the external flash, starting at aStartAddress.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @param aStartAddress The start address of the read data instruction
+ * @param aNumOfBytes   The number of bytes to be sequentially read, starting from aStartAddress.
+ * 						This value should be between 1 and 128.
+ * @param aRxData       Stores the data read from the external flash.
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS      Success
+ * @retval CA_ERROR_NO_ACCESS    This function wasn't called from a scheduled higher layer callback.
+ * @retval CA_ERROR_INVALID_ARGS aNumOfBytes isn't between 1 and 128, or is incompatible with aStartAddress.
+ */
+ca_error BSP_ExternalFlashReadData(uint32_t aStartAddress, uint8_t aNumOfBytes, uint8_t *aRxData);
+
+/**
+ * Erase (i.e. set to all 1s) all memory within a 4KB sector, 32KB block, or 64KB block.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @param aEraseType The type of partial erase that will be performed (4KB, 32KB, or 64KB)
+ * @param aAddress   The address contained in the sector or block that will be erased
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS      Success
+ * @retval CA_ERROR_NO_ACCESS    This function wasn't called from a scheduled higher layer callback.
+ * @retval CA_ERROR_INVALID_ARGS aAddress is greater than the highest existing memory address in the flash.
+ */
+ca_error BSP_ExternalFlashPartialErase(ExternalFlashPartialEraseType aEraseType, uint32_t aAddress);
+
+/**
+ * Erase (i.e. set to all 1s) all the memory of the external flash chip.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS   Success
+ * @retval CA_ERROR_NO_ACCESS This function wasn't called from a scheduled higher layer callback.
+ */
+ca_error BSP_ExternalFlashChipErase(void);
+
+/**
+ * Get the ID of the external flash chip.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @param aId Stores the ID of the external flash chip
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS   Success
+ * @retval CA_ERROR_NO_ACCESS This function wasn't called from a scheduled higher layer callback.
+ */
+ca_error BSP_ExternalFlashGetDeviceId(uint8_t *aId);
+
+/**
+ * Get status information about the external flash chip.
+ *
+ * This function should only be called within a higher layer application function
+ * which is scheduled by BSP_ExternalFlashScheduleCallback(). Otherwise,
+ * it will fail with CA_ERROR_NO_ACCESS.
+ *
+ * See "baremetal/app/external-flash-bm/flash_test_main.c" for an example on how
+ * this is used.
+ *
+ * @param status Stores the status information.
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS   Success
+ * @retval CA_ERROR_NO_ACCESS This function wasn't called from a scheduled higher layer callback.
+ */
+ca_error BSP_ExternalFlashGetStatus(struct ExternalFlashStatus *status);
+
+/**
+ * Schedule a callback for the higher layer, which will be automatically be executed as soon as possible.
+ * The callback should be a pointer to a function of the higher layer, and not a pointer to a BSP_ExternalFlash*() function.
+ *
+ * @param aCallback The callback to be scheduled
+ * @param aContext  Context pointer to be used by the scheduled callback
+ *
+ * @return Status of the command
+ * @retval CA_ERROR_SUCCESS Success
+ * @retval CA_ERROR_ALREADY An instruction has already been scheduled (and hasn't been handled yet)
+ */
+ca_error BSP_ExternalFlashScheduleCallback(ExternalFlashCallback aCallback, void *aContext);
+
+/**
+ * Stores some useful information about the external flash chip in aFlashInfoOut.
+ *
+ * @param aFlashInfoOut Output parameter into which information about the external flash chip will be stored.
+ */
+void BSP_ExternalFlashGetInfo(struct ExternalFlashInfo *aFlashInfoOut);
+#endif
 
 #ifdef __cplusplus
 }

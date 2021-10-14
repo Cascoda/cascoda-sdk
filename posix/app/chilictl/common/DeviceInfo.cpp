@@ -138,8 +138,9 @@ void DeviceInfo::copy_from(const ca_device_info *aDeviceInfo)
 	}
 
 	(void)fillptr;
-	exchange_type = aDeviceInfo->exchange_type;
-	available     = aDeviceInfo->available;
+	exchange_type            = aDeviceInfo->exchange_type;
+	available                = aDeviceInfo->available;
+	external_flash_available = aDeviceInfo->external_flash_available;
 }
 
 const char *DeviceInfo::GetExchangeTypeAsString()
@@ -159,14 +160,15 @@ const char *DeviceInfo::GetExchangeTypeAsString()
 
 void DeviceInfo::move_from(DeviceInfo &aDeviceInfo)
 {
-	mBuffer       = aDeviceInfo.mBuffer;
-	path          = aDeviceInfo.path;
-	device_name   = aDeviceInfo.device_name;
-	app_name      = aDeviceInfo.app_name;
-	version       = aDeviceInfo.version;
-	serialno      = aDeviceInfo.serialno;
-	exchange_type = aDeviceInfo.exchange_type;
-	available     = aDeviceInfo.available;
+	mBuffer                  = aDeviceInfo.mBuffer;
+	path                     = aDeviceInfo.path;
+	device_name              = aDeviceInfo.device_name;
+	app_name                 = aDeviceInfo.app_name;
+	version                  = aDeviceInfo.version;
+	serialno                 = aDeviceInfo.serialno;
+	exchange_type            = aDeviceInfo.exchange_type;
+	available                = aDeviceInfo.available;
+	external_flash_available = aDeviceInfo.external_flash_available;
 
 	//Put the moved-from instance in a valid state that won't free the memory we stole
 	aDeviceInfo.mBuffer = nullptr;

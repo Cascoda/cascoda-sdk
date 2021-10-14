@@ -15,11 +15,15 @@ if(CASCODA_BUILD_OCF AND CASCODA_BUILD_SECURE_LWM2M)
 	message(FATAL_ERROR "Not possible to enable CASCODA_BUILD_OCF and CASCODA_BUILD_SECURE_LWM2M simultaneously")
 endif()
 
+if(CASCODA_CHILI2_TRUSTZONE AND CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
+	message(FATAL_ERROR "Not possible to enable CASCODA_CHILI2_TRUSTZONE and CASCODA_EXTERNAL_FLASHCHIP_PRESENT simultaneously")
+endif()
+
 cascoda_has_changed(CASCODA_BUILD_OCF ocf_has_changed)
 
 if(ocf_has_changed AND CASCODA_BUILD_OCF)
     set(ot_config_value OFF)
-    set(bufs_value 88)
+    set(bufs_value 85)
     set(flash_pages 16)
 
     set(OT_BORDER_AGENT ${ot_config_value} CACHE BOOL "" FORCE)

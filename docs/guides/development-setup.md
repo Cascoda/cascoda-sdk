@@ -83,17 +83,23 @@ Install:
 
 Note that if git was installed without adding to the PATH, then the build system will not be able to detect the version and will display 'unknown'. Add the git `cmd` directory to PATH using the same method as below to solve this.
 
-Make sure the mingw ``bin`` directory and the arm-none-eabi-gcc ``bin`` directory are added to your PATH environment variable. To add to path, take note of the installation directory during the install process. Then after installation:
+Make sure the git ``cmd`` directory, mingw ``bin`` directory, cmake ``bin`` directory, and the arm-none-eabi-gcc ``bin`` directory are added to your PATH environment variable. To add to path, take note of the installation directory during the install process. Then after installation:
 
 1. Open the start menu and search for 'path'
 2. Click on 'Edit the system environment variables'
 3. In the window that opens up, click the 'Environment Variables' button.
 4. Select the 'Path' variable in either the 'User variables' (for current user) or 'System variables' (for all users)
 5. Click the corresponding 'Edit' button
-6. Use the 'New' button to add the mingw and arm-none-eabi-gcc ``bin`` directories.
+6. Use the 'New' button to add the cmake, mingw and arm-none-eabi-gcc ``bin`` directories.
 7. Click 'OK' and exit
 
 <p align="center"><img src="img/devsetup/winpath.png" width="90%" align="center"></p>
+
+The paths of the bin directories can be different from system to system, or version to version, but at the time of writing, they were:
+- CMake: ``C:\Program Files\CMake\bin``
+- Git: ``C:\Program Files\Git\cmd``
+- arm-none-eabi-gcc: ``C:\Program Files (x86)\GNU Tools ARM Embedded\8 2018-q4-major\bin``
+- mingw: ``C:\Program Files (x86)\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin``
 
 Optionally install:
 - [JRE](https://java.com/en/download/)

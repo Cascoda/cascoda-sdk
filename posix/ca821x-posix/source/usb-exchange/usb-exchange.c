@@ -802,8 +802,9 @@ ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext)
 		devi.exchange_type = ca821x_exchange_usb;
 		devi.path = devpath = calloc(1, pathlen + 1);
 		devi.device_name = devname = calloc(1, buf_size);
-		devi.serialno = serialno = calloc(1, buf_size);
-		devi.available           = false;
+		devi.serialno = serialno      = calloc(1, buf_size);
+		devi.available                = false;
+		devi.external_flash_available = false;
 
 		memcpy(devpath, hid_cur->path, pathlen);
 		//The '-1' below are because wcstombs does not safely null-terminate in case of overflow

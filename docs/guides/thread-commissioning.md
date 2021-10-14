@@ -32,11 +32,16 @@ In the Cascoda-SDK, there are many ways to perform the joining/commissioning pro
 
 - [Commissioning](#commissioning)
     - [CLI Commissioning](#cli-commissioning)
+      - This can be used when you are using an openthread CLI on a device that is already connected to the network (or has formed it)
     - [App Commissioning](#app-commissioning)
+      - This can be used when you have a border router, and an android smartphone that you can connect to it over WiFi
     - [OT-BR Web GUI Commissioning](#ot-br-web-gui-commissioning)
+      - This can be used when you have a border router and can access its web interface using a web browser
 - [Joining](#joining)
     - [CLI Joining](#cli-joining)
+      - This is used when the joining device has an openthread CLI interface
     - [Automatic Joining](#automatic-joining)
+      - This is used for example applications that do not have openthread CLI interfaces
 
 ### Commissioning
 
@@ -89,11 +94,10 @@ The App Commissioning process uses the official Thread Commissioning app in orde
 
 #### OT-BR Web GUI Commissioning
 
-The OT-BR Commissioning process uses the Openthread Border Router web portal to add a new device to the network. It provides an example for how a production border router might allow a customer to add devices to the Thread Network.
+The OT-BR Commissioning process uses the Openthread Border Router web portal to add a new device to the network.
+It provides an example for how a production border router might allow a customer to add devices to the Thread Network.
 
-Note: At the time of writing, the ot-br web gui is purely a demo/prototype tool and is somewhat unstable & incomplete.
-
-- Open the ot-br GUI hosted at the local IP address of the border router.
+- Open the ot-br GUI hosted at the local IP address of the border router, port 80.
 - Navigate to the 'Commission' tab
 - Enter the Network Passphrase/Admin Password and the Joiner Credential
     - Note that the EUI64 is not required for this commissioning method. This is less reliable as the joining device will not be directed to the correct network.
@@ -104,6 +108,15 @@ Note: At the time of writing, the ot-br web gui is purely a demo/prototype tool 
 <p align="center"><img src="img/thread-comm/webgui-comm.png" width="80%" align="center"></p>
 
 - Device has been commissioned onto the network!
+
+##### Known issues
+
+The Web GUI can sometimes lock up or crash, returning 'Join Success' even though the joining process has failed. As a workaround,
+the web gui can be restarted from the raspberry pi terminal using the command ``sudo systemctl restart otbr-web.service``.
+
+The Web GUI does not utilise the EUI64 of the joining device, and therefore does not set the commissioner 'steering data'.
+This does not pose a problem if only a single device nearby is attempting to join a Thread network, but can lead to wasted
+joining attempts if devices try to join the incorrect network.
 
 ### Joining
 
@@ -128,7 +141,7 @@ CLI Joining uses the OpenThread CLI in order to join a device to the network. It
 
 #### Automatic Joining 
 
-Automatic Joining is used with some of the demos in the Cascoda SDK that do not have CLI interfaces, such as ``ot-sed-sensorif``. This kind of joining is suitable for real-world products, and sleepy devices that do not have a user interface.
+Automatic Joining is used with some of the demos in the Cascoda SDK that do not have openthread CLI interfaces, such as ``ot-sed-sensorif``. This kind of joining is suitable for real-world products, and sleepy devices that do not have a user interface.
 
 In the case of our examples, we make use of the ``evbme-get`` utility to extract the credentials of the device. For real products, a label or other associated material would be more appropriate.
 

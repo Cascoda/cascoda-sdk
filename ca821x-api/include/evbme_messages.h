@@ -75,12 +75,13 @@ enum evbme_attribute
 	EVBME_CFGPINS  = 0x01, //!< CfgPins - Write only
 	EVBME_WAKEUPRF = 0x02, //!< Wakeup CA8211 - Write only
 
-	EVBME_VERSTRING   = 0x80, //!< Version string - Read only
-	EVBME_PLATSTRING  = 0x81, //!< Platform string - Read only
-	EVBME_APPSTRING   = 0x82, //!< Application string - Read only
-	EVBME_SERIALNO    = 0x83, //!< SerialNo 64 bit binary - Read only
-	EVBME_OT_EUI64    = 0x84, //!< Openthread EUI64 for commissioning - Read only
-	EVBME_OT_JOINCRED = 0x85, //!< Openthread joining credential for commissioning - Read only
+	EVBME_VERSTRING                = 0x80, //!< Version string - Read only
+	EVBME_PLATSTRING               = 0x81, //!< Platform string - Read only
+	EVBME_APPSTRING                = 0x82, //!< Application string - Read only
+	EVBME_SERIALNO                 = 0x83, //!< SerialNo 64 bit binary - Read only
+	EVBME_OT_EUI64                 = 0x84, //!< Openthread EUI64 for commissioning - Read only
+	EVBME_OT_JOINCRED              = 0x85, //!< Openthread joining credential for commissioning - Read only
+	EVBME_EXTERNAL_FLASH_AVAILABLE = 0x86  //!< Whether an external flash chip is available - Read only
 };
 
 /**

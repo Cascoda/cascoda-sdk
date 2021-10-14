@@ -51,6 +51,7 @@ private:
 	Args             mArgParser;
 	ArgOpt           mHelpArg;
 	ArgOpt           mAvailableArg;
+	ArgOpt           mExtFlashAvailableArg;
 	ArgOpt           mSerialArg;
 	ArgOpt           mMinVersionArg;
 	DeviceList       mDeviceList;
@@ -62,6 +63,7 @@ private:
 
 	ca_error print_help_string(const char *aArg);
 	ca_error set_available(const char *aArg);
+	ca_error set_extflash_available(const char *aArg);
 	ca_error set_serialno_filter(const char *aArg);
 	ca_error set_versionno_filter(const char *aArg);
 };

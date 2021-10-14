@@ -137,15 +137,20 @@ ca_error EVBME_DFU_REBOOT_request(enum evbme_dfu_rebootmode aRebootMode, struct 
 
 /**
  * Send a DFU request for Erase to a given device. Causes the given flash pages to be erased.
+ * Can be used to request an Erase to the external flash chip of the given device if aStartAddr >= 0xB0000000.
  * This command is processed asynchronously and the EVBME_DFU_STATUS_indication will indicate completion.
+ *
+ * Note: Only send this command if an EVBME_DFU_STATUS_indication was received for the previous one.
  *
  * EVBME_DFU_STATUS       | Status code meaning
  * ---------------------- | -------------------
  * CA_ERROR_SUCCESS       | Command was successful
  * CA_ERROR_INVALID_ARGS  | aStartAddr or aEraseLen is not aligned
  * CA_ERROR_INVALID_STATE | Device is not in DFU mode
+ * CA_ERROR_ALREADY       | Command was sent without first having received indication for previous command
  *
- * @param aStartAddr The start address of the erase, must be page-aligned
+ * @param aStartAddr The start address of the erase, must be page-aligned.
+ *                   Addresses 0xB0000000 and above represent the external flash.
  * @param aEraseLen  The number of bytes to erase, must be a multiple of the page size
  * @param pDeviceRef The device struct for the device this message is to be sent to
  *
@@ -156,13 +161,17 @@ ca_error EVBME_DFU_ERASE_request(uint32_t aStartAddr, uint32_t aEraseLen, struct
 
 /**
  * Send a DFU request for Write to a given device. Causes the given flash to be written.
+ * Can be used to request a Write to the external flash chip of the given device if aStartAddr >= 0xB0000000.
  * This command is processed asynchronously and the EVBME_DFU_STATUS_indication will indicate completion.
+ *
+ * Note: Only send this command if an EVBME_DFU_STATUS_indication was received for the previous one.
  *
  * EVBME_DFU_STATUS       | Status code meaning
  * ---------------------- | -------------------
  * CA_ERROR_SUCCESS       | Command was successful
  * CA_ERROR_INVALID_ARGS  | aStartAddr or aWriteLen is not aligned
  * CA_ERROR_INVALID_STATE | Device is not in DFU mode
+ * CA_ERROR_ALREADY       | Command was sent without first having received indication for previous command
  *
  * @param aStartAddr The start address of the write, must be word-aligned
  * @param aWriteLen  The length of data to write in bytes, must be word-aligned and max 244 bytes
@@ -180,7 +189,10 @@ ca_error EVBME_DFU_WRITE_request(uint32_t           aStartAddr,
 
 /**
  * Send a DFU request to verify a flash range of a given device.
+ * Can be used to verify a flash range of the external flash chip of the given device if aStartAddr >= 0xB0000000.
  * This command is processed asynchronously and the EVBME_DFU_STATUS_indication will indicate completion.
+ *
+ * Note: Only send this command if an EVBME_DFU_STATUS_indication was received for the previous one.
  *
  * EVBME_DFU_STATUS       | Status code meaning
  * ---------------------- | -------------------
@@ -188,6 +200,7 @@ ca_error EVBME_DFU_WRITE_request(uint32_t           aStartAddr,
  * CA_ERROR_INVALID_ARGS  | aStartAddr or aCheckLen is not aligned
  * CA_ERROR_INVALID_STATE | Device is not in DFU mode
  * CA_ERROR_FAIL          | Command was successful, **CHECKSUM DOES NOT MATCH**
+ * CA_ERROR_ALREADY       | Command was sent without first having received indication for previous command
  *
  * @param aStartAddr The start address of the check, must be page-aligned
  * @param aCheckLen  The number of bytes to check, must be a multiple of the page size

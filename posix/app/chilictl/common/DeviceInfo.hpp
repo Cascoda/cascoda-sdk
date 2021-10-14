@@ -125,6 +125,11 @@ public:
 	 */
 	bool IsAvailable() const { return available; }
 
+	/**
+	 * @return @copydoc ca_device_info::external_flash_available
+	 */
+	bool IsExternalFlashChipAvailable() const { return external_flash_available; }
+
 private:
 	char *mBuffer;
 

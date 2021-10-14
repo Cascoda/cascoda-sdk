@@ -1,0 +1,24 @@
+@startuml
+
+cloud "External Network" as net
+
+node "Border Router" as br {
+    rectangle "Chili2S Pi Hat" as hat
+    rectangle "Raspberry Pi" as pi
+    pi - hat
+}
+
+node "Router Chili2" as router
+node "Router Chili2" as router2
+
+node "End Device Chili2" as ed1
+node "End Device Chili2" as ed2
+
+net -[#blue,thickness=8]- br
+br -[#orange,dashed,thickness=8]- router : Thread Link
+router -[#orange,dashed,thickness=8]- ed1
+router2 -[#orange,dashed,thickness=8]- ed2
+router -[#orange,dashed,thickness=8] router2
+br -[#orange,dashed,thickness=8]- router2
+
+@enduml

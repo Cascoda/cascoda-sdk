@@ -1,0 +1,23 @@
+@startuml
+
+rectangle "Linux Host Operating System"  as host{
+    component wpantund
+    artifact "serial-adapter" as serial
+    wpantund -- serial
+}
+
+node "Chili2" as c1{
+    artifact "ot-ncp" as otncp {
+        component "EVBME" as e1
+        component OpenThread as o1
+        component "OpenThread NCP" as ncp
+        ncp - e1
+        o1 - ncp
+    }
+    rectangle "Radio" as r1
+    otncp -- r1 : spi
+}
+
+serial -- e1 : USB/UART
+
+@enduml

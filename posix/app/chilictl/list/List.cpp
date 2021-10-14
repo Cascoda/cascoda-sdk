@@ -40,6 +40,7 @@ List::List()
     , mArgParser()
     , mHelpArg('h', "help")
     , mAvailableArg('\0', "available", ArgOpt::OPTIONAL)
+    , mExtFlashAvailableArg('\0', "ext-flash-available", ArgOpt::OPTIONAL)
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
     , mMinVersionArg('v', "min-version", ArgOpt::MANDATORY)
     , mDeviceList()
@@ -54,6 +55,12 @@ List::List()
 	mAvailableArg.SetHelpString("Filter the list to only include available devices, or unavailable devices if 'no'.");
 	mAvailableArg.SetCallback(&List::set_available, *this);
 	mArgParser.AddOption(mAvailableArg);
+
+	mExtFlashAvailableArg.SetArgHint("yes|no");
+	mExtFlashAvailableArg.SetHelpString(
+	    "Filter the list to only include devices which have an external flash chip, or those that don't if 'no'.");
+	mExtFlashAvailableArg.SetCallback(&List::set_extflash_available, *this);
+	mArgParser.AddOption(mExtFlashAvailableArg);
 
 	mSerialArg.SetArgHint("serialno");
 	mSerialArg.SetHelpString("Filter the list to only include the device with the given serial number.");
@@ -118,6 +125,7 @@ void List::print_info(const DeviceInfo &aDeviceInfo)
 	printf("\tSerial No: %s\n", or_default(aDeviceInfo.GetSerialNo(), "???"));
 	printf("\tPath: %s\n", or_default(aDeviceInfo.GetPath(), "???"));
 	printf("\tAvailable: %s\n", aDeviceInfo.IsAvailable() ? "Yes" : "No");
+	printf("\tExternal Flash Chip Available: %s\n", aDeviceInfo.IsExternalFlashChipAvailable() ? "Yes" : "No");
 }
 
 ca_error List::print_help_string(const char *aArg)
@@ -144,6 +152,23 @@ ca_error List::set_available(const char *aArg)
 	else if (aArg[0] == 'n')
 	{
 		mDeviceListFilter.SetAvailable(false);
+	}
+	else
+	{
+		return CA_ERROR_INVALID_ARGS;
+	}
+	return CA_ERROR_SUCCESS;
+}
+
+ca_error List::set_extflash_available(const char *aArg)
+{
+	if (!aArg[0] || aArg[0] == 'y')
+	{
+		mDeviceListFilter.SetExtFlashAvailable(true);
+	}
+	else if (aArg[0] == 'n')
+	{
+		mDeviceListFilter.SetExtFlashAvailable(false);
 	}
 	else
 	{

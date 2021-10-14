@@ -103,7 +103,7 @@ target_include_directories(ocf-reed-light BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/in
 
 target_compile_definitions(ocf-reed-light PRIVATE NO_MAIN)
 
-cascoda_configure_memory(ocf-reed-light 0x1700 0xb800)
+cascoda_configure_memory(ocf-reed-light 0x1700 0xba00)
 cascoda_make_binary(ocf-reed-light)
 
 add_executable(ocf-reed-module
@@ -121,5 +121,5 @@ target_include_directories(ocf-reed-module BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/i
 
 target_compile_definitions(ocf-reed-module PRIVATE NO_MAIN)
 
-cascoda_configure_memory(ocf-reed-module 0x1700 0xb800)
+cascoda_configure_memory(ocf-reed-module 0x1700 0xba00)
 cascoda_make_binary(ocf-reed-module)

@@ -42,13 +42,6 @@ cascoda_mark_important("CASCODA_CHILI_FLASH_PAGES")
 set(CASCODA_CHILI_DISABLE_CA821x OFF CACHE BOOL "Disable the onboard CA-821x, and use pin 31 (PB5) as external reset instead.")
 mark_as_advanced(CASCODA_CHILI_DISABLE_CA821x)
 
-# External flash (shares SPI Bus with CA-821x & uses PA15 as /CS)
-if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "TWO_SIDED")
-	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
-else()
-	set(CASCODA_CHILI2_EXTERNAL_FLASHCHIP_PRESENT OFF CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
-endif()
-
 # UART Baud config
 if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL
@@ -150,14 +143,19 @@ elseif(CMAKE_C_COMPILER MATCHES armclang)
 		)
 endif()
 
+if(CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
+	set(FLASH_SOURCES ${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_w25q80dlsnig.c)
+endif()
+
 if(NOT CASCODA_CHILI2_TRUSTZONE)
-	# Non-TrustZone Build ----------------------------------------------------------------------------------------------------------------
+	# Non-TrustZone Build ----------------------------------------------------------------------------------------------------------------	
 	add_library(cascoda-chili2
 		${CHILI2_SOURCES}
 		${CHILI2_SECURE_SOURCES}
 		$<TARGET_OBJECTS:nuvoton-vendor-m2351>
+		${FLASH_SOURCES}
 	)
-
+	
 	#The non-trustzone chili2 platform can use the default partition file, so explicitly add this compile define here to dodge the error.
 	target_compile_definitions(cascoda-chili2 PRIVATE CUSTOM_PARTITION_H)
 
@@ -188,6 +186,7 @@ else()
 	# Use TrustZone Build ----------------------------------------------------------------------------------------------------------------
 	add_library(cascoda-chili2-secure OBJECT
 		${CHILI2_SECURE_SOURCES}
+		${FLASH_SOURCES}
 	)
 
 	target_link_libraries(cascoda-chili2-secure

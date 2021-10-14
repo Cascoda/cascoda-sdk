@@ -154,7 +154,7 @@ public:
 	 *
 	 * @return Status of the processing
 	 * @retval CA_ERROR_SUCCESS      Successfully processed options
-	 * @retval CA_ERROR_NOT_HANDLED  Positional argument encountered or end of arguements reached
+	 * @retval CA_ERROR_NOT_HANDLED  Positional argument encountered or end of arguments reached
 	 * @retval CA_ERROR_INVALID_ARGS Option not recognised or incorrect usage
 	 */
 	ca_error ProcessOption(int &argi, int argc, const char *argv[]);
