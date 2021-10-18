@@ -30,6 +30,10 @@ The network credentials are stored in non-volatile storage of the device, so Com
 
 In the Cascoda-SDK, there are many ways to perform the joining/commissioning procedure, based on the capabilities of the device. These can be used together in any combination - select one commissioning method and one joining method. It should be noted that a network must be formed either via the [OpenThread CLI](https://github.com/Cascoda/openthread/blob/master/src/cli/README_DATASET.md) or the [OpenThread Web GUI](border-router-setup.md), before commissioning can take place.
 
+Note that the commissioning and joining procedures happen in parallel, with the commissioner being provided with the joiner credentials just before the joiner starts discovering the network.
+
+Select one commissioning method and one joining method:
+
 - [Commissioning](#commissioning)
     - [CLI Commissioning](#cli-commissioning)
       - This can be used when you are using an openthread CLI on a device that is already connected to the network (or has formed it)
@@ -49,10 +53,12 @@ In the Cascoda-SDK, there are many ways to perform the joining/commissioning pro
 
 CLI Commissioning uses the OpenThread CLI of a device already on the network in order to commission another device. It is useful for development purposes and testing.
 
+- Connect to the CLI of the device, such as by using ``serial-adapter`` if using the [on module architecture](../reference/system-architecture.md)
 - The Commissioner device must be already connected to the desired network.
     - The ``state`` command can be used to test this - output should be ``child``, ``router`` or ``leader``.
 - Run the ``commissioner start`` command.
     - The device will attempt to become the active commissioner
+- Use one of the joining procedures below to obtain the joiner credentials.
 - Run the ``commissioner joiner add <eui64> <cred>`` command
     - This adds the joiner as an authorised joining device
 - At this point, turn on the new device (or start the joining process using the CLI).
@@ -75,6 +81,7 @@ The App Commissioning process uses the official Thread Commissioning app in orde
 
 <p align="center"><img src="img/thread-comm/commapp-con.jpg" width="50%" align="center"></p>
 
+- Use one of the joining procedures below to obtain the joiner credentials.
 - The Thread Commissioning application will present you with a camera window to scan a QR Code.
     - The QR Code is a simple text string in the format ``v=1&&eui=0000b57fffe15d68&&cc=J01NU5``
     - Any text QR Code generator can be used (including online QR generators)
@@ -99,6 +106,7 @@ It provides an example for how a production border router might allow a customer
 
 - Open the ot-br GUI hosted at the local IP address of the border router, port 80.
 - Navigate to the 'Commission' tab
+- Use one of the joining procedures below to obtain the joiner credentials.
 - Enter the Network Passphrase/Admin Password and the Joiner Credential
     - Note that the EUI64 is not required for this commissioning method. This is less reliable as the joining device will not be directed to the correct network.
 - Click  _START COMMISSION_ , and the commissioning process should begin.
@@ -124,11 +132,12 @@ joining attempts if devices try to join the incorrect network.
 
 CLI Joining uses the OpenThread CLI in order to join a device to the network. It is useful for development purposes and testing.
 
+- Connect to the CLI of the device, such as by using ``serial-adapter`` if using the [on module architecture](../reference/system-architecture.md)
 - The Joiner device should not be connected to a network - use ``factoryreset`` command to wipe all persistent storage and forget network info.
 - Run the ``ifconfig up`` command.
     - This brings up the network interface and initialises the CA-8211
 - Use the ``eui64`` command to obtain the device eui64.
-- At this point, start the commissioner using one of the above methods.
+- At this point, **start the commissioner using one of the above methods.**
 	- The joiner credential can be whatever you like for CLI joining (6-32 characters), as it is manually specified in the next stage
 - Start the joiner using the ``joiner start <cred>`` command
     - This command takes some time to run, and returns ``Join success`` on success, or ``Join failed`` upon an error.
@@ -156,7 +165,7 @@ In the case of our examples, we make use of the ``evbme-get`` utility to extract
 
 <p align="center"><img src="img/thread-comm/evbme-get.png" width="70%" align="center"></p>
 
-- At this point, start the commissioner using one of the above methods and the parameters for the device.
+- At this point, **start the commissioner using one of the above methods** and the parameters for the device.
 - The Chili can be power cycled now to speed up the joining process.
     - The Chili will attempt to join a network if it is not currently part of a network and either:
       - It has just been powered on.

@@ -93,7 +93,7 @@ To build the Cascoda SDK, first configure your environment as detailed [here](do
 
 Either type, or copy and paste the following into a bash terminal:
 
-```Bash
+```bash
 # Make a working directory (this can be anywhere, named anything)
 mkdir cascoda
 cd cascoda
@@ -135,7 +135,7 @@ Either type, or copy and paste the following into a git bash terminal:
 
 (Make sure that the path is set up correctly, as explained in [the development setup guide.](docs/guides/development-setup.md))
 
-```Bash
+```bash
 # Make a working directory (this can be anywhere, named anything)
 mkdir cascoda
 cd cascoda

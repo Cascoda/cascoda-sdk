@@ -1,0 +1,63 @@
+name: GenerateAndPublishPages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  pages_gen:
+    if: ${{ github.repository == 'Cascoda/cascoda-sdk' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: cascoda-sdk
+      
+      - uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.CASCODA_SDK_PAGES_KEY }}
+        
+      - name: inject-docs
+        run: |
+          JS_STRING='<script type="text/javascript" src="https://cascoda.github.io/cascoda-sdk-pages/etc/js/iframeResizer.contentWindow.min.js"></script>'
+
+          # Inject the javascript string into every markdown file
+          cd ${{ github.workspace }}/cascoda-sdk
+          find . -name '*.md' -type f -print0 | xargs -0 sed -i "1s;^;${JS_STRING};"
+
+          # Modify every external link with the {target blank} modifier so it opens in a new tab
+          find . -name '*.md' -type f -print0 | xargs -0 sed -Ei 's/(\[[^]]+\]\(http[^)]+\))/\1{:target="_blank"}/g'
+
+          # Remove the github actions so we don't run them on the generated repository!
+          rm -rf .github
+
+          # Just to check that it generated documents
+          if git diff -s --exit-code; then
+            echo "Fatal error: Javascript injection does not seem to have changed any files."
+            exit -1
+          fi
+
+      - name: copy-docs
+        run: |
+          # Git config
+          git config --global user.name 'Cascoda Bot'
+          git config --global user.email 'github@cascoda.com'
+
+          # Add the pages repo as a remote
+          cd ${{ github.workspace }}/cascoda-sdk
+          git remote add pages 'git@github.com:Cascoda/cascoda-sdk-pages.git'
+          git fetch --all
+
+          # Move HEAD to pages/master
+          git reset pages/master
+          git checkout -b staged
+
+          # Make the new commit
+          git pull --ff-only pages master
+          git add .
+          git commit -m "Automatic publish from github.com/Cascoda/cascoda-sdk"
+
+          # Push
+          git push pages staged:master
