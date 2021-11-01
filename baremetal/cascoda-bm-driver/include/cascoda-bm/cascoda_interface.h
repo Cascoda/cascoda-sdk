@@ -45,6 +45,7 @@
 
 #include "cascoda-bm/cascoda_bm.h"
 #include "cascoda-bm/cascoda_interface_core.h"
+#include "cascoda-util/cascoda_flash.h"
 #include "ca821x_api.h"
 
 #ifdef __cplusplus
@@ -159,14 +160,6 @@ struct ModuleSpecialPins
 };
 //For forward compatibility, add a P_NA for every additional field in the above struct
 #define MSP_DEFAULT P_NA, P_NA, P_NA, P_NA
-
-/** Description of the internal flash */
-struct FlashInfo
-{
-	u32_t dataFlashBaseAddr; //!< Base address of the dataflash
-	u16_t pageSize;          //!< Size of each flash page (in bytes)
-	u8_t  numPages;          //!< Number of flash pages that make up the user flash region
-};
 
 // Type for a function pointer that points to DISPATCH_ReadCA821x
 typedef void (*dispatch_read_t)(struct ca821x_dev *pDeviceRef);
@@ -497,7 +490,7 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms);
  * Get the flashinfo struct for the current platform.
  * @param aFlashInfoOut Pointer to struct to fill with flashinfo
  */
-void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut);
+void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut);
 
 /**
  * \brief Writes Dataflash Memory, relies on Memory erased

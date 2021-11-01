@@ -5,7 +5,6 @@ project (ca821x-openthread)
 add_library(ca821x-openthread-bm-plat OBJECT
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
 	${PROJECT_SOURCE_DIR}/platform/entropy.c
-	${PROJECT_SOURCE_DIR}/platform/flash.c
 	${PROJECT_SOURCE_DIR}/platform/logging.c
 	${PROJECT_SOURCE_DIR}/platform/misc.c
 	${PROJECT_SOURCE_DIR}/platform/radio.c
@@ -22,6 +21,7 @@ target_link_libraries(ca821x-openthread-bm-plat
 		openthread-plat-api
 		mbedcrypto
 		ca-ot-util
+		cascoda-util
 	)
 
 # NTP server used by platform/sntp_helper.c

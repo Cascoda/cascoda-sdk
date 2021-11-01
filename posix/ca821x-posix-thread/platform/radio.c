@@ -50,6 +50,7 @@
 #include "openthread/thread.h"
 
 #include "ca821x-posix-thread/posix-platform.h"
+#include "ca821x-posix/ca821x-posix-settings.h"
 #include "ca821x-posix/ca821x-posix.h"
 #include "cascoda-util/cascoda_rand.h"
 #include "ca821x_api.h"
@@ -555,11 +556,11 @@ void PlatformRadioStop(void)
 
 void initIeeeEui64()
 {
-	int         file;
-	uint8_t     create      = false;
-	const char *dataDir     = posixGetDataDir();
-	size_t      fileNameLen = sizeof(IeeeEuiFile) + strlen(dataDir) + 1; //"datadir/filename"
-	char        fileName[fileNameLen];
+	int     file;
+	uint8_t create      = false;
+	char *  dataDir     = posixGetDataDir(NODE_ID);
+	size_t  fileNameLen = sizeof(IeeeEuiFile) + strlen(dataDir) + 1; //"datadir/filename"
+	char    fileName[fileNameLen];
 
 	snprintf(fileName, fileNameLen, "%s/%s", dataDir, IeeeEuiFile);
 
@@ -589,6 +590,7 @@ void initIeeeEui64()
 		write(file, sIeeeEui64, 8);
 	}
 	close(file);
+	free(dataDir);
 }
 
 static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)

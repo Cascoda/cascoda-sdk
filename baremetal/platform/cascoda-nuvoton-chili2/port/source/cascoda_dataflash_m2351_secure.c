@@ -54,9 +54,9 @@
 #define DATA_FLASH_BASE \
 	(FMC_APROM_END - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE)) /* Dataflash: on top of APROM */
 
-const struct FlashInfo BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
+const struct ca_flash_info BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
 
-__NONSECURE_ENTRY void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
+__NONSECURE_ENTRY void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut)
 {
 	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
 }

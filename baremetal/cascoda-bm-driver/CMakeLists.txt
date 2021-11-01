@@ -49,6 +49,7 @@ add_library(cascoda-bm
 	${PROJECT_SOURCE_DIR}/source/cascoda_rand.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_uart.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_serial_usb.c
+	${PROJECT_SOURCE_DIR}/source/cascoda_flash.c
 	${EXT_FLASH_SOURCE}
 	)
 

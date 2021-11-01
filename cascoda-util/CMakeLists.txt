@@ -7,6 +7,7 @@ add_library(cascoda-util
 	${PROJECT_SOURCE_DIR}/src/cascoda_rand.c
 	${PROJECT_SOURCE_DIR}/src/cascoda_tasklet.c
 	${PROJECT_SOURCE_DIR}/src/cascoda_time.c
+	${PROJECT_SOURCE_DIR}/src/cascoda_settings.c
 	)
 
 target_include_directories(cascoda-util

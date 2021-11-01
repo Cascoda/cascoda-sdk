@@ -45,6 +45,8 @@
 #include "openthread/platform/radio.h"
 #include "ca821x_api.h"
 
+#include "cascoda-util/cascoda_settings.h"
+
 extern otInstance *OT_INSTANCE;
 
 #define SuccessOrExit(aCondition) \
@@ -60,13 +62,6 @@ enum openthread_message_codes
 {
 	OT_SERIAL_DOWNLINK = 0xB2,
 	OT_SERIAL_UPLINK   = 0xB3,
-};
-
-/** Data structure for vectored I/O using otPlatSettingsAddVector */
-struct settingBuffer
-{
-	const uint8_t *value;  //!< Pointer to the data to write to settings
-	uint16_t       length; //!< Length of the data to write to settings
 };
 
 /** Flash settings key for joiner credential */

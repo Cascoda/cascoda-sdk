@@ -28,7 +28,7 @@ jobs:
           find . -name '*.md' -type f -print0 | xargs -0 sed -i "1s;^;${JS_STRING};"
 
           # Modify every external link with the {target blank} modifier so it opens in a new tab
-          find . -name '*.md' -type f -print0 | xargs -0 sed -Ei 's/(\[[^]]+\]\(http[^)]+\))/\1{:target="_blank"}/g'
+          find . -name '*.md' -type f -print0 | xargs -0 sed -Ei 's/(\]\(http[^)]+\))/\1{:target="_blank"}/g'
 
           # Remove the github actions so we don't run them on the generated repository!
           rm -rf .github

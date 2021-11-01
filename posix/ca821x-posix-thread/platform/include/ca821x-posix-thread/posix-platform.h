@@ -169,12 +169,6 @@ void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, int *aMaxF
  */
 void platformUartProcess(void);
 
-/**
- * This method gets the directory in which all the generated non-volatile data files should be placed.
- *
- */
-const char *posixGetDataDir(void);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

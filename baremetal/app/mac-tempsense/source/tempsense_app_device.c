@@ -532,10 +532,10 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
  ******************************************************************************/
 static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 {
-	u32_t            add;
-	u32_t            maxadd;
-	u32_t            buffer;
-	struct FlashInfo flash_info;
+	u32_t                add;
+	u32_t                maxadd;
+	u32_t                buffer;
+	struct ca_flash_info flash_info;
 
 	BSP_GetFlashInfo(&flash_info);
 	maxadd = flash_info.dataFlashBaseAddr + (flash_info.numPages * flash_info.pageSize);
@@ -554,9 +554,9 @@ static void TEMPSENSE_APP_Device_GetFlashSaveAddress(void)
 
 void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 {
-	u32_t            buffer[2];
-	u32_t            i;
-	struct FlashInfo flash_info;
+	u32_t                buffer[2];
+	u32_t                i;
+	struct ca_flash_info flash_info;
 
 	BSP_GetFlashInfo(&flash_info);
 	BSP_FlashRead(flash_info.dataFlashBaseAddr, &buffer[0], 1);
@@ -601,10 +601,10 @@ void TEMPSENSE_APP_Device_SaveStateToFlash(void)
 
 void TEMPSENSE_APP_Device_RestoreStateFromFlash(struct ca821x_dev *pDeviceRef)
 {
-	u32_t            add;
-	u32_t            buffer[2];
-	u32_t            i;
-	struct FlashInfo flash_info;
+	u32_t                add;
+	u32_t                buffer[2];
+	u32_t                i;
+	struct ca_flash_info flash_info;
 
 	BSP_DisableUSB();
 

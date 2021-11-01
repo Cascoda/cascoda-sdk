@@ -23,7 +23,7 @@ endif()
 FetchContent_Declare(
     iotivitylite
     GIT_REPOSITORY ${CASCODA_IOTIVITY_REPO}
-    GIT_TAG 870002eb7ae03c2156ab1ba39f64e412d505a37e
+    GIT_TAG 9105d5cfdf732c414c2211b41d40d55acdd63b3a
     PATCH_COMMAND  ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/iotivity-patch.cmake
 )
 

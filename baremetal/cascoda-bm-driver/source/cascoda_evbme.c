@@ -148,7 +148,7 @@ static ca_error EVBME_DFU_erase(struct EVBME_DFU_cmd *dfuCmd)
 	else
 #endif
 	{
-		struct FlashInfo flash_info;
+		struct ca_flash_info flash_info;
 
 		BSP_GetFlashInfo(&flash_info);
 

@@ -36,28 +36,40 @@
 #define UTILS_FLASH_H
 
 #include <stdint.h>
-
-#include "openthread/instance.h"
+#include "ca821x_api.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** Description of the internal flash */
+struct ca_flash_info
+{
+	uint32_t dataFlashBaseAddr; //!< Base address of the dataflash
+	uint16_t pageSize;          //!< Size of each flash page (in bytes)
+	uint8_t  numPages;          //!< Number of flash pages that make up the user flash region
+};
+
 /**
- * \brief Perform any initialization for flash driver.
+ * Perform any initialization for flash driver.
  *
- * @retval OT_ERROR_NONE    Initialize flash driver success.
- * @retval OT_ERROR_FAILED  Initialize flash driver fail.
+ * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
+ * @param[in] aApplicationName Filename of the storage file, used to distinguish between storage applications. Unused on baremetal.
+ * @param[in] aNodeId Used to distinguish between different nodes on the same host. Unused on baremetal.
+ * 
+ * @retval CA_ERROR_SUCCESS    Initialize flash driver success.
+ * @retval CA_ERROR_FAIL  Initialize flash driver fail.
  */
-otError utilsFlashInit(void);
+ca_error utilsFlashInit(struct ca821x_dev *aInstance, const char *aApplicationName, uint32_t aNodeId);
 
 /**
  * Get the size of flash that can be read/write by the caller.
  * The usable flash size is always the multiple of flash page size.
  *
+ * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
  * @returns The size of the flash.
  */
-uint32_t utilsFlashGetSize(void);
+uint32_t utilsFlashGetSize(struct ca821x_dev *aInstance);
 
 /**
  * Erase one flash page that include the input address.
@@ -67,25 +79,27 @@ uint32_t utilsFlashGetSize(void);
  * 0 is always mapped to the beginning of one flash page.
  * The input address should never be mapped to the firmware space or any other protected flash space.
  *
+ * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
  * @param[in]  aAddress  The start address of the flash to erase.
  *
- * @retval OT_ERROR_NONE           Erase flash operation is started.
- * @retval OT_ERROR_FAILED         Erase flash operation is not started.
- * @retval OT_ERROR_INVALID_ARGS    aAddress is out of range of flash or not aligend.
+ * @retval CA_ERROR_SUCCESS           Erase flash operation is started.
+ * @retval CA_ERROR_FAIL         Erase flash operation is not started.
+ * @retval CA_ERROR_INVALID_ARGS    aAddress is out of range of flash or not aligend.
  */
-otError utilsFlashErasePage(uint32_t aAddress);
+ca_error utilsFlashErasePage(struct ca821x_dev *aInstance, uint32_t aAddress);
 
 /**
   * Check whether flash is ready or busy.
   *
+  * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
   * @param[in]  aTimeout  The interval in milliseconds waiting for the flash operation to be done and become ready again.
   *                       zero indicates that it is a polling function, and returns current status of flash immediately.
   *                       non-zero indicates that it is blocking there until the operation is done and become ready, or timeout expires.
   *
-  * @retval OT_ERROR_NONE           Flash is ready for any operation.
-  * @retval OT_ERROR_BUSY           Flash is busy.
+  * @retval CA_ERROR_SUCCESS           Flash is ready for any operation.
+  * @retval CA_ERROR_BUSY           Flash is busy.
   */
-otError utilsFlashStatusWait(uint32_t aTimeout);
+ca_error utilsFlashStatusWait(struct ca821x_dev *aInstance, uint32_t aTimeout);
 
 /**
  * Write flash. The write operation only clears bits, but never set bits.
@@ -94,6 +108,7 @@ otError utilsFlashStatusWait(uint32_t aTimeout);
  * 0 is always mapped to the beginning of one flash page.
  * The input address should never be mapped to the firmware space or any other protected flash space.
  *
+ * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
  * @param[in]  aAddress  The start address of the flash to write.
  * @param[in]  aData     The pointer of the data to write.
  * @param[in]  aSize     The size of the data to write.
@@ -102,7 +117,7 @@ otError utilsFlashStatusWait(uint32_t aTimeout);
  *          It is expected the same as aSize, and may be less than aSize.
  *          0 indicates that something wrong happens when writing.
  */
-uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize);
+uint32_t utilsFlashWrite(struct ca821x_dev *aInstance, uint32_t aAddress, const uint8_t *aData, uint32_t aSize);
 
 /**
  * Read flash.
@@ -111,6 +126,7 @@ uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize
  * 0 is always mapped to the beginning of one flash page.
  * The input address should never be mapped to the firmware space or any other protected flash space.
  *
+ * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
  * @param[in]   aAddress  The start address of the flash to read.
  * @param[out]  aData     The pointer of buffer for reading.
  * @param[in]   aSize     The size of the data to read.
@@ -119,7 +135,7 @@ uint32_t utilsFlashWrite(uint32_t aAddress, const uint8_t *aData, uint32_t aSize
  *          It is expected the same as aSize, and may be less than aSize.
  *          0 indicates that something wrong happens when reading.
  */
-uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize);
+uint32_t utilsFlashRead(struct ca821x_dev *aInstance, uint32_t aAddress, uint8_t *aData, uint32_t aSize);
 
 #ifdef __cplusplus
 } // extern "C"

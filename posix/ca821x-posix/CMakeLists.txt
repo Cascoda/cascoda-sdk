@@ -40,6 +40,7 @@ if(UNIX)
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-log.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-rand.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-util.c
+		${PROJECT_SOURCE_DIR}/source/util/cascoda-flash.c
 		)
 
 	target_link_libraries(ca821x-posix PUBLIC
@@ -61,6 +62,7 @@ if(WIN32)
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-log.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-rand.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-util.c
+		${PROJECT_SOURCE_DIR}/source/util/cascoda-flash.c
 		)
 
 	target_link_libraries(ca821x-posix PUBLIC

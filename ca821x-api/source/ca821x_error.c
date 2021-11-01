@@ -73,6 +73,9 @@ const char *ca_error_str(ca_error aError)
 	case CA_ERROR_ALREADY:
 		rval = "ALREADY";
 		break;
+	case CA_ERROR_NOT_IMPLEMENTED:
+		rval = "NOT_IMPLEMENTED";
+		break;
 
 	case CA_ERROR_SPI_WAIT_TIMEOUT:
 		rval = "SPI_WAIT";

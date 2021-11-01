@@ -53,8 +53,8 @@
 #define DATA_FLASH_BASE \
 	(FMC_APROM_END - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE)) /* Dataflash: 122k - 123k (1k or 2 pages) */
 
-const struct FlashInfo BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
-void                   BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
+const struct ca_flash_info BSP_FlashInfo = {DATA_FLASH_BASE, FMC_FLASH_PAGE_SIZE, CASCODA_CHILI_FLASH_PAGES};
+void                       BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut)
 {
 	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
 }

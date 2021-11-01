@@ -17,7 +17,6 @@ find_package(Threads REQUIRED)
 add_library(ca821x-openthread-posix-plat OBJECT
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
 	${PROJECT_SOURCE_DIR}/platform/entropy.c
-	${PROJECT_SOURCE_DIR}/platform/flash.c
 	${PROJECT_SOURCE_DIR}/platform/logging.c
 	${PROJECT_SOURCE_DIR}/platform/misc.c
 	${PROJECT_SOURCE_DIR}/platform/platform.c

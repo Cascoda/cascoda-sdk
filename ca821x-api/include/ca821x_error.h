@@ -50,19 +50,20 @@ extern "C" {
 typedef enum ca_error
 {
 	/*General Errors*/
-	CA_ERROR_SUCCESS       = 0x00, ///< Success
-	CA_ERROR_FAIL          = 0x01, ///< Failed for miscellaneous reason
-	CA_ERROR_UNKNOWN       = 0x02, ///< Request for unknown data
-	CA_ERROR_INVALID       = 0x03, ///< Invalid request
-	CA_ERROR_NO_ACCESS     = 0x04, ///< Cannot access requested resource
-	CA_ERROR_INVALID_STATE = 0x05, ///< Request cannot be processed in current state
-	CA_ERROR_BUSY          = 0x06, ///< Busy, try again
-	CA_ERROR_INVALID_ARGS  = 0x07, ///< Invalid arguments
-	CA_ERROR_NOT_HANDLED   = 0x08, ///< Request has not been handled
-	CA_ERROR_NOT_FOUND     = 0x09, ///< Requested resource not found
-	CA_ERROR_NO_BUFFER     = 0x0A, ///< No buffers currently available
-	CA_ERROR_TIMEOUT       = 0x0B, ///< Operation timed out
-	CA_ERROR_ALREADY       = 0x0C, ///< Operation already executed
+	CA_ERROR_SUCCESS         = 0x00, ///< Success
+	CA_ERROR_FAIL            = 0x01, ///< Failed for miscellaneous reason
+	CA_ERROR_UNKNOWN         = 0x02, ///< Request for unknown data
+	CA_ERROR_INVALID         = 0x03, ///< Invalid request
+	CA_ERROR_NO_ACCESS       = 0x04, ///< Cannot access requested resource
+	CA_ERROR_INVALID_STATE   = 0x05, ///< Request cannot be processed in current state
+	CA_ERROR_BUSY            = 0x06, ///< Busy, try again
+	CA_ERROR_INVALID_ARGS    = 0x07, ///< Invalid arguments
+	CA_ERROR_NOT_HANDLED     = 0x08, ///< Request has not been handled
+	CA_ERROR_NOT_FOUND       = 0x09, ///< Requested resource not found
+	CA_ERROR_NO_BUFFER       = 0x0A, ///< No buffers currently available
+	CA_ERROR_TIMEOUT         = 0x0B, ///< Operation timed out
+	CA_ERROR_ALREADY         = 0x0C, ///< Operation already executed
+	CA_ERROR_NOT_IMPLEMENTED = 0x0D, ///< Functionality not implemented
 	/* SPI Errors*/
 	CA_ERROR_SPI_WAIT_TIMEOUT       = 0xA0, ///< SPI Wait timed out
 	CA_ERROR_SPI_NACK_TIMEOUT       = 0xA1, ///< SPI NACKing for too long

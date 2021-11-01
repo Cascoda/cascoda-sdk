@@ -713,6 +713,11 @@ void initialize_variables(void)
 
 	/* set the flag for NO oic/con resource. */
 	oc_set_con_res_announced(false);
+
+	// Cascoda Addition
+	assert(BSP_ModuleRegisterGPIOOutput(RELAY_OUT_PIN, MODULE_PIN_TYPE_GENERIC) == CA_ERROR_SUCCESS);
+	BSP_ModuleSetGPIOPin(RELAY_OUT_PIN, false);
+	// End of Cascoda Addition
 }
 
 #ifndef NO_MAIN

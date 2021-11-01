@@ -41,10 +41,10 @@
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-const struct FlashInfo         BSP_FlashInfo         = {0};
+const struct ca_flash_info     BSP_FlashInfo         = {0};
 const struct ModuleSpecialPins BSP_ModuleSpecialPins = {MSP_DEFAULT};
 
-void BSP_GetFlashInfo(struct FlashInfo *aFlashInfoOut)
+void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut)
 {
 	memcpy(aFlashInfoOut, &BSP_FlashInfo, sizeof(BSP_FlashInfo));
 }

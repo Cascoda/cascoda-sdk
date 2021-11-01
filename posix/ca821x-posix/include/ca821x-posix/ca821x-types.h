@@ -196,6 +196,8 @@ struct ca821x_exchange_base
 	struct buffer_queue in_buffer_queue, out_buffer_queue; //!< queues
 
 	struct EVBME_callbacks evbme_callbacks; //!< EVBME Callback struct
+
+	int flash_fd; //!< File descriptor for persistent storage file
 };
 
 /**
