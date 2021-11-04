@@ -36,8 +36,8 @@ static otUdpSocket secured_socket;
 static otSockAddr  secured_addr = {};
 
 #define OCF_MCAST_PORT_UNSECURED (5683)
-uint32_t OCF_SERVER_PORT_UNSECURED;
-uint32_t OCF_SERVER_PORT_SECURED;
+uint32_t OCF_SERVER_PORT_UNSECURED = 51804; // CA5C in hex
+uint32_t OCF_SERVER_PORT_SECURED   = 51805;
 
 static oc_endpoint_t *eps;
 
@@ -307,14 +307,13 @@ int oc_connectivity_init(size_t device)
 		return -1;
 	}
 
-	unicast_addr.mPort = 0;
+	unicast_addr.mPort = OCF_SERVER_PORT_UNSECURED;
 
 	if (otUdpBind(&unicast_socket, &unicast_addr) != OT_ERROR_NONE)
 	{
 		OC_ERR("Can't bind unicast port");
 		return -1;
 	}
-	OCF_SERVER_PORT_UNSECURED = unicast_socket.mSockName.mPort;
 
 	if (otUdpOpen(OT_INSTANCE, &multicast_socket, udp_receive_cbk, NULL) != OT_ERROR_NONE)
 	{
@@ -336,15 +335,13 @@ int oc_connectivity_init(size_t device)
 		return -1;
 	}
 
-	secured_addr.mPort = 0;
+	secured_addr.mPort = OCF_SERVER_PORT_SECURED;
 
 	if (otUdpBind(&secured_socket, &secured_addr) != OT_ERROR_NONE)
 	{
 		OC_ERR("Can't bind secured port");
 		return -1;
 	}
-
-	OCF_SERVER_PORT_SECURED = secured_socket.mSockName.mPort;
 
 	return 0;
 }

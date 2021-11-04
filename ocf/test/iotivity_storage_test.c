@@ -67,6 +67,11 @@ int main(void)
 		memset(read_data, 0, ITEM_SIZE);
 	}
 
+	// make sure emptying the flash works
+	otInstanceErasePersistentInfo(OT_INSTANCE);
+	int error = oc_storage_read(STATIC_KEY, read_data, ITEM_SIZE);
+	assert(error < 0);
+
 	while (1)
 	{
 	}

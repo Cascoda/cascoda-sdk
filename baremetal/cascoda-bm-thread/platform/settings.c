@@ -105,7 +105,6 @@ void otPlatSettingsDeinit(otInstance *aInstance)
 
 otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsGet(pDevice, aKey, aIndex, aValue, aValueLength);
 	return convertError(err);
@@ -113,7 +112,6 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
 
 otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint16_t *aValueLength)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsGetAddress(pDevice, aKey, aIndex, aValue, aValueLength);
 	return convertError(err);
@@ -121,7 +119,6 @@ otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint1
 
 otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsSet(pDevice, aKey, aValue, aValueLength);
 	return convertError(err);
@@ -129,7 +126,6 @@ otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 
 otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsAdd(pDevice, aKey, aValue, aValueLength);
 	return convertError(err);
@@ -137,7 +133,6 @@ otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 
 otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct settingBuffer *aVector, size_t aCount)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsAddVector(pDevice, aKey, aVector, aCount);
 	return convertError(err);
@@ -145,7 +140,6 @@ otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct set
 
 otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 {
-	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsDelete(pDevice, aKey, aIndex);
 	return convertError(err);
@@ -157,7 +151,7 @@ void otPlatSettingsWipe(otInstance *aInstance)
 	//Wipe the settings, caching the joiner credential, which persists.
 	const char *cred = PlatformGetJoinerCredential(aInstance);
 
-	caUtilSettingsInit(pDevice, "otConfig", 1);
+	caUtilSettingsWipe(pDevice, "otConfig", 1);
 
 	caUtilSettingsSet(pDevice, joiner_credential_key, cred, strlen(cred));
 }
