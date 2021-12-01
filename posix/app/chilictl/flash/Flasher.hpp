@@ -56,7 +56,10 @@ public:
 	 *
 	 * [*] --> INVALID
 	 * [*] -> INIT
+     * INIT -[#blue]> OTA_ERASE: If OTA enabled
 	 * INIT -> REBOOT
+	 * OTA_ERASE -[#blue]> REBOOT: If OTA enabled
+	 * OTA_ERASE -[#blue]> FAIL: If OTA enabled
 	 * REBOOT -> ERASE
 	 * REBOOT --> FAIL
 	 * ERASE -> FLASH
@@ -72,24 +75,29 @@ public:
 	 */
 	enum State
 	{
-		INIT,     /**< Initial state */
-		REBOOT,   /**< Rebooted into DFU mode */
-		ERASE,    /**< Erasing flash */
-		FLASH,    /**< Flashing program */
-		VERIFY,   /**< Verifying correct flashing */
-		VALIDATE, /**< Validating new program functionality */
-		COMPLETE, /**< Flashing completed successfully */
-		FAIL,     /**< Flashing failed */
-		INVALID,  /**< Class not correctly instantiated */
+		INIT,      /**< Initial state */
+		OTA_ERASE, /**< Erase the metadata region of the external flash (only happens if OTA upgrade is enabled) */
+		REBOOT,    /**< Rebooted into DFU mode */
+		ERASE,     /**< Erasing flash */
+		FLASH,     /**< Flashing program */
+		VERIFY,    /**< Verifying correct flashing */
+		VALIDATE,  /**< Validating new program functionality */
+		COMPLETE,  /**< Flashing completed successfully */
+		FAIL,      /**< Flashing failed */
+		INVALID,   /**< Class not correctly instantiated */
 	};
 
 	/**
 	 * Construct a flasher instance
-	 * @param aFilePath   Path to the binary file to be flashed
-	 * @param aDeviceInfo Reference to a deviceInfo struct of the device to be reflashed
-	 * @param aFlashType  Type of reflashing to execute (Update application or bootloader?)
+	 * @param aAppFilePath     Path to the binary file of the application to be flashed
+	 * @param aOtaBootFilePath Path to the binary file of the ota bootloader to be flashed
+	 * @param aDeviceInfo      Reference to a deviceInfo struct of the device to be reflashed
+	 * @param aFlashType       Type of reflashing to execute (Update application or bootloader?)
 	 */
-	Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType aFlashType);
+	Flasher(const char *      aAppFilePath,
+	        const char *      aOtaBootFilePath,
+	        const DeviceInfo &aDeviceInfo,
+	        FlashType         aFlashType);
 
 	~Flasher();
 
@@ -100,13 +108,6 @@ public:
 	 * @retval CA_ERROR_INVALID_STATE Processing complete but failed
 	 */
 	ca_error Process();
-
-	/**
-	 * Is the instance in a valid state (with successfully loaded file and
-	 * configured device info).
-	 * @return True if valid
-	 */
-	bool IsValid() { return mFileSize != 0; }
 
 	/**
 	 * Is the instance complete and successful?
@@ -139,26 +140,34 @@ private:
 	};
 
 	std::mutex    mMutex;
-	std::ifstream mFile;
-	size_t        mFileSize;
-	size_t        mMaxFileSize;
+	std::ifstream mAppFile;
+	std::ifstream mOtaBootFile;
+	size_t        mAppFileSize;
+	size_t        mOtaBootFileSize;
+	size_t        mAppMaxFileSize;
+	size_t        mCombinedFileSize;
+	size_t        mOtaBootMaxFileSize;
 	size_t        mPageSize;
-	uint32_t      mStartAddr;
+	uint32_t      mAppStartAddr;
+	uint32_t      mOtaBootStartAddr;
 	ca821x_dev    mDeviceRef;
 	DeviceInfo    mDeviceInfo;
 	uint32_t      mCounter;
 	State         mState;
 	FlashType     mFlashType;
 	bool          mIgnoreVersion;
+	bool          mOtaBootFilePresent;
 
 	void     set_state(State aNextState);
 	ca_error init();
+	ca_error ota_erase();
 	ca_error reboot();
 	ca_error erase();
 	ca_error flash();
 	ca_error verify();
 	ca_error validate();
 
+	ca_error ota_erase_done(ca_error status);
 	ca_error reboot_done(ca_error status);
 	ca_error erase_done(ca_error status);
 	ca_error flash_done(ca_error status);
@@ -168,8 +177,10 @@ private:
 	ca_error        dfu_callback(EVBME_Message *params);
 	static ca_error dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef);
 
-	void   configure_max_binsize();
-	size_t get_page_count() { return (mFileSize + (mPageSize - 1)) / mPageSize; }
+	ca_error send_reboot_request();
+	void     configure_max_binsize();
+	size_t   get_page_count() { return (mCombinedFileSize + (mPageSize - 1)) / mPageSize; }
+	uint32_t get_start_address() { return mOtaBootFilePresent ? mOtaBootStartAddr : mAppStartAddr; }
 
 	static const char *state_string(State aState);
 };

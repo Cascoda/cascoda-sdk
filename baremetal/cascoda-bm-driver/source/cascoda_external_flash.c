@@ -35,12 +35,11 @@
 #include <string.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_external_flash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-util/cascoda_hash.h"
+#include "cascoda_external_flash.h"
 
-#define BASE_ADDRESS 0xB0000000
-#define MAX_ADDRESS 0xB00FFFFF
+#define MAX_ADDRESS 0xFFFFF
 #define PAGE_SIZE 0x100
 
 #define HEX_64KB 0x10000
@@ -51,10 +50,13 @@
 
 enum
 {
-	mask_64kb = 0xB01F0000,
-	mask_32kb = 0xB01F8000,
-	mask_4kb  = 0xB01FF000
+	mask_64kb = 0x1F0000,
+	mask_32kb = 0x1F8000,
+	mask_4kb  = 0x1FF000
 };
+
+/***** Variable passed as an argument to upstream callbacks, providing status information *****/
+static ca_error upstream_status;
 
 /**
  * This function determines whether to erase the entire chip or not, based
@@ -70,7 +72,7 @@ enum
 */
 static bool should_erase_chip(u32_t aStartAddress, u32_t aEndAddress)
 {
-	return (aStartAddress < BASE_ADDRESS + HEX_4KB) && (aEndAddress > MAX_ADDRESS - HEX_4KB + 1);
+	return (aStartAddress < HEX_4KB) && (aEndAddress > MAX_ADDRESS - HEX_4KB + 1);
 }
 
 /**
@@ -139,7 +141,7 @@ static u32_t get_new_start(ExternalEraseType aT, u32_t aStartAddress, u32_t aEnd
  * @param aT    The type of erase that was performed
  * @param aInfo Pointer to struct containing information necessary for the external flash erase instruction
  */
-static void update_erase_info(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInfo)
+static void update_erase_info(ExternalEraseType aT, ExtFlashEraseInfo *aInfo)
 {
 	aInfo->startAddress = get_new_start(aT, aInfo->startAddress, aInfo->endAddress);
 	aInfo->eraseLength  = aInfo->endAddress - aInfo->startAddress;
@@ -147,15 +149,14 @@ static void update_erase_info(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInf
 
 /**
  * Function that calls the appropriate External Flash Erase instruction based on
- * the arguments. It then schedules 'external_flash_evbme_erase_helper' again
- * with updated information.
+ * the arguments. It then schedules 'external_flash_evbme_erase_helper' again.
  *
  * @param aT    The type of erase to perform
  * @param aInfo Pointer to struct containing information necessary for the external flash erase instruction
  *
  * @return Status
 */
-static ca_error erase_helper(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInfo)
+static ca_error erase_helper(ExternalEraseType aT, ExtFlashEraseInfo *aInfo)
 {
 	ca_error                      status = CA_ERROR_SUCCESS;
 	ExternalFlashPartialEraseType eraseType;
@@ -173,9 +174,8 @@ static ca_error erase_helper(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInfo
 		else
 			eraseType = SECTOR_4KB;
 
-		//u32_t adjustedAddress = startAddress - BASE_ADDRESS;
 		//Erase the block or sector that startAddress is in.
-		status = BSP_ExternalFlashPartialErase(eraseType, (aInfo->startAddress - BASE_ADDRESS));
+		status = BSP_ExternalFlashPartialErase(eraseType, aInfo->startAddress);
 	}
 
 	if (status)
@@ -185,7 +185,7 @@ static ca_error erase_helper(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInfo
 	update_erase_info(aT, aInfo);
 
 	//Schedule the next instruction
-	status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_erase_helper, aInfo);
+	status = BSP_ExternalFlashScheduleCallback(&external_flash_erase_helper, aInfo);
 
 	return status;
 }
@@ -198,7 +198,7 @@ static ca_error erase_helper(ExternalEraseType aT, evbmeExtFlashEraseInfo *aInfo
  *
  * @return Status
 */
-static ca_error erase_and_reschedule(evbmeExtFlashEraseInfo *aInfo)
+static ca_error erase_and_reschedule(ExtFlashEraseInfo *aInfo)
 {
 	ca_error status = CA_ERROR_SUCCESS;
 
@@ -216,7 +216,7 @@ static ca_error erase_and_reschedule(evbmeExtFlashEraseInfo *aInfo)
 
 /**
  * Function that calls the External Flash Program instruction based on
- * the arguments. It then schedules 'external_flash_evbme_write_helper' again
+ * the arguments. It then schedules 'external_flash_write_helper' again
  * with updated information.
  *
  * @param aInfo             Pointer to struct containing information necessary for the external flash program instruction.
@@ -224,12 +224,12 @@ static ca_error erase_and_reschedule(evbmeExtFlashEraseInfo *aInfo)
  *
  * @return Status
 */
-static ca_error write_and_reschedule(evbmeExtFlashWriteInfo *aInfo, u8_t aExtFlashWriteLen)
+static ca_error write_and_reschedule(ExtFlashWriteInfo *aInfo, u8_t aExtFlashWriteLen)
 {
 	ca_error status = CA_ERROR_SUCCESS;
 
 	//Write
-	status = BSP_ExternalFlashProgram(aInfo->startAddress - BASE_ADDRESS, aExtFlashWriteLen, aInfo->data);
+	status = BSP_ExternalFlashProgram(aInfo->startAddress, aExtFlashWriteLen, aInfo->data);
 	if (status)
 		return status;
 
@@ -239,7 +239,7 @@ static ca_error write_and_reschedule(evbmeExtFlashWriteInfo *aInfo, u8_t aExtFla
 	aInfo->writeLength -= aExtFlashWriteLen;
 
 	//Reschedule
-	status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_write_helper, aInfo);
+	status = BSP_ExternalFlashScheduleCallback(&external_flash_write_helper, aInfo);
 
 	return status;
 }
@@ -247,7 +247,7 @@ static ca_error write_and_reschedule(evbmeExtFlashWriteInfo *aInfo, u8_t aExtFla
 /**
  * Function that calls the External Flash Read instruction based on
  * the arguments, and partially computes the crc32 of the data read.
- * It then schedules 'external_flash_evbme_check_helper' again
+ * It then schedules 'external_flash_check_helper' again
  * with updated information.
  *
  * @param aInfo            Pointer to struct containing information necessary for the external flash read instruction.
@@ -256,14 +256,14 @@ static ca_error write_and_reschedule(evbmeExtFlashWriteInfo *aInfo, u8_t aExtFla
  *
  * @return Status
 */
-static ca_error read_and_reschedule(evbmeExtFlashCheckInfo *aInfo, u8_t aExtFlashReadLen, u32_t *aCrc)
+static ca_error read_and_reschedule(ExtFlashCheckInfo *aInfo, u8_t aExtFlashReadLen, u32_t *aCrc)
 {
 	ca_error status = CA_ERROR_SUCCESS;
 	//Maximum read limit for the external flash
 	static uint8_t rxBuf[128];
 	memset(rxBuf, 0xFF, sizeof(rxBuf));
 
-	status = BSP_ExternalFlashReadData(aInfo->startAddress - BASE_ADDRESS, aExtFlashReadLen, rxBuf);
+	status = BSP_ExternalFlashReadData(aInfo->startAddress, aExtFlashReadLen, rxBuf);
 	if (status)
 		return status;
 
@@ -275,16 +275,27 @@ static ca_error read_and_reschedule(evbmeExtFlashCheckInfo *aInfo, u8_t aExtFlas
 	aInfo->checklen -= aExtFlashReadLen;
 
 	//Reschedule
-	status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_check_helper, aInfo);
+	status = BSP_ExternalFlashScheduleCallback(&external_flash_check_helper, aInfo);
 
 	return status;
 }
 
-ca_error external_flash_evbme_erase_helper(void *aContext)
+ca_error external_flash_evbme_send_upstream(void *aContext)
 {
-	ca_error                cmd_status = CA_ERROR_SUCCESS;
-	evbmeExtFlashEraseInfo *info       = ((evbmeExtFlashEraseInfo *)aContext);
-	struct EVBME_DFU_cmd    dfuRsp;
+	ca_error             cmd_status = *((ca_error *)aContext);
+	struct EVBME_DFU_cmd dfuRsp;
+
+	dfuRsp.mDfuSubCmdId              = DFU_STATUS;
+	dfuRsp.mSubCmd.status_cmd.status = (uint8_t)cmd_status;
+	MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuRsp);
+
+	return CA_ERROR_SUCCESS;
+}
+
+ca_error external_flash_erase_helper(void *aContext)
+{
+	ca_error           cmd_status = CA_ERROR_SUCCESS;
+	ExtFlashEraseInfo *info       = ((ExtFlashEraseInfo *)aContext);
 
 	if (info->eraseLength != 0)
 	{
@@ -298,19 +309,23 @@ ca_error external_flash_evbme_erase_helper(void *aContext)
 	//Send upstream response if the erase procedure either failed or succeeded.
 	if (cmd_status != CA_ERROR_BUSY)
 	{
-		dfuRsp.mDfuSubCmdId              = DFU_STATUS;
-		dfuRsp.mSubCmd.status_cmd.status = (uint8_t)cmd_status;
-		MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuRsp);
+		if (info->upstreamCallback)
+		{
+			upstream_status = cmd_status;
+			info->upstreamCallback(&upstream_status);
+		}
+
+		if (cmd_status == CA_ERROR_SUCCESS && info->otaCallback)
+			info->otaCallback(NULL);
 	}
 
 	return CA_ERROR_SUCCESS;
 }
 
-ca_error external_flash_evbme_write_helper(void *aContext)
+ca_error external_flash_write_helper(void *aContext)
 {
-	ca_error                cmd_status = CA_ERROR_SUCCESS;
-	evbmeExtFlashWriteInfo *info       = ((evbmeExtFlashWriteInfo *)aContext);
-	struct EVBME_DFU_cmd    dfuRsp;
+	ca_error           cmd_status = CA_ERROR_SUCCESS;
+	ExtFlashWriteInfo *info       = ((ExtFlashWriteInfo *)aContext);
 
 	if (info->writeLength > 0)
 	{
@@ -328,20 +343,24 @@ ca_error external_flash_evbme_write_helper(void *aContext)
 	//Send upstream response if the erase procedure either failed or succeeded.
 	if (cmd_status != CA_ERROR_BUSY)
 	{
-		dfuRsp.mDfuSubCmdId              = DFU_STATUS;
-		dfuRsp.mSubCmd.status_cmd.status = (uint8_t)cmd_status;
-		MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuRsp);
+		if (info->upstreamCallback)
+		{
+			upstream_status = cmd_status;
+			info->upstreamCallback(&upstream_status);
+		}
+
+		if (cmd_status == CA_ERROR_SUCCESS && info->otaCallback)
+			info->otaCallback(NULL);
 	}
 
 	return CA_ERROR_SUCCESS;
 }
 
-ca_error external_flash_evbme_check_helper(void *aContext)
+ca_error external_flash_check_helper(void *aContext)
 {
-	static uint32_t         crc = 0xFFFFFFFF;
-	struct EVBME_DFU_cmd    dfuRsp;
-	ca_error                cmd_status = CA_ERROR_SUCCESS;
-	evbmeExtFlashCheckInfo *info       = ((evbmeExtFlashCheckInfo *)aContext);
+	static uint32_t    crc        = 0xFFFFFFFF;
+	ca_error           cmd_status = CA_ERROR_SUCCESS;
+	ExtFlashCheckInfo *info       = ((ExtFlashCheckInfo *)aContext);
 
 	if (info->checklen > PAGE_SIZE)
 	{
@@ -371,9 +390,11 @@ exit:
 	//Send upstream response if the erase procedure either failed or succeeded.
 	if (cmd_status != CA_ERROR_BUSY)
 	{
-		dfuRsp.mDfuSubCmdId              = DFU_STATUS;
-		dfuRsp.mSubCmd.status_cmd.status = (uint8_t)cmd_status;
-		MAC_Message(EVBME_DFU_CMD, 2, (u8_t *)&dfuRsp);
+		if (info->upstreamCallback)
+		{
+			upstream_status = cmd_status;
+			info->upstreamCallback(&upstream_status);
+		}
 	}
 
 	return CA_ERROR_SUCCESS;

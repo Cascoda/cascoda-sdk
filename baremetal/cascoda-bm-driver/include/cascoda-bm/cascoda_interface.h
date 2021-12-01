@@ -181,12 +181,12 @@ struct RTCDateAndTime
 /****************************************************/
 
 /** Description of the external flash */
-struct ExternalFlashInfo
+typedef struct ExternalFlashInfo
 {
 	u32_t baseAddress;    //!< Base address of the dataflash
 	u32_t readWriteLimit; //!< Maximum number of bytes that can be read/written in a single instruction
 	u16_t pageSize;       //!< Size of each flash page (in bytes)
-};
+} ExternalFlashInfo;
 
 /** Function pointer used to schedule callbacks for the next higher layer */
 typedef ca_error (*ExternalFlashCallback)(void *aContext);

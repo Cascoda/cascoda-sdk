@@ -58,27 +58,53 @@ static const unsigned int tinf_crc32tab[16] = {0x00000000,
                                                0xa00ae278,
                                                0xbdbdf21c};
 
-Flasher::Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType aFlashType)
-    : mFile(aFilePath, std::ios::in | std::ios::binary | std::ios::ate)
+Flasher::Flasher(const char *      aAppFilePath,
+                 const char *      aOtaBootFilePath,
+                 const DeviceInfo &aDeviceInfo,
+                 FlashType         aFlashType)
+    : mAppFile(aAppFilePath, std::ios::in | std::ios::binary | std::ios::ate)
+    , mOtaBootFile(aOtaBootFilePath, std::ios::in | std::ios::binary | std::ios::ate)
+    , mOtaBootFileSize(0)
     , mPageSize()
     , mDeviceInfo(aDeviceInfo)
+    , mCounter(0)
     , mState(INIT)
     , mFlashType(aFlashType)
     , mIgnoreVersion(false)
+    , mOtaBootFilePresent(strcmp(aOtaBootFilePath, "") != 0)
 {
-	if (!mFile.is_open())
+	if (!mAppFile.is_open())
 	{
-		fprintf(stderr, "Error: File \"%s\" could not be opened\n", aFilePath);
+		fprintf(stderr, "Error: File \"%s\" could not be opened\n", aAppFilePath);
 		return;
 	}
 
-	mFileSize = mFile.tellg();
-	mFile.seekg(0, std::ios::beg);
-
-	if (mFileSize == 0)
+	if (mOtaBootFilePresent && !mOtaBootFile.is_open())
 	{
-		fprintf(stderr, "Error: File \"%s\" appears to be empty\n", aFilePath);
-		mFile.close();
+		fprintf(stderr, "Error: File \"%s\" could not be opened\n", aOtaBootFilePath);
+		return;
+	}
+
+	mAppFileSize = mAppFile.tellg();
+	mAppFile.seekg(0, std::ios::beg);
+
+	if (mOtaBootFilePresent)
+	{
+		mOtaBootFileSize = mOtaBootFile.tellg();
+		mOtaBootFile.seekg(0, std::ios::beg);
+	}
+
+	if (mAppFileSize == 0)
+	{
+		fprintf(stderr, "Error: File \"%s\" appears to be empty\n", aAppFilePath);
+		mAppFile.close();
+		return;
+	}
+
+	if (mOtaBootFilePresent && mOtaBootFileSize == 0)
+	{
+		fprintf(stderr, "Error: File \"%s\" appears to be empty\n", aOtaBootFilePath);
+		mOtaBootFile.close();
 		return;
 	}
 
@@ -87,7 +113,7 @@ Flasher::Flasher(const char *aFilePath, const DeviceInfo &aDeviceInfo, FlashType
 	if (mPageSize == 0)
 	{
 		fprintf(stderr, "Error: Device page size unknown\n");
-		mFile.close();
+		mAppFile.close();
 		return;
 	}
 }
@@ -105,6 +131,8 @@ ca_error Flasher::Process()
 	{
 	case INIT:
 		return init();
+	case OTA_ERASE:
+		return ota_erase();
 	case REBOOT:
 		return reboot();
 	case ERASE:
@@ -131,14 +159,16 @@ ca_error Flasher::init()
 	ca_error status = CA_ERROR_SUCCESS;
 
 	//Verify file size is less than device max size, and greater than zero
-	if (mFileSize == 0)
+	if (mAppFileSize == 0 || (mOtaBootFilePresent && (mOtaBootFileSize == 0)))
 	{
 		fprintf(stderr, "Error: No file loaded\n");
 		status = CA_ERROR_INVALID_STATE;
 		set_state(FAIL);
 		goto exit;
 	}
-	if (mFlashType == APROM && mFileSize > mMaxFileSize)
+
+	if ((mFlashType == APROM && mAppFileSize > mAppMaxFileSize) ||
+	    (mOtaBootFilePresent && mOtaBootFileSize > mOtaBootMaxFileSize))
 	{
 		fprintf(stderr, "Error: File too large\n");
 		status = CA_ERROR_INVALID_ARGS;
@@ -173,31 +203,33 @@ ca_error Flasher::init()
 		}
 	}
 
-	if (mFlashType == APROM)
-	{
-		//Reboot device into DFU
-		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_DFU, &mDeviceRef);
-	}
-	else //Flashing DFU
-	{
-		//Reboot device into APROM
-		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &mDeviceRef);
-	}
-
-	if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
-	{
-		ca821x_util_deinit(&mDeviceRef);
-		memset(&mDeviceRef, 0, sizeof(mDeviceRef));
-		set_state(REBOOT);
-	}
+	if (mOtaBootFilePresent)
+		set_state(OTA_ERASE);
 	else
-	{
-		set_state(FAIL);
-		fprintf(stderr, "Error: Failed to send reboot command\n");
-		return CA_ERROR_FAIL;
-	}
+		status = send_reboot_request();
 
 exit:
+	return status;
+}
+
+ca_error Flasher::ota_erase()
+{
+	ca_error status;
+
+	if (mCounter)
+		return CA_ERROR_SUCCESS;
+
+	//Erase metadata region of external flash
+	mDeviceRef.context                                  = this;
+	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_DFU_cmd = &dfu_callback;
+
+	status = EVBME_DFU_ERASE_request(0xB007f000, mPageSize * 2, &mDeviceRef);
+
+	if (status)
+		set_state(FAIL);
+
+	mCounter++;
+
 	return status;
 }
 
@@ -279,9 +311,11 @@ ca_error Flasher::erase()
 	if (mCounter)
 		return CA_ERROR_SUCCESS;
 
-	size_t reqPageErase = get_page_count();
+	//TODO: No need to erase unused memory between ota bootloader and app, only erase what's necessary
+	size_t   reqPageErase = get_page_count();
+	uint32_t startAddr    = get_start_address();
 
-	status = EVBME_DFU_ERASE_request(mStartAddr, mPageSize * reqPageErase, &mDeviceRef);
+	status = EVBME_DFU_ERASE_request(startAddr, mPageSize * reqPageErase, &mDeviceRef);
 	mCounter++;
 
 	return status;
@@ -404,6 +438,25 @@ void Flasher::set_state(State aNextState)
 	mState   = aNextState;
 }
 
+ca_error Flasher::ota_erase_done(ca_error status)
+{
+	if (status == CA_ERROR_SUCCESS)
+	{
+		status = send_reboot_request();
+		if (status)
+			goto exit;
+	}
+	else
+	{
+		fprintf(stderr, "Error: External flash metadata region erase failed - %s\n", ca_error_str(status));
+		set_state(FAIL);
+		status = CA_ERROR_FAIL;
+	}
+
+exit:
+	return status;
+}
+
 ca_error Flasher::reboot_done(ca_error status)
 {
 	if (status == CA_ERROR_SUCCESS)
@@ -440,20 +493,37 @@ ca_error Flasher::flash_done(ca_error status)
 	if (status)
 		goto exit;
 
-	if (mCounter >= mFileSize)
+	if (mCounter >= mCombinedFileSize)
 	{
-		mFile.seekg(0, std::ios::beg);
+		mAppFile.seekg(0, std::ios::beg);
+
+		if (mOtaBootFilePresent)
+			mOtaBootFile.seekg(0, std::ios::beg);
+
 		set_state(VERIFY);
 		goto exit;
 	}
 
-	writeLen = std::min<size_t>(mFileSize - mCounter, DFU_WRITE_MAX_LEN);
-	writeLen = (writeLen + 3) & (~0x3); //Align it (probably not necessary)
-	buffer   = new char[writeLen];
+	if (mCounter >= mOtaBootFileSize)
+	{
+		//Advance mCounter, this is to account for the gap between ota bootloader region and app region.
+		if (mOtaBootFilePresent && mCounter < mAppStartAddr)
+			mCounter = mAppStartAddr;
 
-	mFile.read(buffer, writeLen);
+		writeLen = std::min<size_t>(mCombinedFileSize - mCounter, DFU_WRITE_MAX_LEN);
+		writeLen = (writeLen + 3) & (~0x3); //Align it (probably not necessary)
+		buffer   = new char[writeLen];
+		mAppFile.read(buffer, writeLen);
+	}
+	else
+	{
+		writeLen = std::min<size_t>(mOtaBootFileSize - mCounter, DFU_WRITE_MAX_LEN);
+		writeLen = (writeLen + 3) & (~0x3); //Align it (probably not necessary)
+		buffer   = new char[writeLen];
+		mOtaBootFile.read(buffer, writeLen);
+	}
 
-	status = EVBME_DFU_WRITE_request(mStartAddr + mCounter, writeLen, buffer, &mDeviceRef);
+	status = EVBME_DFU_WRITE_request(get_start_address() + mCounter, writeLen, buffer, &mDeviceRef);
 	if (status)
 		goto exit;
 	mCounter += writeLen;
@@ -461,7 +531,8 @@ ca_error Flasher::flash_done(ca_error status)
 exit:
 	if (status)
 	{
-		fprintf(stderr, "Error: Flash failed at address 0x%x - %s\n", mStartAddr + mCounter, ca_error_str(status));
+		fprintf(
+		    stderr, "Error: Flash failed at address 0x%x - %s\n", get_start_address() + mCounter, ca_error_str(status));
 		set_state(FAIL);
 	}
 	delete[] buffer;
@@ -476,9 +547,10 @@ ca_error Flasher::verify_done(ca_error status)
 	if (status)
 		goto exit;
 
-	if (mCounter >= mFileSize)
+	if (mCounter >= mCombinedFileSize)
 	{
-		mFile.seekg(0, std::ios::beg);
+		//Only the App file will be validated, even if the ota bootloader was flashed as well.
+		mAppFile.seekg(0, std::ios::beg);
 
 		//Reboot device into newly flashed area
 		if (mFlashType == APROM)
@@ -499,21 +571,39 @@ ca_error Flasher::verify_done(ca_error status)
 		goto exit;
 	}
 
-	//Verify one page at a time
-	dataLen = std::min<size_t>(mFileSize - mCounter, mPageSize);
+	if (mCounter >= mOtaBootFileSize)
+	{
+		//Advance mCounter, this is to account for the gap between ota bootloader and app regions.
+		if (mOtaBootFilePresent && mCounter < mAppStartAddr)
+		{
+			mCounter = mAppStartAddr;
+		}
+
+		dataLen = std::min<size_t>(mCombinedFileSize - mCounter, mPageSize);
+	}
+	else
+	{
+		dataLen = std::min<size_t>(mOtaBootFileSize - mCounter, mPageSize);
+	}
 
 	// CRC algorithm adapted from zlib source, which is
 	// Copyright (C) 1995-1998 Jean-loup Gailly and Mark Adler
 	for (size_t i = 0; i < mPageSize; ++i)
 	{
-		uint8_t newByte = (i < dataLen) ? mFile.get() : 0xFF;
+		uint8_t newByte;
+
+		if (mCounter >= mOtaBootFileSize)
+			newByte = (i < dataLen) ? mAppFile.get() : 0xFF;
+		else
+			newByte = (i < dataLen) ? mOtaBootFile.get() : 0xFF;
+
 		crc ^= newByte;
 		crc = tinf_crc32tab[crc & 0x0f] ^ (crc >> 4);
 		crc = tinf_crc32tab[crc & 0x0f] ^ (crc >> 4);
 	}
 	crc = ~crc;
 
-	status = EVBME_DFU_CHECK_request(mCounter + mStartAddr, mPageSize, crc, &mDeviceRef);
+	status = EVBME_DFU_CHECK_request(mCounter + get_start_address(), mPageSize, crc, &mDeviceRef);
 	if (status)
 		goto exit;
 	mCounter += mPageSize;
@@ -521,7 +611,10 @@ ca_error Flasher::verify_done(ca_error status)
 exit:
 	if (status)
 	{
-		fprintf(stderr, "Error: verify failed at address 0x%x - %s\n", mCounter + mStartAddr, ca_error_str(status));
+		fprintf(stderr,
+		        "Error: verify failed at address 0x%x - %s\n",
+		        mCounter + get_start_address(),
+		        ca_error_str(status));
 		set_state(FAIL);
 	}
 	return status;
@@ -547,24 +640,72 @@ bool Flasher::IsComplete()
 	return mState == COMPLETE;
 }
 
+ca_error Flasher::send_reboot_request()
+{
+	ca_error status = CA_ERROR_SUCCESS;
+
+	if (mFlashType == APROM)
+	{
+		//Reboot device into DFU
+		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_DFU, &mDeviceRef);
+	}
+	else //Flashing DFU
+	{
+		//Reboot device into APROM
+		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &mDeviceRef);
+	}
+
+	if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
+	{
+		ca821x_util_deinit(&mDeviceRef);
+		memset(&mDeviceRef, 0, sizeof(mDeviceRef));
+		set_state(REBOOT);
+	}
+	else
+	{
+		set_state(FAIL);
+		fprintf(stderr, "Error: Failed to send reboot command\n");
+		return CA_ERROR_FAIL;
+	}
+
+	return status;
+}
+
 void Flasher::configure_max_binsize()
 {
-	mMaxFileSize = std::numeric_limits<size_t>::max();
+	mAppMaxFileSize     = std::numeric_limits<size_t>::max();
+	mOtaBootMaxFileSize = std::numeric_limits<size_t>::max();
 
 	if (strcmp(mDeviceInfo.GetDeviceName(), "Chili2") == 0)
 	{
-		mPageSize = 0x800; //2KiB
+		mPageSize           = 0x800; //2KiB
+		mOtaBootMaxFileSize = 0;
+		mOtaBootStartAddr   = 0;
+
 		if (mFlashType == APROM)
 		{
-			mMaxFileSize = 0x80000; //512KiB
-			mStartAddr   = 0;
+			if (mOtaBootFilePresent)
+			{
+				mAppMaxFileSize = 0x60000; //384KiB
+				mAppStartAddr   = 0x20000;
+
+				mOtaBootMaxFileSize = 0x20000; //128kiB
+				mOtaBootStartAddr   = 0;
+			}
+			else
+			{
+				mAppMaxFileSize = 0x80000; //512KiB
+				mAppStartAddr   = 0;
+			}
 		}
 		else if (mFlashType == DFU)
 		{
-			mMaxFileSize = 0x1000; //4KiB
-			mStartAddr   = 0x00100000;
+			mAppMaxFileSize = 0x1000; //4KiB
+			mAppStartAddr   = 0x00100000;
 		}
 	}
+
+	mCombinedFileSize = mAppStartAddr + mAppFileSize;
 }
 
 ca_error Flasher::dfu_callback(EVBME_Message *params)
@@ -580,6 +721,9 @@ ca_error Flasher::dfu_callback(EVBME_Message *params)
 	switch (mState)
 	{
 	case INIT:
+		break;
+	case OTA_ERASE:
+		ota_erase_done(status);
 		break;
 	case REBOOT:
 		reboot_done(status);
@@ -616,6 +760,8 @@ const char *Flasher::state_string(State aState)
 	{
 	case INIT:
 		return "INIT";
+	case OTA_ERASE:
+		return "OTA_ERASE";
 	case REBOOT:
 		return "REBOOT";
 	case ERASE:

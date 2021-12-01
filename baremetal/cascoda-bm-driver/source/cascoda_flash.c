@@ -46,6 +46,33 @@
 /******************************************************************************/
 #define FLASH_BUFSIZE 4
 
+static uint32_t sSettingsBaseAddress;
+static uint32_t sSettingsUsedSize;
+
+uint32_t utilsFlashGetBaseAddress(struct ca821x_dev *aInstance)
+{
+	(void)aInstance;
+	return sSettingsBaseAddress;
+}
+
+uint32_t utilsFlashGetUsedSize(struct ca821x_dev *aInstance)
+{
+	(void)aInstance;
+	return sSettingsUsedSize;
+}
+
+void utilsFlashSetBaseAddress(struct ca821x_dev *aInstance, uint32_t aAddress)
+{
+	(void)aInstance;
+	sSettingsBaseAddress = aAddress;
+}
+
+void utilsFlashSetUsedSize(struct ca821x_dev *aInstance, uint32_t aSize)
+{
+	(void)aInstance;
+	sSettingsUsedSize = aSize;
+}
+
 ca_error utilsFlashInit(struct ca821x_dev *instance, const char *aApplicationName, uint32_t aNodeId)
 {
 	(void)instance;

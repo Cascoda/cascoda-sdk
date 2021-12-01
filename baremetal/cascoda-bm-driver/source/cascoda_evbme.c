@@ -35,9 +35,9 @@
 #include "cascoda-bm/cascoda_bm.h"
 #include "cascoda-bm/cascoda_dispatch.h"
 #include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_external_flash.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_os.h"
+#include "cascoda-bm/cascoda_ota_upgrade.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_wait.h"
@@ -46,6 +46,7 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_bm_internal.h"
+#include "cascoda_external_flash.h"
 #include "evbme_messages.h"
 #include "mac_messages.h"
 
@@ -57,10 +58,6 @@ uint8_t EVBME_UseMAC   = 0; //!< Use MAC functionality during phy tests
 
 static const char *app_name;    //!< String describing initialised app
 static u8_t        CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz clock
-
-#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-static union evbmeExtFlashInfoStructs infoStruct; //!< Structure containing info for interaction with the external flash
-#endif
 
 /** Function pointer for sending ASCII reporting messages upstream */
 void (*EVBME_Message)(char *message, size_t len);
@@ -130,20 +127,13 @@ static ca_error EVBME_DFU_erase(struct EVBME_DFU_cmd *dfuCmd)
 	uint32_t startAddr = GETLE32(dfuCmd->mSubCmd.erase_cmd.startAddr);
 
 #if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-	struct ExternalFlashInfo external_flash_info;
+	ExternalFlashInfo external_flash_info;
 	BSP_ExternalFlashGetInfo(&external_flash_info);
 
 	if (startAddr >= external_flash_info.baseAddress)
 	{
-		status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_erase_helper, &infoStruct.eraseInfo);
-		if (status == CA_ERROR_SUCCESS)
-			status = CA_ERROR_BUSY;
-
-		//infoStruct is protected by BSP_ExternalFlashScheduleCallback
-		uint32_t endAddr                  = startAddr + eraseLen;
-		infoStruct.eraseInfo.startAddress = startAddr;
-		infoStruct.eraseInfo.eraseLength  = eraseLen;
-		infoStruct.eraseInfo.endAddress   = endAddr;
+		startAddr -= external_flash_info.baseAddress;
+		status = ota_handle_erase(startAddr, eraseLen, &external_flash_evbme_send_upstream);
 	}
 	else
 #endif
@@ -173,7 +163,7 @@ static ca_error EVBME_DFU_write(struct EVBME_Message *rxMsg)
 #if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
 	ca_error status = CA_ERROR_INVALID_ARGS;
 
-	struct ExternalFlashInfo external_flash_info;
+	ExternalFlashInfo external_flash_info;
 	BSP_ExternalFlashGetInfo(&external_flash_info);
 
 	if (startAddr >= external_flash_info.baseAddress)
@@ -183,16 +173,8 @@ static ca_error EVBME_DFU_write(struct EVBME_Message *rxMsg)
 		memcpy(data_buff, dfuCmd->mSubCmd.write_cmd.data, writeLen);
 		data = data_buff;
 
-		status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_write_helper, &infoStruct.writeInfo);
-		if (status == CA_ERROR_SUCCESS)
-			status = CA_ERROR_BUSY;
-
-		//infoStruct is protected by BSP_ExternalFlashScheduleCallback
-		infoStruct.writeInfo.startAddress = startAddr;
-		infoStruct.writeInfo.writeLength  = writeLen;
-		infoStruct.writeInfo.data         = data;
-		infoStruct.writeInfo.pageSize     = external_flash_info.pageSize;
-		infoStruct.writeInfo.writeLimit   = external_flash_info.readWriteLimit;
+		startAddr -= external_flash_info.baseAddress;
+		status = ota_handle_write(startAddr, writeLen, data, external_flash_info, &external_flash_evbme_send_upstream);
 	}
 	else
 #endif
@@ -220,15 +202,9 @@ static ca_error EVBME_DFU_check(struct EVBME_DFU_cmd *dfuCmd)
 
 	if (startaddr >= external_flash_info.baseAddress)
 	{
-		status = BSP_ExternalFlashScheduleCallback(&external_flash_evbme_check_helper, &infoStruct.checkInfo);
-		if (status == CA_ERROR_SUCCESS)
-			status = CA_ERROR_BUSY;
-
-		//infoStruct is protected by BSP_ExternalFlashScheduleCallback
-		infoStruct.checkInfo.startAddress = startaddr;
-		infoStruct.checkInfo.checklen     = checklen;
-		infoStruct.checkInfo.checksum     = checksum;
-		infoStruct.checkInfo.readLimit    = external_flash_info.readWriteLimit;
+		startaddr -= external_flash_info.baseAddress;
+		status =
+		    ota_handle_check(startaddr, checklen, checksum, external_flash_info, &external_flash_evbme_send_upstream);
 	}
 	else
 #endif

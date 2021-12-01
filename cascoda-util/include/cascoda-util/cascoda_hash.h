@@ -48,6 +48,9 @@
 extern "C" {
 #endif
 
+static const uint64_t prime64 = 1099511628211ULL;
+static const uint64_t basis64 = 14695981039346656037ULL;
+
 /**
  * Calculate the 32-bit fnv1a non-crypto hash of a block of data
  *
@@ -67,6 +70,20 @@ uint32_t HASH_fnv1a_32(const void *data_in, size_t num_bytes);
  * @return 64-bit fnv1a non-crypto hash
  */
 uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes);
+
+/**
+ * Streaming version of HASH_fnv1a_64.
+ *
+ * Usage note: This function leaves out the initialisation of the hash to the basis64 at the beginning.
+ * So this has to be done before this function is done.
+ * (For example, see HASH_fnv1a_64, which uses HASH_fnv1a_64_stream).
+ *
+ * @param data_in   The data to hash
+ * @param num_bytes The sizeof the data to be hashed (in bytes)
+ * @param hash      Output variable into which the (partial) hash computation is stored
+ * 					Should be initialised to basis64 (14695981039346656037ULL)
+ */
+void HASH_fnv1a_64_stream(const void *data_in, size_t num_bytes, uint64_t *hash);
 
 /**
  * Calculate the CRC32 hash of a block of data.

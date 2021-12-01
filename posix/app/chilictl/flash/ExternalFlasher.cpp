@@ -30,21 +30,24 @@
 
 #include "ca821x-posix/ca821x-posix.h"
 #include "cascoda-util/cascoda_hash.h"
+#include "ca821x_endian.h"
 
 #include "common/DeviceList.hpp"
-#include "external-flash/ExternalFlasher.hpp"
+#include "ExternalFlasher.hpp"
 
 namespace ca {
 
-ExternalFlasher::ExternalFlasher(const char *aFilePath, const DeviceInfo &aDeviceInfo)
-    : mFile(aFilePath, std::ios::in | std::ios::binary | std::ios::ate)
+ExternalFlasher::ExternalFlasher(const char *aAppFilePath, const DeviceInfo &aDeviceInfo)
+    : mFile(aAppFilePath, std::ios::in | std::ios::binary | std::ios::ate)
     , mPageSize()
+    , mBinarySizeSent(false)
+    , mBinaryHashSent(false)
     , mDeviceInfo(aDeviceInfo)
     , mState(INIT)
 {
 	if (!mFile.is_open())
 	{
-		fprintf(stderr, "Error: File \"%s\" could not be opened\n", aFilePath);
+		fprintf(stderr, "Error: File \"%s\" could not be opened\n", aAppFilePath);
 		return;
 	}
 
@@ -53,7 +56,7 @@ ExternalFlasher::ExternalFlasher(const char *aFilePath, const DeviceInfo &aDevic
 
 	if (mFileSize == 0)
 	{
-		fprintf(stderr, "Error: File \"%s\" appears to be empty\n", aFilePath);
+		fprintf(stderr, "Error: File \"%s\" appears to be empty\n", aAppFilePath);
 		mFile.close();
 		return;
 	}
@@ -130,8 +133,9 @@ ca_error ExternalFlasher::init()
 	if (status)
 		goto exit;
 
-	mDeviceRef.context                                  = this;
-	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_DFU_cmd = &dfu_callback;
+	mDeviceRef.context                                             = this;
+	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_DFU_cmd            = &dfu_callback;
+	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
 
 	set_state(ERASE);
 
@@ -141,23 +145,15 @@ exit:
 
 ca_error ExternalFlasher::erase()
 {
-	ca_error status;
-
 	if (mCounter)
 		return CA_ERROR_SUCCESS;
 
-	size_t reqPageErase = get_page_count();
-
-	status = EVBME_DFU_ERASE_request(mStartAddr, mPageSize * reqPageErase, &mDeviceRef);
-
-	mCounter++;
-
-	return status;
+	return erase_done(CA_ERROR_SUCCESS);
 }
 
 ca_error ExternalFlasher::program()
 {
-	if (mCounter)
+	if (mBinarySizeSent)
 		return CA_ERROR_SUCCESS;
 
 	return program_done(CA_ERROR_SUCCESS);
@@ -181,27 +177,80 @@ void ExternalFlasher::set_state(State aNextState)
 
 ca_error ExternalFlasher::erase_done(ca_error status)
 {
-	if (status == CA_ERROR_SUCCESS)
+	if (status)
+		goto exit;
+
+	if (mCounter == 0)
 	{
-		set_state(PROGRAM);
+		//Erase External flash where binary will be programmed
+		size_t reqPageErase = get_page_count(mFileSize);
+		status              = EVBME_DFU_ERASE_request(mStartAddr, mPageSize * reqPageErase, &mDeviceRef);
+		if (status)
+			goto exit;
+	}
+	else if (mCounter == 1)
+	{
+		//Erase metadata region of external flash
+		status = EVBME_DFU_ERASE_request(mMetadataStartAddr, mPageSize * 16, &mDeviceRef);
+		if (status)
+			goto exit;
+	}
+	else if (mCounter == 2)
+	{
+		size_t reqPageErase = get_page_count(mMaxAddress - mCurrentAppStartAddr);
+
+		//Erase External flash region dedicated for current binary
+		status = EVBME_DFU_ERASE_request(mCurrentAppStartAddr, mPageSize * reqPageErase, &mDeviceRef);
 	}
 	else
 	{
+		set_state(PROGRAM);
+		goto exit;
+	}
+	mCounter++;
+
+exit:
+	if (status)
+	{
 		fprintf(stderr, "Error: External flash erase failed - %s\n", ca_error_str(status));
+		set_state(FAIL);
 	}
 	return status;
 }
 
 ca_error ExternalFlasher::program_done(ca_error status)
 {
-	size_t writeLen;
-	char * buffer = nullptr;
+	size_t          writeLen;
+	char *          buffer = nullptr;
+	static uint64_t hash   = basis64;
 
 	if (status)
 		goto exit;
 
+	// Send the size of the binary before sending the binary
+	if (!mBinarySizeSent)
+	{
+		mBinarySizeSent = true;
+		uint8_t binSizeBuf[4];
+		PUTLE32((uint32_t)mFileSize, binSizeBuf);
+
+		status = EVBME_DFU_WRITE_request(mBinarySizeMetadataPartitionAddr, sizeof(binSizeBuf), binSizeBuf, &mDeviceRef);
+		goto exit;
+	}
+
 	if (mCounter >= mFileSize)
 	{
+		if (!mBinaryHashSent)
+		{
+			mBinaryHashSent = true;
+			uint8_t hashBuf[8];
+			PUTLE64(hash, hashBuf);
+
+			//Send the hash of the binary after sending the binary
+			status = EVBME_DFU_WRITE_request(mBinaryHashMetadataPartitionAddr, sizeof(hashBuf), hashBuf, &mDeviceRef);
+			goto exit;
+		}
+
 		mFile.seekg(0, std::ios::beg);
 		set_state(VERIFY);
 		goto exit;
@@ -212,6 +261,8 @@ ca_error ExternalFlasher::program_done(ca_error status)
 	buffer   = new char[writeLen];
 
 	mFile.read(buffer, writeLen);
+
+	HASH_fnv1a_64_stream(buffer, writeLen, &hash);
 
 	status = EVBME_DFU_WRITE_request(mStartAddr + mCounter, writeLen, buffer, &mDeviceRef);
 	if (status)
@@ -282,9 +333,18 @@ void ExternalFlasher::configure_max_binsize()
 
 	if (strcmp(mDeviceInfo.GetDeviceName(), "Chili2") == 0)
 	{
-		mPageSize    = 0x100;      //256 bytes
-		mMaxFileSize = 0x80000;    //512KiB
-		mStartAddr   = 0xB0000000; //Address used to represent beginning of external flash address space
+		mPageSize            = 0x100;      //256 bytes
+		mMaxFileSize         = 0x80000;    //512KiB
+		mStartAddr           = 0xB0000000; //Address used to represent beginning of external flash address space
+		mMaxAddress          = mStartAddr + 0x100000;
+		mMetadataStartAddr   = mStartAddr + 0x07f000; //Address of the metadata region of the external flash
+		mCurrentAppStartAddr = mStartAddr + 0x081000; //Address of the current application region of the external flash
+		mBinarySizeMetadataPartitionAddr =
+		    mStartAddr +
+		    0x07f200; //Address of the sub-region in the metadata region where the size of the binary is stored
+		mBinaryHashMetadataPartitionAddr =
+		    mStartAddr +
+		    0x07f100; //Address of the sub-region in the metadata region where the hash of the binary is stored
 	}
 }
 
@@ -321,9 +381,20 @@ ca_error ExternalFlasher::dfu_callback(EVBME_Message *params)
 	return CA_ERROR_SUCCESS;
 }
 
+ca_error ExternalFlasher::handle_evbme_message(EVBME_Message *params)
+{
+	fprintf(stderr, "Rx: %.*s\r\n", params->mLen, params->EVBME.MESSAGE_indication.mMessage);
+	return CA_ERROR_SUCCESS;
+}
+
 ca_error ExternalFlasher::dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef)
 {
 	return static_cast<ExternalFlasher *>(pDeviceRef->context)->dfu_callback(params);
+}
+
+ca_error ExternalFlasher::handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef)
+{
+	return static_cast<ExternalFlasher *>(pDeviceRef->context)->handle_evbme_message(params);
 }
 
 const char *ExternalFlasher::state_string(State aState)

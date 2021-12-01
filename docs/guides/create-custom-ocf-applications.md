@@ -9,12 +9,12 @@ import them into the Cascoda SDK.
 
 In order to follow this guide, you must set up the IoTivity-Lite SDK as
 described in the [IoTivity-Lite Device Simulation
-Guide.](https://iotivity.org/getting-started-iotivity-device-simulation) We
+Guide.](https://iotivity.org/GS_DS/) We
 recommend going through the entire guide so that you can gain an
 understanding of how OCF applications work in general. If you have the
 necessary hardware, we also recommend going through the [IoTivity-Lite
 Raspberry Pi
-Guide](https://iotivity.org/getting-started-iotivity-raspberry-pi-kit) before
+Guide](https://iotivity.org/GS_Rasp) before
 proceeding.
 
 ## Generating an Application ##

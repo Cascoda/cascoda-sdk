@@ -8,15 +8,15 @@ The purpose of this document is to provide the reader with all the required know
 <!-- TOC -->
 
 - [Getting Started with OCF and Thread](#getting-started-with-ocf-and-thread)
-    - [Contents](#contents)
-    - [Important references](#important-references)
-    - [Step 0 - Building the Cascoda SDK (optional)](#step-0---building-the-cascoda-sdk-optional)
-    - [Step 1 - Prerequisite Knowledge](#step-1---prerequisite-knowledge)
-    - [Step 2 - Getting Started](#step-2---getting-started)
-    - [Step 3 - Creating OCF Applications over Thread](#step-3---creating-ocf-applications-over-thread)
-    - [Step 4 - Thread Network Set-Up and Configuration](#step-4---thread-network-set-up-and-configuration)
-    - [Step 5 - OCF Device Spy Configuration](#step-5---ocf-device-spy-configuration)
-    - [Step 6 - Interact with your OCF server using OCF Device Spy](#step-6---interact-with-your-ocf-server-using-ocf-device-spy)
+  - [Contents](#contents)
+  - [Important references](#important-references)
+  - [Step 0 - Building the Cascoda SDK (optional)](#step-0---building-the-cascoda-sdk-optional)
+  - [Step 1 - Prerequisite Knowledge](#step-1---prerequisite-knowledge)
+  - [Step 2 - Getting Started](#step-2---getting-started)
+  - [Step 3 - Creating OCF Applications over Thread](#step-3---creating-ocf-applications-over-thread)
+  - [Step 4 - Thread Network Set-Up and Configuration](#step-4---thread-network-set-up-and-configuration)
+  - [Step 5 - OCF Device Spy Configuration](#step-5---ocf-device-spy-configuration)
+  - [Step 6 - Interact with your OCF server using OCF Device Spy](#step-6---interact-with-your-ocf-server-using-ocf-device-spy)
 
 <!-- /TOC -->
 
@@ -29,15 +29,15 @@ On the other hand, if you only intend to run pre-existing OCF applications, then
 
 ## Step 1 - Prerequisite Knowledge
 - Read the contents of the "About Us" page of OCF's official website [here](https://openconnectivity.org/foundation/), to get a quick understanding of the context and reason behind the implementation of this technology. Note that OCF is a set of specifications. To do anything useful with it, it needs to be implemented; IoTivity is such an implementation.
-- Read the contents of the "IoTivity Architecture" page of IoTivity's official website [here](https://iotivity.org/about/iotivity-architecture). This should introduce what IoTivity is, and should also explain that OCF can run over Wi-Fi, Ethernet, and Thread. 
+- Read the contents of the "IoTivity Architecture" page of IoTivity's official website [here](https://iotivity.org/architecture/). This should introduce what IoTivity is, and should also explain that OCF can run over Wi-Fi, Ethernet, and Thread. 
 - Visit the "Technology" page of OCF's official website [here](https://openconnectivity.org/technology/), which explains how to establish Device-to-Device, Device-to-Cloud, and Cloud-to-Cloud communication. You only need to read the contents of the "Device-to-Device" section for the purposes of this guide. The key concepts to understand are:
     - An OCF device is a device which implements the OCF Core Specification. To learn more about OCF devices and for a list of pre-existing ones, see the OCF specification document titled "Device".
     - The function of an OCF device (i.e. what it does/can do) is determined by what is known as its resources. To learn more about resources and for a complete list of them, see the OCF specification document titled "Resource Type". **NB**: OCF used to be called OIC (Open Interconnect Consortium), and that is why the device and resource types all start with "oic.".
     
 ## Step 2 - Getting Started
-- Follow along IoTivity's device simulation guide [here](https://iotivity.org/getting-started-iotivity-device-simulation), which will get you familiar with the concepts of an OCF Server device, an OCF Client device, and with the general workflow of generating, building and running OCF server code.
+- Follow along IoTivity's device simulation guide [here](https://iotivity.org/GS_DS/), which will get you familiar with the concepts of an OCF Server device, an OCF Client device, and with the general workflow of generating, building and running OCF server code.
 - Note: If you don't have a linux machine, you can use a raspberry pi running Raspberry Pi OS instead.
-- Note: We have used the Windows onboarding tool called [OCF Device Spy](https://iotivity.org/tools/ocf-device-spy) instead of the linux OTGC that is suggested in the guide. Follow the instructions [here](https://openconnectivityfoundation.github.io/development-support/DeviceSpy/) to download the tool.
+- Note: We have used the Windows onboarding tool called [OCF Device Spy](https://iotivity.org/tools/#ocf-device-spy) instead of the linux OTGC that is suggested in the guide. Follow the instructions [here](https://openconnectivityfoundation.github.io/development-support/DeviceSpy/) to download the tool.
     - For this guide to work with OCF Device Spy instead of the linux OTGC, make sure that the Windows machine and the linux (or Raspberry Pi OS) machine running the server are part of the same Ethernet network.
     - Once installed, if OCF Device Spy produces an error when you try to run it, then execute the installer again, and select "Remove OCF Device Spy". Then execute the installer once more to reinstall OCF Device Spy. It should work now.
     - For a full guide on how to use OCF Device Spy, open the tool, click on "Help" and select "User Guide". This will only properly work if opened with Internet Explorer.

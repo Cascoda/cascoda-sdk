@@ -52,10 +52,10 @@ public:
 
 	/**
 	 * Construct an ExternalFlasher instance
-	 * @param aFilePath   Path to the binary file to be written to the external flash
+	 * @param aAppFilePath   Path to the binary file to be written to the external flash
 	 * @param aDeviceInfo Reference to a deviceInfo struct of the device whose external flash will be erased/programmed/read.
 	 */
-	ExternalFlasher(const char *aFilePath, const DeviceInfo &aDeviceInfo);
+	ExternalFlasher(const char *aAppFilePath, const DeviceInfo &aDeviceInfo);
 
 	~ExternalFlasher();
 
@@ -92,6 +92,13 @@ private:
 	size_t        mMaxFileSize;
 	size_t        mPageSize;
 	uint32_t      mStartAddr;
+	uint32_t      mMaxAddress;
+	uint32_t      mMetadataStartAddr;
+	uint32_t      mCurrentAppStartAddr;
+	uint32_t      mBinarySizeMetadataPartitionAddr;
+	bool          mBinarySizeSent;
+	uint32_t      mBinaryHashMetadataPartitionAddr;
+	bool          mBinaryHashSent;
 	ca821x_dev    mDeviceRef;
 	DeviceInfo    mDeviceInfo;
 	uint32_t      mCounter;
@@ -110,8 +117,11 @@ private:
 	ca_error        dfu_callback(EVBME_Message *params);
 	static ca_error dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef);
 
+	ca_error        handle_evbme_message(EVBME_Message *params);
+	static ca_error handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef);
+
 	void   configure_max_binsize();
-	size_t get_page_count() { return (mFileSize + (mPageSize - 1)) / mPageSize; }
+	size_t get_page_count(size_t len) { return (len + (mPageSize - 1)) / mPageSize; }
 
 	static const char *state_string(State aState);
 };

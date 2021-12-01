@@ -197,7 +197,9 @@ struct ca821x_exchange_base
 
 	struct EVBME_callbacks evbme_callbacks; //!< EVBME Callback struct
 
-	int flash_fd; //!< File descriptor for persistent storage file
+	int      flash_fd;     //!< File descriptor for persistent storage file
+	uint32_t base_address; //!< Base address of persistent storage
+	uint32_t used_size;    //!< Size of used persistent storage
 };
 
 /**

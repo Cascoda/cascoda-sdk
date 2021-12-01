@@ -30,12 +30,11 @@
  */
 
 #include "cascoda-util/cascoda_hash.h"
+#include "ca821x_log.h"
 
 //Constants and alogrithm from http://www.isthe.com/chongo/tech/comp/fnv
 static const uint32_t prime32 = 16777619;
 static const uint32_t basis32 = 2166136261;
-static const uint64_t prime64 = 1099511628211ULL;
-static const uint64_t basis64 = 14695981039346656037ULL;
 
 /*
  * CRC32 algorithm taken from the zlib source, which is
@@ -72,14 +71,21 @@ uint32_t HASH_fnv1a_32(const void *data_in, size_t num_bytes)
 
 uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes)
 {
-	uint64_t       hash = basis64;
+	uint64_t hash = basis64;
+
+	HASH_fnv1a_64_stream(data_in, num_bytes, &hash);
+
+	return hash;
+}
+
+void HASH_fnv1a_64_stream(const void *data_in, size_t num_bytes, uint64_t *hash)
+{
 	const uint8_t *data = data_in;
 
 	for (size_t i = 0; i < num_bytes; i++)
 	{
-		hash = (data[i] ^ hash) * prime64;
+		*hash = (data[i] ^ *hash) * prime64;
 	}
-	return hash;
 }
 
 uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen)

@@ -227,6 +227,14 @@ exit:
 	return error;
 }
 
+ca_error utilsFlashDeinit(struct ca821x_dev *aInstance)
+{
+	int error = close(((struct ca821x_exchange_base *)aInstance->exchange_context)->flash_fd);
+	if (error)
+		ca_log_crit("Failed to close flash file descriptor! Error %d", error);
+	return error ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
+}
+
 uint32_t utilsFlashGetSize(struct ca821x_dev *instance)
 {
 	(void)instance;
@@ -313,4 +321,24 @@ void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut)
 	aFlashInfoOut->dataFlashBaseAddr = 0;
 	aFlashInfoOut->numPages          = FLASH_PAGE_NUM;
 	aFlashInfoOut->pageSize          = FLASH_PAGE_SIZE;
+}
+
+uint32_t utilsFlashGetBaseAddress(struct ca821x_dev *aInstance)
+{
+	return ((struct ca821x_exchange_base *)aInstance->exchange_context)->base_address;
+}
+
+uint32_t utilsFlashGetUsedSize(struct ca821x_dev *aInstance)
+{
+	return ((struct ca821x_exchange_base *)aInstance->exchange_context)->used_size;
+}
+
+void utilsFlashSetBaseAddress(struct ca821x_dev *aInstance, uint32_t aAddress)
+{
+	((struct ca821x_exchange_base *)aInstance->exchange_context)->base_address = aAddress;
+}
+
+void utilsFlashSetUsedSize(struct ca821x_dev *aInstance, uint32_t aSize)
+{
+	((struct ca821x_exchange_base *)aInstance->exchange_context)->used_size = aSize;
 }

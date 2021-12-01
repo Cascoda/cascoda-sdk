@@ -10,6 +10,25 @@ endif()
 
 option(CASCODA_BUILD_OCF_PKI "Enable PKI security in all secure OCF targets" ON)
 
+if(${CASCODA_BUILD_OCF_PKI})
+    # Download PKI Test certs
+    find_package (Python3)
+    message("Python3_Interpreter_FOUND = " ${Python3_Interpreter_FOUND})
+    
+    get_target_property(PYTHON3 Python3::Interpreter LOCATION)
+
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/pki_certs)
+
+    execute_process(COMMAND ${PYTHON3} ${PROJECT_SOURCE_DIR}/pki_certs_update.py
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/pki_certs
+        RESULT_VARIABLE PYTHON_RESULT
+    )
+
+    if(PYTHON_RESULT)
+        message(FATAL_ERROR "Failed to download PKI Certs")
+    endif()
+endif()
+
 # Only the Chili 2 has enough memory and flash to run Iotivity
 if(NOT TARGET cascoda-chili2)
 	message(FATAL_ERROR "OCF is currently only supported for the Chili2 target")
@@ -235,6 +254,7 @@ target_link_libraries(iotivity-unsecure-server PUBLIC ca821x-openthread-bm-plat 
 target_compile_definitions(iotivity-unsecure-server PUBLIC OC_SERVER)
 
 add_library(iotivity-secure-server)
+target_include_directories(iotivity-secure-server PUBLIC ${PROJECT_BINARY_DIR}/pki_certs)
 target_link_libraries(iotivity-secure-server PRIVATE iotivity-server)
 target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
 target_compile_definitions(iotivity-secure-server PUBLIC OC_SERVER OC_SECURITY)

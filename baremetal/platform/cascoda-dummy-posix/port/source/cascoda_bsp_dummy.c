@@ -375,3 +375,8 @@ ca_error SENSORIF_SPI_Write(u8_t out_data)
 void SENSORIF_SPI_Init(void)
 {
 }
+
+ca_error utilsFlashDeinit(struct ca821x_dev *aInstance)
+{
+	return CA_ERROR_NOT_HANDLED;
+}

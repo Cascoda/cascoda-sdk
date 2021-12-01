@@ -32,6 +32,7 @@
 #include <fstream>
 #include <thread>
 
+#include "ExternalFlasher.hpp"
 #include "Flash.hpp"
 #include "Flasher.hpp"
 
@@ -43,8 +44,10 @@ Flash::Flash()
     , mHelpArg('h', "help")
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
     , mBatchArg('b', "batch")
-    , mFileArg('f', "file", ArgOpt::MANDATORY)
+    , mAppFileArg('f', "app-file", ArgOpt::MANDATORY)
+    , mOtaBootFileArg('o', "ota-boot-file", ArgOpt::MANDATORY)
     , mDfuUpdateArg('d', "dfu-update")
+    , mExtFlashUpdateArg('e', "external-flash-update")
     , mIgnoreVersionArg('\0', "ignore-version")
 {
 	mHelpArg.SetHelpString("Print this message to stdout");
@@ -59,13 +62,22 @@ Flash::Flash()
 	mBatchArg.SetHelpString("Permit the flashing of multiple devices at a time.");
 	mArgParser.AddOption(mBatchArg);
 
-	mFileArg.SetArgHint("filepath");
-	mFileArg.SetHelpString("Set the .bin file to flash to the device(s)");
-	mFileArg.SetCallback(&Flash::set_file, *this);
-	mArgParser.AddOption(mFileArg);
+	mAppFileArg.SetArgHint("filepath");
+	mAppFileArg.SetHelpString("Set the .bin application file to flash to the device(s)");
+	mAppFileArg.SetCallback(&Flash::set_application_file, *this);
+	mArgParser.AddOption(mAppFileArg);
+
+	mOtaBootFileArg.SetArgHint("filepath");
+	mOtaBootFileArg.SetHelpString("Set the .bin ota bootloader file to flash to the device(s)");
+	mOtaBootFileArg.SetCallback(&Flash::set_ota_bootloader_file, *this);
+	mArgParser.AddOption(mOtaBootFileArg);
 
 	mDfuUpdateArg.SetHelpString("Update the DFU region itself, rather than the application.");
 	mArgParser.AddOption(mDfuUpdateArg);
+
+	mExtFlashUpdateArg.SetHelpString(
+	    "Use the external flash update procedure (or OTA update) to flash the new binary. This is only supported by devices with a 2nd level bootloader (ota-bootloader.bin) flashed alongside an application binary which supports ota upgrade.");
+	mArgParser.AddOption(mExtFlashUpdateArg);
 
 	mIgnoreVersionArg.SetHelpString(
 	    "Ignore the version check on the device to be flashed. Warning: Flashing will not work if device firmware is older than v0.14.");
@@ -115,33 +127,90 @@ ca_error Flash::Process(int argc, const char *argv[])
 	//TODO: Expand this to be parallel, and have a non-polling mechanism to call 'process'
 	for (const DeviceInfo &di : mDeviceList.Get())
 	{
-		Flasher::FlashType flashType =
-		    mDfuUpdateArg.GetCallCount() ? Flasher::FlashType::DFU : Flasher::FlashType::APROM;
-		Flasher f{mFilePath.c_str(), di, flashType};
+		Flasher::FlashType flashType;
 
-		if (mIgnoreVersionArg.GetCallCount())
-			f.SetIgnoreVersion(true);
-
-		do
+		if (mOtaBootFileArg.GetCallCount())
 		{
-			error = f.Process();
-			if (!error)
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		} while (!error);
-
-		if (f.IsComplete())
-		{
-			error = CA_ERROR_SUCCESS;
+			flashType = Flasher::FlashType::APROM;
 		}
 		else
 		{
-			//Exit early if fail
-			fprintf(stderr, "Error: Early termination - %s\n", ca_error_str(error));
-			goto exit;
+			flashType = mDfuUpdateArg.GetCallCount() ? Flasher::FlashType::DFU : Flasher::FlashType::APROM;
+			mOtaBootFilePath.clear();
+		}
+
+		//TODO: Use polymorphism to get rid of those 2 functions (external_flash_process and flash_process)
+		//which have very similar code.
+		if (mExtFlashUpdateArg.GetCallCount())
+		{
+			error = external_flash_process(di);
+			if (error)
+				goto exit;
+		}
+		else
+		{
+			error = flash_process(di, flashType);
+			if (error)
+				goto exit;
 		}
 	}
 
 exit:
+	return error;
+}
+
+ca_error Flash::flash_process(const DeviceInfo &aDeviceInfo, Flasher::FlashType flashType)
+{
+	ca_error error = CA_ERROR_SUCCESS;
+	Flasher  f{mAppFilePath.c_str(), mOtaBootFilePath.c_str(), aDeviceInfo, flashType};
+
+	if (mIgnoreVersionArg.GetCallCount())
+		f.SetIgnoreVersion(true);
+
+	do
+	{
+		error = f.Process();
+		if (!error)
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	} while (!error);
+
+	if (f.IsComplete())
+	{
+		error = CA_ERROR_SUCCESS;
+	}
+	else
+	{
+		//Exit early if fail
+		fprintf(stderr, "Error: Early termination - %s\n", ca_error_str(error));
+		error = CA_ERROR_FAIL;
+	}
+
+	return error;
+}
+
+ca_error Flash::external_flash_process(const DeviceInfo &aDeviceInfo)
+{
+	ca_error        error = CA_ERROR_SUCCESS;
+	ExternalFlasher ext_f{mAppFilePath.c_str(), aDeviceInfo};
+
+	do
+	{
+		error = ext_f.Process();
+		if (!error)
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	} while (!error);
+
+	if (ext_f.IsComplete())
+	{
+		error = CA_ERROR_SUCCESS;
+	}
+	else
+	{
+		//Exit early if fail
+		fprintf(stderr, "Error: Early termination - %s\n", ca_error_str(error));
+		error = CA_ERROR_FAIL;
+	}
+
 	return error;
 }
 
@@ -164,15 +233,26 @@ ca_error Flash::set_serialno_filter(const char *aArg)
 	return CA_ERROR_SUCCESS;
 }
 
-ca_error Flash::set_file(const char *aArg)
+ca_error Flash::set_application_file(const char *aArg)
 {
-	if (mFileArg.GetCallCount() > 1)
+	if (mAppFileArg.GetCallCount() > 1)
 	{
 		fprintf(stderr, "Error: Multiple flash file arguments detected");
 		return CA_ERROR_INVALID_ARGS;
 	}
 
-	mFilePath = aArg;
+	mAppFilePath = aArg;
+	return CA_ERROR_SUCCESS;
+}
+ca_error Flash::set_ota_bootloader_file(const char *aArg)
+{
+	if (mOtaBootFileArg.GetCallCount() > 1)
+	{
+		fprintf(stderr, "Error: Multiple flash file arguments detected");
+		return CA_ERROR_INVALID_ARGS;
+	}
+
+	mOtaBootFilePath = aArg;
 	return CA_ERROR_SUCCESS;
 }
 

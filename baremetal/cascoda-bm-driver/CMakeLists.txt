@@ -39,7 +39,7 @@ configure_file(
 
 # Main library config ---------------------------------------------------------
 if(CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
-	set(EXT_FLASH_SOURCE ${PROJECT_SOURCE_DIR}/source/cascoda_external_flash.c)
+	set(EXT_FLASH_SOURCE ${PROJECT_SOURCE_DIR}/source/cascoda_external_flash.c ${PROJECT_SOURCE_DIR}/source/cascoda_ota_upgrade.c)
 endif()
 
 add_library(cascoda-bm
@@ -73,6 +73,8 @@ target_compile_definitions(cascoda-bm
 	INTERFACE
 		CA_TARGET_NAME=\"$<TARGET_PROPERTY:NAME>\"
 )
+
+target_compile_definitions(cascoda-bm PUBLIC CASCODA_OTA_UPGRADE_ENABLED=$<BOOL:${CASCODA_OTA_UPGRADE_ENABLED}>)
 
 cascoda_use_warnings(cascoda-bm)
 

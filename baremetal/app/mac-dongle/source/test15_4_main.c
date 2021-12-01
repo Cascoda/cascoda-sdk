@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_ota_upgrade.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_types.h"
@@ -83,6 +84,11 @@ int main(void)
 	/* Insert Application-Specific Initialisation Routines here */
 	TEST15_4_Initialise(&dev);
 	TXRX_LED_Initialise(&dev);
+
+#if CASCODA_OTA_UPGRADE_ENABLED
+	/* Initialises handling of OTA Firmware Upgrade */
+	ota_upgrade_init();
+#endif
 
 	/* Endless Polling Loop */
 	while (1)

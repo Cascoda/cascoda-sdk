@@ -58,11 +58,23 @@ To flash the firmware over USB (or other), consult the [flashing guide.](../../d
 
 ## Step 2 - Configure the Border Router
 
-A pre-configured SD Card should be provided with your kit. It is necessary to log in with the default username 'raspberry'
-and default password 'pi' at least once to complete configuration. It may also be necessary to expand the filesystem using the
-``raspi-config`` utility.
+A pre-configured SD Card should be provided with your kit. It is necessary to log in with the default username 'pi' and default password 'raspberry' at least once to complete configuration. It may also be necessary to expand the filesystem using the ``raspi-config`` utility.
 
-To create a new SD card, it is possible to download the image from the [install-script releases page](https://github.com/Cascoda/install-script/releases), which can be flashed with a tool such as [win32 disk imager](https://sourceforge.net/projects/win32diskimager/).
+Troubleshooting: If you see the following message after logging in: 
+
+```
+WiFi AP is down. See the systemctl hostapd.service to re-enable
+```
+
+this indicates that the WiFi access point could not be started and cannot be used for connecting to the border router. To fix this, type the command 
+
+```
+sudo rfkill unblock 0
+```
+
+and then reboot the pi. On the reboot, you should now see that WiFi AP down message is gone.
+
+To create a new SD card instead of using a pre-configured one, it is possible to download the image from the [install-script releases page](https://github.com/Cascoda/install-script/releases), which can be flashed with a tool such as [win32 disk imager](https://sourceforge.net/projects/win32diskimager/).
 
 Alternatively it is possible to follow the initial setup section from the [border router setup guide.](../guides/border-router-setup.md), although this script can take quite a long time to run.
 

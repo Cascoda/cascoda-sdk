@@ -22,6 +22,7 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
     - [How-To Guides](#how-to-guides)
     - [Other Guides](#other-guides)
     - [Complete API Reference](#complete-api-reference)
+    - [Reference Documents](#reference-documents)
   - [Building](#building)
     - [Instructions](#instructions)
       - [Linux/MacOS](#linuxmacos)
@@ -67,6 +68,7 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 - [Cross-compiling for the Raspberry Pi](docs/guides/cross-compile-for-the-raspberry-pi.md)
 - [M2351 TrustZone Development Guide](docs/guides/M2351-TrustZone-development-guide.md)
 - [Border Router Setup Guide](docs/guides/border-router-setup.md)
+- [Two Border Router Setup Guide](docs/guides/two-border-router-setup.md)
 - [LWM2M over Thread](docs/guides/lwm2m-over-thread.md)
 
 ### Complete API Reference

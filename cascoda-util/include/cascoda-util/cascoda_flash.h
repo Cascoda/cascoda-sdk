@@ -45,9 +45,10 @@ extern "C" {
 /** Description of the internal flash */
 struct ca_flash_info
 {
-	uint32_t dataFlashBaseAddr; //!< Base address of the dataflash
-	uint16_t pageSize;          //!< Size of each flash page (in bytes)
-	uint8_t  numPages;          //!< Number of flash pages that make up the user flash region
+	uint32_t apromFlashBaseAddr; //!< Base address of the APROM flash
+	uint32_t dataFlashBaseAddr;  //!< Base address of the dataflash
+	uint16_t pageSize;           //!< Size of each flash page (in bytes)
+	uint8_t  numPages;           //!< Number of flash pages that make up the user flash region
 };
 
 /**
@@ -61,6 +62,16 @@ struct ca_flash_info
  * @retval CA_ERROR_FAIL  Initialize flash driver fail.
  */
 ca_error utilsFlashInit(struct ca821x_dev *aInstance, const char *aApplicationName, uint32_t aNodeId);
+
+/**
+ * @brief Deinitialize the flash driver
+ * 
+ * @param aInstance Instance to deinitialize. Unused on baremetal.
+ * 
+ * @retval CA_ERROR_SUCCESS    Initialize flash driver success.
+ * @retval CA_ERROR_FAIL  Initialize flash driver fail.
+ */
+ca_error utilsFlashDeinit(struct ca821x_dev *aInstance);
 
 /**
  * Get the size of flash that can be read/write by the caller.
@@ -136,6 +147,38 @@ uint32_t utilsFlashWrite(struct ca821x_dev *aInstance, uint32_t aAddress, const 
  *          0 indicates that something wrong happens when reading.
  */
 uint32_t utilsFlashRead(struct ca821x_dev *aInstance, uint32_t aAddress, uint8_t *aData, uint32_t aSize);
+
+/**
+ * @brief Internal function for getting the base address
+ * 
+ * @param aInstance The device to access
+ * @return uint32_t The base address
+ */
+uint32_t utilsFlashGetBaseAddress(struct ca821x_dev *aInstance);
+
+/**
+ * @brief Internal function for returning the amount of flash used
+ * 
+ * @param aInstance The device to access
+ * @return uint32_t How much flash is used starting from the base address
+ */
+uint32_t utilsFlashGetUsedSize(struct ca821x_dev *aInstance);
+
+/**
+ * @brief Internal function for setting the base address
+ * 
+ * @param aInstance The device to access
+ * @param aAddress The address
+ */
+void utilsFlashSetBaseAddress(struct ca821x_dev *aInstance, uint32_t aAddress);
+
+/**
+ * @brief Internal function for setting the amount of flash used
+ * 
+ * @param aInstance The device to access
+ * @param aSize The size
+ */
+void utilsFlashSetUsedSize(struct ca821x_dev *aInstance, uint32_t aSize);
 
 #ifdef __cplusplus
 } // extern "C"

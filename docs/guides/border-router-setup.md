@@ -14,6 +14,10 @@ Raspberry Pi, using a Chili2S Pi Hat for communication.
 
 ## Initial Setup
 
+Please flash an SD card with [the latest pre-built Raspberry Pi image.](https://github.com/Cascoda/install-script/releases) 
+
+### Manually running the install script
+Alternatively, you may manually set up a border router using the legacy install script, though this process takes a couple of hours & should not be necessary for most use cases.
 1. Install a fresh [Raspberry Pi OS](https://www.raspberrypi.org/software/operating-systems/) (Lite is fine) onto a 
    microSD card, and insert into Raspberry Pi
 2. [Flash](flashing.md) the mac-dongle binary (configured for UART) onto the Pi Hat Chili2

@@ -221,10 +221,6 @@ void TxReady(void)
 	EP2_Handler();
 }
 
-//from cascoda_hash.c
-static const uint64_t prime64 = 1099511628211ULL;
-static const uint64_t basis64 = 14695981039346656037ULL;
-
 uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes)
 {
 	uint64_t       hash = basis64;

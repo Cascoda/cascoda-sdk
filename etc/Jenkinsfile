@@ -105,19 +105,30 @@ pipeline {
 							cmakeArgs: '-DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_CA_VER=8210'
 						)
 
-						/* Build for CA8211*/
+						/* Build for CA8211, without OTA upgrade support */
 						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_EXTERNAL_FLASHCHIP_PRESENT=ON')
 
-						/* Collect binary size information for graphing using 'plot' calls in PostBuild stage*/
 						dir("build-chili2")
 						{
+							/* Stores binary used for longtest */
 							sh 'mkdir -p ${STORAGE_DIR}'
-							sh 'cp ./bin/mac-dongle.bin ${STORAGE_DIR}'
+							sh 'cp ./bin/mac-dongle.bin ${STORAGE_DIR}/mac-dongle-no-ota.bin'
+							/* Collect binary size information for graphing using 'plot' calls in PostBuild stage*/
 							sh '${SRC_DIR}/etc/make_size_csvs.sh "mac-dongle" "ot-cli" "ot-sed-thermometer"'
 						}
 
+						/* Build with OTA upgrade support */
+						cmake_build_helper(cmakeArgs: '-DCASCODA_OTA_UPGRADE_ENABLED=ON')
+
+						dir("build-chili2")
+						{
+							/* Stores binary used for longtest */
+							sh 'cp ./bin/mac-dongle.bin ${STORAGE_DIR}/mac-dongle-ota.bin'
+							sh 'cp ./bin/ota-bootloader.bin ${STORAGE_DIR}/ota-bootloader.bin'
+						}
+
 						/* Build with TrustZone*/
-						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON -DCASCODA_EXTERNAL_FLASHCHIP_PRESENT=OFF')
+						cmake_build_helper(cmakeArgs: '-DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_TRUSTZONE=ON -DCASCODA_EXTERNAL_FLASHCHIP_PRESENT=OFF -DCASCODA_OTA_UPGRADE_ENABLED=OFF')
 
 						/* Build with UART instead of USB */
 						cmake_build_helper(cmakeArgs: '-DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_TRUSTZONE=OFF')
@@ -231,7 +242,7 @@ pipeline {
 			steps {
 				lock('long-test-lock') {
 					cmake_build_helper(
-						cmakeArgs: " -DCASCODA_CHILICTL_TEST_SERIALNO=E5F3704A4A4D5391 -DCASCODA_CHILICTL_TEST_BINPATH=${STORAGE_DIR}/mac-dongle.bin",
+						cmakeArgs: " -DCASCODA_CHILICTL_TEST_SERIALNO=E5F3704A4A4D5391 -DCASCODA_CHILICTL_TEST_OTA_SUPPORTED_APP_BINPATH=${STORAGE_DIR}/mac-dongle-ota.bin -DCASCODA_CHILICTL_TEST_OTA_NOT_SUPPORTED_APP_BINPATH=${STORAGE_DIR}/mac-dongle-no-ota.bin -DCASCODA_CHILICTL_TEST_OTA_BOOTLOADER_BINPATH=${STORAGE_DIR}/ota-bootloader.bin",
 						steps: [[args: 'longtest']]
 					)
 				}

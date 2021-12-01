@@ -136,9 +136,6 @@ struct settingsBlock
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-static uint32_t sSettingsBaseAddress;
-static uint32_t sSettingsUsedSize;
-
 void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut);
 
 static uint16_t getAlignLength(uint16_t length)
@@ -171,9 +168,9 @@ static void initSettings(struct ca821x_dev *aInstance, uint32_t aBase, uint32_t 
 
 static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 {
-	uint32_t             oldBase     = sSettingsBaseAddress;
+	uint32_t             oldBase     = utilsFlashGetBaseAddress(aInstance);
 	uint32_t             swapAddress = oldBase;
-	uint32_t             usedSize    = sSettingsUsedSize;
+	uint32_t             usedSize    = utilsFlashGetUsedSize(aInstance);
 	struct ca_flash_info flash_info;
 	BSP_GetFlashInfo(&flash_info);
 	uint8_t  pageNum      = flash_info.numPages;
@@ -181,11 +178,12 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 
 	otEXPECT_ACTION(pageNum > 1, ;);
 
-	sSettingsBaseAddress =
-	    (swapAddress == SETTINGS_CONFIG_BASE_ADDRESS) ? (swapAddress + settingsSize) : SETTINGS_CONFIG_BASE_ADDRESS;
+	utilsFlashSetBaseAddress(aInstance,
+	                         (swapAddress == SETTINGS_CONFIG_BASE_ADDRESS) ? (swapAddress + settingsSize)
+	                                                                       : SETTINGS_CONFIG_BASE_ADDRESS);
 
-	initSettings(aInstance, sSettingsBaseAddress, (uint32_t)(kSettingsInSwap));
-	sSettingsUsedSize = kSettingsFlagSize;
+	initSettings(aInstance, utilsFlashGetBaseAddress(aInstance), (uint32_t)(kSettingsInSwap));
+	utilsFlashSetUsedSize(aInstance, kSettingsFlagSize);
 	swapAddress += kSettingsFlagSize;
 
 	while (swapAddress < (oldBase + usedSize))
@@ -234,7 +232,7 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 				uint16_t bytes_copied_so_far = 0;
 				// Copy the settings block. Flash data may be corrupted if power is lost past this point!
 				utilsFlashWrite(aInstance,
-				                sSettingsBaseAddress + sSettingsUsedSize,
+				                utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance),
 				                (uint8_t *)(&new_block),
 				                sizeof(struct settingsBlock));
 
@@ -253,14 +251,18 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 
 					// write many bytes to sSettingsBaseAddress
 					utilsFlashWrite(aInstance,
-					                sSettingsBaseAddress + sSettingsUsedSize + bytes_copied_so_far,
+					                utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance) +
+					                    bytes_copied_so_far,
 					                copy_buffer,
 					                amount_to_copy);
 
 					bytes_copied_so_far += amount_to_copy;
 				}
 				// Finished writing - update the settings used size
-				sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(new_block.length));
+
+				uint32_t used = utilsFlashGetUsedSize(aInstance);
+				used += (sizeof(struct settingsBlock) + getAlignLength(new_block.length));
+				utilsFlashSetUsedSize(aInstance, used);
 			}
 		}
 		// flag == 0xff => this block is not in use, so you are at the end!
@@ -273,12 +275,12 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 		swapAddress += getAlignLength(new_block.length);
 	}
 
-	setSettingsFlag(aInstance, sSettingsBaseAddress, (uint32_t)(kSettingsInUse));
+	setSettingsFlag(aInstance, utilsFlashGetBaseAddress(aInstance), (uint32_t)(kSettingsInUse));
 	setSettingsFlag(aInstance, oldBase, (uint32_t)(kSettingsNotUse));
 
 exit:
 	// Returns the amount of space left
-	return settingsSize - sSettingsUsedSize;
+	return settingsSize - utilsFlashGetUsedSize(aInstance);
 }
 
 static ca_error addSettingVector(struct ca821x_dev *   aInstance,
@@ -312,17 +314,21 @@ static ca_error addSettingVector(struct ca821x_dev *   aInstance,
 	block.length = total_length;
 
 	// Is there room for the new block?
-	if ((sSettingsUsedSize + getAlignLength(block.length) + sizeof(struct settingsBlock)) >= settingsSize)
+	if ((utilsFlashGetUsedSize(aInstance) + getAlignLength(block.length) + sizeof(struct settingsBlock)) >=
+	    settingsSize)
 	{
 		// There is no room - get a new block free of deleted entries.
 		otEXPECT_ACTION(swapSettingsBlock(aInstance) >= (getAlignLength(block.length) + sizeof(struct settingsBlock)),
 		                error = CA_ERROR_NO_BUFFER);
 	}
 
-	utilsFlashWrite(
-	    aInstance, sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
+	utilsFlashWrite(aInstance,
+	                utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance),
+	                (uint8_t *)(&block),
+	                sizeof(struct settingsBlock));
 
-	uint32_t write_address = sSettingsBaseAddress + sSettingsUsedSize + sizeof(struct settingsBlock);
+	uint32_t write_address =
+	    utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance) + sizeof(struct settingsBlock);
 	for (size_t i = 0; i < aSettingCnt; ++i)
 	{
 		// buffers for holding padding bytes
@@ -349,9 +355,14 @@ static ca_error addSettingVector(struct ca821x_dev *   aInstance,
 	}
 
 	block.flag &= (~kBlockAddCompleteFlag);
-	utilsFlashWrite(
-	    aInstance, sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(struct settingsBlock));
-	sSettingsUsedSize += (sizeof(struct settingsBlock) + getAlignLength(block.length));
+	utilsFlashWrite(aInstance,
+	                utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance),
+	                (uint8_t *)(&block),
+	                sizeof(struct settingsBlock));
+
+	uint32_t used = utilsFlashGetUsedSize(aInstance);
+	used += (sizeof(struct settingsBlock) + getAlignLength(block.length));
+	utilsFlashSetUsedSize(aInstance, used);
 
 exit:
 	return error;
@@ -366,7 +377,7 @@ void caUtilSettingsInit(struct ca821x_dev *aInstance, const char *aApplicationNa
 	uint32_t settingsSize =
 	    flash_info.numPages > 1 ? flash_info.pageSize * flash_info.numPages / 2 : flash_info.pageSize;
 
-	sSettingsBaseAddress = SETTINGS_CONFIG_BASE_ADDRESS;
+	utilsFlashSetBaseAddress(aInstance, SETTINGS_CONFIG_BASE_ADDRESS);
 
 	utilsFlashInit(aInstance, aApplicationName, aNodeId);
 
@@ -374,8 +385,11 @@ void caUtilSettingsInit(struct ca821x_dev *aInstance, const char *aApplicationNa
 	{
 		uint32_t blockFlag;
 
-		sSettingsBaseAddress += settingsSize * index;
-		utilsFlashRead(aInstance, sSettingsBaseAddress, (uint8_t *)(&blockFlag), sizeof(blockFlag));
+		uint32_t base = utilsFlashGetBaseAddress(aInstance);
+		base += settingsSize * index;
+		utilsFlashSetBaseAddress(aInstance, base);
+
+		utilsFlashRead(aInstance, base, (uint8_t *)(&blockFlag), sizeof(blockFlag));
 
 		if (blockFlag == kSettingsInUse)
 		{
@@ -385,20 +399,25 @@ void caUtilSettingsInit(struct ca821x_dev *aInstance, const char *aApplicationNa
 
 	if (index == 2)
 	{
-		initSettings(aInstance, sSettingsBaseAddress, (uint32_t)(kSettingsInUse));
+		initSettings(aInstance, utilsFlashGetBaseAddress(aInstance), (uint32_t)(kSettingsInUse));
 	}
 
-	sSettingsUsedSize = kSettingsFlagSize;
+	utilsFlashSetUsedSize(aInstance, kSettingsFlagSize);
 
-	while (sSettingsUsedSize < settingsSize)
+	while (utilsFlashGetUsedSize(aInstance) < settingsSize)
 	{
 		struct settingsBlock block;
 
-		utilsFlashRead(aInstance, sSettingsBaseAddress + sSettingsUsedSize, (uint8_t *)(&block), sizeof(block));
+		utilsFlashRead(aInstance,
+		               utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance),
+		               (uint8_t *)(&block),
+		               sizeof(block));
 
 		if (!(block.flag & kBlockAddBeginFlag))
 		{
-			sSettingsUsedSize += (getAlignLength(block.length) + sizeof(struct settingsBlock));
+			uint32_t used = utilsFlashGetUsedSize(aInstance);
+			used += (getAlignLength(block.length) + sizeof(struct settingsBlock));
+			utilsFlashSetUsedSize(aInstance, used);
 		}
 		else
 		{
@@ -427,7 +446,7 @@ ca_error caUtilSettingsAbandonChange(struct ca821x_dev *aInstance)
 
 void caUtilSettingsDeinit(struct ca821x_dev *aInstance)
 {
-	(void)aInstance;
+	utilsFlashDeinit(aInstance);
 }
 
 static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
@@ -437,10 +456,10 @@ static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
                                    uint16_t *         aValueLength)
 {
 	ca_error error   = CA_ERROR_NOT_FOUND;
-	uint32_t address = sSettingsBaseAddress + kSettingsFlagSize;
+	uint32_t address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
 	int      index   = 0;
 
-	while (address < (sSettingsBaseAddress + sSettingsUsedSize))
+	while (address < (utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance)))
 	{
 		struct settingsBlock block;
 
@@ -562,10 +581,10 @@ ca_error caUtilSettingsAddVector(struct ca821x_dev *   aInstance,
 ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int aIndex)
 {
 	ca_error error   = CA_ERROR_NOT_FOUND;
-	uint32_t address = sSettingsBaseAddress + kSettingsFlagSize;
+	uint32_t address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
 	int      index   = 0;
 
-	while (address < (sSettingsBaseAddress + sSettingsUsedSize))
+	while (address < (utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance)))
 	{
 		struct settingsBlock block;
 
@@ -612,6 +631,6 @@ ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int a
 
 void caUtilSettingsWipe(struct ca821x_dev *aInstance, const char *aApplicationName, uint32_t aNodeId)
 {
-	initSettings(aInstance, sSettingsBaseAddress, (uint32_t)(kSettingsInUse));
+	initSettings(aInstance, utilsFlashGetBaseAddress(aInstance), (uint32_t)(kSettingsInUse));
 	caUtilSettingsInit(aInstance, aApplicationName, aNodeId);
 }

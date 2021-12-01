@@ -155,8 +155,7 @@ typedef enum statusRegister1_pos
 */
 static bool pageOverflow(uint32_t startAddress, uint8_t numOfBytes)
 {
-	int numOfBytesLeftInThePage =
-	    NUM_OF_BYTES_IN_A_PAGE - (int)(startAddress % NUM_OF_BYTES_IN_A_PAGE) - (int)numOfBytes;
+	int numOfBytesLeftInThePage = NUM_OF_BYTES_IN_A_PAGE - (startAddress % NUM_OF_BYTES_IN_A_PAGE) - numOfBytes;
 
 	if (numOfBytesLeftInThePage < 0)
 		return true;

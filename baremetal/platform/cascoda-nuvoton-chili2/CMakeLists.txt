@@ -119,28 +119,30 @@ set(CHILI2_SECURE_SOURCES
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351_secure.c
 )
 
+set(CASCODA_OTA_UPGRADE_ENABLED OFF CACHE BOOL "Enables partition of APROM into a BOOTLOADER region and APPLICATION region for OTA upgrade.")
+
 # Add linker file dependency
 add_library(cascoda-chili2-ldfile INTERFACE)
 add_library(cascoda-chili2-ldfile-ldrom INTERFACE)
 
 if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
-	target_link_options(cascoda-chili2-ldfile
-		INTERFACE
-			"-T${PROJECT_SOURCE_DIR}/m2351BN.ld"
-		)
 	target_link_options(cascoda-chili2-ldfile-ldrom
 		INTERFACE
 			"-T${PROJECT_SOURCE_DIR}/m2351BN_LDROM.ld"
 		)
+		target_link_options(cascoda-chili2-ldfile
+			INTERFACE
+				"-T${PROJECT_SOURCE_DIR}/m2351BN.ld"
+			)
 elseif(CMAKE_C_COMPILER MATCHES armclang)
-	target_link_options(cascoda-chili2-ldfile
-		INTERFACE
-			"-Wl,--ro-base=0x00000000,--entry=0x00000000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
-		)
 	target_link_options(cascoda-chili2-ldfile-ldrom
 		INTERFACE
 			"-Wl,--ro-base=0x00100000,--entry=0x00100000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
 		)
+		target_link_options(cascoda-chili2-ldfile
+			INTERFACE
+				"-Wl,--ro-base=0x00000000,--entry=0x00000000,--rw-base=0x20000000,--entry=Reset_Handler,--first=__Vectors,--strict,--datacompressor=off,--entry=Reset_Handler,--library_type=microlib"
+			)
 endif()
 
 if(CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
@@ -160,14 +162,14 @@ if(NOT CASCODA_CHILI2_TRUSTZONE)
 	target_compile_definitions(cascoda-chili2 PRIVATE CUSTOM_PARTITION_H)
 
 	target_link_libraries(cascoda-chili2
-		PUBLIC
-			cascoda-bm
-			nuvoton-vendor-m2351
-			cascoda-chili2-ldfile
-		PRIVATE
-			mbedcrypto
-			mbedcrypto-plat
-		)
+	PUBLIC
+		cascoda-bm
+		nuvoton-vendor-m2351
+		cascoda-chili2-ldfile
+	PRIVATE
+		mbedcrypto
+		mbedcrypto-plat
+	)
 
 	cascoda_use_warnings(cascoda-chili2)
 
@@ -252,3 +254,4 @@ if(CASCODA_BM_INTERFACE STREQUAL "USB")
 	target_link_libraries(ldrom_hid nuvoton-vendor-m2351 cascoda-chili2-ldfile-ldrom)
 	cascoda_make_binary(ldrom_hid)
 endif()
+

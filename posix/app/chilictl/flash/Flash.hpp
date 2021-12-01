@@ -36,6 +36,7 @@
 #include "common/Args.hpp"
 #include "common/Command.hpp"
 #include "common/DeviceList.hpp"
+#include "Flasher.hpp"
 
 namespace ca {
 
@@ -54,16 +55,23 @@ private:
 	ArgOpt           mHelpArg;
 	ArgOpt           mSerialArg;
 	ArgOpt           mBatchArg;
-	ArgOpt           mFileArg;
+	ArgOpt           mAppFileArg;
+	ArgOpt           mOtaBootFileArg;
 	ArgOpt           mDfuUpdateArg;
+	ArgOpt           mExtFlashUpdateArg;
 	ArgOpt           mIgnoreVersionArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
-	std::string      mFilePath;
+	std::string      mAppFilePath;
+	std::string      mOtaBootFilePath;
+
+	ca_error flash_process(const DeviceInfo &aDeviceInfo, Flasher::FlashType flashType);
+	ca_error external_flash_process(const DeviceInfo &aDeviceInfo);
 
 	ca_error print_help_string(const char *aArg);
 	ca_error set_serialno_filter(const char *aArg);
-	ca_error set_file(const char *aArg);
+	ca_error set_application_file(const char *aArg);
+	ca_error set_ota_bootloader_file(const char *aArg);
 };
 
 } /* namespace ca */
