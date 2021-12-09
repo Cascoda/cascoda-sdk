@@ -36,7 +36,7 @@
 namespace ca {
 
 List::List()
-    : Command("list", "Utility for listing connected chili devices")
+    : Command("list", "Utility for listing connected chili devices\n  type 'list -h' for more info")
     , mArgParser()
     , mHelpArg('h', "help")
     , mAvailableArg('\0', "available", ArgOpt::OPTIONAL)

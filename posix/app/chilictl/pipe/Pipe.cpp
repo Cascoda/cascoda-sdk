@@ -41,7 +41,8 @@
 namespace ca {
 
 Pipe::Pipe()
-    : Command("pipe", "Utility for piping binary commands to/from a connected chili device")
+    : Command("pipe",
+              "Utility for piping binary commands to/from a connected chili device\n  type 'pipe -h' for more info")
     , mArgParser()
     , mHelpArg('h', "help")
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)

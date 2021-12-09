@@ -39,7 +39,7 @@
 namespace ca {
 
 Flash::Flash()
-    : Command("flash", "Utility for flashing new binaries to connected chili devices")
+    : Command("flash", "Utility for flashing new binaries to connected chili devices\n  type 'flash -h' for more info")
     , mArgParser()
     , mHelpArg('h', "help")
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
@@ -219,6 +219,11 @@ ca_error Flash::print_help_string(const char *aArg)
 	(void)aArg;
 
 	fprintf(stdout, "--- Chili Control: Flashing Sub-Application ---\n");
+	fprintf(stdout,
+	        "EXAMLPE 1 - DFU region update (this only has to be done once before being able to flash applications)\n");
+	fprintf(stdout, "\t$ ./chilictl flash -s FBC647CDB300A0DA -df \"~/sdk-chili2/bin/ldrom-hid.bin\"\n");
+	fprintf(stdout, "EXAMLPE 2 - Application flashing\n");
+	fprintf(stdout, "\t$ ./chilictl flash -s FBC647CDB300A0DA -f \"~/sdk-chili2/bin/mac-dongle.bin\"\n");
 	fprintf(stdout, "SYNOPSIS\n");
 	fprintf(stdout, "\tchilictl [options] flash [command options]\n");
 	fprintf(stdout, "COMMAND OPTIONS\n");

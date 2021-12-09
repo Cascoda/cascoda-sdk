@@ -114,7 +114,7 @@ Hardware Requirements:
 
 1. Connect the Nu-Link Pro to the Chili2D via debug adapter
 2. Do NOT power the Chili2D (It is powered by the Nu-Link Pro)
-3. Start the Nuvoton NuMicro Programming Tool
+3. Start the [Nuvoton NuMicro ICP Programming Tool](https://www.nuvoton.com/tool-and-software/software-development-tool/programmer/)
 4. Select M2351 Series target chip
 5. Click 'Connect' to connect to M2351
 6. Click the 'APROM' button to browse to the APROM binary file

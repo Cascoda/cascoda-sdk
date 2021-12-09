@@ -12,11 +12,23 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 
 ![Thread Certified Component Logo](etc/img/thread_certified_component.png)
 
+## Pre-built Binaries for Evaluation
+
+We offer binaries that can be flashed directly onto our Chili2D USB module
+inside `Chili2D-USB.zip`. Windows executable files are found in
+`Windows-SDK.zip`. However, `Chili2S-UART0-1Mbaud.zip` is _for advanced users
+only_ as these binaries _cannot be used with our USB module_, only with Chili2S
+devices soldered onto a PCB.
+
+[**Click here to download pre-built
+binaries.**](https://github.com/Cascoda/cascoda-sdk/releases)
+
 ## Contents
 
 <!-- TOC -->
 
 - [Cascoda SDK](#cascoda-sdk)
+  - [Pre-built Binaries for Evaluation](#pre-built-binaries-for-evaluation)
   - [Contents](#contents)
   - [Guides](#guides)
     - [How-To Guides](#how-to-guides)
@@ -53,8 +65,8 @@ The Chili2D with Cascoda SDK v0.13 is a Thread Certified Component, proving comp
 
 ### How-To Guides
 
-- [Getting Started with the Cascoda Thread Evaluation Kit](docs/how-to/howto-thread.md): This how-to will guide you through setting up a Thread network and testing simple communication.
-- [Getting Started with OCF and Thread](docs/how-to/howto-ocf-thread.md): This how-to will guide you through running pre-existing or creating new OCF applications that run on the Chili module.
+- [Getting Started with the Cascoda Thread Evaluation Kit](docs/how-to/howto-thread.md): Set up a Thread network and test simple communications. 
+- [Getting Started with OCF and Thread](docs/how-to/howto-ocf-thread.md): Run pre-existing OCF applications or create your own.
 
 ### Other Guides
 

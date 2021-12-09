@@ -2,6 +2,10 @@
 cmake_minimum_required (VERSION 3.13.1)
 project (cascoda-sdk)
 
+if (MSVC)
+	message(FATAL_ERROR "Building with the Microsoft Visual C/C++ compiler is not supported. Please set up MinGW as shown here: https://github.com/Cascoda/cascoda-sdk/blob/master/docs/guides/development-setup.md#windows")
+endif()
+
 # Include helper functions
 include(etc/cascoda.cmake)
 include(etc/options.cmake)
