@@ -138,6 +138,45 @@ struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
 	return rval;
 }
 
+u8_t CHILI_ModuleGetPinFromPort(enPortnum portnum, u8_t portbit)
+{
+	int i;
+	for (i = 0; i < NUM_MODULEPINS; i++)
+	{
+		if (ModulePinList[i].portnum == portnum && ModulePinList[i].portbit == portbit)
+		{
+			return ModulePinList[i].pin;
+		}
+	}
+	return (P_NA);
+}
+
+u8_t CHILI_ModuleGetPortBitFromPin(u8_t mpin)
+{
+	int i;
+	for (i = 0; i < NUM_MODULEPINS; i++)
+	{
+		if (ModulePinList[i].pin == mpin)
+		{
+			return ModulePinList[i].portbit;
+		}
+	}
+	return (P_NA);
+}
+
+u8_t CHILI_ModuleGetPortNumFromPin(u8_t mpin)
+{
+	int i;
+	for (i = 0; i < NUM_MODULEPINS; i++)
+	{
+		if (ModulePinList[i].pin == mpin)
+		{
+			return ModulePinList[i].portnum;
+		}
+	}
+	return (P_NA);
+}
+
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 {
 	u8_t i;

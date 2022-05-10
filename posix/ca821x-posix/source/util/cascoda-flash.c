@@ -99,6 +99,13 @@ char *posixGetDataDir(uint32_t aNodeId)
 	size_t      dataPathLen = 0;
 	struct stat st;
 
+	if (aNodeId > 9999)
+	{
+		ca_log_crit("Attempting to use Node ID %d", aNodeId);
+		ca_log_crit("Persistent Storage Node ID must be between 0 and 9999! Aborting...");
+		abort();
+	}
+
 	memset(&st, 0, sizeof(st));
 
 	if ((ddp = getenv("APPDATA")))
@@ -141,6 +148,13 @@ char *posixGetDataDir(uint32_t aNodeId)
 	char *      dataPath    = NULL;
 	size_t      dataPathLen = 0;
 	struct stat st;
+
+	if (aNodeId > 9999)
+	{
+		ca_log_crit("Attempting to use Node ID %d", aNodeId);
+		ca_log_crit("Persistent Storage Node ID must be between 0 and 9999! Aborting...");
+		abort();
+	}
 
 	memset(&st, 0, sizeof(st));
 

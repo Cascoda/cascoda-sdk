@@ -64,6 +64,7 @@ jobs:
         mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4
 
 
+
   # Build artifacts for macos - for build testing only, no artifacts
   macos:
     runs-on: macos-latest
@@ -165,6 +166,7 @@ jobs:
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
         make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
         cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-usb
+
 
     - name: Upload Chili2S-UART0-1Mbaud
       uses: actions/upload-artifact@v1.0.0

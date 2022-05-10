@@ -78,9 +78,18 @@ if(NOT WIN32)
 endif()
 
 if(CASCODA_OPENTHREAD_FTD)
-	list(APPEND OT_PLATFORM_DEFINES
-		"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=7"
-	)
+	# We do not want to run out of multicast addresses on border routers, as they do not fail gracefully
+	# and briefly get stuck in a loop of restarting the Cascoda ot-ncp-posix binary.
+	# Fifty thousand entries need 1MB of RAM, which we can spare on our BRs.
+	if(UNIX)
+		list(APPEND OT_PLATFORM_DEFINES
+			"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=50000"
+		)
+	else()
+		list(APPEND OT_PLATFORM_DEFINES
+			"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=7"
+		)
+	endif()
 endif()
 
 FetchContent_GetProperties(openthread)

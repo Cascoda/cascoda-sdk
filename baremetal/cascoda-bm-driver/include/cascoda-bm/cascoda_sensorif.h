@@ -149,6 +149,33 @@ void SENSORIF_SPI_Deinit(void);
  ************************************************************************************************************/
 ca_error SENSORIF_SPI_Write(u8_t out_data);
 
+/************************************************************************************************************/
+/*********************************************************************************************************/ /**
+ * \brief Read data in the RX while sending IDLE data to TX. This is intended for receive-only transmission from the slave.
+ * \param RxBuf - read data buffer
+ * \param RxLen - the data length
+ *************************************************************************************************************
+ * \return Return CA_ERROR_SUCCESS = 0x00 if successful and CA_ERROR_FAIL = 0x01 if transmit FIFO is full
+ *************************************************************************************************************
+ ************************************************************************************************************/
+void SENSORIF_SPI_FULL_DUPLEX_RXONLY(u8_t *RxBuf, u8_t RxLen);
+
+/************************************************************************************************************/
+/*********************************************************************************************************/ /**
+ *      ***   Not being tested yet   ***
+ * \brief Exchange bytes between SPI slave and master
+ * \param RxBuf - read data buffer
+ * \param TxBuf - write data buffer
+ * \param RxLen - read data length
+ * \param TxLen - write data length
+ *  This function exchange data between SPI slave and master. It is able to 
+ *  transmit data and receive data. 
+ *************************************************************************************************************
+ * \return Return CA_ERROR_SUCCESS = 0x00 if successful and CA_ERROR_FAIL = 0x01 if transmit FIFO is full
+ *************************************************************************************************************
+ ************************************************************************************************************/
+void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxLen);
+
 #ifdef __cplusplus
 }
 #endif

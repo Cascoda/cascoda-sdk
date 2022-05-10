@@ -135,13 +135,13 @@ otInstance *OT_INSTANCE;
 */
 STATIC int app_init(void)
 {
-	int ret = oc_init_platform("ocf", NULL, NULL);
+	int ret = oc_init_platform("Cascoda", NULL, NULL);
 	/* the settings determine the appearance of the device on the network
      can be OCF1.3.1 or OCF2.0.0 (or even higher)
      supplied values are for OCF1.3.1 */
 	ret |= oc_add_device("/oic/d",
 	                     "x.com.cascoda.thermometer",
-	                     "cascoda_thermometer",
+	                     "Cascoda Thermometer",
 	                     "ocf.2.0.5",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
@@ -296,8 +296,8 @@ STATIC void get_temperature(oc_request_t *request, oc_interface_mask_t interface
 STATIC void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/temperature\"\n");
-	oc_resource_t *res_temperature =
-	    oc_new_resource(NULL, g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
+	oc_resource_t *res_temperature = oc_new_resource(
+	    "M2351 internal thermometer data", g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_temperature_nr_resource_types);
 	for (int a = 0; a < g_temperature_nr_resource_types; a++)
 	{
@@ -363,8 +363,8 @@ void initialize_variables(void)
 	    g_temperature_units,
 	    "C"); /* current value of property "units" The unit for the conveyed temperature value, Note that when doing an UPDATE, the unit on the device does NOT change, it only indicates the unit of the conveyed value during the UPDATE operation. */
 
-	/* set the flag for NO oic/con resource. */
-	oc_set_con_res_announced(false);
+	/* set the flag for oic/con resource. */
+	oc_set_con_res_announced(true);
 }
 
 /**

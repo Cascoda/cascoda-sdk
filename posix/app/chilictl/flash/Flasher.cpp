@@ -187,7 +187,10 @@ ca_error Flasher::init()
 	status = ca821x_util_init_path(&mDeviceRef, nullptr, mDeviceInfo.GetExchangeType(), mDeviceInfo.GetPath());
 	if (status)
 		goto exit;
-	mDeviceRef.context = this;
+
+	mDeviceRef.context                                             = this;
+	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_DFU_cmd            = &dfu_callback;
+	EVBME_GetCallbackStruct(&mDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
 
 	//Can't flash Chilis with a firmware version of less than 0.14 (except if in DFU mode)
 	if (!mIgnoreVersion && strcmp(mDeviceInfo.GetAppName(), "DFU") != 0)
@@ -686,10 +689,10 @@ void Flasher::configure_max_binsize()
 		{
 			if (mOtaBootFilePresent)
 			{
-				mAppMaxFileSize = 0x60000; //384KiB
-				mAppStartAddr   = 0x20000;
+				mAppMaxFileSize = 0x70000; //448KiB
+				mAppStartAddr   = 0x10000;
 
-				mOtaBootMaxFileSize = 0x20000; //128kiB
+				mOtaBootMaxFileSize = 0x10000; //64kiB
 				mOtaBootStartAddr   = 0;
 			}
 			else
@@ -749,9 +752,20 @@ ca_error Flasher::dfu_callback(EVBME_Message *params)
 	return CA_ERROR_SUCCESS;
 }
 
+ca_error Flasher::handle_evbme_message(EVBME_Message *params)
+{
+	fprintf(stderr, "Rx: %.*s\r\n", params->mLen, params->EVBME.MESSAGE_indication.mMessage);
+	return CA_ERROR_SUCCESS;
+}
+
 ca_error Flasher::dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef)
 {
 	return static_cast<Flasher *>(pDeviceRef->context)->dfu_callback(params);
+}
+
+ca_error Flasher::handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef)
+{
+	return static_cast<Flasher *>(pDeviceRef->context)->handle_evbme_message(params);
 }
 
 const char *Flasher::state_string(State aState)

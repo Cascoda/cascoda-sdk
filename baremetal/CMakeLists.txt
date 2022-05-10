@@ -11,6 +11,13 @@ add_subdirectory(platform/cascoda-dummy-posix)
 
 # Baremetal Applications (If a suitable platform layer was configured)
 if(TARGET cascoda-bm-plat)
+	# MicroSDK only builds for the chili 2 at the moment
+	if(TARGET cascoda-chili2)
+		add_subdirectory(mikrosdk-lib/hal)
+		add_subdirectory(mikrosdk-lib/drv)
+		add_subdirectory(mikrosdk-click)
+		add_subdirectory(app/mikrosdk-bm)
+	endif()
 	# Openthread platform
 	add_subdirectory(cascoda-bm-thread)
 	# Examples

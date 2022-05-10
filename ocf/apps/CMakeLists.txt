@@ -33,6 +33,25 @@ cascoda_configure_memory(ocf-sleepy-thermometer 0x1700 0xb000)
 target_compile_definitions(ocf-sleepy-thermometer PRIVATE)
 cascoda_make_binary(ocf-sleepy-thermometer)
 
+add_executable(ocf-wakeful-thermometer
+    ${PROJECT_SOURCE_DIR}/example_wakeful_thermometer.c
+    ${PROJECT_SOURCE_DIR}/wakeful_main.c
+    ${iotivitylite_SOURCE_DIR}/api/oc_introspection.c
+)
+
+target_link_libraries(ocf-wakeful-thermometer
+    iotivity-secure-server
+    ca821x-openthread-bm-ftd
+)
+
+target_include_directories(ocf-wakeful-thermometer BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include_thermometer)
+
+target_compile_definitions(ocf-wakeful-thermometer PRIVATE NO_MAIN)
+
+cascoda_configure_memory(ocf-wakeful-thermometer 0x1700 0xb000)
+target_compile_definitions(ocf-wakeful-thermometer PRIVATE)
+cascoda_make_binary(ocf-wakeful-thermometer)
+
 add_executable(ocf-sensorif
     ${PROJECT_SOURCE_DIR}/example_sensorif.c
     ${PROJECT_SOURCE_DIR}/sleepy_main.c

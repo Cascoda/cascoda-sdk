@@ -23,7 +23,6 @@ cascoda_has_changed(CASCODA_BUILD_OCF ocf_has_changed)
 
 if(ocf_has_changed AND CASCODA_BUILD_OCF)
     set(ot_config_value OFF)
-    set(bufs_value 85)
     set(flash_pages 16)
 
     set(OT_BORDER_AGENT ${ot_config_value} CACHE BOOL "" FORCE)
@@ -35,6 +34,5 @@ if(ocf_has_changed AND CASCODA_BUILD_OCF)
     set(OT_SERVICE ${ot_config_value} CACHE BOOL "" FORCE)
     set(OT_UDP_FORWARD ${ot_config_value} CACHE BOOL "" FORCE)
 
-    set(CASCODA_OPENTHREAD_MESSAGE_BUFS ${bufs_value} CACHE STRING "" FORCE)
     set(CASCODA_CHILI_FLASH_PAGES ${flash_pages} CACHE STRING "" FORCE)
 endif()

@@ -40,7 +40,6 @@ typedef uint64_t oc_clock_time_t;
 #define OC_MAX_APP_RESOURCES (1)
 
 /* Common paramters */
-
 #define OC_INOUT_BUFFER_POOL (2)
 #define OC_INOUT_BUFFER_SIZE (1232)
 
@@ -69,6 +68,10 @@ typedef uint64_t oc_clock_time_t;
 
 /* Max inactivity timeout before tearing down DTLS connection */
 #define OC_DTLS_INACTIVITY_TIMEOUT (604800)
+
+/* Wipe device name during reset, when oic/con is enabled */
+/* Default: Keep name */
+#define OC_WIPE_NAME (0)
 
 #ifdef __cplusplus
 } // extern "C"

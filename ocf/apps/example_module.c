@@ -152,13 +152,15 @@ static char *g_varianturl_RESOURCE_ENDPOINT         = "/varianturl";          /*
 static char *g_varianturl_RESOURCE_TYPE[MAX_STRING] = {"oic.r.test.variant"}; /* rt value (as an array) */
 int          g_varianturl_nr_resource_types         = 1;
 
+void set_additional_info(void *data);
+
 /**
 * function to set up the device.
 *
 */
 int app_init(void)
 {
-	int ret = oc_init_platform("ocf", NULL, NULL);
+	int ret = oc_init_platform("Cascoda", set_additional_info, NULL);
 	/* the settings determine the appearance of the device on the network
      can be ocf.2.2.0 (or even higher)
      supplied values are for ocf.2.2.2 */
@@ -299,17 +301,10 @@ static void get_queryurl(oc_request_t *request, oc_interface_mask_t interfaces, 
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
+		/* fall through */
+	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
-
-		/* property (string) 'queryvalue' */
-		oc_rep_set_text_string(root, queryvalue, owned_queryvalue);
-		PRINT("   %s : %s\n", g_queryurl_RESOURCE_PROPERTY_NAME_queryvalue, owned_queryvalue);
-		/* property (number) 'value' */
-		oc_rep_set_double(root, value, g_queryurl_value);
-		PRINT("   %s : %f\n", g_queryurl_RESOURCE_PROPERTY_NAME_value, g_queryurl_value);
-		break;
-	case OC_IF_A:
 
 		/* property (string) 'queryvalue' */
 		oc_rep_set_text_string(root, queryvalue, owned_queryvalue);
@@ -361,27 +356,10 @@ static void get_rangeurl(oc_request_t *request, oc_interface_mask_t interfaces, 
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
+		/* fall through */
+	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
-
-		/* property (array of numbers) 'range' */
-		oc_rep_set_array(root, range);
-		PRINT("   %s double = [ ", g_rangeurl_RESOURCE_PROPERTY_NAME_range);
-		for (int i = 0; i < (int)g_rangeurl_range_array_size; i++)
-		{
-			oc_rep_add_double(range, g_rangeurl_range[i]);
-			PRINT("   %f ", g_rangeurl_range[i]);
-		}
-		PRINT("   ]\n");
-		oc_rep_close_array(root, range);
-		/* property (number) 'step' */
-		oc_rep_set_double(root, step, g_rangeurl_step);
-		PRINT("   %s : %f\n", g_rangeurl_RESOURCE_PROPERTY_NAME_step, g_rangeurl_step);
-		/* property (number) 'value' */
-		oc_rep_set_double(root, value, g_rangeurl_value);
-		PRINT("   %s : %f\n", g_rangeurl_RESOURCE_PROPERTY_NAME_value, g_rangeurl_value);
-		break;
-	case OC_IF_A:
 
 		/* property (array of numbers) 'range' */
 		oc_rep_set_array(root, range);
@@ -443,24 +421,10 @@ static void get_varianturl(oc_request_t *request, oc_interface_mask_t interfaces
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
+		/* fall through */
+	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
-
-		/* property (boolean) 'valueboolean' */
-		oc_rep_set_boolean(root, valueboolean, g_varianturl_valueboolean);
-		PRINT(
-		    "   %s : %s\n", g_varianturl_RESOURCE_PROPERTY_NAME_valueboolean, (char *)btoa(g_varianturl_valueboolean));
-		/* property (integer) 'valueinteger' */
-		oc_rep_set_int(root, valueinteger, g_varianturl_valueinteger);
-		PRINT("   %s : %d\n", g_varianturl_RESOURCE_PROPERTY_NAME_valueinteger, g_varianturl_valueinteger);
-		/* property (number) 'valuenumber' */
-		oc_rep_set_double(root, valuenumber, g_varianturl_valuenumber);
-		PRINT("   %s : %f\n", g_varianturl_RESOURCE_PROPERTY_NAME_valuenumber, g_varianturl_valuenumber);
-		/* property (string) 'valuestring' */
-		oc_rep_set_text_string(root, valuestring, g_varianturl_valuestring);
-		PRINT("   %s : %s\n", g_varianturl_RESOURCE_PROPERTY_NAME_valuestring, g_varianturl_valuestring);
-		break;
-	case OC_IF_A:
 
 		/* property (boolean) 'valueboolean' */
 		oc_rep_set_boolean(root, valueboolean, g_varianturl_valueboolean);
@@ -990,7 +954,8 @@ static void post_varianturl(oc_request_t *request, oc_interface_mask_t interface
 void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/queryurl\"\n");
-	oc_resource_t *res_queryurl = oc_new_resource(NULL, g_queryurl_RESOURCE_ENDPOINT, g_queryurl_nr_resource_types, 0);
+	oc_resource_t *res_queryurl =
+	    oc_new_resource("Query resource", g_queryurl_RESOURCE_ENDPOINT, g_queryurl_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_queryurl_nr_resource_types);
 	for (int a = 0; a < g_queryurl_nr_resource_types; a++)
 	{
@@ -1024,7 +989,8 @@ void register_resources(void)
 #endif
 	oc_add_resource(res_queryurl);
 	PRINT("Register Resource with local path \"/rangeurl\"\n");
-	oc_resource_t *res_rangeurl = oc_new_resource(NULL, g_rangeurl_RESOURCE_ENDPOINT, g_rangeurl_nr_resource_types, 0);
+	oc_resource_t *res_rangeurl =
+	    oc_new_resource("Range resource", g_rangeurl_RESOURCE_ENDPOINT, g_rangeurl_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_rangeurl_nr_resource_types);
 	for (int a = 0; a < g_rangeurl_nr_resource_types; a++)
 	{
@@ -1059,7 +1025,7 @@ void register_resources(void)
 	oc_add_resource(res_rangeurl);
 	PRINT("Register Resource with local path \"/varianturl\"\n");
 	oc_resource_t *res_varianturl =
-	    oc_new_resource(NULL, g_varianturl_RESOURCE_ENDPOINT, g_varianturl_nr_resource_types, 0);
+	    oc_new_resource("Variant resource", g_varianturl_RESOURCE_ENDPOINT, g_varianturl_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_varianturl_nr_resource_types);
 	for (int a = 0; a < g_varianturl_nr_resource_types; a++)
 	{
@@ -1188,8 +1154,8 @@ void initialize_variables(void)
 	    ""
 	    ""); /* current value of property "valuestring" value string, using a different length than the default lenght. */
 
-	/* set the flag for NO oic/con resource. */
-	oc_set_con_res_announced(false);
+	/* set the flag for oic/con resource. */
+	oc_set_con_res_announced(true);
 }
 
 #ifndef NO_MAIN

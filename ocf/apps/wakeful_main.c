@@ -25,6 +25,7 @@
 
 #include "ocf_application.h"
 
+
 #define OCF_COMMAND (0xB0)
 #define OCF_COMMAND_RFOTM (0x00)
 #define OCF_COMMAND_POWER (0x01)
@@ -109,6 +110,32 @@ static void signal_event_loop(void)
 }
 
 /**
+* Add additional device information to oic.wk.p
+*/
+void set_additional_info(void *data)
+{
+	(void)data;
+
+	// Get device serial number and convert it to string
+	uint64_t serial_no   = BSP_GetUniqueId();
+	uint32_t serial_no_1 = (uint32_t)(serial_no >> 32ULL);
+	uint32_t serial_no_2 = (uint32_t)serial_no;
+	char     serial_no_str[9];
+	char     serial_no_str_2[9];
+	sprintf(serial_no_str, "%x", serial_no_1);
+	sprintf(serial_no_str_2, "%x", serial_no_2);
+	strcat(serial_no_str, serial_no_str_2);
+
+	// Get binary version
+	const char *binary_version = ca821x_get_version_nodate();
+
+	// Add custom properties to oic.wk.p
+	oc_set_custom_platform_property(mnsel, serial_no_str); // Serial number
+	oc_set_custom_platform_property(mnfv, binary_version); // Binary version
+	oc_set_custom_platform_property(mnpv, CA_TARGET_NAME); // Binary name
+}
+
+/**
 * main application.
 * intializes the global variables
 * registers and starts the handler
@@ -144,6 +171,7 @@ int main(void)
 
 	// Print the joiner credentials, delaying for up to 5 seconds
 	PlatformPrintJoinerCredentials(&dev, OT_INSTANCE, 5000);
+
 
 	// Try to join network
 	do

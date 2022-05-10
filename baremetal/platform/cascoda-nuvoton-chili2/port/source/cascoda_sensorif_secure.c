@@ -16,7 +16,7 @@
 /****************************************************************************/
 
 /* set I2C interface number (0/1/2) */
-#define SENSORIF_I2CNUM 1
+#define SENSORIF_I2CNUM 0
 
 /* I2C module */
 #if (SENSORIF_I2CNUM == 0)
@@ -144,25 +144,35 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(void)
 	CLK_EnableModuleClock(SPI2_MODULE);
 #endif
 
-	/* MOSI/CLK/SS port configurations (Half-duplex mode so no MISO)*/
+	/* MOSI/MISO/CLK/SS port configurations*/
 #if (SENSORIF_SPINUM == 1)
+
+#if (!CASCODA_EINK_DISPLAY_PRESENT)
+	/* re-config PB.5 for MISO pin for full duplex mode*/
+	GPIO_ENABLE_DIGITAL_PATH(PB, BIT5);
+	GPIO_DISABLE_DEBOUNCE(PB, BIT5);
+	GPIO_SetPullCtl(PB, BIT5, GPIO_PUSEL_DISABLE);
+	/* initialise PB MFP for MISO */
+	SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB5MFP_Msk)) | SYS_GPB_MFPL_PB5MFP_SPI1_MISO;
+#endif
+
 	/* re-config PB.4, PB.3 and PB.2 */
 	GPIO_ENABLE_DIGITAL_PATH(PB, BIT4);
 	GPIO_ENABLE_DIGITAL_PATH(PB, BIT3);
-	//GPIO_ENABLE_DIGITAL_PATH(PB, BIT2); /* Uncomment if using SS */
+	// GPIO_ENABLE_DIGITAL_PATH(PB, BIT2); /* Uncomment if using SS */
 	GPIO_DISABLE_DEBOUNCE(PB, BIT4);
 	GPIO_DISABLE_DEBOUNCE(PB, BIT3);
-	//GPIO_DISABLE_DEBOUNCE(PB, BIT2); /* Uncomment if using SS */
+	// GPIO_DISABLE_DEBOUNCE(PB, BIT2); /* Uncomment if using SS */
 	GPIO_SetPullCtl(PB, BIT4, GPIO_PUSEL_DISABLE);
 	GPIO_SetPullCtl(PB, BIT3, GPIO_PUSEL_DISABLE);
-	//GPIO_SetPullCtl(PB, BIT2, GPIO_PUSEL_DISABLE);
+	// GPIO_SetPullCtl(PB, BIT2, GPIO_PUSEL_DISABLE);
 	/* initialise PB MFP for SPI1 MOSI, CLK, and SS */
 	/* PB.4 = SPI1 MOSI */
 	/* PB.3 = SPI1 CLK */
 	SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB4MFP_Msk)) | SYS_GPB_MFPL_PB4MFP_SPI1_MOSI;
 	SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB3MFP_Msk)) | SYS_GPB_MFPL_PB3MFP_SPI1_CLK;
 	/* PB.2 = SPI1 SS */
-	//SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB2MFP_Msk)) | SYS_GPB_MFPL_PB2MFP_GPIO;
+	// SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB2MFP_Msk)) | SYS_GPB_MFPL_PB2MFP_GPIO;
 #elif (SENSORIF_SPINUM == 2)
 	/* re-config PA.15, PA.13 and PA.12 */
 	GPIO_ENABLE_DIGITAL_PATH(PA, BIT15);
@@ -190,14 +200,19 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(void)
 	SYS_ResetModule(SPI2_RST);
 #endif
 
-	/* clear transmit fifo*/
+	/* clear transmit fifo but only clear receive fifo for full-duplex mode*/
 	SPI_ClearTxFIFO(SENSORIF_SPIIF);
+#if (!CASCODA_EINK_DISPLAY_PRESENT)
+	SPI_ClearRxFIFO(SENSORIF_SPIIF);
+#endif
 
 	/* enable SPI */
 	SPI_Open(SENSORIF_SPIIF, SPI_MASTER, SPI_MODE_0, SENSORIF_SPI_DATA_WIDTH, SENSORIF_SPI_CLK_FREQUENCY);
 
+#if (CASCODA_EINK_DISPLAY_PRESENT)
 	/* Set SPI commmunication to half-duplex mode with output data direction */
 	SENSORIF_SPIIF->CTL |= (SPI_CTL_HALFDPX_Msk | SPI_CTL_DATDIR_Msk);
+#endif
 }
 
 __NONSECURE_ENTRY void SENSORIF_SPI_Deinit(void)

@@ -177,6 +177,9 @@ private:
 	ca_error        dfu_callback(EVBME_Message *params);
 	static ca_error dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef);
 
+	ca_error        handle_evbme_message(EVBME_Message *params);
+	static ca_error handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef);
+
 	ca_error send_reboot_request();
 	void     configure_max_binsize();
 	size_t   get_page_count() { return (mCombinedFileSize + (mPageSize - 1)) / mPageSize; }

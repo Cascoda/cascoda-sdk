@@ -72,7 +72,7 @@ endif()
 set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
 
 # Set the message buffers pretty high as we have plenty of RAM on chili2
-set(CASCODA_OPENTHREAD_MESSAGE_BUFS 100 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
+set(CASCODA_OPENTHREAD_MESSAGE_BUFS 85 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
 
 # Config file generation ------------------------------------------------------
 configure_file(

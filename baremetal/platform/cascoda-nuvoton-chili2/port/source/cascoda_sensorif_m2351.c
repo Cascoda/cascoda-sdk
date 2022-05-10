@@ -47,6 +47,8 @@
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 /* I2C Interface Module used:
  * -------------------------------------------------------------------------
  * Number  Module   SDA     SCL		Module Configuration
@@ -69,7 +71,7 @@
 /****************************************************************************/
 
 /* set I2C interface number (0/1/2) */
-#define SENSORIF_I2CNUM 1
+#define SENSORIF_I2CNUM 0
 
 /* I2C module */
 #if (SENSORIF_I2CNUM == 0)
@@ -94,6 +96,35 @@
 #error "sensorif SPI module not valid"
 #endif
 
+/* Dummy data for SPI transmission */
+#define SPI_IDLE 0xFF
+
+/*-----------------------Private function----------------*/
+
+/* Write data to TX buffer */
+static u8_t SENSORIF_SPIPushByte(u8_t OutByte)
+{
+	/* Wait for TXE */
+	while (!SPI_GET_TX_FIFO_EMPTY_FLAG(SENSORIF_SPIIF))
+		;
+
+	SPI_WRITE_TX(SENSORIF_SPIIF, OutByte);
+	return 1;
+}
+
+/* Receive data from RX buffer */
+static u8_t SENSORIF_SPIPopByte(u8_t *InByte)
+{
+	/* Wait for received character */
+	while (SPI_GET_RX_FIFO_EMPTY_FLAG(SENSORIF_SPIIF))
+		;
+
+	*InByte = (u8_t)(SPI_READ_RX(SENSORIF_SPIIF) & 0xFF);
+	return 1;
+}
+
+/*-----------------------Public function----------------*/
+
 enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *plen)
 {
 	u8_t                     transferring = 1;
@@ -106,6 +137,7 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 	*plen = 0;
 	BSP_WaitUs(10);
 	I2C_START(SENSORIF_I2CIF); /* send START bit */
+
 	while (transferring)
 	{
 		/* wait until bus is ready */
@@ -117,6 +149,7 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 		}
 
 		status = (enum sensorif_i2c_status)I2C_GET_STATUS(SENSORIF_I2CIF);
+
 		switch (status)
 		{
 		case SENSORIF_I2C_ST_START: /* start: write SLA+W */
@@ -168,6 +201,7 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	*plen = 0;
 	BSP_WaitUs(10);
 	I2C_START(SENSORIF_I2CIF); /* send START bit */
+
 	while (transferring)
 	{
 		/* wait until bus is ready */
@@ -242,4 +276,63 @@ ca_error SENSORIF_SPI_Write(u8_t out_data)
 		return CA_ERROR_SUCCESS;
 	}
 	return CA_ERROR_FAIL;
+}
+
+void SENSORIF_SPI_FULL_DUPLEX_RXONLY(u8_t *RxBuf, u8_t RxLen)
+{
+	for (u8_t i = 0; i < RxLen; i++)
+	{
+		SENSORIF_SPIPushByte(SPI_IDLE);
+		SENSORIF_SPIPopByte(&RxBuf[i]);
+	}
+}
+
+void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxLen)
+{
+	uint8_t TxDataLeft, RxDataLeft;
+	uint8_t junk, i, j;
+
+	i = 0;
+	j = 0;
+
+	//Transmit & Receive command payloads asynchronously using transmit and receive buffers
+	TxDataLeft = TxLen;                //Total amount of valid data to send
+	RxDataLeft = RxLen;                //Total amount of valid data to receive
+	TxLen = RxLen = MAX(RxLen, TxLen); //Total number of byte transactions
+	while ((TxLen != 0) || (RxLen != 0))
+	{
+		/* If there is data to be transmitted, then transmit it*/
+		if (TxDataLeft)
+		{
+			if (SENSORIF_SPIPushByte(TxBuf[i]))
+			{
+				i++;
+				TxLen--;
+				TxDataLeft--;
+			}
+		}
+		/* If there is no more data to be transmitted
+			but expecting more received data, then send dummy data*/
+		else if (TxLen && SENSORIF_SPIPushByte(SPI_IDLE))
+		{
+			TxLen--;
+		}
+
+		/* If there is data to be received, then receive it*/
+		if (RxDataLeft)
+		{
+			if (SENSORIF_SPIPopByte(&RxBuf[j]))
+			{
+				j++;
+				RxLen--;
+				RxDataLeft--;
+			}
+		}
+		/* If there is no more data to be received
+			but expecting more data to be transmitted, then receive them to a dummy variable*/
+		else if (RxLen && SENSORIF_SPIPopByte(&junk))
+		{
+			RxLen--;
+		}
+	}
 }

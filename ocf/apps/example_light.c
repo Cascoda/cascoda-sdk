@@ -82,6 +82,7 @@
 #include "port/oc_clock.h"
 #include "oc_api.h"
 
+
 #ifdef OC_CLOUD
 #include "oc_cloud.h"
 #endif
@@ -126,6 +127,7 @@ volatile int quit = 0; /**< stop variable, used by handle_signal */
 otInstance *OT_INSTANCE;
 // Pin used by the relay, for the lamp demo
 #define RELAY_OUT_PIN 15
+
 /** End of Cascoda Additions */
 
 /** global property variables for path: "/binaryswitch" */
@@ -148,6 +150,8 @@ STATIC char *      g_dimming_RESOURCE_ENDPOINT = "/dimming";              /**< u
 STATIC const char *g_dimming_RESOURCE_TYPE[]   = {"oic.r.light.dimming"}; /**< rt value (as an array) */
 int                g_dimming_nr_resource_types = 1;                       /**< amount of resource type entries */
 
+void set_additional_info(void *data);
+
 /**
 * function to set up the device.
 * 
@@ -159,7 +163,7 @@ int                g_dimming_nr_resource_types = 1;                       /**< a
 */
 int app_init(void)
 {
-	int ret = oc_init_platform("ocf", NULL, NULL);
+	int ret = oc_init_platform("Cascoda", set_additional_info, NULL);
 	/* the settings determine the appearance of the device on the network
      can be ocf.2.2.3 (or even higher)
      supplied values are for OCF1.3.1 */
@@ -276,14 +280,10 @@ STATIC void get_binaryswitch(oc_request_t *request, oc_interface_mask_t interfac
 	switch (interfaces)
 	{
 	case OC_IF_BASELINE:
+		/* fall through */
+	case OC_IF_A:
 		PRINT("   Adding Baseline info\n");
 		oc_process_baseline_interface(request->resource);
-
-		/* property (boolean) 'value' */
-		oc_rep_set_boolean(root, value, g_binaryswitch_value);
-		PRINT("   %s : %s\n", g_binaryswitch_RESOURCE_PROPERTY_NAME_value, btoa(g_binaryswitch_value));
-		break;
-	case OC_IF_A:
 
 		/* property (boolean) 'value' */
 		oc_rep_set_boolean(root, value, g_binaryswitch_value);
@@ -569,7 +569,7 @@ void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/binaryswitch\"\n");
 	oc_resource_t *res_binaryswitch =
-	    oc_new_resource(NULL, g_binaryswitch_RESOURCE_ENDPOINT, g_binaryswitch_nr_resource_types, 0);
+	    oc_new_resource("A simple lamp switch", g_binaryswitch_RESOURCE_ENDPOINT, g_binaryswitch_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_binaryswitch_nr_resource_types);
 	for (int a = 0; a < g_binaryswitch_nr_resource_types; a++)
 	{
@@ -593,6 +593,7 @@ void register_resources(void)
 
 	oc_resource_set_request_handler(res_binaryswitch, OC_GET, get_binaryswitch, NULL);
 
+
 #ifdef OC_CLOUD
 	oc_cloud_add_resource(res_binaryswitch);
 #endif
@@ -605,7 +606,8 @@ void register_resources(void)
 	oc_add_resource(res_binaryswitch);
 
 	PRINT("Register Resource with local path \"/dimming\"\n");
-	oc_resource_t *res_dimming = oc_new_resource(NULL, g_dimming_RESOURCE_ENDPOINT, g_dimming_nr_resource_types, 0);
+	oc_resource_t *res_dimming =
+	    oc_new_resource("Dimming settings", g_dimming_RESOURCE_ENDPOINT, g_dimming_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_dimming_nr_resource_types);
 	for (int a = 0; a < g_dimming_nr_resource_types; a++)
 	{
@@ -711,8 +713,8 @@ void initialize_variables(void)
 	/* initialize global variables for resource "/dimming" */
 	g_dimming_dimmingSetting = 30; /* current value of property "dimmingSetting" The current dimming value. */
 
-	/* set the flag for NO oic/con resource. */
-	oc_set_con_res_announced(false);
+	/* set the flag for oic/con resource. */
+	oc_set_con_res_announced(true);
 
 	// Cascoda Addition
 	assert(BSP_ModuleRegisterGPIOOutput(RELAY_OUT_PIN, MODULE_PIN_TYPE_GENERIC) == CA_ERROR_SUCCESS);

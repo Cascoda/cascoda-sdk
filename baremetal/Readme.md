@@ -6,7 +6,7 @@ This directory contains the Baremetal-specific code, including drivers, platform
 
 ### app
 
-Example applications. This folder includes examples for using the OpenThread CLI (`ot-cli-*`), using Thread Sleepy End Devices (`ot-sed-*`), interfacing with I2C or SPI sensors (`ot-sed-sensorif`), interfacing with actuators over UART (`ot-cli-actuator`), and interfacing with a host application over USB or UART (see `CASCODA_BM_INTERFACE` CMake configuration variable).
+Example applications. This folder includes examples for using the OpenThread CLI (`ot-cli-*`), using Thread Sleepy End Devices (`ot-sed-*`), interfacing with I2C or SPI sensors (`ot-sed-sensorif`), interfacing with actuators over UART (`ot-cli-actuator`), interfacing with a host application over USB or UART (see `CASCODA_BM_INTERFACE` CMake configuration variable), interfacing with I2C or SPI sensors (`sensorif-bm`), and interfacing with MikroEletronika sensors (`mikrosdk-bm`).
 
 ### cascoda-bm-driver
 
@@ -19,6 +19,14 @@ Minimal baremetal driver. This contains the minimal functionality required to co
 ### cascoda-bm-thread
 
 Port layer for the OpenThread stack. This enables using OpenThread on baremetal platforms with a CA-821x radio. The [OpenThread API](https://openthread.io/reference) itself should be used for controlling the OpenThread stack.
+
+### mikrosdk-click
+
+Set of example drivers for extracting data from connected sensors and controlling actuators. It abstracts away the base I2C/SPI bus protocols to C functions. The drivers in this folder are manufactured by MikroElektronika which provides libraries for their sensors.
+
+### mikrosdk-lib
+
+A mid-level layer between user interface and hardware. It integrates MikroElektronika library with Cascoda libary in HAL layer allowing communication between MikroElektronika devices and Chili2 via I2C/SPI and GPIO.
 
 ### platform
 

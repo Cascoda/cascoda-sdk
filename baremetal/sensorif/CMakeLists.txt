@@ -8,6 +8,7 @@ add_library(sensorif
 	${PROJECT_SOURCE_DIR}/source/sif_ltr303als.c
 	${PROJECT_SOURCE_DIR}/source/sif_il3820.c
 	${PROJECT_SOURCE_DIR}/source/sif_il3820_image.c
+	${PROJECT_SOURCE_DIR}/source/sif_tmp102.c
 	)
 
 target_include_directories(sensorif

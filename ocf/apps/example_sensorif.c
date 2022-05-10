@@ -157,6 +157,8 @@ STATIC const char *g_temperature_RESOURCE_INTERFACE[]   = {"oic.if.s",
                                                          "oic.if.baseline"}; /**< interface if (as an array) */
 int                g_temperature_nr_resource_interfaces = 2;                   /**< amount of resource type entries */
 
+void set_additional_info(void *data);
+
 /**
 * function to set up the device.
 *
@@ -169,13 +171,13 @@ int                g_temperature_nr_resource_interfaces = 2;                   /
 */
 int app_init(void)
 {
-	int ret = oc_init_platform("ocf", NULL, NULL);
+	int ret = oc_init_platform("Cascoda", set_additional_info, NULL);
 	/* the settings determine the appearance of the device on the network
      can be OCF1.3.1 or OCF2.0.0 (or even higher)
      supplied values are for OCF1.3.1 */
 	ret |= oc_add_device("/oic/d",
 	                     "x.com.cascoda.sensorif",
-	                     "sensorif OCF Server",
+	                     "Cascoda sensorif OCF Server",
 	                     "ocf.2.0.5",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
@@ -461,7 +463,8 @@ STATIC void get_temperature(oc_request_t *request, oc_interface_mask_t interface
 void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/humidity\"\n");
-	oc_resource_t *res_humidity = oc_new_resource(NULL, g_humidity_RESOURCE_ENDPOINT, g_humidity_nr_resource_types, 0);
+	oc_resource_t *res_humidity =
+	    oc_new_resource("Go IoT humidity sensor data", g_humidity_RESOURCE_ENDPOINT, g_humidity_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_humidity_nr_resource_types);
 	for (int a = 0; a < g_humidity_nr_resource_types; a++)
 	{
@@ -489,8 +492,8 @@ void register_resources(void)
 	oc_add_resource(res_humidity);
 
 	PRINT("Register Resource with local path \"/illuminance\"\n");
-	oc_resource_t *res_illuminance =
-	    oc_new_resource(NULL, g_illuminance_RESOURCE_ENDPOINT, g_illuminance_nr_resource_types, 0);
+	oc_resource_t *res_illuminance = oc_new_resource(
+	    "Go IoT illuminance sensor data", g_illuminance_RESOURCE_ENDPOINT, g_illuminance_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_illuminance_nr_resource_types);
 	for (int a = 0; a < g_illuminance_nr_resource_types; a++)
 	{
@@ -518,8 +521,8 @@ void register_resources(void)
 	oc_add_resource(res_illuminance);
 
 	PRINT("Register Resource with local path \"/temperature\"\n");
-	oc_resource_t *res_temperature =
-	    oc_new_resource(NULL, g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
+	oc_resource_t *res_temperature = oc_new_resource(
+	    "Go IoT temperature sensor data", g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_temperature_nr_resource_types);
 	for (int a = 0; a < g_temperature_nr_resource_types; a++)
 	{
@@ -618,8 +621,8 @@ void initialize_variables(void)
 	    g_temperature_units,
 	    "C"); /* current value of property "units" The unit for the conveyed temperature value, Note that when doing an UPDATE, the unit on the device does NOT change, it only indicates the unit of the conveyed value during the UPDATE operation. */
 
-	/* set the flag for NO oic/con resource. */
-	oc_set_con_res_announced(false);
+	/* set the flag for oic/con resource. */
+	oc_set_con_res_announced(true);
 }
 
 /**

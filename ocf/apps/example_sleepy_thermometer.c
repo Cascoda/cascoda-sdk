@@ -114,10 +114,11 @@ char        g_temperature_units[MAX_PAYLOAD_STRING]      = "C";
 STATIC char        g_temperature_RESOURCE_ENDPOINT[]    = "/temperature";        /**< used path for this resource */
 STATIC const char *g_temperature_RESOURCE_TYPE[]        = {"oic.r.temperature"}; /**< rt value (as an array) */
 int                g_temperature_nr_resource_types      = 1;                     /**< amount of resource type entries */
-STATIC const char *g_temperature_RESOURCE_INTERFACE[]   = {"oic.if.a",
-                                                         "oic.if.baseline",
-                                                         "oic.if.s"}; /**< interface if (as an array) */
-int                g_temperature_nr_resource_interfaces = 2;            /**< amount of resource interface entries */
+STATIC const char *g_temperature_RESOURCE_INTERFACE[]   = {"oic.if.s",
+                                                         "oic.if.baseline"}; /**< interface if (as an array) */
+int                g_temperature_nr_resource_interfaces = 2; /**< amount of resource interface entries */
+
+void set_additional_info(void *data);
 
 /**
 * function to set up the device.
@@ -131,13 +132,13 @@ int                g_temperature_nr_resource_interfaces = 2;            /**< amo
 */
 int app_init(void)
 {
-	int ret = oc_init_platform("ocf", NULL, NULL);
+	int ret = oc_init_platform("Cascoda", set_additional_info, NULL);
 	/* the settings determine the appearance of the device on the network
      can be OCF1.3.1 or OCF2.0.0 (or even higher)
      supplied values are for OCF1.3.1 */
 	ret |= oc_add_device("/oic/d",
 	                     "oic.d.sensor",
-	                     "cascoda_thermometer",
+	                     "Cascoda Thermometer",
 	                     "ocf.2.0.5",                   /* icv value */
 	                     "ocf.res.1.3.0, ocf.sh.1.3.0", /* dmv value */
 	                     NULL,
@@ -293,8 +294,8 @@ STATIC void get_temperature(oc_request_t *request, oc_interface_mask_t interface
 void register_resources(void)
 {
 	PRINT("Register Resource with local path \"/temperature\"\n");
-	oc_resource_t *res_temperature =
-	    oc_new_resource(NULL, g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
+	oc_resource_t *res_temperature = oc_new_resource(
+	    "M2351 internal thermometer data", g_temperature_RESOURCE_ENDPOINT, g_temperature_nr_resource_types, 0);
 	PRINT("     number of Resource Types: %d\n", g_temperature_nr_resource_types);
 	for (int a = 0; a < g_temperature_nr_resource_types; a++)
 	{
@@ -360,8 +361,8 @@ void initialize_variables(void)
 	    g_temperature_units,
 	    "C"); /* current value of property "units" The unit for the conveyed temperature value, Note that when doing an UPDATE, the unit on the device does NOT change, it only indicates the unit of the conveyed value during the UPDATE operation. */
 
-	/* set the flag for NO oic/con resource. */
-	oc_set_con_res_announced(false);
+	/* set the flag for oic/con resource. */
+	oc_set_con_res_announced(true);
 }
 /**
  * @}

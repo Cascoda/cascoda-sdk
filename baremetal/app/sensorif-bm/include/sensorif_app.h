@@ -33,7 +33,7 @@
 #define SENSORIF_APP_H
 
 /* measurement period in [ms] */
-#define SENSORIF_MEASUREMENT_PERIOD 5000
+#define SENSORIF_MEASUREMENT_PERIOD 10000
 /* delta in [ms] around measurement time */
 /* needs to be increased of more devices are tested */
 #define SENSORIF_MEASUREMENT_DELTA 100
@@ -44,7 +44,11 @@
 /* flag which sensors to include in test */
 #define SENSORIF_TEST_SI7021 0
 #define SENSORIF_TEST_MAX30205 0
-#define SENSORIF_TEST_LTR303ALS 1
+#define SENSORIF_TEST_LTR303ALS 0
+#define SENSORIF_TEST_TMP102 0
+
+/* Decimal mask for temperature sensor */
+#define DECIMAL_MASK_FOUR_BITS 0x0F
 
 /* functions */
 
@@ -64,5 +68,6 @@ void SENSORIF_Handler(struct ca821x_dev *pDeviceRef);
 void SENSORIF_Handler_SI7021(void);
 void SENSORIF_Handler_MAX30205(void);
 void SENSORIF_Handler_LTR303ALS(void);
+void SENSORIF_Handler_TMP102(void);
 
 #endif // SENSORIF_APP_H

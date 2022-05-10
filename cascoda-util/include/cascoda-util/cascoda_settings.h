@@ -82,7 +82,7 @@ struct settingBuffer
  * aApplicationName Used to distinguish between applications. Unused on
  * baremetal.
  * @param[in] aNodeId Used to distinguish between different nodes on
- * the same host. Unused on baremetal.
+ * the same host. Must be smaller than or equal to 9999. Unused on baremetal.
  */
 void caUtilSettingsInit(struct ca821x_dev *aInstance, const char *aApplicationName, uint32_t aNodeId);
 
@@ -209,7 +209,8 @@ ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int a
  *
  *  @param[in] aInstance  The Cascoda instance structure.
  * @param[in] aApplicationName Application of the storage file, used to distinguish between storage applications. Unused on baremetal.
- * @param[in] aNodeId Used to distinguish between different nodes on the same host. Unused on baremetal.
+ * @param[in] aNodeId Used to distinguish between different nodes on the same host. 
+ * Must be smaller than or equal to 9999. Unused on baremetal.
  */
 void caUtilSettingsWipe(struct ca821x_dev *aInstance, const char *aApplicationName, uint32_t aNodeId);
 

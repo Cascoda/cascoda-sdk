@@ -51,6 +51,7 @@ if(NOT iotivitylite_POPULATED)
     FetchContent_Populate(iotivitylite)
 endif()
 
+
 # Iotivity Patched mbedTLS
 
 # Do not build anything except for the library
