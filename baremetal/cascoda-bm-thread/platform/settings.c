@@ -75,26 +75,26 @@ static otError convertError(ca_error error)
 // settings API
 void otPlatSettingsInit(otInstance *aInstance)
 {
-	// TODO only works on baremetal?
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	caUtilSettingsInit(pDevice, "otConfig", 1);
 }
 
 otError otPlatSettingsBeginChange(otInstance *aInstance)
 {
-	(void)aInstance;
+	OT_UNUSED_VARIABLE(aInstance);
 	return OT_ERROR_NONE;
 }
 
 otError otPlatSettingsCommitChange(otInstance *aInstance)
 {
-	(void)aInstance;
+	OT_UNUSED_VARIABLE(aInstance);
 	return OT_ERROR_NONE;
 }
 
 otError otPlatSettingsAbandonChange(otInstance *aInstance)
 {
-	(void)aInstance;
+	OT_UNUSED_VARIABLE(aInstance);
 	return OT_ERROR_NONE;
 }
 
@@ -105,6 +105,7 @@ void otPlatSettingsDeinit(otInstance *aInstance)
 
 otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsGet(pDevice, aKey, aIndex, aValue, aValueLength);
 	return convertError(err);
@@ -119,6 +120,7 @@ otError otPlatSettingsGetAddress(uint16_t aKey, int aIndex, void **aValue, uint1
 
 otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsSet(pDevice, aKey, aValue, aValueLength);
 	return convertError(err);
@@ -126,6 +128,7 @@ otError otPlatSettingsSet(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 
 otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *aValue, uint16_t aValueLength)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsAdd(pDevice, aKey, aValue, aValueLength);
 	return convertError(err);
@@ -133,6 +136,7 @@ otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 
 otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct settingBuffer *aVector, size_t aCount)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsAddVector(pDevice, aKey, aVector, aCount);
 	return convertError(err);
@@ -140,6 +144,7 @@ otError otPlatSettingsAddVector(otInstance *aInstance, uint16_t aKey, struct set
 
 otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	ca_error           err     = caUtilSettingsDelete(pDevice, aKey, aIndex);
 	return convertError(err);

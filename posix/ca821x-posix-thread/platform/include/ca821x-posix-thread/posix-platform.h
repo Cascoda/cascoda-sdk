@@ -67,6 +67,13 @@ extern uint32_t WELLKNOWN_NODE_ID;
 int posixPlatformInit(void);
 
 /**
+ * @brief Get the radio device currently in use by Openthread
+ * 
+ * @return struct ca821x_dev* Pointer to the device
+ */
+struct ca821x_dev *PlatformGetDeviceRef();
+
+/**
  * This method stores the original arguments given to the program
  *
  */

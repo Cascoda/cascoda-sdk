@@ -648,6 +648,11 @@ int PlatformRadioInit(void)
 	return 0;
 }
 
+struct ca821x_dev *PlatformGetDeviceRef()
+{
+	return pDeviceRef;
+}
+
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
 	return sNoiseFloor;
