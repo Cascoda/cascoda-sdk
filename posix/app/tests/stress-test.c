@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
 		pthread_mutex_init(&(cur->confirm_mutex), NULL);
 		pthread_cond_init(&(cur->confirm_cond), NULL);
 
-		while (ca821x_util_init(pDeviceRef, &driverErrorCallback))
+		while (ca821x_util_init(pDeviceRef, &driverErrorCallback, NULL))
 		{
 			sleep(1); //Wait while there isn't a device available to connect
 		}

@@ -378,7 +378,7 @@ static void displayEvbme(struct ca821x_dev *pDeviceRef)
 static void initialise_ca821x(struct ca821x_dev *pDeviceRef)
 {
 	printf("Initialising.");
-	while (ca821x_util_init(pDeviceRef, NULL))
+	while (ca821x_util_init(pDeviceRef, NULL, NULL))
 	{
 		sleep(1); //Wait while there isn't a device available to connect
 		printf(".");

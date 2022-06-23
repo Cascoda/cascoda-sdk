@@ -39,5 +39,5 @@ install(
 	COMPONENT
 		tests
 	RUNTIME DESTINATION
-		${CMAKE_INSTALL_BINDIR}
+		bin
 )

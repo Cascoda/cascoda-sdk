@@ -55,10 +55,15 @@ enum usb_exchange_errors
  *
  * If path is specified, then the exchange will attempt to open that device, and fail if it cannot.
  * The path of a device can be obtained with usb_exchange_enumerate.
+ * 
+ * If serial_num is specified, then the exchange will run an additional check when iterating through
+ * all devices, looking for one with matching serial number; Otherwise it will carry out the normal
+ * iteration and try to open the first available device.
  *
  * @param[in]  callback    Function pointer to an error-handling callback (can be NULL)
  * @param[in]  path        String representing an exchange & system specific path to a device (can be NULL)
  * @param[in]  pDeviceRef  Pointer to initialised ca821x_device_ref struct
+ * @param[in]  serial_num  Serial number of the target device (can be NULL)
  *
  * @retval CA_ERROR_SUCCESS  success
  * @retval CA_ERROR_NOT_FOUND No available devices found (or device at path not found)
@@ -66,7 +71,10 @@ enum usb_exchange_errors
  * @retval CA_ERROR_ALREADY The pDeviceRef is already initialised
  *
  */
-ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef);
+ca_error usb_exchange_init(ca821x_errorhandler callback,
+                           const char *        path,
+                           struct ca821x_dev * pDeviceRef,
+                           char *              serial_num);
 
 /**
  * Deinitialise the usb exchange, so that it can be reinitialised by another

@@ -646,7 +646,10 @@ static ca_error unlock_device(struct ca821x_dev *pDeviceRef)
 }
 #endif
 
-ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef)
+ca_error usb_exchange_init(ca821x_errorhandler callback,
+                           const char *        path,
+                           struct ca821x_dev * pDeviceRef,
+                           char *              serial_num)
 {
 	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
 	hid_device *              dev        = NULL;
@@ -695,6 +698,17 @@ ca_error usb_exchange_init(ca821x_errorhandler callback, const char *path, struc
 		{
 			hid_cur = get_next_hid(hid_cur->next);
 			continue;
+		}
+		if (serial_num != NULL)
+		{
+			char hidSerialNum[16];
+			sprintf(hidSerialNum, "%ws", hid_cur->serial_number);
+			ca_log_debg("Looking for serial number %s, current device is %s", serial_num, hidSerialNum);
+			if (strcmp(serial_num, hidSerialNum) != 0)
+			{
+				hid_cur = get_next_hid(hid_cur->next);
+				continue;
+			}
 		}
 		path_found = true;
 		ca_log_debg("Attempting to claim usb device %s", hid_cur->path);

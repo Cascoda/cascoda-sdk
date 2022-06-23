@@ -181,10 +181,16 @@ static void process_input(struct ca821x_dev *pDeviceRef)
 	}
 }
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
+	char *serial_num = NULL;
+	if (argc > 1)
+	{
+		serial_num = argv[1];
+	}
+
 	struct ca821x_dev *pDeviceRef = &sDeviceRef;
-	while (ca821x_util_init(pDeviceRef, NULL))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
 	{
 		return -1;
 		sleep(1);

@@ -708,7 +708,10 @@ void Flasher::configure_max_binsize()
 		}
 	}
 
-	mCombinedFileSize = mAppStartAddr + mAppFileSize;
+	if (mOtaBootFilePresent)
+		mCombinedFileSize = mAppStartAddr + mAppFileSize;
+	else
+		mCombinedFileSize = mAppFileSize;
 }
 
 ca_error Flasher::dfu_callback(EVBME_Message *params)

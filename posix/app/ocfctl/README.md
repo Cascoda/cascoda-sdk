@@ -4,7 +4,15 @@
 
 ## Basic Usage
 
-Flash a Chili2D with an `ocf-light` binary that has been configured with the USB interface. Then, connect the Chili to a computer via USB and run `ocfctl` on the host computer. On first launch, `ocfctl` will display information about the connected device:
+Flash a Chili2D with an `ocf-light` binary that has been configured with the USB interface. Then, connect the Chili to a computer via USB and run `ocfctl` on the host computer. 
+
+An optional command line argument to specify the serial number of the target device is supported, e.g.:
+
+```
+./ocfctl 0123456789ABCDEF
+```
+
+On first launch, `ocfctl` will display information about the connected device:
 
 ```
 Rx: 1ms NOTE: EVBME connected, ocf-light, v0.17-11-geea8d7d5-dirty Apr 29 2021

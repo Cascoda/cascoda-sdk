@@ -17,5 +17,5 @@ install(
 	COMPONENT
 		tools
 	RUNTIME DESTINATION
-		${CMAKE_INSTALL_BINDIR}
+		bin
 )

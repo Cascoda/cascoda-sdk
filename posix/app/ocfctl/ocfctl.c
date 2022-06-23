@@ -75,12 +75,18 @@ static void handle_user_commands()
 	}
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+	char *serial_num = NULL;
+	if (argc > 1)
+	{
+		serial_num = argv[1];
+	}
+
 	// Connect to the Chili
 	pDeviceRef = &sDeviceRef;
 
-	while (ca821x_util_init(pDeviceRef, NULL))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
 	{
 		return -1;
 	}

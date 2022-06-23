@@ -77,6 +77,8 @@ DESCRIPTION
 
         -W [PATH]      Open WireShark at the path to process the packet capture.
                        Implies -w.
+
+        -s [SerialNo]  (Optional) Specify the serial number of the target device.
 ```
 
 For instance the ``-w`` argument can be used to automatically boot wireshark and connect. On unix platforms the usage is more flexible and can use command line pipes such as:

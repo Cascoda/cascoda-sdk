@@ -663,6 +663,8 @@ int main(int argc, char *argv[])
 	char *             pipeName      = NULL;
 	char *             wiresharkPath = NULL;
 
+	char *serial_num = NULL;
+
 	configure_io();
 	snprintf(default_pipe, sizeof(default_pipe), DEFAULT_PIPE "%x", getpid());
 
@@ -714,6 +716,10 @@ int main(int argc, char *argv[])
 		{
 			channel = temp;
 		}
+		else if (strcmp(argv[i], "-s") == 0)
+		{
+			serial_num = argv[++i];
+		}
 		else
 		{
 			fprintf(stderr, "Invalid argument \"%s\"\n", argv[i]);
@@ -751,7 +757,7 @@ int main(int argc, char *argv[])
 	}
 
 	fprintf(stderr, "Initialising ca821x_api.\n");
-	while (ca821x_util_init(pDeviceRef, NULL))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
 	{
 		sleep(1); //Wait while there isn't a device available to connect
 		fprintf(stderr, ".");
