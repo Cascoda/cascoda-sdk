@@ -10,6 +10,8 @@ if(${CASCODA_CA_VER} EQUAL 8210)
 	set(CASCODA_DEVICE_TABLE_SIZE 10)
 elseif(${CASCODA_CA_VER} EQUAL 8211)
 	set(CASCODA_DEVICE_TABLE_SIZE 32)
+elseif(${CASCODA_CA_VER} EQUAL 8212)
+	set(CASCODA_DEVICE_TABLE_SIZE 32)
 else()
 	MESSAGE( ERROR "CA-${CASCODA_CA_VER} is not supported with this version of cascoda SDK")
 endif()
@@ -30,7 +32,7 @@ include(FetchContent)
 if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG 8b4518581e4fd4d3daebd03ac264ebe8eee1bfe3)
+	set(OT_TAG 2432fb08e5e2219bc7f816334ef91817a8181140)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
@@ -143,13 +145,6 @@ target_compile_definitions(openthread-plat-api
 	INTERFACE
 		${OT_PLATFORM_DEFINES}
 )
-
-if(${OT_BUILTIN_MBEDTLS})
-	target_compile_definitions(mbedcrypto
-		PUBLIC
-			MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\"
-	)
-endif()
 
 # utils ----------------------------------------------------------
 add_subdirectory(ca-ot-util)

@@ -9,12 +9,17 @@ else()
 endif()
 
 add_library(cascoda-bm-core
-	${PROJECT_SOURCE_DIR}/source/cascoda_dispatch.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_log.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_spi.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_time.c
 	${PROJECT_SOURCE_DIR}/source/cascoda_wait.c
 )
+
+if(CASCODA_CA_VER EQUAL 8212)
+	target_sources(cascoda-bm-core PRIVATE ${PROJECT_SOURCE_DIR}/source/cascoda_dispatch_8212.c)
+else()
+	target_sources(cascoda-bm-core PRIVATE ${PROJECT_SOURCE_DIR}/source/cascoda_dispatch.c)
+endif()
 
 target_link_libraries(cascoda-bm-core 
 	PUBLIC

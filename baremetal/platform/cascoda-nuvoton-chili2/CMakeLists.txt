@@ -13,16 +13,17 @@ endif()
 
 # Set configuration variables -------------------------------------------------
 cascoda_dropdown(CASCODA_CHILI2_REV
-	"The revision of the chili 2 hardware being used 2.x (2.0 is chili, use -1 or -2 for numaker devboard)"
-	0 -1 -2
+	"The revision of the Chili 2 hardware being used (use 0 for Chili 2D/2S, use 1 for Chili devboard and use -1 or -2 for NuMaker devboard)"
+	0 1 -1 -2
 	)
 
 # Single or double sided config
 cascoda_dropdown(CASCODA_CHILI2_CONFIG_STRING
 	"The hardware configuration of the Chili 2"
-	TWO_SIDED ONE_SIDED
+	TWO_SIDED ONE_SIDED DEV_BOARD
 	)
 cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
+	DEV_BOARD -1
 	ONE_SIDED 0
 	TWO_SIDED 1
 	)
@@ -35,6 +36,11 @@ set(CASCODA_CHILI2_TRUSTZONE OFF CACHE BOOL "Enable the Chili2 armv8-m CSME buil
 
 # Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
+
+# Disable onboard CA-821x if we're using an external one - reconfigure nreset to PB5 (pin 31)
+set(CASCODA_CHILI_DISABLE_CA821x OFF CACHE BOOL "Disable the onboard CA-821x, and use pin 31 (PB5) as external reset instead.")
+mark_as_advanced(CASCODA_CHILI_DISABLE_CA821x)
+
 cascoda_mark_important("CASCODA_CHILI_FLASH_PAGES")
 
 
@@ -69,7 +75,7 @@ if(CASCODA_CHILI2_DEFAULT_FSYS STREQUAL "FSYS_4MHZ")
 endif()
 
 # Mark the device as being FTD-capable
-set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
+set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "" FORCE)
 
 # Set the message buffers pretty high as we have plenty of RAM on chili2
 set(CASCODA_OPENTHREAD_MESSAGE_BUFS 85 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")

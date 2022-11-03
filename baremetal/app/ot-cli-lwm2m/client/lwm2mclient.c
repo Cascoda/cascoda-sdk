@@ -66,6 +66,7 @@
 #include "ca-ot-util/cascoda_dns.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_serial.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_rand.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "openthread/cli.h"
@@ -1094,6 +1095,9 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 		PlatformUartReceive(buf + 2, buf[1]);
 		ret = 1;
 	}
+
+	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
+
 	return ret;
 }
 

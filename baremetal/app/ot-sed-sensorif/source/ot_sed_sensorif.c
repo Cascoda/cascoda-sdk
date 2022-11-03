@@ -15,6 +15,7 @@
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
@@ -123,7 +124,7 @@ static void SED_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 	BSP_ModuleSetGPIOPin(ledPin, LED_ON);
 
 	EVBME_SwitchClock(pDeviceRef, 1);
-
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	SENSORIF_I2C_Init();
 	SIF_LTR303ALS_Initialise();
 	SENSORIF_I2C_Deinit();
@@ -364,6 +365,7 @@ int main(void)
 	struct ca821x_dev dev;
 
 	ca821x_api_init(&dev);
+	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);

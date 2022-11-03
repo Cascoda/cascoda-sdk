@@ -41,7 +41,8 @@
 
 // ---------------------------------------------- PRIVATE VARIABLES
 
-static thermo_t thermo; // Click object
+static thermo_t     thermo; // Click object
+static thermo_cfg_t cfg;
 
 // ---------------------------------------------- PRIVATE FUNCTION DECLARATIONS
 
@@ -138,7 +139,7 @@ uint16_t thermo_get_junction_temperature(void)
 
 uint8_t thermo_check_fault(thermo_t *ctx)
 {
-	uint32_t tmp;
+	uint32_t tmp = 1;
 
 	tmp = thermo_read_data(ctx);
 
@@ -183,13 +184,17 @@ uint8_t thermo_check_connections(void)
 	return tmp;
 }
 
+void thermo_cs_config()
+{
+	cfg.cs = SENSORIF_SPI_Chip_Select();
+	printf("Chip select : %d\n", cfg.cs);
+}
+
 uint8_t MIKROSDK_THERMO_Initialise(void)
 {
-	thermo_cfg_t cfg;
-	thermo_cfg_setup(&cfg);
-	THERMO_MAP_MIKROBUS(cfg);
+	SENSORIF_SPI_Init();
+	thermo_cs_config();
 	thermo_init(&thermo, &cfg);
-
 	if (thermo_check_fault(&thermo))
 	{
 		ca_log_warn("Unable to initialise THERMO click");
@@ -198,7 +203,7 @@ uint8_t MIKROSDK_THERMO_Initialise(void)
 	{
 		printf("Status OK\n");
 	}
-	spi_master_close(&thermo.spi);
+	SENSORIF_SPI_Deinit();
 }
 
 // ----------------------------------------------- PRIVATE FUNCTION DEFINITIONS

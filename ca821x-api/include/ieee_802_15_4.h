@@ -49,23 +49,32 @@ extern "C" {
 
 enum mac_constants
 {
-	aMaxPHYPacketSize       = 127,
-	aMaxMACSafePayloadSize  = 102,
-	aTurnaroundTime         = 12,
-	aSymbolPeriod_us        = 16,
-	aNumSuperframeSlots     = 16,
+	aMaxPHYPacketSize      = 127,
+	aMaxMACSafePayloadSize = 102,
+	aMaxMACPayloadSize     = aMaxPHYPacketSize - 9,
+	aTurnaroundTime        = 12,
+	aSymbolPeriod_us       = 16,
+	aNumSuperframeSlots    = 16,
+
 	aBaseSlotDuration       = 60,
 	aBaseSuperframeDuration = aBaseSlotDuration * aNumSuperframeSlots,
 	aMaxBeaconOverhead      = 75,
 	aMaxBeaconPayloadLength = aMaxPHYPacketSize - aMaxBeaconOverhead,
 	aUnitBackoffPeriod      = 20,
-	MAX_ATTRIBUTE_SIZE      = 122,
-	MAX_DATA_SIZE           = aMaxPHYPacketSize,
-	M_MinimumChannel        = 11,
-	M_MaximumChannel        = 26,
-	M_ValidChannels         = 0x07FFF800,
-	MAX_FRAME_DURATION      = 266,
-	MAC_BROADCAST_ADDRESS   = 0xFFFF
+
+	MAX_ATTRIBUTE_SIZE = 250,
+#if CASCODA_CA_VER >= 8212
+	MAX_DATA_SIZE = 121,
+#else
+	MAX_DATA_SIZE                = 114,
+#endif // CASCODA_CA_VER >= 8212
+
+	M_MinimumChannel = 11,
+	M_MaximumChannel = 26,
+	M_ValidChannels  = 0x07FFF800,
+
+	MAX_FRAME_DURATION    = 266,
+	MAC_BROADCAST_ADDRESS = 0xFFFF
 };
 
 /** MAC Status Codes (see 802.15.4 2006 spec table 78) */
@@ -110,7 +119,11 @@ typedef enum mac_status
 	MAC_READ_ONLY               = 0xFB,
 	MAC_SCAN_IN_PROGRESS        = 0xFC,
 	MAC_SUPERFRAME_OVERLAP      = 0xFD,
-	MAC_SYSTEM_ERROR            = 0xFF
+	MAC_SYSTEM_ERROR            = 0xFF,
+#if CASCODA_CA_VER >= 8212
+	MAC_UNAVAILABLE_DEVICE = 0xDA,
+	MAC_SCHEDULING_FAILURE = 0xFE,
+#endif // CASCODA_CA_VER >= 8212
 } ca_mac_status;
 
 /** MAC Address Mode Definitions */
@@ -125,12 +138,30 @@ enum mac_addr_mode
 /** Enumeration of different MAC TxOptions */
 enum MAC_TXOPT
 {
-	TXOPT_ACKREQ             = 0x01, //!< Request acknowledgement from receiving node
-	TXOPT_GTS                = 0x02, //!< Use guaranteed time slot (Not supported)
-	TXOPT_INDIRECT           = 0x04, //!< Transmit indirectly
-	TXOPT_NS_THREADNONCE     = 0x80, //!< Nonstandard, use Thread-specific nonce for mode2 frames
-	TXOPT_NS_FPEND           = 0x40, //!< Nonstandard, set the frame pending bit on the outgoing frame
-	TXOPT_NS_SECURE_INDIRECT = 0x20, //!< Nonstandard, only send the indirect message in reply to a secure poll
+#if CASCODA_CA_VER >= 8212
+	TXOPT0_ACKREQ             = 0x01, //!< Set the AR bit in the mac header
+	TXOPT0_GTS                = 0x02, //!< Unused, can be removed.
+	TXOPT0_INDIRECT           = 0x04, //!< Send the frame indirectly
+	TXOPT0_SCH                = 0x08, //!< Send a scheduled transmission at a specific timestamp
+	TXOPT0_SPECIFIC_CHANNEL   = 0x10, //!< Transmit the frame on a specific channel
+	TXOPT0_NS_SECURE_INDIRECT = 0x20, //!< Only allow this indirect frame to be extracted by a secured data poll
+	TXOPT0_NS_FPEND           = 0x40, //!< Set the "Frame Pending" bit in the mac header
+	TXOPT0_NS_THREADNONCE     = 0x80, //!< Use the Thread Key ID Mode 2 nonce for security (not secure)
+
+	// Tx options for v2015 only:
+	TXOPT1_2015_FRAME = 0x01, //!< Send a version 2015 frame
+	TXOPT1_SN_SUPP    = 0x02, //!< Suppress the sequence number in the frame
+	TXOPT1_PANID_SUPP = 0x04, //!< Suppress the PAN ID in the frame
+	TXOPT1_SENDMPF    = 0x08, //!< Unused, can be removed
+	TXOPT1_CSLIE      = 0x10, //!< Include a real-time updated CSL IE in the frame
+#else
+	TXOPT_ACKREQ                 = 0x01, //!< Request acknowledgement from receiving node
+	TXOPT_GTS                    = 0x02, //!< Use guaranteed time slot (Not supported)
+	TXOPT_INDIRECT               = 0x04, //!< Transmit indirectly
+	TXOPT_NS_SECURE_INDIRECT     = 0x20, //!< Nonstandard, only send the indirect message in reply to a secure poll
+	TXOPT_NS_FPEND               = 0x40, //!< Nonstandard, set the frame pending bit on the outgoing frame
+	TXOPT_NS_THREADNONCE         = 0x80, //!< Nonstandard, use Thread-specific nonce for mode2 frames
+#endif // CASCODA_CA_VER >= 8212
 };
 
 /**
@@ -249,14 +280,51 @@ enum pib_attribute
 	macSyncSymbolOffset           = 0x5B,
 	macTimestampSupported         = 0x5C,
 	macSecurityEnabled            = 0x5D,
+#if CASCODA_CA_VER >= 8211
+	macMinLIFSPeriod = 0x5E,
+	macMinSIFSPeriod = 0x5F,
+#endif // CASCODA_CA_VER >= 8211
+
+#if CASCODA_CA_VER >= 8212
+	macTimestamp        = 0x60,
+	macCslPeriod        = 0x61,
+	macCslMargin        = 0x62,
+	macCslNextTimestamp = 0x63,
+#endif // CASCODA_CA_VER >= 8212
 
 	macPibFirst = macAckWaitDuration,
-	macPibLast  = macSecurityEnabled,
+#if CASCODA_CA_VER >= 8212
+	macPibLast = macCslNextTimestamp,
+#elif CASCODA_CA_VER >= 8211
+	macPibLast                   = macMinSIFSPeriod,
+#endif // CASCODA_CA_VER >= 8212
 
-	macKeyTable                  = 0x71,
-	macKeyTableEntries           = 0x72,
-	macDeviceTable               = 0x73,
-	macDeviceTableEntries        = 0x74,
+	macKeyTable           = 0x71,
+	macKeyTableEntries    = 0x72,
+	macDeviceTable        = 0x73,
+	macDeviceTableEntries = 0x74,
+
+#if CASCODA_CA_VER >= 8212
+	macKeyLookupTable                     = 0x75,
+	macKeyLookupTableEntries              = 0x76,
+	macCommandIdSecurityLevelTable        = 0x79,
+	macCommandIdSecurityLevelTableEntries = 0x7a,
+	macIESecurityLevelTable               = 0x7b,
+	macIESecurityLevelTableEntries        = 0x7c,
+	macSecurityLevelExemptionTable        = 0x7d,
+	macSecurityLevelExemptionTableEntries = 0x7e,
+	macFrameCounter                       = 0x7f,
+	macAutoRequestSecurityLevel           = 0x80,
+	macAutoRequestLookupDataIndex         = 0x81,
+	macUseAutoReqForEnhAck                = 0x82,
+	macEnhAckIeSec                        = 0x83,
+	macIndicateSecurityDroppedFrames      = 0x84,
+
+	macSecPibFirst = macKeyTable,
+	macSecPibLast  = macIndicateSecurityDroppedFrames,
+
+	macExtendedAddress = 0xFF /* Non-standard IEEE address */
+#else
 	macSecurityLevelTable        = 0x75,
 	macSecurityLevelTableEntries = 0x76,
 	macFrameCounter              = 0x77,
@@ -272,6 +340,7 @@ enum pib_attribute
 	macSecPibLast  = macPANCoordShortAddress,
 
 	nsIEEEAddress = 0xFF /* Non-standard IEEE address */
+#endif // CASCODA_CA_VER >= 8212
 };
 
 #ifdef __cplusplus

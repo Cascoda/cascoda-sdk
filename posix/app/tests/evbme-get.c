@@ -123,7 +123,7 @@ static void initialise_ca821x(struct ca821x_dev *pDeviceRef)
 	}
 	//Register callbacks for async messages
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	printf("\r\nInitialised.\r\n\n");
 }

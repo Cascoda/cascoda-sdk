@@ -13,7 +13,11 @@ target_include_directories(sensorif-test
 		${PROJECT_SOURCE_DIR}/include
 	)
 
-target_link_libraries(sensorif-test sensorif test15-4 cascoda-bm)
+target_link_libraries(sensorif-test 
+	cascoda-bm
+	sensorif 
+	test15-4-api 
+)
 
 
 # convert to bin file format

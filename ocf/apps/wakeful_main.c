@@ -164,9 +164,6 @@ int main(void)
 
 	otIp6SetEnabled(OT_INSTANCE, true);
 
-	if (otDatasetIsCommissioned(OT_INSTANCE))
-		otThreadSetEnabled(OT_INSTANCE, true);
-
 	oc_assert(OT_INSTANCE);
 
 	// Print the joiner credentials, delaying for up to 5 seconds

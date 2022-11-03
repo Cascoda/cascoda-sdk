@@ -8,6 +8,7 @@ add_executable(ocf-cli-thermometer
 target_link_libraries(ocf-cli-thermometer
     openthread-cli-ftd
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
 )
 
@@ -24,6 +25,7 @@ add_executable(ocf-sleepy-thermometer
 
 target_link_libraries(ocf-sleepy-thermometer
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
 )
 
@@ -41,6 +43,7 @@ add_executable(ocf-wakeful-thermometer
 
 target_link_libraries(ocf-wakeful-thermometer
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
 )
 
@@ -60,6 +63,7 @@ add_executable(ocf-sensorif
 
 target_link_libraries(ocf-sensorif
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
     sensorif
 )
@@ -78,6 +82,7 @@ add_executable(ocf-sensorif-unsecure
 
 target_link_libraries(ocf-sensorif-unsecure
     iotivity-unsecure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
     sensorif
 )
@@ -97,6 +102,7 @@ add_executable(ocf-light
 
 target_link_libraries(ocf-light
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-mtd
 )
 
@@ -115,6 +121,7 @@ add_executable(ocf-reed-light
 
 target_link_libraries(ocf-reed-light
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
 )
 
@@ -133,6 +140,7 @@ add_executable(ocf-reed-module
 
 target_link_libraries(ocf-reed-module
     iotivity-secure-server
+    iotivity-port
     ca821x-openthread-bm-ftd
 )
 

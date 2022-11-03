@@ -663,9 +663,9 @@ __NONSECURE_ENTRY void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t 
 			SYS->GPE_MFPL = (SYS->GPE_MFPL & (~mask)) | data;
 		else if (portnum == PN_F)
 			SYS->GPF_MFPL = (SYS->GPF_MFPL & (~mask)) | data;
-		else if (portnum == PN_F)
+		else if (portnum == PN_G)
 			SYS->GPG_MFPL = (SYS->GPG_MFPL & (~mask)) | data;
-		else if (portnum == PN_F)
+		else if (portnum == PN_H)
 			SYS->GPH_MFPL = (SYS->GPH_MFPL & (~mask)) | data;
 	}
 	else if (portbit < 16)
@@ -684,9 +684,9 @@ __NONSECURE_ENTRY void CHILI_ModuleSetMFP(enPortnum portnum, u8_t portbit, u8_t 
 			SYS->GPE_MFPH = (SYS->GPE_MFPH & (~mask)) | data;
 		else if (portnum == PN_F)
 			SYS->GPF_MFPH = (SYS->GPF_MFPH & (~mask)) | data;
-		else if (portnum == PN_F)
+		else if (portnum == PN_G)
 			SYS->GPG_MFPH = (SYS->GPG_MFPH & (~mask)) | data;
-		else if (portnum == PN_F)
+		else if (portnum == PN_H)
 			SYS->GPH_MFPH = (SYS->GPH_MFPH & (~mask)) | data;
 		/* no PF_H_MFP */
 	}

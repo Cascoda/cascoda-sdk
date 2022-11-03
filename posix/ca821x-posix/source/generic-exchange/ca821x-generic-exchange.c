@@ -48,7 +48,7 @@ enum
 };
 
 /** Is the downstream dispatch thread supposed to be running? */
-static int dd_run_flag = 0;
+static int ud_run_flag = 0;
 
 /** Is the generic dispatch initialised (statics)? */
 static int generic_initialised = 0;
@@ -57,17 +57,17 @@ static int generic_initialised = 0;
 static pthread_mutex_t s_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Queue of buffers to be processed by downstream dispatch */
-static struct buffer_queue downstream_dispatch_queue = {NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+static struct buffer_queue upstream_dispatch_queue = {NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
 
 /** Thread for running the downstream dispatch functions on the dd queue */
-static pthread_t dd_thread;
+static pthread_t ud_thread;
 
 void (*wake_hw_worker)(void);
 
 static void     init_generic_statics(void);
 static ca_error deinit_generic_statics(void);
 
-static int ca821x_run_downstream_dispatch()
+static int ca821x_run_upstream_dispatch()
 {
 	struct ca821x_dev *          pDeviceRef;
 	struct ca821x_exchange_base *priv;
@@ -75,12 +75,12 @@ static int ca821x_run_downstream_dispatch()
 	ca_error                     rval;
 	int                          len;
 
-	len = pop_from_queue(&downstream_dispatch_queue, buffer, MAX_BUF_SIZE, &pDeviceRef);
+	len = pop_from_queue(&upstream_dispatch_queue, buffer, MAX_BUF_SIZE, &pDeviceRef);
 
 	if (len > 0)
 	{
 		priv = pDeviceRef->exchange_context;
-		rval = ca821x_downstream_dispatch((struct MAC_Message *)buffer, pDeviceRef);
+		rval = ca821x_upstream_dispatch((struct MAC_Message *)buffer, pDeviceRef);
 
 		if (rval != CA_ERROR_SUCCESS)
 		{
@@ -101,30 +101,30 @@ ca_error ca821x_util_dispatch_poll()
 	int is_async;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	is_async = dd_run_flag;
+	is_async = ud_run_flag;
 	pthread_mutex_unlock(&s_flag_mutex);
 
 	if (is_async)
 		return CA_ERROR_INVALID_STATE;
 
-	if (ca821x_run_downstream_dispatch())
+	if (ca821x_run_upstream_dispatch())
 		return CA_ERROR_SUCCESS;
 	else
 		return CA_ERROR_NOT_FOUND;
 }
 
-static void *ca821x_downstream_dispatch_worker(void *arg)
+static void *ca821x_upstream_dispatch_worker(void *arg)
 {
 	(void)arg;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	while (dd_run_flag)
+	while (ud_run_flag)
 	{
 		pthread_mutex_unlock(&s_flag_mutex);
 
-		wait_on_queue(&downstream_dispatch_queue, 0);
+		wait_on_queue(&upstream_dispatch_queue, 0);
 
-		ca821x_run_downstream_dispatch();
+		ca821x_run_upstream_dispatch();
 
 		pthread_mutex_lock(&s_flag_mutex);
 	}
@@ -133,47 +133,47 @@ static void *ca821x_downstream_dispatch_worker(void *arg)
 	return 0;
 }
 
-ca_error ca821x_util_start_downstream_dispatch_worker()
+ca_error ca821x_util_start_upstream_dispatch_worker()
 {
 	int rval = 0;
 	int old_runflag;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	old_runflag = dd_run_flag;
+	old_runflag = ud_run_flag;
 	pthread_mutex_unlock(&s_flag_mutex);
 
 	if (old_runflag)
 		return CA_ERROR_ALREADY;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	dd_run_flag = 1;
+	ud_run_flag = 1;
 	pthread_mutex_unlock(&s_flag_mutex);
 
-	rval = pthread_create(&dd_thread, NULL, &ca821x_downstream_dispatch_worker, NULL);
+	rval = pthread_create(&ud_thread, NULL, &ca821x_upstream_dispatch_worker, NULL);
 
 	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 }
 
-ca_error ca821x_util_stop_downstream_dispatch_worker()
+ca_error ca821x_util_stop_upstream_dispatch_worker()
 {
 	int rval = 0;
 	int old_runflag;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	old_runflag = dd_run_flag;
+	old_runflag = ud_run_flag;
 	pthread_mutex_unlock(&s_flag_mutex);
 
 	if (!old_runflag)
 		return CA_ERROR_ALREADY;
 
 	pthread_mutex_lock(&s_flag_mutex);
-	dd_run_flag = 0;
+	ud_run_flag = 0;
 	pthread_mutex_unlock(&s_flag_mutex);
 
 	//Wake the downstream dispatch thread up so that it dies cleanly
-	add_to_queue(&downstream_dispatch_queue, NULL, 0, NULL);
+	add_to_queue(&upstream_dispatch_queue, NULL, 0, NULL);
 
-	rval = pthread_join(dd_thread, NULL);
+	rval = pthread_join(ud_thread, NULL);
 
 	return rval ? CA_ERROR_FAIL : CA_ERROR_SUCCESS;
 }
@@ -250,9 +250,9 @@ static ca_error deinit_generic_statics()
 	if (!(--generic_initialised))
 		goto exit;
 
-	error = ca821x_util_stop_downstream_dispatch_worker();
+	error = ca821x_util_stop_upstream_dispatch_worker();
 
-	flush_queue(&downstream_dispatch_queue);
+	flush_queue(&upstream_dispatch_queue);
 
 exit:
 	return error;
@@ -350,7 +350,7 @@ static inline ca_error ca821x_try_read(struct ca821x_dev *pDeviceRef)
 		else
 		{
 			//Add to queue for dispatching downstream
-			add_to_queue(&downstream_dispatch_queue, buffer, len, pDeviceRef);
+			add_to_queue(&upstream_dispatch_queue, buffer, len, pDeviceRef);
 		}
 		return CA_ERROR_SUCCESS;
 	}

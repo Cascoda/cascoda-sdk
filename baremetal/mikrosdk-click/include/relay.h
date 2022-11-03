@@ -38,22 +38,6 @@
 #include "drv_digital_out.h"
 
 // -------------------------------------------------------------- PUBLIC MACROS
-/**
- * \defgroup macros Macros
- * \{
- */
-
-/**
- * \defgroup module pin mapping
- * \{
- */
-/* module pins are used for pin configuration
-	- relay1 = pin 33, relay2 = pin 34 */
-#define RELAY_MAP_MIKROBUS(cfg) \
-	cfg.rel2 = 34;              \
-	cfg.rel1 = 33;
-
-/** \} */
 
 /**
  * \defgroup error_code Error Code
@@ -164,6 +148,13 @@ void relay_default_cfg(relay_t *ctx);
  * With this function you can control relays.
  */
 void relay_set_state(uint8_t num, uint8_t state);
+
+/**
+ * \defgroup module pin mapping
+ * \{
+ */
+/* module pins are used for pin configuration */
+void relay_pin_mapping(uint8_t r1, uint8_t r2);
 
 /******************************************************************************/
 /***************************************************************************/ /**

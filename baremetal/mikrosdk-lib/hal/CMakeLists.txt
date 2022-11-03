@@ -15,5 +15,5 @@ target_include_directories(mikrosdk-hal
 
 target_link_libraries(mikrosdk-hal
 	PUBLIC
-		sensorif mikrosdk-drv
+		cascoda-bm
 	)

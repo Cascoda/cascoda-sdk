@@ -16,7 +16,7 @@ target_include_directories(eink-test
 		${PROJECT_SOURCE_DIR}/include
 	)
 
-target_link_libraries(eink-test test15-4 cascoda-bm sensorif)
+target_link_libraries(eink-test test15-4-api cascoda-bm sensorif)
 
 # convert to bin file format
 cascoda_make_binary(eink-test)

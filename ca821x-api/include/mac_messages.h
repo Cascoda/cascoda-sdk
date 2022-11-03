@@ -108,7 +108,20 @@ struct PanDescriptor
 };
 
 // MCPS
-
+#if CASCODA_CA_VER >= 8212
+/** MCPS_DATA_request parameter set */
+struct MCPS_DATA_request_pset
+{
+	uint8_t         SrcAddrMode;     /**< Source addressing mode */
+	struct FullAddr Dst;             /**< Destination addressing information */
+	uint8_t         HeaderIELength;  /**< Length of the Header IE List */
+	uint8_t         PayloadIELength; /**< Length of the Payload IE List */
+	uint8_t         MsduLength;      /**< Length of Data */
+	uint8_t         MsduHandle;      /**< Handle of Data */
+	uint8_t         TxOptions[2];    /**< Tx options bit field */
+	uint8_t Data[MAX_DATA_SIZE];     /**< SCH params, tx channel, IEs, MSDU and Security are concatenated into Data */
+};
+#else
 /** MCPS_DATA_request parameter set */
 struct MCPS_DATA_request_pset
 {
@@ -119,9 +132,19 @@ struct MCPS_DATA_request_pset
 	uint8_t         TxOptions;           /**< Tx options bit field */
 	uint8_t         Msdu[MAX_DATA_SIZE]; /**< Data */
 };
+#endif // CASCODA_CA_VER >= 8212
 
 // PCPS
-
+#if CASCODA_CA_VER >= 8212
+/** PCPS_DATA_request parameter set */
+struct PCPS_DATA_request_pset
+{
+	uint8_t PsduHandle; /**< Handle to identify PCPS request */
+	uint8_t TxOpts;     /**< TxOpts for data request (such as indirect sending) */
+	/* 6 bytes (Optional: SCH timestamp and period) + 1 byte PsduLength + aMaxPHYPacketSize bytes Psdu */
+	uint8_t VariableData[7 + aMaxPHYPacketSize];
+};
+#elif CASCODA_CA_VER == 8211
 /** PCPS_DATA_request parameter set */
 struct PCPS_DATA_request_pset
 {
@@ -130,6 +153,7 @@ struct PCPS_DATA_request_pset
 	uint8_t PsduLength;              /**< Length of the PSDU */
 	uint8_t Psdu[aMaxPHYPacketSize]; /**< PSDU data */
 };
+#endif // CASCODA_CA_VER >= 8212
 
 // MLME
 
@@ -194,9 +218,19 @@ struct MLME_POLL_request_pset
 	uint8_t Interval[2]; /* polling interval in 0.1 seconds res */
 	                     /* 0 means poll once */
 	                     /* 0xFFFF means stop polling */
-#endif
+#endif                   // CASCODA_CA_VER == 8210
+#if CASCODA_CA_VER >= 8212
+	uint8_t FrameVersion; /* Determines if the Data request frame to be sent is a 2015 frame (FrameVersion set to 1) */
+#endif                    // CASCODA_CA_VER >= 8212
 	struct SecSpec Security;
 };
+
+#if CASCODA_CA_VER >= 8212
+struct MLME_POLL_confirm_pset
+{
+	uint8_t Status;
+};
+#endif // CASCODA_CA_VER >= 8212
 
 /** MLME_RX_ENABLE_request parameter set */
 struct MLME_RX_ENABLE_request_pset
@@ -224,7 +258,7 @@ struct MLME_SET_request_pset
 	uint8_t PIBAttributeValue[MAX_ATTRIBUTE_SIZE];
 };
 
-/** MLME_GET_confirm parameter set */
+/** MLME_SET_confirm parameter set */
 struct MLME_SET_confirm_pset
 {
 	uint8_t Status;
@@ -324,9 +358,14 @@ struct MCPS_DATA_confirm_pset
 	uint8_t MsduHandle;
 	uint8_t Status;
 	uint8_t TimeStamp[4];
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 	uint8_t FramePending;
-#endif
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	uint8_t FailCount_NoAck;
+	uint8_t FailCount_CsmaCa;
+	uint8_t Channel;
+#endif // CASCODA_CA_VER >= 8212
 };
 
 /** MCPS_PURGE_confirm parameter set */
@@ -345,17 +384,58 @@ struct MCPS_DATA_indication_pset
 {
 	struct FullAddr Src;
 	struct FullAddr Dst;
-	uint8_t         MsduLength;
-	uint8_t         MpduLinkQuality;
-	uint8_t         DSN;
-	uint8_t         TimeStamp[4];
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8212
+	uint8_t HeaderIELength;
+	uint8_t PayloadIELength;
+#endif // CASCODA_CA_VER >= 8212
+	uint8_t MsduLength;
+	uint8_t MpduLinkQuality;
+	uint8_t DSN;
+	uint8_t TimeStamp[4];
+#if CASCODA_CA_VER >= 8211
 	uint8_t FramePending;
-#endif
-	uint8_t Msdu[MAX_DATA_SIZE];
+#endif // CASCODA_CA_VER >= 8212
+#if CASCODA_CA_VER >= 8212
+	uint8_t Data[MAX_DATA_SIZE]; /* IEs and MSDU and Security are concatenated into Data */
+#else
+	uint8_t Msdu[MAX_DATA_SIZE]; /* Security is concatenated here */
+#endif // CASCODA_CA_VER >= 8212
 };
 
-// PCPS - CA8211 only!
+#if CASCODA_CA_VER >= 8212
+/** PCPS_DATA_indication parameter set */
+struct PCPS_DATA_indication_pset
+{
+	uint8_t CS;                      /**< Carrier sense value of received frame*/
+	uint8_t ED;                      /**< Energy detect value of received frame */
+	uint8_t Timestamp[4];            /**< Timestamp the frame was received at */
+	uint8_t PsduLength;              /**< Length of received PSDU */
+	uint8_t Psdu[aMaxPHYPacketSize]; /**< Received PSDU */
+};
+
+/** PCPS_DATA_confirm parameter set */
+struct PCPS_DATA_confirm_pset
+{
+	uint8_t PsduHandle;       /**< PSDU handle identifying the PSDU request */
+	uint8_t Status;           /**< Status of the PSDU Data Request */
+	uint8_t TimeStamp[4];     /**< Timestamp the frame was transmitted at */
+	uint8_t FramePending;     /**< Value of 'Frame Pending' on the ack that was received (if any) */
+	uint8_t FailCount_NoAck;  /**< Number of unsuccessful tx attempts due to no reception of acknowledgements */
+	uint8_t FailCount_CsmaCa; /**< Number of unsuccessful tx attempts due to back-offs from a busy channel */
+};
+
+/** MLME_IE_NOTIFY_indication parameter set */
+struct MLME_IE_NOTIFY_indication_pset
+{
+	struct FullAddr Src;                         /**< Source addressing information */
+	struct FullAddr Dst;                         /**< Destination addressing information */
+	uint8_t         HeaderIELength;              /**< Length of the Header IE List */
+	uint8_t         PayloadIELength;             /**< Length of the Payload IE List */
+	uint8_t         FrameType;                   /**< Received frame type (ACK, COMMAND) */
+	uint8_t         CommandID;                   /**< Command ID if FrameType is a command */
+	uint8_t         VariableData[MAX_DATA_SIZE]; /**< IEs and Security are concatenated here */
+};
+#elif CASCODA_CA_VER == 8211
 /** PCPS_DATA_indication parameter set */
 struct PCPS_DATA_indication_pset
 {
@@ -372,6 +452,7 @@ struct PCPS_DATA_confirm_pset
 	uint8_t Status;       /**< Status of the PSDU Data Request */
 	uint8_t FramePending; /**< Value of 'Frame Pending' on the ack that was received (if any) */
 };
+#endif // CASCODA_CA_VER >= 8212
 
 // MLME
 
@@ -410,7 +491,12 @@ struct MLME_DISASSOCIATE_indication_pset
 struct MLME_BEACON_NOTIFY_indication_pset
 {
 	uint8_t              BSN;
-	struct PanDescriptor PanDescriptor; /**< Variable length, see ca821x_api_helper.h */
+	struct PanDescriptor PanDescriptor; /**< Variable length and so following
+	                                         fields have to be dealt with separately,
+											  see ca821x_api_helper.h */
+	                                    /* u8_t            PendAddrSpec; */
+	                                    /* variable        Address List  */
+	                                    /* variable        Beacon payload */
 };
 
 /** Default size of scan results list */
@@ -460,7 +546,10 @@ struct MLME_POLL_indication_pset
 	struct FullAddr Dst;
 	uint8_t         LQI;
 	uint8_t         DSN;
-	struct SecSpec  Security;
+#if CASCODA_CA_VER >= 8212
+	uint8_t Timestamp[4];
+#endif // CASCODA_CA_VER >= 8212
+	struct SecSpec Security;
 };
 
 // HWME
@@ -578,21 +667,186 @@ struct TDME_LOTLK_confirm_pset
 /******************************************************************************/
 enum SecurityPibSize
 {
+#if CASCODA_CA_VER >= 8212
+	KEY_TABLE_SIZE                       = 6,   /** Maximum value of macKeyTableEntries */
+	LOOKUP_DESC_TABLE_SIZE               = 10,  /** Maximum value of macKeyLookupTableEntries */
+	DEVICE_TABLE_SIZE                    = 150, /** Maximum value of macDeviceTableEntries */
+	SECURITY_LEVEL_TABLE_SIZE            = 10,  /** Maximum value of macSecurityLevelTableEntries */
+	COMMAND_ID_SECURITY_LEVEL_TABLE_SIZE = 10,  /** Maximum value of macCommandIdSecurityLevelTableEntries */
+	IE_SECURITY_LEVEL_TABLE_SIZE         = 10,  /** Maximum value of macIESecurityLevelTableEntries */
+	SECURITY_LEVEL_EXEMPTION_TABLE_SIZE  = 4,   /** Maximum value of macSecurityLevelExemptionTableEntries */
+#elif CASCODA_CA_VER == 8211
 	KEY_TABLE_SIZE            = 4,  /** Maximum value of macKeyTableEntries */
 	LOOKUP_DESC_TABLE_SIZE    = 5,  /** Maximum value of KeyIdLookupListEntries */
+	KEY_DEVICE_TABLE_SIZE     = 32, /** Maximum value of KeyDeviceListEntries */
 	KEY_USAGE_TABLE_SIZE      = 12, /** Maximum value of KeyUsageListEntries */
 	SECURITY_LEVEL_TABLE_SIZE = 2,  /** Maximum value of macSecurityLevelTableEntries */
-#if (CASCODA_CA_VER == 8210)
-	KEY_DEVICE_TABLE_SIZE = 10, /** Maximum value of KeyDeviceListEntries */
-	DEVICE_TABLE_SIZE     = 10, /** Maximum value of macDeviceTableEntries */
-#elif (CASCODA_CA_VER == 8211)
-	KEY_DEVICE_TABLE_SIZE = 32, /** Maximum value of KeyDeviceListEntries */
-	DEVICE_TABLE_SIZE     = 32, /** Maximum value of macDeviceTableEntries */
+	DEVICE_TABLE_SIZE         = 32, /** Maximum value of macDeviceTableEntries */
+#elif CASCODA_CA_VER == 8210
+	KEY_TABLE_SIZE            = 4,  /** Maximum value of macKeyTableEntries */
+	LOOKUP_DESC_TABLE_SIZE    = 5,  /** Maximum value of KeyIdLookupListEntries */
+	KEY_DEVICE_TABLE_SIZE     = 10, /** Maximum value of KeyDeviceListEntries */
+	KEY_USAGE_TABLE_SIZE      = 12, /** Maximum value of KeyUsageListEntries */
+	SECURITY_LEVEL_TABLE_SIZE = 2,  /** Maximum value of macSecurityLevelTableEntries */
+	DEVICE_TABLE_SIZE         = 10, /** Maximum value of macDeviceTableEntries */
 #else
 #error "Security table sizes undefined"
-#endif
+#endif // CASCODA_CA_VER >= 8212
 };
 
+/*******************************************************************************
+ * Structures used by security PIB attributes
+ ******************************************************************************/
+
+#if CASCODA_CA_VER >= 8212
+struct DeviceTable
+{
+	uint8_t NumEntries;
+	struct DeviceTableShortPan
+	{
+		uint8_t ShortAddr[2];
+		uint8_t PANId[2];
+	} ShortPan[DEVICE_TABLE_SIZE];
+	struct DeviceTableExtAddr
+	{
+		uint8_t ExtAddr[8];
+	} ExtAddr[DEVICE_TABLE_SIZE];
+	struct
+	{
+		uint8_t FrameCounter[4];
+		uint8_t EnhAckFCOffset;
+		uint8_t KeyMask : 7;
+		uint8_t ThreadKeyIndexEnabled : 1;
+	} Entry[DEVICE_TABLE_SIZE];
+};
+
+struct KeyTable
+{
+	uint8_t NumEntries;
+	struct
+	{
+		uint8_t Key[16];
+		uint8_t ThreadKeyIDMode2 : 1;
+	} Entry[KEY_TABLE_SIZE];
+};
+
+struct KeyLookupTable
+{
+	uint8_t NumEntries;
+	struct LookupTableData
+	{
+		uint8_t KeyIdMode;
+		uint8_t LookupData[9];
+	} LookupData[LOOKUP_DESC_TABLE_SIZE];
+	struct
+	{
+		uint8_t KeyTableIndex;
+	} Entry[LOOKUP_DESC_TABLE_SIZE];
+};
+
+struct SecurityLevelTable
+{
+	uint8_t NumEntries;
+	struct
+	{
+		uint8_t FrameTypeMask;
+		uint8_t SecLevelMask;
+		uint8_t KeyMask;
+	} Entry[SECURITY_LEVEL_TABLE_SIZE];
+};
+
+struct CommandIdSecurityLevelTable
+{
+	uint8_t NumEntries;
+	uint8_t CommandId[COMMAND_ID_SECURITY_LEVEL_TABLE_SIZE];
+	struct
+	{
+		uint8_t SecLevelMask;
+		uint8_t KeyMask;
+	} Entry[COMMAND_ID_SECURITY_LEVEL_TABLE_SIZE];
+};
+
+struct IESecurityLevelTable
+{
+	uint8_t NumEntries;
+	uint8_t IEId[IE_SECURITY_LEVEL_TABLE_SIZE];
+	struct
+	{
+		uint8_t FrameTypeMask;
+		uint8_t SecLevelMask;
+		uint8_t KeyMask;
+	} Entry[IE_SECURITY_LEVEL_TABLE_SIZE];
+};
+
+struct SecurityLevelExemptionTable
+{
+	uint8_t NumEntries;
+	struct
+	{
+		uint8_t FrameTypeMask;
+		uint8_t CommandIdMask;
+		uint8_t SecLevelMask;
+		uint8_t KeyMask;
+		uint8_t DeviceTableIndex;
+	} Entry[SECURITY_LEVEL_EXEMPTION_TABLE_SIZE];
+};
+
+// MLME Get/Set representations of security table entries
+struct DeviceTablePib
+{
+	uint8_t ShortAddr[2];
+	uint8_t PANId[2];
+	uint8_t ExtAddr[8];
+	uint8_t FrameCounter[4];
+	uint8_t EnhAckFCOffset;
+	uint8_t KeyMask;
+	uint8_t ThreadKeyIndexEnabled;
+};
+
+struct KeyTablePib
+{
+	uint8_t Key[16];
+	uint8_t ThreadKeyIDMode2;
+};
+
+struct KeyLookupTablePib
+{
+	uint8_t KeyIdMode;
+	uint8_t LookupData[9];
+	uint8_t KeyTableIndex;
+};
+
+struct SecurityLevelTablePib
+{
+	uint8_t FrameTypeMask;
+	uint8_t SecLevelMask;
+	uint8_t KeyMask;
+};
+
+struct CommandIdSecurityLevelTablePib
+{
+	uint8_t CommandId;
+	uint8_t SecLevelMask;
+	uint8_t KeyMask;
+};
+
+struct IESecurityLevelTablePib
+{
+	uint8_t IEId;
+	uint8_t FrameTypeMask;
+	uint8_t SecLevelMask;
+	uint8_t KeyMask;
+};
+
+struct SecurityLevelExemptionTablePib
+{
+	uint8_t FrameTypeMask;
+	uint8_t CommandIdMask;
+	uint8_t SecLevelMask;
+	uint8_t KeyMask;
+	uint8_t DeviceTableIndex;
+};
+#else
 struct M_KeyIdLookupDesc
 {
 	uint8_t LookupData[9];
@@ -631,8 +885,8 @@ enum kdd_mask
 	KDD_BlacklistedMask      = 0x80, /** Key Device Descriptor is blacklisted mask */
 	KDD_UniqueDeviceMask     = 0x40, /** Key Device Descriptor is unique device mask */
 #if CASCODA_CA_VER == 8211
-	KDD_NewMask = 0x20, /** Key Device Descriptor nonstandard 'is new' key-device pair */
-#endif
+	KDD_NewMask              = 0x20, /** Key Device Descriptor nonstandard 'is new' key-device pair */
+#endif // CASCODA_CA_VER == 8211
 };
 
 struct M_KeyUsageDesc
@@ -665,6 +919,7 @@ struct M_KeyDescriptor
 	struct M_KeyDeviceDesc      KeyDeviceList[KEY_DEVICE_TABLE_SIZE];
 	struct M_KeyUsageDesc       KeyUsageList[KEY_USAGE_TABLE_SIZE];
 };
+#endif // CASCODA_CA_VER >= 8212
 
 /***************************************************************************/ /**
  * SPI Callback templates
@@ -691,13 +946,20 @@ typedef ca_error (*MLME_SYNC_LOSS_indication_callback)(struct MLME_SYNC_LOSS_ind
                                                        struct ca821x_dev *                    pDeviceRef);
 typedef ca_error (*MLME_POLL_indication_callback)(struct MLME_POLL_indication_pset *params,
                                                   struct ca821x_dev *               pDeviceRef);
+#if CASCODA_CA_VER >= 8212
+typedef ca_error (*MLME_POLL_confirm_callback)(struct MLME_POLL_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+typedef ca_error (*MLME_IE_NOTIFY_indication_callback)(struct MLME_IE_NOTIFY_indication_pset *params,
+                                                       struct ca821x_dev *                    pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 typedef ca_error (*MLME_SCAN_confirm_callback)(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 typedef ca_error (*MCPS_DATA_indication_callback)(struct MCPS_DATA_indication_pset *params,
                                                   struct ca821x_dev *               pDeviceRef);
 typedef ca_error (*MCPS_DATA_confirm_callback)(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+#if CASCODA_CA_VER >= 8211
 typedef ca_error (*PCPS_DATA_indication_callback)(struct PCPS_DATA_indication_pset *params,
                                                   struct ca821x_dev *               pDeviceRef);
 typedef ca_error (*PCPS_DATA_confirm_callback)(struct PCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+#endif // CASCODA_CA_VER >= 8211
 typedef ca_error (*TDME_RXPKT_indication_callback)(struct TDME_RXPKT_indication_pset *params,
                                                    struct ca821x_dev *                pDeviceRef);
 typedef ca_error (*TDME_EDDET_indication_callback)(struct TDME_EDDET_indication_pset *params,
@@ -709,10 +971,12 @@ typedef ca_error (*ca821x_generic_callback)(void *params, struct ca821x_dev *pDe
 /** Union of all compatible callback types */
 union ca821x_api_callback
 {
-	MCPS_DATA_indication_callback          MCPS_DATA_indication;
-	MCPS_DATA_confirm_callback             MCPS_DATA_confirm;
-	PCPS_DATA_indication_callback          PCPS_DATA_indication;
-	PCPS_DATA_confirm_callback             PCPS_DATA_confirm;
+	MCPS_DATA_indication_callback MCPS_DATA_indication;
+	MCPS_DATA_confirm_callback    MCPS_DATA_confirm;
+#if CASCODA_CA_VER >= 8211
+	PCPS_DATA_indication_callback PCPS_DATA_indication;
+	PCPS_DATA_confirm_callback    PCPS_DATA_confirm;
+#endif // CASCODA_CA_VER >= 8211
 	MLME_ASSOCIATE_indication_callback     MLME_ASSOCIATE_indication;
 	MLME_ASSOCIATE_confirm_callback        MLME_ASSOCIATE_confirm;
 	MLME_DISASSOCIATE_indication_callback  MLME_DISASSOCIATE_indication;
@@ -722,16 +986,32 @@ union ca821x_api_callback
 	MLME_SCAN_confirm_callback             MLME_SCAN_confirm;
 	MLME_COMM_STATUS_indication_callback   MLME_COMM_STATUS_indication;
 	MLME_POLL_indication_callback          MLME_POLL_indication;
-	MLME_SYNC_LOSS_indication_callback     MLME_SYNC_LOSS_indication;
-	HWME_WAKEUP_indication_callback        HWME_WAKEUP_indication;
-	TDME_RXPKT_indication_callback         TDME_RXPKT_indication;
-	TDME_EDDET_indication_callback         TDME_EDDET_indication;
-	TDME_ERROR_indication_callback         TDME_ERROR_indication;
-	ca821x_generic_callback                generic_callback;
+#if CASCODA_CA_VER >= 8212
+	MLME_POLL_confirm_callback         MLME_POLL_confirm;
+	MLME_IE_NOTIFY_indication_callback MLME_IE_NOTIFY_indication;
+#endif // CASCODA_CA_VER >= 8212
+	MLME_SYNC_LOSS_indication_callback MLME_SYNC_LOSS_indication;
+	HWME_WAKEUP_indication_callback    HWME_WAKEUP_indication;
+	TDME_RXPKT_indication_callback     TDME_RXPKT_indication;
+	TDME_EDDET_indication_callback     TDME_EDDET_indication;
+	TDME_ERROR_indication_callback     TDME_ERROR_indication;
+	ca821x_generic_callback            generic_callback;
 };
 
 /***************************************************************************/ /**
  * SPI Message Format Typedef
+ * 
+ * IMPORTANT: Make sure all of the structs in the PData union have no alignment
+ * requirements, i.e. all the members of any of the structs should be of type
+ * uint8_t (that includes uint8_t arrays, or other structs which themselves
+ * only have uint8_t members.).
+ * An example of what NOT to do:
+ * struct BAD_EXAMPLE_request_set 
+ * {
+ * 		uint8_t var1;
+ * 		uint8_t var2;
+ * 		uint32_t bad_var; // DON'T DO THIS, instead do uint8_t good_var[4];
+ * };
  ******************************************************************************/
 struct MAC_Message
 {
@@ -767,11 +1047,15 @@ struct MAC_Message
 		struct MLME_ORPHAN_indication_pset        OrphanInd;
 #if CASCODA_CA_VER >= 8211
 		struct MLME_POLL_indication_pset PollInd;
+#if CASCODA_CA_VER >= 8212
+		struct MLME_POLL_confirm_pset         PollCnf;
+		struct MLME_IE_NOTIFY_indication_pset IENotifyInd;
+#endif // CASCODA_CA_VER >= 8212
 		/* PCPS */
 		struct PCPS_DATA_request_pset    PhyDataReq;
 		struct PCPS_DATA_confirm_pset    PhyDataCnf;
 		struct PCPS_DATA_indication_pset PhyDataInd;
-#endif
+#endif // CASCODA_CA_VER >= 8211
 		/* HWME */
 		struct HWME_SET_request_pset       HWMESetReq;
 		struct HWME_GET_request_pset       HWMEGetReq;
@@ -811,6 +1095,7 @@ enum spi_command_masks
 	SPI_MID_MASK = 0x1F, /** Mask to derive the Message ID Code from the Command ID */
 	SPI_S2M      = 0x20, /** Bit indicating a Confirm or Indication from Slave to Master */
 	SPI_SYN      = 0x40, /** Bit indicating a Synchronous Message */
+	SPI_INVALID  = 0x80, /** Bit indicating an IDLE or invalid command ID */
 };
 
 /** SPI Command IDs */
@@ -830,20 +1115,24 @@ enum spi_command_ids
 	SPI_PCPS_DATA_REQUEST    = 0x07,
 	SPI_PCPS_DATA_CONFIRM    = 0x38,
 	SPI_PCPS_DATA_INDICATION = 0x28,
-#endif
+#endif // CASCODA_CA_VER >= 8211
 	// MAC MLME
-	SPI_MLME_ASSOCIATE_REQUEST        = 0x02,
-	SPI_MLME_ASSOCIATE_RESPONSE       = 0x03,
-	SPI_MLME_DISASSOCIATE_REQUEST     = 0x04,
-	SPI_MLME_GET_REQUEST              = 0x45,
-	SPI_MLME_ORPHAN_RESPONSE          = 0x06,
-	SPI_MLME_RESET_REQUEST            = 0x47,
-	SPI_MLME_RX_ENABLE_REQUEST        = 0x48,
-	SPI_MLME_SCAN_REQUEST             = 0x09,
-	SPI_MLME_SET_REQUEST              = 0x4A,
-	SPI_MLME_START_REQUEST            = 0x4B,
-	SPI_MLME_SYNC_REQUEST             = 0x0C,
-	SPI_MLME_POLL_REQUEST             = 0x4D,
+	SPI_MLME_ASSOCIATE_REQUEST    = 0x02,
+	SPI_MLME_ASSOCIATE_RESPONSE   = 0x03,
+	SPI_MLME_DISASSOCIATE_REQUEST = 0x04,
+	SPI_MLME_GET_REQUEST          = 0x45,
+	SPI_MLME_ORPHAN_RESPONSE      = 0x06,
+	SPI_MLME_RESET_REQUEST        = 0x47,
+	SPI_MLME_RX_ENABLE_REQUEST    = 0x48,
+	SPI_MLME_SCAN_REQUEST         = 0x09,
+	SPI_MLME_SET_REQUEST          = 0x4A,
+	SPI_MLME_START_REQUEST        = 0x4B,
+	SPI_MLME_SYNC_REQUEST         = 0x0C,
+#if CASCODA_CA_VER >= 8212
+	SPI_MLME_POLL_REQUEST = 0x32,
+#else
+	SPI_MLME_POLL_REQUEST = 0x4D,
+#endif // CASCODA_CA_VER >= 8212
 	SPI_MLME_ASSOCIATE_INDICATION     = 0x23,
 	SPI_MLME_ASSOCIATE_CONFIRM        = 0x24,
 	SPI_MLME_DISASSOCIATE_INDICATION  = 0x25,
@@ -858,10 +1147,15 @@ enum spi_command_ids
 	SPI_MLME_SET_CONFIRM              = 0x6E,
 	SPI_MLME_START_CONFIRM            = 0x6F,
 	SPI_MLME_SYNC_LOSS_INDICATION     = 0x30,
-	SPI_MLME_POLL_CONFIRM             = 0x71,
+#if CASCODA_CA_VER >= 8212
+	SPI_MLME_POLL_CONFIRM         = 0x33,
+	SPI_MLME_IE_NOTIFY_INDICATION = 0x22,
+#else
+	SPI_MLME_POLL_CONFIRM = 0x71,
+#endif // CASCODA_CA_VER >= 8212
 #if CASCODA_CA_VER >= 8211
 	SPI_MLME_POLL_INDICATION = 0x31,
-#endif
+#endif // CASCODA_CA_VER >= 8211
 	// HWME
 	SPI_HWME_SET_REQUEST       = 0x4E,
 	SPI_HWME_GET_REQUEST       = 0x4F,

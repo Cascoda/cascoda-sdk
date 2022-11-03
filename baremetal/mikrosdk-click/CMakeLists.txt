@@ -9,6 +9,9 @@ add_library(mikrosdk-click
 	${PROJECT_SOURCE_DIR}/source/relay.c
 	${PROJECT_SOURCE_DIR}/source/environment2.c
 	${PROJECT_SOURCE_DIR}/source/airquality4.c
+	${PROJECT_SOURCE_DIR}/source/hvac.c
+	${PROJECT_SOURCE_DIR}/source/sps30.c
+	${PROJECT_SOURCE_DIR}/source/sht.c
 	)
 
 target_include_directories(mikrosdk-click
@@ -18,5 +21,5 @@ target_include_directories(mikrosdk-click
 
 target_link_libraries(mikrosdk-click
 	PUBLIC
-		sensorif mikrosdk-drv mikrosdk-hal
+		mikrosdk-drv mikrosdk-hal
 	)

@@ -262,6 +262,7 @@ STATIC void get_humidity(oc_request_t *request, oc_interface_mask_t interfaces, 
 {
 	(void)user_data; /* variable not used */
 	uint32_t humidity;
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	SENSORIF_I2C_Init();
 	humidity = SIF_SI7021_ReadHumidity();
 	SENSORIF_I2C_Deinit();
@@ -320,7 +321,7 @@ STATIC void get_illuminance(oc_request_t *request, oc_interface_mask_t interface
 {
 	(void)user_data; /* variable not used */
 	uint16_t lightLevel0, lightLevel1;
-
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	SENSORIF_I2C_Init();
 	SIF_LTR303ALS_ReadLight(&lightLevel0, &lightLevel1);
 	SENSORIF_I2C_Deinit();
@@ -385,7 +386,8 @@ STATIC void get_illuminance(oc_request_t *request, oc_interface_mask_t interface
 */
 STATIC void get_temperature(oc_request_t *request, oc_interface_mask_t interfaces, void *user_data)
 {
-	(void)user_data; /* variable not used */
+	(void)user_data;        /* variable not used */
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	SENSORIF_I2C_Init();
 	g_temperature_temperature = SIF_SI7021_ReadTemperature();
 	SENSORIF_I2C_Deinit();

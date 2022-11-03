@@ -275,7 +275,12 @@ void TEMPSENSE_APP_Device_ProcessDataInd(struct MCPS_DATA_indication_pset *param
 	u8_t            len;
 	u8_t            status;
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	if (params->Data[msdu_shift] != PT_MSDU_C_DATA)
+#else
 	if (params->Msdu[0] != PT_MSDU_C_DATA)
+#endif // CASCODA_CA_VER >= 8212
 	{
 /* wrong packet type */
 #if APP_USE_DEBUG
@@ -320,6 +325,25 @@ void TEMPSENSE_APP_Device_ProcessDataInd(struct MCPS_DATA_indication_pset *param
 	msdu[4] = lqi_device; /* received lqi at device */
 	msdu[5] = ed_device;  /* received ed  at device */
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0] |= TXOPT0_ACKREQ;
+	status = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,  /* SrcAddrMode */
+	                           CoordFAdd,            /* DstAddr */
+	                           0,                    /* HeaderIELength */
+	                           0,                    /* PayloadIELength */
+	                           6,                    /* MsduLength */
+	                           msdu,                 /* pMsdu */
+	                           LS0_BYTE(APP_Handle), /* MsduHandle */
+	                           tx_op,                /* pTxOptions */
+	                           0,                    /* SchTimestamp */
+	                           0,                    /* SchPeriod */
+	                           0,                    /* TxChannel */
+	                           NULLP,                /* pHeaderIEList */
+	                           NULLP,                /* pPayloadIEList */
+	                           NULLP,                /* pSecurity */
+	                           pDeviceRef);          /* pDeviceRef */
+#else
 	status = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,  /* SrcAddrMode */
 	                           CoordFAdd,            /* DstAddr */
 	                           6,                    /* MsduLength */
@@ -328,6 +352,7 @@ void TEMPSENSE_APP_Device_ProcessDataInd(struct MCPS_DATA_indication_pset *param
 	                           TXOPT_ACKREQ,         /* TxOptions */
 	                           NULLP,                /* *pSecurity */
 	                           pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	if (status)
 	{
@@ -424,6 +449,25 @@ void TEMPSENSE_APP_Device_ExchangeData(struct ca821x_dev *pDeviceRef)
 	msdu[3] = LS2_BYTE(APP_Handle);
 	msdu[4] = LS3_BYTE(APP_Handle);
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0] |= TXOPT0_ACKREQ;
+	status = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,  /* SrcAddrMode */
+	                           CoordFAdd,            /* DstAddr */
+	                           0,                    /* HeaderIELength */
+	                           0,                    /* PayloadIELength */
+	                           5,                    /* MsduLength */
+	                           msdu,                 /* pMsdu */
+	                           LS0_BYTE(APP_Handle), /* MsduHandle */
+	                           tx_op,                /* pTxOptions */
+	                           0,                    /* SchTimestamp */
+	                           0,                    /* SchPeriod */
+	                           0,                    /* TxChannel */
+	                           NULLP,                /* pHeaderIEList */
+	                           NULLP,                /* pPayloadIEList */
+	                           NULLP,                /* pSecurity */
+	                           pDeviceRef);          /* pDeviceRef */
+#else
 	status = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,  /* SrcAddrMode */
 	                           CoordFAdd,            /* DstAddr */
 	                           5,                    /* MsduLength */
@@ -432,6 +476,7 @@ void TEMPSENSE_APP_Device_ExchangeData(struct ca821x_dev *pDeviceRef)
 	                           TXOPT_ACKREQ,         /* TxOptions */
 	                           NULLP,                /* *pSecurity */
 	                           pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	if (status)
 	{

@@ -49,7 +49,7 @@
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
-#include "test15_4_evbme.h"
+#include "cascoda-bm/test15_4_evbme.h"
 
 #define TEST_MSDULENGTH (40)
 #define TEST_MSDUHANDLE (0xAA)
@@ -146,26 +146,12 @@ ca_error W25Q80DLSNIG_PowerDown();
 ca_error W25Q80DLSNIG_ReleasePowerDown();
 ca_error W25Q80DLSNIG_ReadStatusRegister1(uint8_t *statusRegister1);
 
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Dispatch function to process received serial messages
- *******************************************************************************
- * \param buf - serial buffer to dispatch
- * \param len - length of buf
- * \param pDeviceRef - pointer to a CA-821x Device reference struct
- *******************************************************************************
- * \return 1: consumed by driver 0: command to be sent downstream to spi
- *******************************************************************************
- ******************************************************************************/
 int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	int ret = 0;
-
 	if (buf[0] == 0xB2)
 		return 1;
 
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
+	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
 	/* Insert Application-Specific Dispatches here in the same style */
 	return 0;
 }
@@ -191,10 +177,28 @@ static ca_error read_data_helper(void *aContext)
 		memcpy(full_address.Address, (uint8_t[]){TEST_DSTADDR}, sizeof(full_address.Address));
 		memcpy(msdu_buffer, (uint8_t[]){TEST_MSDU}, TEST_MSDULENGTH);
 
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+		                  full_address,        /* DstAddr */
+		                  0,                   /* HeaderIELength */
+		                  0,                   /* PayloadIELength */
+		                  TEST_MSDULENGTH,     /* MsduLength */
+		                  msdu_buffer,         /* pMsdu */
+		                  TEST_MSDUHANDLE,     /* MsduHandle */
+		                  tx_op,               /* pTxOptions */
+		                  0,                   /* SchTimestamp */
+		                  0,                   /* SchPeriod */
+		                  0,                   /* TxChannel */
+		                  NULL,                /* pHeaderIEList */
+		                  NULL,                /* pPayloadIEList */
+		                  NULL,                /* pSecurity */
+		                  &dev);               /* pDeviceRef */
+#else
 		MCPS_DATA_request(
 		    MAC_MODE_SHORT_ADDR, full_address, TEST_MSDULENGTH, msdu_buffer, TEST_MSDUHANDLE, 0x00, NULL, &dev);
+#endif // CASCODA_CA_VER >= 8212
 	}
-
 	ca_error err = BSP_ExternalFlashReadData(args.startAddress + args.iterationNumber * NUMBER_OF_BYTES_IN_HALF_A_PAGE,
 	                                         NUMBER_OF_BYTES_IN_HALF_A_PAGE,
 	                                         args.dataReadFromFlash);
@@ -235,8 +239,27 @@ static ca_error page_program_helper(void *aContext)
 		memcpy(full_address.Address, (uint8_t[]){TEST_DSTADDR}, sizeof(full_address.Address));
 		memcpy(msdu_buffer, (uint8_t[]){TEST_MSDU}, TEST_MSDULENGTH);
 
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		MCPS_DATA_request(MAC_MODE_SHORT_ADDR,
+		                  full_address,
+		                  0,
+		                  0,
+		                  TEST_MSDULENGTH,
+		                  msdu_buffer,
+		                  TEST_MSDUHANDLE,
+		                  tx_op,
+		                  0,
+		                  0,
+		                  0,
+		                  NULL,
+		                  NULL,
+		                  NULL,
+		                  &dev);
+#else
 		MCPS_DATA_request(
 		    MAC_MODE_SHORT_ADDR, full_address, TEST_MSDULENGTH, msdu_buffer, TEST_MSDUHANDLE, 0x00, NULL, &dev);
+#endif // CASCODA_CA_VER >= 8212
 	}
 
 	ca_error status =
@@ -1247,14 +1270,11 @@ int main(void)
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	/* Insert Application-Specific Initialisation Routines here */
-	TEST15_4_Initialise(&dev);
-
 	TASKLET_Init(&testTasklet, &handle_tests);
 	TASKLET_ScheduleDelta(&testTasklet, 712, NULL);
 	/* Endless Polling Loop */
 	while (1)
 	{
 		cascoda_io_handler(&dev);
-		TEST15_4_Handler(&dev);
 	} /* while(1) */
 }

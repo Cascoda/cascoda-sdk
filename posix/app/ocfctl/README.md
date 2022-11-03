@@ -84,7 +84,7 @@ Rx: OCF server "server_lite_53868" running, waiting on incoming connections.
 
 ## Technical Detail
 
-`ocfctl` works by sending [asynchronous TLV (type-length-value) user commands](../../../../docs/reference/cascoda-tlv-message.md) to the connected device. Command code `0xB0` is used for all `ocfctl` TLV commands. The length byte must be set to 1, and the value describes the specific `ocfctl` command sent to the Chili. For instance, `B0 01 00` is used for the `rfotm` command, and `B1 01 01` is used for the `power` command.
+`ocfctl` works by sending [asynchronous TLV (type-length-value) user commands](../../../docs/reference/cascoda-tlv-message.md) to the connected device. Command code `0xB0` is used for all `ocfctl` TLV commands. The length byte must be set to 1, and the value describes the specific `ocfctl` command sent to the Chili. For instance, `B0 01 00` is used for the `rfotm` command, and `B0 01 01` is used for the `power` command.
 
 To keep things simple, and to avoid concurrency bugs, `ocfctl` only _sends_ custom commands to the device, it does not receive any. The only information received by `ocfctl` from the Chili consists of EVBME messages used to display device information & debugging logs.
 

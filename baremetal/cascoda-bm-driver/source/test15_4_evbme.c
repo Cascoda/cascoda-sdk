@@ -36,11 +36,9 @@
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_time.h"
-#include "ca821x_api.h"
 #include "mac_messages.h"
-
-#include "test15_4_evbme.h"
 #include "test15_4_phy_tests.h"
 
 /******************************************************************************/
@@ -289,12 +287,11 @@ void TEST15_4_SetupAwaitOrphan(uint8_t *pDeviceAddress, uint16_t OrphanShortAddr
  * \brief Callback for MLME_ASSOCIATE_indication
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params,
-                                             struct ca821x_dev *                    pDeviceRef)
+ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (MAC_AWAITING_ASSOC_INDICATION)
 	{
-		if (memcmp(params->DeviceAddress, EVBME_AssocDeviceAddress, 8))
+		if (memcmp(params->DeviceAddress, EVBME_AssocDeviceAddress, 8) != 0)
 			return CA_ERROR_NOT_HANDLED;
 		MLME_ASSOCIATE_response(
 		    params->DeviceAddress, EVBME_StoredAssocShortAddress, EVBME_StoredAssocStatus, 0, pDeviceRef);
@@ -308,11 +305,11 @@ static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_ps
  * \brief Callback for MLME_ORPHAN_indication
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (MAC_AWAITING_ORPHAN_INDICATION)
 	{
-		if (memcmp(params->OrphanAddr, EVBME_OrphanDeviceAddress, 8))
+		if (memcmp(params->OrphanAddr, EVBME_OrphanDeviceAddress, 8) != 0)
 			return CA_ERROR_NOT_HANDLED;
 		MLME_ORPHAN_response(params->OrphanAddr, EVBME_StoredOrphanShortAddress, 1, &params->Security, pDeviceRef);
 		MAC_AWAITING_ORPHAN_INDICATION = 0;
@@ -325,7 +322,7 @@ static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *pa
  * \brief Callback for TDME_RXPKT_indication
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (!PHY_TESTPAR.MACENABLED)
 	{
@@ -343,7 +340,7 @@ static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset 
  * \brief Callback for MCPS_DATA_indication
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (PHY_TESTPAR.MACENABLED)
 	{
@@ -361,7 +358,7 @@ static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *
  * \brief Callback for MCPS_DATA_confirm
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (PHY_TESTPAR.MACENABLED)
 	{
@@ -379,7 +376,7 @@ static ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params
  * \brief Callback for TDME_EDDET_indication
  *******************************************************************************
  ******************************************************************************/
-static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
+ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	if (PHY_TESTMODE == PHY_TEST_RX_EDSN)
 	{
@@ -412,3 +409,13 @@ void TEST15_4_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 		pDeviceRef->callbacks.TDME_EDDET_indication = NULL;
 
 } // End of TEST15_4_RegisterCallbacks()
+
+int TEST15_4_SerialDispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
+{
+	(void)len;
+	int ret = 0;
+	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
+		return ret;
+	/* Insert Application-Specific Dispatches here in the same style */
+	return 0;
+} // End of TEST15_4_SerialDispatch()

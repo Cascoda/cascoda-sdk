@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include "cascoda-bm/cascoda_sensorif.h"
 
+int num = 0;
 //I2C
 #define I2C_MODULE_COUNT 2
 //I2C
@@ -231,6 +232,7 @@ err_t hal_i2c_master_write(handle_t handle, uint8_t *write_data_buf, size_t len_
 	}
 
 	hal_status = SENSORIF_I2C_Write(addr, wdata, &num);
+	SLAVE_ADDR = addr;
 
 	if (hal_status != HAL_I2C_MASTER_SUCCESS)
 	{

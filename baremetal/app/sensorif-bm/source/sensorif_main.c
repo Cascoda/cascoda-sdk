@@ -43,28 +43,8 @@
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
+#include "cascoda-bm/test15_4_evbme.h"
 #include "sensorif_app.h"
-#include "test15_4_evbme.h"
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Dispatch function to process received serial messages
- *******************************************************************************
- * \param buf - serial buffer to dispatch
- * \param len - length of buf
- * \param pDeviceRef - pointer to a CA-821x Device reference struct
- *******************************************************************************
- * \return 1: consumed by driver 0: command to be sent downstream to spi
- *******************************************************************************
- ******************************************************************************/
-static int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
-{
-	int ret = 0;
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
-	/* Insert Application-Specific Dispatches here in the same style */
-	return 0;
-}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -77,14 +57,13 @@ int main(void)
 {
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
-	cascoda_serial_dispatch = test15_4_serial_dispatch;
+	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
 	/* in case there is no UpStream Communications Channel available */
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 	/* Insert Application-Specific Initialisation Routines here */
-	TEST15_4_Initialise(&dev);
 	SENSORIF_Initialise(&dev);
 
 	/* Endless Polling Loop */
@@ -93,7 +72,6 @@ int main(void)
 		cascoda_io_handler(&dev);
 
 		/* Insert Application-Specific Event Handlers here */
-		TEST15_4_Handler(&dev);
 		SENSORIF_Handler(&dev);
 
 	} /* while(1) */

@@ -1,5 +1,5 @@
 # Global config ---------------------------------------------------------------
-project (mikrosdk_drv)
+project (mikrosdk-drv)
 
 include(FetchContent)
 
@@ -20,19 +20,19 @@ if(NOT mikrosdk_drv_layer_POPULATED)
     FetchContent_Populate(mikrosdk_drv_layer)
 endif()
 
-add_library(mikrosdk-drv INTERFACE)
-
-target_sources(mikrosdk-drv INTERFACE
+add_library(mikrosdk-drv
     ${mikrosdk_drv_layer_SOURCE_DIR}/drv/lib/src/lib_drv_digital_in/drv_digital_in.c
     ${mikrosdk_drv_layer_SOURCE_DIR}/drv/lib/src/lib_drv_digital_out/drv_digital_out.c
     ${mikrosdk_drv_layer_SOURCE_DIR}/drv/lib/src/lib_drv_i2c_master/drv_i2c_master.c 
     ${mikrosdk_drv_layer_SOURCE_DIR}/drv/lib/src/lib_drv_spi_master/drv_spi_master.c
 )
 
-target_include_directories(mikrosdk-drv INTERFACE
+target_include_directories(mikrosdk-drv PUBLIC
     ${mikrosdk_drv_layer_SOURCE_DIR}/drv/lib/include
 )
 
-target_link_libraries(mikrosdk-drv INTERFACE
+target_link_libraries(mikrosdk-drv PUBLIC
 		sensorif mikrosdk-hal
 )
+
+target_compile_options(mikrosdk-drv PRIVATE -Wno-unused-variable -Wno-return-type)

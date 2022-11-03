@@ -215,6 +215,11 @@ ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
 	return CA_ERROR_NOT_HANDLED;
 }
 
+ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	return CA_ERROR_NOT_HANDLED;
@@ -340,6 +345,11 @@ ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize)
 ca_error BSP_FlashCheck(u32_t startaddr, u32_t checklen, u32_t crc32)
 {
 	return CA_ERROR_INVALID_ARGS;
+}
+
+void SENSORIF_I2C_Config(u32_t portnum)
+{
+	(void)portnum;
 }
 
 void SENSORIF_I2C_Init(void)

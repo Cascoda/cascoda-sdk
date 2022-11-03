@@ -61,12 +61,51 @@ static void timeout_mcps_test(void **state)
 	expect_value(handleDataConfirm, params->MsduHandle, TestHandle2);
 
 	fa.AddressMode = MAC_MODE_SHORT_ADDR;
+
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle1,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle1, 0, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle2,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle2, 0, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
@@ -85,13 +124,68 @@ static void timeout_mcps_indirect_test(void **state)
 	expect_value(handleDataConfirm, params->MsduHandle, TestHandle3);
 
 	fa.AddressMode = MAC_MODE_SHORT_ADDR;
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle1,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+
+	tx_op[0] |= TXOPT0_INDIRECT;
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle2,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle1, 0, NULL, &sdev);
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle2, TXOPT_INDIRECT, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle3,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle3, 0, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
@@ -110,14 +204,71 @@ static void timeout_mcps_purge_test(void **state)
 	expect_value(handleDataConfirm, params->MsduHandle, TestHandle3);
 
 	fa.AddressMode = MAC_MODE_SHORT_ADDR;
+
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle1,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+
+	tx_op[0] |= TXOPT0_INDIRECT;
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  purgeHandle,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle1, 0, NULL, &sdev);
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, purgeHandle, TXOPT_INDIRECT, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
+
 	MCPS_PURGE_request_sync(&purgeHandle, &sdev);
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  fa,                  /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  8,                   /* MsduLength */
+	                  fa.Address,          /* pMsdu */
+	                  TestHandle3,         /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULL,                /* pHeaderIEList */
+	                  NULL,                /* pPayloadIEList */
+	                  NULL,                /* pSecurity */
+	                  &sdev);              /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, fa, 8, fa.Address, TestHandle3, 0, NULL, &sdev);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_FastForward(250);
 	DISPATCH_FromCA821x(&sdev);

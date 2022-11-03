@@ -30,7 +30,8 @@
 #include "relay.h"
 
 // ------------------------------------------------ STATIC VARIABLES
-static relay_t relay; // Click object
+static relay_t     relay; // Click object
+static relay_cfg_t cfg;   // Click object
 
 // ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
 
@@ -77,12 +78,14 @@ void relay_set_state(uint8_t num, uint8_t state)
 	}
 }
 
+void relay_pin_mapping(uint8_t r1, uint8_t r2)
+{
+	cfg.rel1 = r1;
+	cfg.rel2 = r2;
+}
+
 uint8_t MIKROSDK_RELAY_Initialise(void)
 {
-	relay_cfg_t cfg;
-
-	relay_cfg_setup(&cfg);
-	RELAY_MAP_MIKROBUS(cfg);
 	relay_init(&relay, &cfg);
 	relay_default_cfg(&relay);
 	return 0;

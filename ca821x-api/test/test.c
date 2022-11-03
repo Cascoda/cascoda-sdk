@@ -285,18 +285,22 @@ uint8_t ref_mlme_start_cnf[] = {
 /** MLME-POLL.request reference buffer */
 uint8_t ref_mlme_poll_req[] = {
     SPI_MLME_POLL_REQUEST, /* CmdId */
-#if CASCODA_CA_VER == 8210
-    24, /* Packet Length */
-#else
+#if CASCODA_CA_VER >= 8212
+    23, /* Packet Length */
+#elif CASCODA_CA_VER == 8211
     22, /* Packet Length */
-#endif
+#else
+    24,
+#endif                  // CASCODA_CA_VER >= 8212
     MAC_MODE_LONG_ADDR, /* CoordAddressMode */
     TEST_PANID,         /* CoordinatorPANId */
     TEST_DSTADDR,       /* CoordAddress */
-#if CASCODA_CA_VER == 8210
+#if CASCODA_CA_VER >= 8212
+    1, /* FrameVersion */
+#elif CASCODA_CA_VER == 8210
     00,
     00, /*Interval*/
-#endif
+#endif                  // CASCODA_CA_VER >= 8212
     TEST_SECURITYLEVEL, /* SecurityLevel */
     TEST_KEYIDMODE,     /* KeyIdMode */
     TEST_KEYSOURCE,     /* KeySource */
@@ -779,6 +783,26 @@ int api_functions_test(void)
 	memcpy(msdu_buffer, (uint8_t[]){TEST_MSDU}, TEST_MSDULENGTH);
 	memcpy(haesdata, (uint8_t[]){TEST_HAESDATA}, sizeof(haesdata));
 	printf("%-35s", "MCPS_DATA_request()... ");
+
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+
+	ret = MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                        full_address,        /* DstAddr */
+	                        0,                   /* HeaderIELength */
+	                        0,                   /* PayloadIELength */
+	                        TEST_MSDULENGTH,     /* MsduLength */
+	                        msdu_buffer,         /* pMsdu */
+	                        TEST_MSDUHANDLE,     /* MsduHandle */
+	                        tx_op,               /* pTxOptions */
+	                        0,                   /* SchTimestamp */
+	                        0,                   /* SchPeriod */
+	                        0,                   /* TxChannel */
+	                        NULL,                /* pHeaderIEList */
+	                        NULL,                /* pPayloadIEList */
+	                        &test_secspec,       /* pSecurity */
+	                        &test_dev);          /* pDeviceRef */
+#else
 	ret = MCPS_DATA_request(MAC_MODE_SHORT_ADDR,
 	                        full_address,
 	                        TEST_MSDULENGTH,
@@ -787,6 +811,8 @@ int api_functions_test(void)
 	                        0x00,
 	                        &test_secspec,
 	                        &test_dev);
+#endif // CASCODA_CA_VER >= 8212
+
 	print_result(ret);
 	printf("%-35s", "MCPS_PURGE_request_sync()... ");
 	ret = MCPS_PURGE_request_sync(&msduhandle, &test_dev);
@@ -822,13 +848,18 @@ int api_functions_test(void)
 	ret = MLME_START_request_sync(
 	    GETLE16(full_address.PANId), TEST_CHANNEL, 0x0F, 0x0F, 0, 0, 0, &test_secspec, &test_secspec, &test_dev);
 	print_result(ret);
+#if CASCODA_CA_VER >= 8212
+	printf("%-35s", "MLME_POLL_request()... ");
+	ret = MLME_POLL_request(full_address, 1, &test_secspec, &test_dev);
+#else
 	printf("%-35s", "MLME_POLL_request_sync()... ");
 	ret = MLME_POLL_request_sync(full_address,
 #if CASCODA_CA_VER == 8210
 	                             interval,
-#endif
+#endif // CASCODA_CA_VER == 8210
 	                             &test_secspec,
 	                             &test_dev);
+#endif // CASCODA_CA_VER >= 8212
 	print_result(ret);
 	printf("%-35s", "HWME_SET_request_sync()... ");
 	ret = HWME_SET_request_sync(TEST_HWATTRIBUTE, 1, &hwattributevalue, &test_dev);
@@ -1202,9 +1233,9 @@ ca_error test_generic_dispatch(const struct MAC_Message *msg, struct ca821x_dev 
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Wrapper for ca821x_downstream_dispatch
+ * \brief Wrapper for ca821x_upstream_dispatch
  *******************************************************************************
- * Calls ca821x_downstream_dispatch and prints the result
+ * Calls ca821x_upstream_dispatch and prints the result
  *******************************************************************************
  * \param msg - Message buffer
  * \param pDeviceRef - Device reference
@@ -1212,7 +1243,7 @@ ca_error test_generic_dispatch(const struct MAC_Message *msg, struct ca821x_dev 
  ******************************************************************************/
 void call_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
-	if (ca821x_downstream_dispatch(msg, pDeviceRef) == CA_ERROR_SUCCESS)
+	if (ca821x_upstream_dispatch(msg, pDeviceRef) == CA_ERROR_SUCCESS)
 	{
 		printf(ANSI_COLOR_GREEN "Success\n" ANSI_COLOR_RESET);
 	}

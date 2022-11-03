@@ -51,11 +51,20 @@ static void msdu_secspec_test(void **state)
 	(void)state;
 
 	dataInd.MsduLength = 1;
-	trueSecSpec        = (struct SecSpec *)(dataInd.Msdu + 1);
+#if CASCODA_CA_VER >= 8212
+	uint8_t msdu_shift = dataInd.HeaderIELength + dataInd.PayloadIELength;
+	trueSecSpec        = (struct SecSpec *)(dataInd.Data[msdu_shift] + 1);
+#else
+	trueSecSpec = (struct SecSpec *)(dataInd.Msdu + 1);
+#endif
 	assert_ptr_equal(MCPS_DATA_indication_get_secspec(&dataInd), trueSecSpec);
 
 	dataInd.MsduLength = MAX_DATA_SIZE;
-	trueSecSpec        = (struct SecSpec *)(dataInd.Msdu + MAX_DATA_SIZE);
+#if CASCODA_CA_VER >= 8212
+	trueSecSpec = (struct SecSpec *)(dataInd.Data[msdu_shift] + MAX_DATA_SIZE);
+#else
+	trueSecSpec = (struct SecSpec *)(dataInd.Msdu + MAX_DATA_SIZE);
+#endif
 	assert_ptr_equal(MCPS_DATA_indication_get_secspec(&dataInd), trueSecSpec);
 }
 
@@ -198,6 +207,7 @@ static void scan_confirm_null_test(void **state)
 	assert_null(MLME_SCAN_confirm_get_pandescriptor(0, &scanTest));
 }
 
+#if CASCODA_CA_VER <= 8211
 /** Test that a key table entry can be correctly parsed
  */
 static void key_table_entry_test(void **state)
@@ -240,17 +250,20 @@ static void key_table_entry_zerotest(void **state)
 	assert_non_null(KeyTableEntry_get_keydevicedescs(kte));
 	assert_ptr_equal(KeyTableEntry_get_keyusagedescs(kte), testKte.KeyUsageList);
 }
+#endif // CASCODA_CA_VER <= 8211
 
 int main(void)
 {
 	const struct CMUnitTest tests[] = {
-	    cmocka_unit_test(&msdu_secspec_test),
-	    cmocka_unit_test(&beacon_notify_test),
-	    cmocka_unit_test(&beacon_notify_zerotest),
-	    cmocka_unit_test(&scan_confirm_test),
-	    cmocka_unit_test(&scan_confirm_null_test),
-	    cmocka_unit_test(&key_table_entry_test),
-	    cmocka_unit_test(&key_table_entry_zerotest),
+		cmocka_unit_test(&msdu_secspec_test),
+		cmocka_unit_test(&beacon_notify_test),
+		cmocka_unit_test(&beacon_notify_zerotest),
+		cmocka_unit_test(&scan_confirm_test),
+		cmocka_unit_test(&scan_confirm_null_test),
+#if CASCODA_CA_VER <= 8211
+		cmocka_unit_test(&key_table_entry_test),
+		cmocka_unit_test(&key_table_entry_zerotest),
+#endif // CASCODA_CA_VER <= 8211
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

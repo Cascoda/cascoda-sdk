@@ -39,9 +39,9 @@
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
-#include "chili_test.h"
+#include "cascoda-bm/chili_test.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "tempsense_evbme.h"
-#include "test15_4_evbme.h"
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -86,7 +86,6 @@ int main(void)
 	/* in case there is no UpStream Communications Channel available */
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 	/* Insert Application-Specific Initialisation Routines here */
-	TEST15_4_Initialise(&dev);
 	TEMPSENSE_Initialise(StartupStatus, &dev);
 	CHILI_TEST_Initialise(StartupStatus, &dev);
 
@@ -102,9 +101,7 @@ int main(void)
 		}
 		else
 		{
-			TEST15_4_Handler(&dev);
 			TEMPSENSE_Handler(&dev);
 		}
-
 	} // while(1)
 }

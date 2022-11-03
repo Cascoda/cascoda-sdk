@@ -12,6 +12,9 @@ CMake cache variable is set to `ON`. Note that this will disable several other
 targets vithin the SDK. If these are required, they must be built in a separate
 binary directory.
 
+Note that enabling `CASCODA_BUILD_OCF` disables the Test15-4 low-level debug interface globally,
+which would break targets such as `mac-dongle` and also prevent running commands with Wing Commander.
+
 ## apps
 
 The `apps` subdirectory contains a collection of OCF based example

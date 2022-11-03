@@ -232,10 +232,20 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 	struct inst_priv *other, *priv = pDeviceRef->context;
 	pthread_mutex_lock(&out_mutex);
 	priv->mRx++;
+
+#if CASCODA_CA_VER >= 8212
+	// MSDU located after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	processReceived(priv, GETLE32(params->Data + msdu_shift));
+
+	if (params->Data[params->MsduLength + msdu_shift] != 0)
+		fprintf(stderr, "Unexpected security level!");
+#else
 	processReceived(priv, GETLE32(params->Msdu));
 
 	if (params->Msdu[params->MsduLength] != 0)
 		fprintf(stderr, "Unexpected security level!");
+#endif // CASCODA_CA_VER >= 8212
 
 	pthread_mutex_unlock(&out_mutex);
 
@@ -266,7 +276,28 @@ static void fillIndirectJunk(struct inst_priv *priv)
 			PUTLE16(0xDEAD, dest.Address);
 			dest.AddressMode = curAddrMode;
 
+#if CASCODA_CA_VER >= 8212
+			uint8_t tx_op[2] = {0x00, 0x00};
+			tx_op[0]         = 0x05;
+			MCPS_DATA_request(curAddrMode,          /* SrcAddrMode */
+			                  dest,                 /* DstAddr */
+			                  0,                    /* HeaderIELength */
+			                  0,                    /* PayloadIELength */
+			                  M_MSDU_LENGTH,        /* MsduLength */
+			                  priv->msdu,           /* pMsdu */
+			                  i,                    /* MsduHandle */
+			                  tx_op,                /* pTxOptions */
+			                  0,                    /* SchTimestamp */
+			                  0,                    /* SchPeriod */
+			                  0,                    /* TxChannel */
+			                  NULL,                 /* pHeaderIEList */
+			                  NULL,                 /* pPayloadIEList */
+			                  &sSecSpec,            /* pSecurity */
+			                  &(priv->pDeviceRef)); /* pDeviceRef */
+#else
 			MCPS_DATA_request(curAddrMode, dest, M_MSDU_LENGTH, priv->msdu, i, 0x05, &sSecSpec, &(priv->pDeviceRef));
+#endif // CASCODA_CA_VER >= 8212
+
 			priv->mJunkInQueue[i] = 1;
 		}
 	}
@@ -364,6 +395,17 @@ static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct 
 	return CA_ERROR_SUCCESS;
 }
 
+#if CASCODA_CA_VER >= 8212
+static ca_error handlePollConfirm(struct MLME_POLL_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+{
+	// TODO: Populate this.
+	(void)params;
+	(void)pDeviceRef;
+
+	return CA_ERROR_SUCCESS;
+}
+#endif // CASCODA_CA_VER >= 8212
+
 static ca_error handleGenericDispatchFrame(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *priv = pDeviceRef->context;
@@ -451,12 +493,15 @@ static void *inst_worker(void *arg)
 			PUTLE16(M_PANID, fa.PANId);
 			PUTLE16(insts[i].mAddress, fa.Address);
 			fa.AddressMode = curAddrMode;
-#if CASCODA_CA_VER == 8210
+#if CASCODA_CA_VER >= 8212
+			uint8_t FrameVersion = getRand(0, 0);
+			MLME_POLL_request(fa, FrameVersion, &sSecSpec, pDeviceRef);
+#elif CASCODA_CA_VER == 8211
+			MLME_POLL_request_sync(fa, &sSecSpec, pDeviceRef);
+#else
 			uint8_t interval[2] = {0, 0};
 			MLME_POLL_request_sync(fa, interval, &sSecSpec, pDeviceRef);
-#else
-			MLME_POLL_request_sync(fa, &sSecSpec, pDeviceRef);
-#endif
+#endif // CASCODA_CA_VER >= 8212
 			continue;
 		}
 
@@ -484,8 +529,29 @@ static void *inst_worker(void *arg)
 		priv->lastAddress = insts[i].mAddress;
 		pthread_mutex_unlock(confirm_mutex);
 		PUTLE32(payload, priv->msdu);
+
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		tx_op[0]         = txOpts;
+		MCPS_DATA_request(curAddrMode,      /* SrcAddrMode */
+		                  dest,             /* DstAddr */
+		                  0,                /* HeaderIELength */
+		                  0,                /* PayloadIELength */
+		                  M_MSDU_LENGTH,    /* MsduLength */
+		                  priv->msdu,       /* pMsdu */
+		                  priv->lastHandle, /* MsduHandle */
+		                  tx_op,            /* pTxOptions */
+		                  0,                /* SchTimestamp */
+		                  0,                /* SchPeriod */
+		                  0,                /* TxChannel */
+		                  NULL,             /* pHeaderIEList */
+		                  NULL,             /* pPayloadIEList */
+		                  &sSecSpec,        /* pSecurity */
+		                  pDeviceRef);      /* pDeviceRef */
+#else
 		MCPS_DATA_request(
 		    curAddrMode, dest, M_MSDU_LENGTH, priv->msdu, priv->lastHandle, txOpts, &sSecSpec, pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 		fillIndirectJunk(priv);
 	}
@@ -611,7 +677,11 @@ void initInst(struct inst_priv *cur)
 	LEarray[0] = LS0_BYTE(cur->mAddress);
 	LEarray[1] = LS1_BYTE(cur->mAddress);
 
+#if CASCODA_CA_VER >= 8212
+	MLME_SET_request_sync(macExtendedAddress, 0, 8, LEarray, pDeviceRef);
+#else
 	MLME_SET_request_sync(nsIEEEAddress, 0, 8, LEarray, pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	MLME_SET_request_sync(macShortAddress, 0, sizeof(cur->mAddress), LEarray, pDeviceRef);
 
@@ -635,11 +705,12 @@ int main(int argc, char *argv[])
 	time_t t;
 	srand((unsigned)time(&t));
 
-	if (argc - 1 > MAX_INSTANCES)
+	if (numInsts > MAX_INSTANCES)
 	{
 		printf("Please increase MAX_INSTANCES in main.c");
 		return -1;
 	}
+
 	for (int i = 0; i < numInsts; i++)
 	{
 		struct inst_priv * cur        = &insts[i];
@@ -650,8 +721,10 @@ int main(int argc, char *argv[])
 		       STATUS_RECEIVED | STATUS_ACKNOWLEDGED | STATUS_CONFIRMED,
 		       sizeof(cur->mExpectedStatus));
 
-		pthread_mutex_init(&(cur->confirm_mutex), NULL);
-		pthread_cond_init(&(cur->confirm_cond), NULL);
+		int rc = pthread_mutex_init(&(cur->confirm_mutex), NULL);
+		assert(rc == 0);
+		rc = pthread_cond_init(&(cur->confirm_cond), NULL);
+		assert(rc == 0);
 
 		while (ca821x_util_init(pDeviceRef, &driverErrorCallback, NULL))
 		{
@@ -660,11 +733,14 @@ int main(int argc, char *argv[])
 		pDeviceRef->context = cur;
 
 		//Register callbacks for async messages
-		pDeviceRef->callbacks.MCPS_DATA_indication                    = &handleDataIndication;
-		pDeviceRef->callbacks.MCPS_DATA_confirm                       = &handleDataConfirm;
+		pDeviceRef->callbacks.MCPS_DATA_indication = &handleDataIndication;
+		pDeviceRef->callbacks.MCPS_DATA_confirm    = &handleDataConfirm;
+#if CASCODA_CA_VER >= 8212
+		pDeviceRef->callbacks.MLME_POLL_confirm = &handlePollConfirm;
+#endif
 		pDeviceRef->callbacks.generic_dispatch                        = &handleGenericDispatchFrame;
 		EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handleEvbmeMessage;
-		ca821x_util_start_downstream_dispatch_worker();
+		ca821x_util_start_upstream_dispatch_worker();
 
 		initInst(cur);
 		printf("Initialised. %d\r\n", i);

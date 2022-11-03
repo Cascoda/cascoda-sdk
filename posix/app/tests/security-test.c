@@ -269,10 +269,30 @@ static void *inst_worker(void *arg)
 		pthread_mutex_lock(confirm_mutex);
 		priv->lastAddress = insts[i].mAddress;
 		pthread_mutex_unlock(confirm_mutex);
-		//TDME_SETSFR_request_sync(0, 0xdb, 0x0E, pDeviceRef);
-		//if(i == 1)
+//TDME_SETSFR_request_sync(0, 0xdb, 0x0E, pDeviceRef);
+//if(i == 1)
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		tx_op[0]         = 0x01;
+		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+		                  dest,                /* DstAddr */
+		                  0,                   /* HeaderIELength */
+		                  0,                   /* PayloadIELength */
+		                  M_MSDU_LENGTH,       /* MsduLength */
+		                  msdu,                /* pMsdu */
+		                  priv->lastHandle,    /* MsduHandle */
+		                  tx_op,               /* pTxOptions */
+		                  0,                   /* SchTimestamp */
+		                  0,                   /* SchPeriod */
+		                  0,                   /* TxChannel */
+		                  NULLP,               /* pHeaderIEList */
+		                  NULLP,               /* pPayloadIEList */
+		                  &priv->mSecSpec,     /* pSecurity */
+		                  pDeviceRef);         /* pDeviceRef */
+#else
 		MCPS_DATA_request(
 		    MAC_MODE_SHORT_ADDR, dest, M_MSDU_LENGTH, msdu, priv->lastHandle, 0x01, &priv->mSecSpec, pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 	}
 	return NULL;
 }
@@ -464,7 +484,7 @@ int main(int argc, char *argv[])
 		pDeviceRef->callbacks.MLME_COMM_STATUS_indication             = &handleCommStatusIndication;
 		pDeviceRef->callbacks.generic_dispatch                        = &handleGenericDispatchFrame;
 		EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handleEvbmeMessage;
-		ca821x_util_start_downstream_dispatch_worker();
+		ca821x_util_start_upstream_dispatch_worker();
 
 		initInst(cur);
 		printf("Initialised. %d\r\n", i);

@@ -74,8 +74,42 @@ enum hwme_wakeup_condition
 enum lqi_mode
 {
 	HWME_LQIMODE_CS = 0x00, //!< CS (Carrier Sense) is reported as LQI
-	HWME_LQIMODE_ED = 0x01  //!< ED (Energy Detect) is reported as LQI
+	HWME_LQIMODE_ED = 0x01, //!< ED (Energy Detect) is reported as LQI
 };
+
+#if CASCODA_CA_VER >= 8212
+/** Potential values for byte 1 (DC/DC Level Modes) of HWME_DCDCMODE */
+enum dcdc_level_mode
+{
+	HWME_DCDCMODE_OFF      = 0x00, //!< Always off - default
+	HWME_DCDCMODE_TRXONLY  = 0x01, //!< Only on for high currents (tx/rx)
+	HWME_DCDCMODE_ALWAYSON = 0x02, //!< Always on
+};
+
+/** Potential values for byte 2 (DC/DC Frequency Tracking Modes) of HWME_DCDCMODE */
+enum dcdc_frequency_tracking_mode
+{
+	HWME_FREQ_TRACKING_DISABLED = 0x00, //!< Frequency tracking disabled
+	HWME_FREQ_TRACKING_ENABLED  = 0x01, //!< Frequency tracking enabled
+};
+
+/** Potential values for byte 3 (Brown-Out Detector Modes) of HWME_DCDCMODE */
+enum dcdc_bod_mode
+{
+	HWME_BODMODE_OFF      = 0x00, //!< Always off - default
+	HWME_BODMODE_DCDC     = 0x01, //!< Supply is checked when changing DCDC Mode
+	HWME_BODMODE_ALWAYSON = 0x02, //!< Always on - interrupt controlled
+};
+
+/** Potential values for RC OSC Calibration Tracking Mode */
+enum rcosc_tracking_mode
+{
+	HWME_RCOSC_TRMD_OFF    = 0x00, //!< Tracking off
+	HWME_RCOSC_TRMD_GUARD  = 0x01, //!< Tracking with guard band
+	HWME_RCOSC_TRMD_GUARDR = 0x02, //!< Tracking with guard band, but delta values reset when neutral
+	HWME_RCOSC_TRMD_INST   = 0x03, //!< Instantaneous tracking
+};
+#endif // CASCODA_CA_VER >= 8212
 
 /** HWME Attribute IDs */
 enum hwme_attribute
@@ -98,14 +132,21 @@ enum hwme_attribute
 	HWME_SYSCLKOUT   = 0x0F, //!< System Clock Output to a specific GPIO
 	HWME_LQIMODE     = 0x10, //!< LQI Reporting Mode for Data Indications and PanDescriptors
 	HWME_LQILIMIT    = 0x11, //!< LQI minimal value to accept a received MAC frame
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 	HWME_RXMODE       = 0x12, //!< RX_MODE: 0 = MCPS, 1=PCPS, 2=PCPS except data polls
 	HWME_POLLINDMODE  = 0x13, //!< Poll Ind Mode: 0=No indications, 1=Always indicate, 2=indicate if no data confirm
 	HWME_ENHANCEDFP   = 0x14, //!< Use the 'Frame Pending' flag in data frames as informative for the child
 	HWME_MAXDIRECTS   = 0x15, //!< Maximum number of direct frames queued
 	HWME_MAXINDIRECTS = 0x16, //!< Maximum number of indirect frames that can be queued
+#endif                        // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	HWME_DCDCMODE             = 0x18, //!< DC/DC Buck converter mode
+	HWME_RCOSCTRMODE          = 0x19, //!< 32KHz RC oscillator frequency tracking mode
+	HWME_LOTXCALVALUES        = 0x1A, //!< Local Oscillator Transmit Calibration Values
+	HWME_LOTXCALOVERWRITEMODE = 0x1B  //!< LOTXCAL Overwrite mode (0: Read mode, 1: Overwrite mode)
+#else
 	HWME_IMAGINARYINDIRECT = 0x17, //!< 0=Normal Indirect behaviour, 1=Imaginary mode, don't send indirect frames
-#endif
+#endif // CASCODA_CA_VER >= 8212
 };
 
 /** Hardware AES mode values */
@@ -150,6 +191,11 @@ enum tdme_status
 	TDME_FCS_ERROR = 0x05, //!< Received Packet Frame Check Sequence (CRC) Error
 	TDME_SHR_ERROR = 0x06, //!< Received Packet Synchronisation Header Error
 	TDME_PHR_ERROR = 0x07, //!< Received Packet Packet Header Error
+#if CASCODA_CA_VER >= 8212
+	TDME_ERR_BOD_DETECT = 0xA0, //!< Brown-Out Detected
+	TDME_ERR_DCDC_ERR   = 0xB0, //!< DCDC Initialisation Error
+	TDME_ERR_QUEUE      = 0xC0, //!< Queueing Error
+#endif                          // CASCODA_CA_VER >= 8212
 };
 
 /** TDME Test Modes */
@@ -184,7 +230,9 @@ enum tdme_attribute
 	TDME_LO_1_CONFIG = 0x04, //!< LO Test 1 Configuration (Tx/Rx with no Modulation on 802.15.4 Channel)
 	TDME_LO_2_CONFIG = 0x05, //!< LO Test 2 Configuration (VCO Open Loop / Initialisation)
 	TDME_ATM_CONFIG  = 0x06, //!< Analog Test Bus Configuration
-	TDME_MPW2_OVWR   = 0x07,
+#if CASCODA_CA_VER <= 8211
+	TDME_MPW2_OVWR = 0x07,
+#endif // CASCODA_CA_VER <= 8211
 };
 
 #ifdef __cplusplus

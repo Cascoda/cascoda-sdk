@@ -113,7 +113,7 @@ void CHILI_SystemReInit()
 
 	/* set interrupt priorities */
 	/* 0: highest  timers */
-	/* 1:          downstream dispatch and gpios */
+	/* 1:          upstream dispatch and gpios */
 	/* 2:          upstream   dispatch */
 	/* 3: lowest */
 	CHILI_ReInitSetTimerPriority();
@@ -240,7 +240,7 @@ void CHILI_GPIOInit(void)
 	/* Disable internal CA821x - output, no pull-up, set to 1 */
 	GPIO_SetMode(ZIG_INTERNAL_RESET_PORT, BITMASK(ZIG_INTERNAL_RESET_PIN), GPIO_MODE_OUTPUT);
 	GPIO_SetPullCtl(ZIG_INTERNAL_RESET_PORT, BITMASK(ZIG_INTERNAL_RESET_PIN), GPIO_PUSEL_DISABLE);
-	ZIG_INTERNAL_RESET_PVAL = 1; /* RSTB is HIGH */
+	ZIG_INTERNAL_RESET_PVAL = 0; /* RSTB is LOW */
 #endif
 
 	/* ZIG_RESET */

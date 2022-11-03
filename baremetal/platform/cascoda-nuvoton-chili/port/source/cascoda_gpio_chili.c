@@ -394,6 +394,37 @@ ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled)
+{
+	u8_t    index;
+	GPIO_T *port;
+
+	/* pin in dynamic list ? */
+	if (((index = CHILI_ModuleGetIndexFromPin(mpin))) == P_NA)
+		return CA_ERROR_NO_ACCESS;
+	/* pin already registered or used ? */
+	if (ModulePinStatus[index].blocked)
+		return CA_ERROR_NO_ACCESS;
+
+	port = MGPIO_PORT(ModulePinList[index].portnum);
+
+	GPIO_SetMode(port, BITMASK(ModulePinList[index].portbit), GPIO_PMD_OPEN_DRAIN);
+	GPIO_DISABLE_PULL_UP(port, BITMASK(ModulePinList[index].portbit));
+
+	ModulePinStatus[index].blocked  = 1;
+	ModulePinStatus[index].io       = MODULE_PIN_DIR_OUT;
+	ModulePinStatus[index].pullup   = MODULE_PIN_PULLUP_OFF;
+	ModulePinStatus[index].debounce = MODULE_PIN_DEBOUNCE_OFF;
+	ModulePinStatus[index].isled    = isled;
+	ModulePinStatus[index].irq      = MODULE_PIN_IRQ_OFF;
+	ModulePinCallbacks[index]       = NULL;
+
+	return CA_ERROR_SUCCESS;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	u8_t    index;

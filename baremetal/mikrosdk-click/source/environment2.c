@@ -24,14 +24,13 @@
  * @file environment2.c
  * @brief Environment 2 Click Driver.
  */
-
 #include "environment2.h"
+#include <stdio.h>
 #include "cascoda-bm/cascoda_interface_core.h"
 #include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_spi.h"
+#include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
-
-#include <stdio.h>
+#include "math.h"
 
 /**
  * @brief Environment 2 the maximum value of fix16_t.
@@ -58,17 +57,10 @@
  */
 #define FIX16_ONE 0x00010000
 
-static environment2_t environment2;
-
-static uint16_t air_quality;
-static float    humidity;
-static float    temperature;
-static int32_t  voc_index;
-
 static environment2_voc_algorithm_params voc_algorithm_params;
+static environment2_t                    environment2;
 
 // ---------------------------------------------- PRIVATE FUNCTION DECLARATIONS
-
 static fix16_t dev_voc_algorithm_mox_model_process(environment2_voc_algorithm_params *params, fix16_t sraw);
 
 static fix16_t dev_voc_algorithm_sigmoid_scaled_process(environment2_voc_algorithm_params *params, fix16_t sample);
@@ -225,22 +217,19 @@ static uint8_t dev_calc_crc(uint8_t data_0, uint8_t data_1);
  *
  * See #err_t definition for detailed explanation.
  * @note None.
- *
+ * 
  */
 static err_t dev_set_device_slave_address(environment2_t *ctx, uint8_t select_device);
 
 /**
  * @brief Write data to slave
  * @details This function append the slave address to the first byte of data buffer.
- * @param[in] ctx : Click context object.
- * @param[in] slave_addr : Slave address.
+ * @param[in] i2c : i2c handle.
  * @param[in] tx_buf : data buffer .
  * @param[in] len : data buffer length.
  *
- *
  */
-void write_data(environment2_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len);
-
+static void write_data(i2c_master_t *i2c, uint8_t *tx_buf, size_t len);
 // ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
 
 void environment2_cfg_setup(environment2_cfg_t *cfg)
@@ -268,19 +257,16 @@ err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg)
 	if (i2c_master_open(&ctx->i2c, &i2c_cfg) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
-		ca_log_warn("environment2_cfg_setup() Error; initialisation failed");
 	}
 
 	if (i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
-		ca_log_warn("environment2_cfg_setup() Error; unable to set slave address");
 	}
 
 	if (i2c_master_set_speed(&ctx->i2c, cfg->i2c_speed) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
-		ca_log_warn("environment2_cfg_setup() Error; unable to set speed");
 	}
 
 	return I2C_MASTER_SUCCESS;
@@ -288,8 +274,6 @@ err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg)
 
 err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *tx_buf)
 {
-	size_t num_w = 2;
-	//uint8_t tx_buf[ num_w ];
 	err_t status;
 
 	status = ENVIRONMENT2_ERROR;
@@ -301,7 +285,7 @@ err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uin
 			tx_buf[0] = (uint8_t)(cmd >> 8);
 			tx_buf[1] = (uint8_t)cmd;
 
-			write_data(ctx, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w);
+			write_data(&ctx->i2c, tx_buf, 2);
 
 			status = ENVIRONMENT2_OK;
 		}
@@ -312,11 +296,7 @@ err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uin
 
 err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *rx_buf)
 {
-	size_t  num_w_SHT40 = 1;
-	size_t  num_w_SGP40 = 2;
-	size_t  num_r_SHT40 = 6;
-	size_t  num_r_SGP40 = 3;
-	uint8_t tx_buf[num_w_SGP40];
+	uint8_t tx_buf[2];
 	err_t   status;
 
 	status = ENVIRONMENT2_ERROR;
@@ -326,10 +306,9 @@ err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint
 		tx_buf[0] = (uint8_t)(cmd >> 8);
 		tx_buf[1] = (uint8_t)cmd;
 
-		write_data(ctx, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w_SGP40);
+		write_data(&ctx->i2c, tx_buf, 2);
 		dev_measurement_duration_test_delay();
-		dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40);
-		i2c_master_read(&ctx->i2c, rx_buf, num_r_SGP40);
+		i2c_master_read(&ctx->i2c, rx_buf, 3);
 
 		status = ENVIRONMENT2_OK;
 	}
@@ -337,10 +316,9 @@ err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint
 	{
 		tx_buf[0] = (uint8_t)cmd;
 
-		write_data(ctx, ENVIRONMENT2_SHT40_SET_DEV_ADDR, tx_buf, &num_w_SHT40);
+		write_data(&ctx->i2c, tx_buf, 1);
 		dev_measurement_duration_temp_hum_delay();
-		dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SHT40);
-		i2c_master_read(&ctx->i2c, rx_buf, num_r_SHT40);
+		i2c_master_read(&ctx->i2c, rx_buf, 6);
 
 		status = ENVIRONMENT2_OK;
 	}
@@ -350,8 +328,6 @@ err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint
 
 err_t environment2_get_temp_hum(float *humidity, float *temperature)
 {
-	size_t   num_w = 1;
-	size_t   num_r = 6;
 	uint8_t  tx_buf[1];
 	uint8_t  rx_buf[6];
 	uint16_t t_ticks;
@@ -364,9 +340,9 @@ err_t environment2_get_temp_hum(float *humidity, float *temperature)
 
 	if (dev_set_device_slave_address(&environment2, ENVIRONMENT2_SEL_SHT40) == ENVIRONMENT2_OK)
 	{
-		write_data(&environment2, ENVIRONMENT2_SHT40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&environment2.i2c, tx_buf, 1);
 		dev_measurement_duration_temp_hum_delay();
-		i2c_master_read(&environment2.i2c, rx_buf, num_r);
+		i2c_master_read(&environment2.i2c, rx_buf, 6);
 
 		t_ticks = rx_buf[0];
 		t_ticks <<= 8;
@@ -381,7 +357,6 @@ err_t environment2_get_temp_hum(float *humidity, float *temperature)
 	}
 	else
 	{
-		ca_log_warn("environment2_get_temp_hum() Error; write status: %02X", status);
 		status = ENVIRONMENT2_ERROR;
 	}
 
@@ -390,8 +365,6 @@ err_t environment2_get_temp_hum(float *humidity, float *temperature)
 
 err_t environment2_get_air_quality(uint16_t *air_quality)
 {
-	size_t   num_w = 8;
-	size_t   num_r = 3;
 	uint8_t  tx_buf[8];
 	uint8_t  rx_buf[3];
 	uint16_t tmp_hum;
@@ -402,14 +375,7 @@ err_t environment2_get_air_quality(uint16_t *air_quality)
 	err_t    status;
 
 	status = ENVIRONMENT2_OK;
-
-	status = environment2_get_temp_hum(&humidity, &temperature);
-
-	if (status == ENVIRONMENT2_ERROR)
-	{
-		ca_log_warn("environment2_get_air_quality() Error; write status: %02X", status);
-		return status;
-	}
+	environment2_get_temp_hum(&humidity, &temperature);
 
 	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_RAW >> 8);
 	tx_buf[1] = (uint8_t)ENVIRONMENT2_SGP40_CMD_MEASURE_RAW;
@@ -428,9 +394,9 @@ err_t environment2_get_air_quality(uint16_t *air_quality)
 
 	if (dev_set_device_slave_address(&environment2, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
 	{
-		write_data(&environment2, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&environment2.i2c, tx_buf, 8);
 		dev_measurement_duration_raw_delay();
-		i2c_master_read(&environment2.i2c, rx_buf, num_r);
+		i2c_master_read(&environment2.i2c, rx_buf, 3);
 
 		result = rx_buf[0];
 		result <<= 8;
@@ -448,8 +414,6 @@ err_t environment2_get_air_quality(uint16_t *air_quality)
 
 uint16_t environment2_sgp40_measure_test(environment2_t *ctx)
 {
-	size_t   num_w = 2;
-	size_t   num_r = 3;
 	uint8_t  tx_buf[2];
 	uint8_t  rx_buf[3];
 	uint16_t result;
@@ -459,9 +423,9 @@ uint16_t environment2_sgp40_measure_test(environment2_t *ctx)
 
 	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
 	{
-		write_data(ctx, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&ctx->i2c, tx_buf, 2);
 		dev_measurement_duration_test_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, num_r);
+		i2c_master_read(&ctx->i2c, rx_buf, 3);
 
 		result = rx_buf[0];
 		result <<= 8;
@@ -473,7 +437,6 @@ uint16_t environment2_sgp40_measure_test(environment2_t *ctx)
 
 err_t environment2_sgp40_heater_off(environment2_t *ctx)
 {
-	size_t  num_w = 2;
 	uint8_t tx_buf[2];
 	err_t   status;
 
@@ -484,11 +447,10 @@ err_t environment2_sgp40_heater_off(environment2_t *ctx)
 
 	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
 	{
-		write_data(ctx, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&ctx->i2c, tx_buf, 2);
 	}
 	else
 	{
-		ca_log_warn("environment2_sgp40_heater_off() Error; write status: %02X", status);
 		status = ENVIRONMENT2_ERROR;
 	}
 
@@ -497,7 +459,6 @@ err_t environment2_sgp40_heater_off(environment2_t *ctx)
 
 err_t environment2_sgp40_soft_reset(environment2_t *ctx)
 {
-	size_t  num_w = 2;
 	uint8_t tx_buf[2];
 	err_t   status;
 
@@ -508,11 +469,10 @@ err_t environment2_sgp40_soft_reset(environment2_t *ctx)
 
 	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
 	{
-		write_data(ctx, ENVIRONMENT2_SGP40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&ctx->i2c, tx_buf, 2);
 	}
 	else
 	{
-		ca_log_warn("environment2_sgp40_soft_reset() Error; write status: %02X", status);
 		status = ENVIRONMENT2_ERROR;
 	}
 
@@ -577,7 +537,6 @@ err_t environment2_voc_algorithm_process(environment2_voc_algorithm_params *para
 			                                           dev_voc_algorithm_mean_variance_estimator_get_mean(params));
 		}
 	}
-
 	*voc_index = (fix16_cast_to_int((params->mVoc_Index + F16(0.5))));
 
 	return ENVIRONMENT2_OK;
@@ -590,8 +549,6 @@ err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
 {
 	int32_t  int_temperature, int_humidity;
 	uint16_t sraw;
-	size_t   num_w = 1;
-	size_t   num_r = 6;
 	uint8_t  tx_buf[1];
 	uint8_t  rx_buf[6];
 	uint16_t t_ticks;
@@ -604,9 +561,9 @@ err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
 
 	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SHT40) == ENVIRONMENT2_OK)
 	{
-		write_data(ctx, ENVIRONMENT2_SHT40_SET_DEV_ADDR, tx_buf, &num_w);
+		write_data(&ctx->i2c, tx_buf, 1);
 		dev_measurement_duration_temp_hum_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, num_r);
+		i2c_master_read(&ctx->i2c, rx_buf, 6);
 
 		t_ticks = rx_buf[0];
 		t_ticks <<= 8;
@@ -621,7 +578,6 @@ err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
 	}
 	else
 	{
-		ca_log_warn("environment2_measure_voc_index_with_rh_t() Error; write status: %02X", status);
 		status = ENVIRONMENT2_ERROR;
 	}
 
@@ -640,35 +596,27 @@ err_t environment2_get_voc_index(int32_t *voc_index)
 
 	status = environment2_get_air_quality(&sraw);
 	dev_measurement_duration_raw_delay();
-
 	environment2_voc_algorithm_process(&voc_algorithm_params, sraw, voc_index);
 	return ENVIRONMENT2_OK;
 }
 
-uint8_t MIKROSDK_ENVIRONMENT2_Initialise()
+uint8_t MIKROSDK_ENVIRONMENT2_Initialise(void)
 {
+	SENSORIF_I2C_Init();
 	environment2_cfg_t environment2_cfg; /**< Click config object. */
-
-	printf("Initialising\n");
 	environment2_cfg_setup(&environment2_cfg);
 	ENVIRONMENT2_MAP_MIKROBUS(environment2_cfg);
 	err_t init_flag = environment2_init(&environment2, &environment2_cfg);
 
-	if (init_flag == I2C_MASTER_ERROR)
+	if (environment2_sgp40_measure_test(&environment2) != ENVIRONMENT2_SGP40_TEST_PASSED)
 	{
-		ca_log_warn("MIKROSDK_ENVIRONMENT2_Initialise() Error; Initialisation failed");
-		return ENVIRONMENT2_ERROR;
+		printf("  One or more tests have failed\r\n");
 	}
 
-	BSP_WaitTicks(200);
-
+	printf("-----------------------\r\n");
 	environment2_sgp40_heater_off(&environment2);
-	BSP_WaitTicks(200);
-
 	environment2_config_sensors();
-	BSP_WaitTicks(200);
-
-	return ENVIRONMENT2_OK;
+	SENSORIF_I2C_Deinit();
 }
 
 // ----------------------------------------------- PRIVATE FUNCTION DEFINITIONS
@@ -1209,16 +1157,19 @@ static fix16_t dev_fix16_exp(fix16_t x)
 	return res;
 }
 
+/* Wait for 30ms */
 static void dev_measurement_duration_raw_delay(void)
 {
 	BSP_WaitTicks(30);
 }
 
+/* Wait for 250ms */
 static void dev_measurement_duration_test_delay(void)
 {
 	BSP_WaitTicks(250);
 }
 
+/* Wait for 10ms */
 static void dev_measurement_duration_temp_hum_delay(void)
 {
 	BSP_WaitTicks(10);
@@ -1272,25 +1223,28 @@ static err_t dev_set_device_slave_address(environment2_t *ctx, uint8_t select_de
 		i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
 		status = ENVIRONMENT2_OK;
 	}
+	if (status == ENVIRONMENT2_ERROR)
+	{
+		printf("Error in dev_set_device_slave_address!\n");
+	}
 
 	return status;
 }
 
-void write_data(environment2_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len)
+void write_data(i2c_master_t *i2c, uint8_t *tx_buf, size_t len)
 {
 	uint8_t data_buf[256];
 	uint8_t cnt;
-	size_t  length     = ++*len;
 	err_t   hal_status = HAL_I2C_MASTER_SUCCESS;
 
-	data_buf[0] = slave_addr;
+	data_buf[0] = environment2.slave_address;
 
-	for (cnt = 1; cnt <= *len; cnt++)
+	for (cnt = 1; cnt <= len; cnt++)
 	{
 		data_buf[cnt] = tx_buf[cnt - 1];
 	}
 
-	i2c_master_write(&ctx->i2c, data_buf, length);
+	i2c_master_write(i2c, data_buf, ++len);
 }
 
 // ------------------------------------------------------------------------- END

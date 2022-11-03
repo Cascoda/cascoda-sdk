@@ -13,10 +13,7 @@ target_include_directories(mikrosdk-test
 		${PROJECT_SOURCE_DIR}/include
 	)
 
-target_link_libraries(mikrosdk-test test15-4 cascoda-bm)
-if(TARGET mikrosdk-click)
-	target_link_libraries(mikrosdk-test mikrosdk-click)
-endif()
+target_link_libraries(mikrosdk-test test15-4-api cascoda-bm mikrosdk-click)
 
 # convert to bin file format
 cascoda_make_binary(mikrosdk-test)

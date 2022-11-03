@@ -37,6 +37,8 @@
 #include "i2c.h"
 #include "spi.h"
 #include "sys.h"
+#include "uart.h"
+
 /* Cascoda */
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
@@ -49,7 +51,7 @@
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-/* I2C Interface Module used:
+/* M2351 I2C Interface Module used:
  * -------------------------------------------------------------------------
  * Number  Module   SDA     SCL		Module Configuration
  * -------------------------------------------------------------------------
@@ -69,40 +71,22 @@
 /****************************************************************************/
 /* These values must also be updated in cascoda_sensorif_secure.c           */
 /****************************************************************************/
-
 /* set I2C interface number (0/1/2) */
-#define SENSORIF_I2CNUM 0
 
-/* I2C module */
-#if (SENSORIF_I2CNUM == 0)
-#define SENSORIF_I2CIF I2C0
-#elif (SENSORIF_I2CNUM == 1)
-#define SENSORIF_I2CIF I2C1
-#elif (SENSORIF_I2CNUM == 2)
-#define SENSORIF_I2CIF I2C2
-#else
-#error "sensorif I2C module not valid"
-#endif
-
-/* set SPI interface number (1/2)*/
-#define SENSORIF_SPINUM 1
-
-/* SPI module */
-#if (SENSORIF_SPINUM == 1)
-#define SENSORIF_SPIIF SPI1
-#elif (SENSORIF_SPINUM == 2)
-#define SENSORIF_SPIIF SPI2
-#else
-#error "sensorif SPI module not valid"
-#endif
-
-/* Dummy data for SPI transmission */
-#define SPI_IDLE 0xFF
+static uint32_t SENSORIF_I2CNUM;
+static I2C_T *  SENSORIF_I2CIF;
+static uint32_t SENSORIF_SPINUM;
+static SPI_T *  SENSORIF_SPIIF;
+static uint8_t  SPI_CHIP_SELECT;
+static uint32_t SENSORIF_UARTNUM;
+static UART_T * SENSORIF_UARTIF;
+static uint64_t SENSORIF_UART_MODULE;
+static uint64_t SENSORIF_UART_RST;
 
 /*-----------------------Private function----------------*/
 
 /* Write data to TX buffer */
-static u8_t SENSORIF_SPIPushByte(u8_t OutByte)
+static u8_t SENSORIF_SPI_PushByte(u8_t OutByte)
 {
 	/* Wait for TXE */
 	while (!SPI_GET_TX_FIFO_EMPTY_FLAG(SENSORIF_SPIIF))
@@ -113,7 +97,7 @@ static u8_t SENSORIF_SPIPushByte(u8_t OutByte)
 }
 
 /* Receive data from RX buffer */
-static u8_t SENSORIF_SPIPopByte(u8_t *InByte)
+static u8_t SENSORIF_SPI_PopByte(u8_t *InByte)
 {
 	/* Wait for received character */
 	while (SPI_GET_RX_FIFO_EMPTY_FLAG(SENSORIF_SPIIF))
@@ -123,7 +107,79 @@ static u8_t SENSORIF_SPIPopByte(u8_t *InByte)
 	return 1;
 }
 
+#if !defined(USE_UART)
+static u8_t SENSORIF_UART_ReverseBits(u8_t input)
+{
+	u8_t num_of_bits = sizeof(input) * 8;
+	u8_t reverse_num = 0;
+	u8_t i;
+	for (i = 0; i < num_of_bits; ++i)
+	{
+		if ((input & (1 << i)))
+		{
+			reverse_num |= 1 << ((num_of_bits - 1) - i);
+		}
+	}
+	return reverse_num;
+}
+#endif
 /*-----------------------Public function----------------*/
+
+u8_t SENSORIF_SPI_Chip_Select()
+{
+	return SPI_CHIP_SELECT;
+}
+
+void SENSORIF_I2C_Config(u32_t portnum)
+{
+	SENSORIF_SECURE_I2C_Config(portnum);
+	SENSORIF_I2CNUM = portnum;
+	/* I2C module */
+	if (SENSORIF_I2CNUM == 0)
+		SENSORIF_I2CIF = I2C0;
+	else if (SENSORIF_I2CNUM == 1)
+		SENSORIF_I2CIF = I2C1;
+	else if (SENSORIF_I2CNUM == 2)
+		SENSORIF_I2CIF = I2C2;
+	else
+		ca_log_warn("sensorif I2C module not valid");
+}
+
+void SENSORIF_SPI_Config(u32_t portnum)
+{
+	SENSORIF_SECURE_SPI_Config(portnum);
+	SENSORIF_SPINUM = portnum;
+	/* SPI module */
+	if (SENSORIF_SPINUM == 1)
+	{
+		SENSORIF_SPIIF  = SPI1;
+		SPI_CHIP_SELECT = 34;
+	}
+#if (CASCODA_CHILI2_REV != 1)
+	else if (SENSORIF_SPINUM == 2)
+	{
+		SENSORIF_SPIIF  = SPI2;
+		SPI_CHIP_SELECT = 17;
+	}
+#endif
+	else
+		ca_log_warn("sensorif SPI module not valid");
+}
+
+void SENSORIF_UART_Config(u32_t portnum)
+{
+	SENSORIF_SECURE_UART_Config(portnum);
+	SENSORIF_UARTNUM = portnum;
+	/* UART module */
+	if (SENSORIF_UARTNUM == 5)
+	{
+		SENSORIF_UARTIF      = UART5;
+		SENSORIF_UART_MODULE = UART5_MODULE;
+		SENSORIF_UART_RST    = UART5_RST;
+	}
+	else
+		ca_log_warn("sensorif UART module not valid");
+}
 
 enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *plen)
 {
@@ -282,8 +338,8 @@ void SENSORIF_SPI_FULL_DUPLEX_RXONLY(u8_t *RxBuf, u8_t RxLen)
 {
 	for (u8_t i = 0; i < RxLen; i++)
 	{
-		SENSORIF_SPIPushByte(SPI_IDLE);
-		SENSORIF_SPIPopByte(&RxBuf[i]);
+		SENSORIF_SPI_PushByte(0xFF);
+		SENSORIF_SPI_PopByte(&RxBuf[i]);
 	}
 }
 
@@ -304,7 +360,7 @@ void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxL
 		/* If there is data to be transmitted, then transmit it*/
 		if (TxDataLeft)
 		{
-			if (SENSORIF_SPIPushByte(TxBuf[i]))
+			if (SENSORIF_SPI_PushByte(TxBuf[i]))
 			{
 				i++;
 				TxLen--;
@@ -313,7 +369,7 @@ void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxL
 		}
 		/* If there is no more data to be transmitted
 			but expecting more received data, then send dummy data*/
-		else if (TxLen && SENSORIF_SPIPushByte(SPI_IDLE))
+		else if (TxLen && SENSORIF_SPI_PushByte(SPI_IDLE))
 		{
 			TxLen--;
 		}
@@ -321,7 +377,7 @@ void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxL
 		/* If there is data to be received, then receive it*/
 		if (RxDataLeft)
 		{
-			if (SENSORIF_SPIPopByte(&RxBuf[j]))
+			if (SENSORIF_SPI_PopByte(&RxBuf[j]))
 			{
 				j++;
 				RxLen--;
@@ -330,9 +386,51 @@ void SENSORIF_SPI_WRITE_THEN_READ(u8_t *RxBuf, u8_t *TxBuf, u8_t RxLen, u8_t TxL
 		}
 		/* If there is no more data to be received
 			but expecting more data to be transmitted, then receive them to a dummy variable*/
-		else if (RxLen && SENSORIF_SPIPopByte(&junk))
+		else if (RxLen && SENSORIF_SPI_PopByte(&junk))
 		{
 			RxLen--;
 		}
 	}
 }
+
+#if !defined(USE_UART)
+u32_t SENSORIF_UART_Write(u8_t *out_data, u32_t writebytes)
+{
+	u32_t numBytes;
+
+	/* Wait until Tx FIFO is empty */
+	while (!(SENSORIF_UARTIF->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk))
+		;
+	/* fill FIFO */
+	for (numBytes = 0; numBytes < writebytes; ++numBytes)
+	{
+		/* Reverse each byte to LSB first and MSB last before putting on TX line */
+		SENSORIF_UARTIF->DAT = SENSORIF_UART_ReverseBits(out_data[numBytes]);
+	}
+	return numBytes;
+}
+
+u32_t SENSORIF_UART_Read(u8_t *in_data, u32_t readbytes)
+{
+	u8_t  rx_data[readbytes];
+	u32_t numBytes = 0;
+	u32_t iter;
+
+	/* Note that this is basically redefining the vendor BSP function UART_Read() */
+	/* which cannot read a previously unknown number of bytes. */
+
+	while ((!(SENSORIF_UARTIF->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk)) && (numBytes < readbytes)) /* Rx FIFO empty ? */
+	{
+		rx_data[numBytes] = SENSORIF_UARTIF->DAT;
+		++numBytes;
+	}
+
+	/* Reverse bits in each byte to MSB first and LSB last */
+	for (iter = 0; iter < numBytes; ++iter)
+	{
+		in_data[iter] = SENSORIF_UART_ReverseBits(rx_data[iter]);
+	}
+
+	return (numBytes);
+}
+#endif

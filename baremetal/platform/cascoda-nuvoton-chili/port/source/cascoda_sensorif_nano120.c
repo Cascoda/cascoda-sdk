@@ -45,7 +45,7 @@
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
 
-/* I2C Interface Module used:
+/* Nano120 I2C Interface Module used:
  * -------------------------------------------------------------------------
  * Number  Module   SDA     SCL		Module Configuration
  * -------------------------------------------------------------------------
@@ -53,14 +53,19 @@
  * 1       I2C1                     No pins available on module
  */
 /* set interface number (0/1/2) */
-#define SENSORIF_I2CNUM 0
 
-/* I2C module */
-#if (SENSORIF_I2CNUM == 0)
-#define SENSORIF_I2CIF I2C0
-#else
-#error "sensorif I2C module not valid"
-#endif
+static uint32_t SENSORIF_I2CNUM;
+static I2C_T *  SENSORIF_I2CIF;
+
+void SENSORIF_I2C_Config(u32_t portnum)
+{
+	SENSORIF_I2CNUM = portnum;
+	/* I2C module */
+	if (SENSORIF_I2CNUM == 0)
+		SENSORIF_I2CIF = I2C0;
+	else
+		ca_log_warn("sensorif I2C module not valid");
+}
 
 enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *plen)
 {

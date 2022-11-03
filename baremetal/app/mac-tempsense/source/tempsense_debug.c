@@ -160,6 +160,24 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 		return;
 	}
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	status           = MCPS_DATA_request(MAC_MODE_NO_ADDR, /* SrcAddrMode */
+                               fadd,             /* DstAddr */
+                               0,                /* HeaderIELength */
+                               0,                /* PayloadIELength */
+                               msduLength,       /* MsduLength */
+                               msdu,             /* pMsdu */
+                               Debug_Handle,     /* MsduHandle */
+                               tx_op,            /* pTxOptions */
+                               0,                /* SchTimestamp */
+                               0,                /* SchPeriod */
+                               0,                /* TxChannel */
+                               NULLP,            /* pHeaderIEList */
+                               NULLP,            /* pPayloadIEList */
+                               NULLP,            /* pSecurity */
+                               pDeviceRef);      /* pDeviceRef */
+#else
 	status = MCPS_DATA_request(MAC_MODE_NO_ADDR, /* SrcAddrMode */
 	                           fadd,             /* DstAddr */
 	                           msdulength,       /* MsduLength */
@@ -168,6 +186,7 @@ void APP_Debug_Send(struct ca821x_dev *pDeviceRef)
 	                           0,                /* TxOptions */
 	                           NULLP,            /* *pSecurity */
 	                           pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	if (status)
 	{

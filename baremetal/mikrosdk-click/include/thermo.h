@@ -49,8 +49,8 @@
  * \defgroup module pin mapping
  * \{
  */
-/* module pins are used for pin configuration
-	- MISO = pin 31, MOSI = pin 32 (unused), SCK = pin 33, CS = pin 34*/
+/* This is for code conventional purpose and 
+	has no effect on anything  */
 #define THERMO_MAP_MIKROBUS(cfg) \
 	cfg.miso = 31;               \
 	cfg.mosi = 32;               \

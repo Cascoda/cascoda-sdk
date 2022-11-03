@@ -329,6 +329,10 @@ void cascoda_isr_chili_init(void);
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
+#elif (CASCODA_CHILI2_REV == 1) /* Chili devboard */
+#define SPI SPI0
+#define SPI_MODULE SPI0_MODULE
+#define SPI_NUM 0
 #elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 #define SPI SPI1
 #define SPI_MODULE SPI1_MODULE

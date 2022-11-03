@@ -94,9 +94,11 @@ uint8_t ca821x_get_sync_response_id(uint8_t cmdid)
 	case SPI_MLME_START_REQUEST:
 		rval = SPI_MLME_START_CONFIRM;
 		break;
+#if CASCODA_CA_VER <= 8211
 	case SPI_MLME_POLL_REQUEST:
 		rval = SPI_MLME_POLL_CONFIRM;
 		break;
+#endif // CASCODA_CA_VER <= 8211
 	case SPI_HWME_SET_REQUEST:
 		rval = SPI_HWME_SET_CONFIRM;
 		break;
@@ -136,14 +138,110 @@ ca_error ca821x_api_init(struct ca821x_dev *pDeviceRef)
 
 	memset(pDeviceRef, 0, sizeof(*pDeviceRef));
 
-#if (CASCODA_CA_VER == 8210)
+#if CASCODA_CA_VER == 8210
 	pDeviceRef->shortaddr = 0xFFFF;
 	pDeviceRef->lqi_mode  = HWME_LQIMODE_CS;
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 	return CA_ERROR_SUCCESS;
 }
 
+#if CASCODA_CA_VER >= 8212
+ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
+                                struct FullAddr    DstAddr,
+                                uint8_t            HeaderIELength,
+                                uint8_t            PayloadIELength,
+                                uint8_t            MsduLength,
+                                uint8_t *          pMsdu,
+                                uint8_t            MsduHandle,
+                                uint8_t *          pTxOptions,
+                                uint32_t           SchTimestamp,
+                                uint16_t           SchPeriod,
+                                uint8_t            TxChannel,
+                                uint8_t *          pHeaderIEList,
+                                uint8_t *          pPayloadIEList,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef)
+{
+	union DataReqVariable
+	{
+		uint8_t *       ptr;
+		uint32_t *      pSchTimestamp;
+		uint16_t *      pSchPeriod;
+		uint8_t *       pTxChannel;
+		uint8_t *       pHieList;
+		uint8_t *       pPieList;
+		uint8_t *       pMsdu;
+		struct SecSpec *pSec;
+	} data; //Moving pointer
+	struct MAC_Message Command;
+#define DATAREQ (Command.PData.DataReq)
+	Command.CommandId       = SPI_MCPS_DATA_REQUEST;
+	DATAREQ.SrcAddrMode     = SrcAddrMode;
+	DATAREQ.Dst             = DstAddr;
+	DATAREQ.HeaderIELength  = HeaderIELength;
+	DATAREQ.PayloadIELength = PayloadIELength;
+	DATAREQ.MsduLength      = MsduLength;
+	DATAREQ.MsduHandle      = MsduHandle;
+	memcpy(DATAREQ.TxOptions, pTxOptions, 2);
+	data.ptr       = DATAREQ.Data;
+	Command.Length = sizeof(struct MCPS_DATA_request_pset) - MAX_DATA_SIZE + MsduLength;
+
+	//SCH params
+	if (DATAREQ.TxOptions[0] & TXOPT0_SCH)
+	{
+		*(data.pSchTimestamp++) = SchTimestamp;
+		*(data.pSchPeriod++)    = SchPeriod;
+		Command.Length += sizeof(*data.pSchTimestamp) + sizeof(*data.pSchPeriod);
+	}
+
+	//Tx Channel
+	if (DATAREQ.TxOptions[0] & TXOPT0_SPECIFIC_CHANNEL)
+	{
+		*(data.pTxChannel++) = TxChannel;
+		Command.Length += sizeof(*data.pTxChannel);
+	}
+
+	//IEs
+	if (DATAREQ.TxOptions[1] & TXOPT1_2015_FRAME)
+	{
+		memcpy(data.pHieList, pHeaderIEList, HeaderIELength);
+		data.ptr += HeaderIELength;
+
+		memcpy(data.pPieList, pPayloadIEList, PayloadIELength);
+		data.ptr += PayloadIELength;
+
+		Command.Length += HeaderIELength + PayloadIELength;
+	}
+	else
+	{
+		if (HeaderIELength || PayloadIELength)
+			ca_log_crit("Non-2015 frames don't support Header or Payload IEs.");
+	}
+
+	//MSDU
+	memcpy(data.pMsdu, pMsdu, MsduLength);
+	data.ptr += MsduLength;
+
+	//Security
+	if ((pSecurity == NULL) || (pSecurity->SecurityLevel == 0))
+	{
+		data.pSec->SecurityLevel = 0;
+		Command.Length += 1;
+	}
+	else
+	{
+		*data.pSec = *pSecurity;
+		Command.Length += sizeof(struct SecSpec);
+	}
+
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
+		return MAC_SYSTEM_ERROR;
+
+	return MAC_SUCCESS;
+#undef DATAREQ
+} // End of MCPS_DATA_request()
+#else
 ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
                                 struct FullAddr    DstAddr,
                                 uint8_t            MsduLength,
@@ -182,6 +280,7 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
 	return MAC_SUCCESS;
 #undef DATAREQ
 } // End of MCPS_DATA_request()
+#endif // CASCODA_CA_VER >= 8212
 
 ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef)
 {
@@ -207,7 +306,54 @@ ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pD
 	return (ca_mac_status)Response.PData.PurgeCnf.Status;
 } // End of MCPS_PURGE_request_sync()
 
-#if CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
+                                uint8_t            TxOpts,
+                                uint8_t            PsduLength,
+                                uint8_t *          pPsdu,
+                                uint32_t           SchTimestamp,
+                                uint16_t           SchPeriod,
+                                struct ca821x_dev *pDeviceRef)
+{
+	union DataReqVariable
+	{
+		uint8_t * ptr;
+		uint32_t *pSchTimestamp;
+		uint16_t *pSchPeriod;
+		uint8_t * pPsduLength;
+
+	} data;
+
+	struct MAC_Message Command;
+
+	if (PsduLength > aMaxPHYPacketSize)
+		return MAC_FRAME_TOO_LONG;
+
+#define DATAREQ (Command.PData.PhyDataReq)
+	Command.CommandId  = SPI_PCPS_DATA_REQUEST;
+	DATAREQ.PsduHandle = PsduHandle;
+	DATAREQ.TxOpts     = TxOpts;
+	data.ptr           = DATAREQ.VariableData;
+	Command.Length     = PsduLength + sizeof(struct PCPS_DATA_request_pset) - sizeof(DATAREQ.VariableData);
+	if (DATAREQ.TxOpts & TXOPT0_SCH)
+	{
+		*(data.pSchTimestamp++) = SchTimestamp;
+		Command.Length += sizeof(SchTimestamp);
+
+		*(data.pSchPeriod++) = SchPeriod;
+		Command.Length += sizeof(SchPeriod);
+	}
+	*(data.pPsduLength++) = PsduLength;
+	Command.Length += 1;
+	memcpy(data.ptr, pPsdu, PsduLength);
+
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
+		return MAC_SYSTEM_ERROR;
+
+	return MAC_SUCCESS;
+#undef DATAREQ
+} // End of PCPS_DATA_request()
+#elif CASCODA_CA_VER == 8211
 ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
                                 uint8_t            TxOpts,
                                 uint8_t            PsduLength,
@@ -233,7 +379,7 @@ ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
 	return MAC_SUCCESS;
 #undef DATAREQ
 } // End of PCPS_DATA_request()
-#endif // CASCODA_CA_VER >= 8211
+#endif // CASCODA_CA_VER >= 8212
 
 ca_mac_status MLME_ASSOCIATE_request(uint8_t            LogicalChannel,
                                      struct FullAddr    DstAddr,
@@ -421,12 +567,12 @@ ca_mac_status MLME_RESET_request_sync(uint8_t SetDefaultPIB, struct ca821x_dev *
 
 	status = SIMPLECNF.Status;
 
-#if (CASCODA_CA_VER == 8210)
+#if CASCODA_CA_VER == 8210
 	if (SetDefaultPIB && status == MAC_SUCCESS)
 	{
 		pDeviceRef->shortaddr = 0xFFFF;
 	}
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 	return (ca_mac_status)status;
 #undef SIMPLEREQ
@@ -531,7 +677,7 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
 	if (Response.CommandId != SPI_MLME_SET_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-#if (CASCODA_CA_VER == 8210)
+#if CASCODA_CA_VER == 8210
 	if (SIMPLECNF.Status == MAC_SUCCESS)
 	{
 		if (PIBAttribute == macShortAddress)
@@ -543,7 +689,7 @@ ca_mac_status MLME_SET_request_sync(uint8_t            PIBAttribute,
 			memcpy(pDeviceRef->extaddr, pPIBAttributeValue, 8);
 		}
 	}
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 	return (ca_mac_status)SIMPLECNF.Status;
 #undef SETREQ
@@ -612,12 +758,46 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
 #undef STARTREQ
 } // End of MLME_START_request_sync()
 
+#if CASCODA_CA_VER >= 8212
+ca_mac_status MLME_POLL_request(struct FullAddr    CoordAddress,
+                                uint8_t            FrameVersion,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef)
+{
+	struct cmd
+	{
+		uint8_t                       CommandId;
+		uint8_t                       Length;
+		struct MLME_POLL_request_pset PollReq;
+	} Command;
+#define POLLREQ (Command.PollReq)
+	Command.CommandId    = SPI_MLME_POLL_REQUEST;
+	Command.Length       = sizeof(struct MLME_POLL_request_pset);
+	POLLREQ.CoordAddress = CoordAddress;
+	POLLREQ.FrameVersion = FrameVersion;
+	if ((pSecurity == NULL) || (pSecurity->SecurityLevel == 0))
+	{
+		POLLREQ.Security.SecurityLevel = 0;
+		Command.Length -= sizeof(struct SecSpec) - 1;
+	}
+	else
+	{
+		POLLREQ.Security = *pSecurity;
+	}
+
+	if (ca821x_api_downstream(&Command.CommandId, NULL, pDeviceRef))
+		return MAC_SYSTEM_ERROR;
+
+	return MAC_SUCCESS;
+#undef POLLREQ
+} // End of MLME_POLL_request()
+#else
 ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 #if CASCODA_CA_VER == 8210
-                                     uint8_t Interval[2], /* polling interval in 0.1 seconds res */
-                                                          /* 0 means poll once */
-                                                          /* 0xFFFF means stop polling */
-#endif
+                                     uint8_t         Interval[2], /* polling interval in 0.1 seconds res */
+                                                                  /* 0 means poll once */
+                                                                  /* 0xFFFF means stop polling */
+#endif // CASCODA_CA_VER == 8210
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef)
 {
@@ -633,9 +813,9 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 	Command.Length       = sizeof(struct MLME_POLL_request_pset);
 	POLLREQ.CoordAddress = CoordAddress;
 #if CASCODA_CA_VER == 8210
-	POLLREQ.Interval[0] = Interval[0];
-	POLLREQ.Interval[1] = Interval[1];
-#endif
+	POLLREQ.Interval[0]  = Interval[0];
+	POLLREQ.Interval[1]  = Interval[1];
+#endif // CASCODA_CA_VER == 8210
 	if ((pSecurity == NULL) || (pSecurity->SecurityLevel == 0))
 	{
 		POLLREQ.Security.SecurityLevel = 0;
@@ -655,6 +835,7 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr CoordAddress,
 	return (ca_mac_status)Response.PData.Status;
 #undef POLLREQ
 } // End of MLME_POLL_request_sync()
+#endif // CASCODA_CA_VER >= 8212
 
 ca_mac_status HWME_SET_request_sync(uint8_t            HWAttribute,
                                     uint8_t            HWAttributeLength,
@@ -680,10 +861,10 @@ ca_mac_status HWME_SET_request_sync(uint8_t            HWAttribute,
 	if (Response.CommandId != SPI_HWME_SET_CONFIRM)
 		return MAC_SYSTEM_ERROR;
 
-#if (CASCODA_CA_VER == 8210)
+#if CASCODA_CA_VER == 8210
 	if (HWAttribute == HWME_LQIMODE && Response.PData.Status == MAC_SUCCESS)
 		pDeviceRef->lqi_mode = *pHWAttributeValue;
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 	return (ca_mac_status)Response.PData.HWMESetCnf.Status;
 } // End of HWME_SET_request_sync()
@@ -962,12 +1143,40 @@ ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 	if ((status = TDME_SETSFR_request_sync(0, 0xFE, 0x3F, pDeviceRef))) // Tx Output Power 8 dBm
 		return (ca_mac_status)(status);
 
+	// Set the Clear Channel Assessment mode to OR - CCA fails if either the
+	// channel Carrier Sense or Energy Detect levels are too high
+	uint8_t mlme_attribute = 0x00;
+	if ((status = MLME_SET_request_sync(phyCCAMode, 0, 1, &mlme_attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+
+#if CASCODA_CA_VER <= 8211
+	// Set the maximum number of retries to the largest possible value - seven under the CA8210 & CA8211
+	mlme_attribute = 7;
+	if ((status = MLME_SET_request_sync(macMaxFrameRetries, 0, 1, &mlme_attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#else
+		//TODO: Set macMaxFrameRetries to 15 once support for that is implemented in the MAC
+#endif
+
 #if CASCODA_CA_VER == 8210
 	/* Set hardware lqi limit to 0 to disable lqi-based frame filtering */
 	uint8_t lqi_limit = 0;
-	if ((status = HWME_SET_request_sync(0x11, 1, &lqi_limit, pDeviceRef)))
+	if ((status = HWME_SET_request_sync(HWME_LQILIMIT, 1, &lqi_limit, pDeviceRef)))
 		return (ca_mac_status)(status);
-#endif
+#endif // CASCODA_CA_VER == 8210
+
+#if CASCODA_CA_VER >= 8212
+	/* Set the LO TX calibration values for the ca8212 */
+	uint8_t txcal_vals[16] = {
+	    0xAF, 0xAE, 0xAE, 0xAD, 0xAD, 0xAC, 0xAB, 0xAB, 0xAB, 0xAA, 0xAA, 0xA9, 0xA8, 0xA8, 0xA7, 0xA7};
+	if ((status = HWME_SET_request_sync(HWME_LOTXCALVALUES, 16, txcal_vals, pDeviceRef)))
+		return (ca_mac_status)(status);
+
+	/* Set the LOTXCAL Overwrite mode to 1 to enable lotxcal sfr being overwritten when channel changes */
+	uint8_t lotxcal_overwrite_mode = 1;
+	if ((status = HWME_SET_request_sync(HWME_LOTXCALOVERWRITEMODE, 1, &lotxcal_overwrite_mode, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif // CASCODA_CA_VER >= 8212
 
 	return MAC_SUCCESS;
 } // End of TDME_ChipInit()
@@ -1025,11 +1234,13 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 
 	switch (PIBAttribute)
 	{
-	/* PHY */
+/* PHY */
+#if CASCODA_CA_VER == 8210
 	case phyCurrentChannel:
 		if (value < 11 || value > 26)
 			status = MAC_INVALID_PARAMETER;
 		break;
+#endif // CASCODA_CA_VER == 8210
 	case phyTransmitPower:
 		if (value > 0x3F)
 			status = MAC_INVALID_PARAMETER;
@@ -1052,7 +1263,7 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 			status = MAC_INVALID_PARAMETER;
 		break;
 	case macBeaconOrder:
-		if (value > 15)
+		if (value != 15)
 			status = MAC_INVALID_PARAMETER;
 		break;
 	case macMaxBE:
@@ -1096,10 +1307,21 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 		if (value > 7)
 			status = MAC_INVALID_PARAMETER;
 		break;
+#if CASCODA_CA_VER >= 8212
+	case macAutoRequestLookupDataIndex:
+		if (value > 9)
+			status = MAC_INVALID_PARAMETER;
+		break;
+	case macEnhAckIeSec:
+		if (value > 3)
+			status = MAC_INVALID_PARAMETER;
+		break;
+#else
 	case macAutoRequestKeyIdMode:
 		if (value > 3)
 			status = MAC_INVALID_PARAMETER;
 		break;
+#endif // CASCODA_CA_VER >= 8212
 	default:
 		break;
 	}
@@ -1246,7 +1468,7 @@ ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 	return (ca_mac_status)status;
 }
 
-#if (CASCODA_CA_VER == 8210)
+#if CASCODA_CA_VER == 8210
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Checks a data indication to ensure that its destination address
@@ -1287,7 +1509,7 @@ static ca_error check_data_ind_destaddr(struct MCPS_DATA_indication_pset *ind, s
 	}
 	return (CA_ERROR_SUCCESS);
 }
-#endif //(CASCODA_CA_VER == 8210)
+#endif // CASCODA_CA_VER == 8210
 
 #if CASCODA_CA_VER == 8210
 /******************************************************************************/
@@ -1304,9 +1526,7 @@ static void get_assoccnf_shortaddr(struct MLME_ASSOCIATE_confirm_pset *assoc_cnf
 		pDeviceRef->shortaddr = GETLE16(assoc_cnf->AssocShortAddress);
 	}
 }
-#endif
 
-#if CASCODA_CA_VER == 8210
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Checks a scan confirm for pan descriptor entries that have a beacon
@@ -1357,7 +1577,7 @@ static void verify_scancnf_results(struct MAC_Message *scan_cnf, struct ca821x_d
 		scan_cnf_pset->Status = MAC_NO_BEACON;
 	}
 }
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev *pDeviceRef)
 {
@@ -1412,6 +1632,14 @@ union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev 
 		rval = (union ca821x_api_callback *)&callbacks->MLME_POLL_indication;
 		break;
 #endif //CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	case SPI_MLME_POLL_CONFIRM:
+		rval = (union ca821x_api_callback *)&callbacks->MLME_POLL_confirm;
+		break;
+	case SPI_MLME_IE_NOTIFY_INDICATION:
+		rval = (union ca821x_api_callback *)&callbacks->MLME_IE_NOTIFY_indication;
+		break;
+#endif // CASCODA_CA_VER >= 8212
 	case SPI_HWME_WAKEUP_INDICATION:
 		rval = (union ca821x_api_callback *)&callbacks->HWME_WAKEUP_indication;
 		break;
@@ -1465,7 +1693,12 @@ static uint8_t blacklist_must_filter(struct MAC_Message *msg, struct ca821x_dev 
 	case SPI_MLME_POLL_INDICATION:
 		src = msg->PData.PollInd.Src;
 		break;
-#endif
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	case SPI_MLME_IE_NOTIFY_INDICATION:
+		src = msg->Pdata.NotifyInd.Src;
+		break;
+#endif // CASCODA_CA_VER >= 8212
 	}
 
 	if (src.AddressMode == MAC_MODE_SHORT_ADDR)
@@ -1490,7 +1723,7 @@ static uint8_t blacklist_must_filter(struct MAC_Message *msg, struct ca821x_dev 
 }
 #endif
 
-ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
+ca_error ca821x_upstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
 	ca_error ret = CA_ERROR_NOT_HANDLED;
 
@@ -1499,6 +1732,11 @@ ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *
 	if (!rval) //Unrecognised command ID
 	{
 		ret = CA_ERROR_INVALID_ARGS;
+#if CASCODA_CA_VER >= 8212
+		//TODO: Temporary for CA-8212 development
+		if (pDeviceRef->callbacks.generic_dispatch)
+			ret = pDeviceRef->callbacks.generic_dispatch(msg, pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 		goto exit;
 	}
 
@@ -1520,7 +1758,7 @@ ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *
 		get_assoccnf_shortaddr(&msg->PData.AssocCnf, pDeviceRef);
 		break;
 	}
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 #if CASCODA_MAC_BLACKLIST != 0
 	if (blacklist_must_filter(msg, pDeviceRef))

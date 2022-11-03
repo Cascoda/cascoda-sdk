@@ -40,21 +40,6 @@
 #include "drv_digital_out.h"
 
 // -------------------------------------------------------------- PUBLIC MACROS
-/**
- * \defgroup macros Macros
- * \{
- */
-
-/**
- * \defgroup module pin mapping
- * \{
- */
-/* module pins are used for pin configuration 
-	- RST(EN) = pin 33, INT(OUT) = pin 34*/
-#define MOTION_MAP_MIKROBUS(cfg) \
-	cfg.en  = 33;                \
-	cfg.out = 34;
-/** \} */
 
 /**
  * \defgroup error_code Error Code
@@ -191,6 +176,9 @@ void motion_set_en_pin(motion_t *ctx, motion_pin_state_t en_state);
  * MOTION_NO_DETECT ( 0 ) if a motion is not detected. 
  */
 motion_detect_state_t motion_get_detected();
+
+/* module pins are used for pin configuration */
+void motion_pin_mapping(uint8_t r1, uint8_t r2);
 
 /******************************************************************************/
 /***************************************************************************/ /**

@@ -300,7 +300,7 @@ void BSP_UseExternalClock(u8_t useExternalClock);
 struct ModuleSpecialPins BSP_GetModuleSpecialPins(void);
 
 /**
- * \brief Registers GPIO Functionality for Module Pin
+ * \brief Registers GPIO Input Functionality for Module Pin
  * \param args Arguments, see gpio_input_args
  * \return status
  *
@@ -308,13 +308,22 @@ struct ModuleSpecialPins BSP_GetModuleSpecialPins(void);
 ca_error BSP_ModuleRegisterGPIOInput(struct gpio_input_args *args);
 
 /**
- * \brief Registers GPIO Functionality for Module Pin
+ * \brief Registers GPIO Output Functionality for Module Pin
  * \param mpin  - module pin number
  * \param isled - pin is attached to led (Used to prevent power down leakage)
  * \return status
  *
  */
 ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled);
+
+/**
+ * \brief Registers GPIO Open Drain Output Functionality for Module Pin
+ * \param mpin  - module pin number
+ * \param isled - pin is attached to led (Used to prevent power down leakage)
+ * \return status
+ *
+ */
+ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled);
 
 /**
  * \brief Unregisters GPIO Functionality for Module Pin to Default Settings

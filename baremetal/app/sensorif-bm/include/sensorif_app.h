@@ -39,7 +39,7 @@
 #define SENSORIF_MEASUREMENT_DELTA 100
 
 /* report measurement times flag */
-#define SENSORIF_REPORT_TMEAS 1
+// #define SENSORIF_REPORT_TMEAS 1
 
 /* flag which sensors to include in test */
 #define SENSORIF_TEST_SI7021 0

@@ -38,9 +38,9 @@
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-bm/chili_test.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
-#include "chili_test.h"
 
 /******************************************************************************/
 /****** Global Variables                                                 ******/
@@ -178,6 +178,7 @@ void CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef)
 
 void CHILI_TEST_REF_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
+	(void)params;
 	/* reset test */
 	CHILI_TEST_TestInit(pDeviceRef);
 } // End of CHILI_TEST_REF_ProcessDataCnf()
@@ -195,7 +196,14 @@ void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 	panid    = (u16_t)(params->Src.PANId[1] << 8) + params->Src.PANId[0];
 	shortadd = (u16_t)(params->Src.Address[1] << 8) + params->Src.Address[0];
 
+#if CASCODA_CA_VER >= 8212
+	//MSDU located after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	if ((panid == CHILI_TEST_PANID) && (shortadd == CHILI_TEST_DUT_SHORTADD) &&
+	    (params->Data[msdu_shift] == PT_MSDU_TEST_DUT))
+#else
 	if ((panid == CHILI_TEST_PANID) && (shortadd == CHILI_TEST_DUT_SHORTADD) && (params->Msdu[0] == PT_MSDU_TEST_DUT))
+#endif // CASCODA_CA_VER >= 8212
 	{
 		/* correct device identifiers and packet id */
 		/* get ed and cs values on reference device side */
@@ -213,6 +221,25 @@ void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 
 		WAIT_ms(20);
 
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		tx_op[0] |= TXOPT0_ACKREQ;
+		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+		                  DUTAdd,              /* DstAddr */
+		                  0,                   /* HeaderIELength */
+		                  0,                   /* PayloadIELength */
+		                  3,                   /* MsduLength */
+		                  msdu,                /* pMsdu */
+		                  0,                   /* MsduHandle */
+		                  tx_op,               /* pTxOptions */
+		                  0,                   /* SchTimestamp */
+		                  0,                   /* SchPeriod */
+		                  0,                   /* TxChannel */
+		                  NULLP,               /* pHeaderIEList */
+		                  NULLP,               /* pPayloadIEList */
+		                  NULLP,               /* pSecurity */
+		                  pDeviceRef);         /* pDeviceRef */
+#else
 		MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
 		                  DUTAdd,              /* DstAddr */
 		                  3,                   /* MsduLength */
@@ -221,6 +248,7 @@ void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 		                  TXOPT_ACKREQ,        /* TxOptions */
 		                  NULLP,               /* *pSecurity */
 		                  pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 	}
 
 } // End of CHILI_TEST_REF_ProcessDataInd()
@@ -241,6 +269,25 @@ void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef)
 	PUTLE16(CHILI_TEST_PANID, REFAdd.PANId);
 	REFAdd.AddressMode = MAC_MODE_SHORT_ADDR;
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0] |= TXOPT0_ACKREQ;
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
+	                  REFAdd,              /* DstAddr */
+	                  0,                   /* HeaderIELength */
+	                  0,                   /* PayloadIELength */
+	                  1,                   /* MsduLength */
+	                  msdu,                /* pMsdu */
+	                  0,                   /* MsduHandle */
+	                  tx_op,               /* pTxOptions */
+	                  0,                   /* SchTimestamp */
+	                  0,                   /* SchPeriod */
+	                  0,                   /* TxChannel */
+	                  NULLP,               /* pHeaderIEList */
+	                  NULLP,               /* pPayloadIEList */
+	                  NULLP,               /* pSecurity */
+	                  pDeviceRef);         /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR, /* SrcAddrMode */
 	                  REFAdd,              /* DstAddr */
 	                  1,                   /* MsduLength */
@@ -249,6 +296,7 @@ void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef)
 	                  TXOPT_ACKREQ,        /* TxOptions */
 	                  NULLP,               /* *pSecurity */
 	                  pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	CHILI_TEST_CState = CHILI_TEST_CST_DUT_D_REQUESTED;
 	return;
@@ -275,18 +323,31 @@ void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 	panid    = (u16_t)(params->Src.PANId[1] << 8) + params->Src.PANId[0];
 	shortadd = (u16_t)(params->Src.Address[1] << 8) + params->Src.Address[0];
 
+#if CASCODA_CA_VER >= 8212
+	// MSDU located after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	if ((panid != CHILI_TEST_PANID) || (shortadd != CHILI_TEST_REF_SHORTADD) ||
+	    (params->Data[msdu_shift] != PT_MSDU_TEST_REF))
+#else
 	if ((panid != CHILI_TEST_PANID) || (shortadd != CHILI_TEST_REF_SHORTADD) || (params->Msdu[0] != PT_MSDU_TEST_REF))
+#endif // CASCODA_CA_VER >= 8212
 	{
 		/* wrong packet id */
 		CHILI_TEST_RESULT = CHILI_TEST_ST_DATA_IND_ID;
 		goto exit;
 	}
 
-	/* packet received ok */
-	/* analyse cs and ed values of both ref and dut side */
+/* packet received ok */
+/* analyse cs and ed values of both ref and dut side */
+#if CASCODA_CA_VER >= 8212
+	cs_ref = params->Data[1 + msdu_shift];
+	ed_ref = params->Data[2 + msdu_shift];
+	cs_dut = params->MpduLinkQuality;
+#else
 	cs_ref = params->Msdu[1];
 	ed_ref = params->Msdu[2];
 	cs_dut = params->MpduLinkQuality;
+#endif // CASCODA_CA_VER >= 8212
 	HWME_GET_request_sync(HWME_EDVALLP, &len, &ed_dut, pDeviceRef);
 
 	if (cs_ref < CHILI_TEST_CS_LIMIT)
@@ -308,6 +369,7 @@ exit:
 
 void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
+	(void)pDeviceRef;
 	u8_t status;
 
 	if (CHILI_TEST_CState != CHILI_TEST_CST_DUT_D_REQUESTED)
@@ -339,6 +401,7 @@ void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct
 
 void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef)
 {
+	(void)pDeviceRef;
 	u32_t tnow;
 	i32_t tdiff;
 
@@ -441,6 +504,8 @@ static ca_error CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *
 static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
                                                        struct ca821x_dev *                      pDeviceRef)
 {
+	(void)params;
+	(void)pDeviceRef;
 	/* only supress message */
 	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_MLME_COMM_STATUS_indication()

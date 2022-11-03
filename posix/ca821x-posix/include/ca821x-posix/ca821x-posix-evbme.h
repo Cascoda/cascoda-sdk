@@ -69,8 +69,8 @@ struct ca_version_number
 
 /**
  * Get the mutable callback structure for the given device. Modify this to add EVBME callback handlers.
- * Do not modify the EVBME callback handlers while the downstream dispatch worker is running asynchronously
- * after being started with ca821x_util_start_downstream_dispatch_worker.
+ * Do not modify the EVBME callback handlers while the upstream dispatch worker is running asynchronously
+ * after being started with ca821x_util_start_upstream_dispatch_worker.
  *
  * @param pDeviceRef The device struct for the device that is to have callbacks modified
  * @return A mutable pointer to the device's EVBME callback structure

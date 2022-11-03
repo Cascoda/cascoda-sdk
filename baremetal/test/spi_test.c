@@ -99,7 +99,28 @@ static void async_send_test(void **state)
 	struct FullAddr dest = {0};
 	uint8_t         msdu = 0;
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0]         = 0x05;
+	assert_int_equal(MCPS_DATA_request(0,      /* SrcAddrMode */
+	                                   dest,   /* DstAddr */
+	                                   0,      /* HeaderIELength */
+	                                   0,      /* PayloadIELength */
+	                                   1,      /* MsduLength */
+	                                   &msdu,  /* pMsdu */
+	                                   0,      /* MsduHandle */
+	                                   tx_op,  /* pTxOptions */
+	                                   0,      /* SchTimestamp */
+	                                   0,      /* SchPeriod */
+	                                   0,      /* TxChannel */
+	                                   NULLP,  /* pHeaderIEList */
+	                                   NULLP,  /* pPayloadIEList */
+	                                   NULLP,  /* pSecurity */
+	                                   &sdev), /* pDeviceRef */
+	                 MAC_SUCCESS);
+#else
 	assert_int_equal(MCPS_DATA_request(0, dest, 1, &msdu, 0, 0x05, NULL, &sdev), MAC_SUCCESS);
+#endif // CASCODA_CA_VER >= 8212
 }
 
 static int setup(void **state)

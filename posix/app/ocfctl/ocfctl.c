@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 	// Print debug messages coming from the Chili
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	// innocent EVBME command, to make sure debug messages are being sent upstream
 	uint64_t serialno;

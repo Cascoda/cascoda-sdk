@@ -65,8 +65,8 @@ struct SecSpec *MCPS_DATA_indication_get_secspec(const struct MCPS_DATA_indicati
  * This helper function exists because the short address list exists after a
  * variable length portion of the beacon indication.
  *
- * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  * \param[out] aLength - Length of the output list (Must not be NULL)
+ * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  *
  * \return Pointer to the start of the ShortAddr list (even if length=0)
  *
@@ -80,8 +80,8 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
  * This helper function exists because the ext address list exists after a
  * variable length portion of the beacon indication.
  *
- * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  * \param[out] aLength - Length of the output list (Must not be NULL)
+ * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  *
  * \return Pointer to the start of the ExtAddr list (even if length=0)
  *
@@ -95,8 +95,8 @@ struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *            
  * This helper function exists because the sdu exists after a variable length
  * portion of the beacon indication.
  *
- * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  * \param[out] aLength - Length of the output list (Must not be NULL)
+ * \param aPset - Pointer to the MLME_BEACON_NOTIFY_indication to be analysed
  *
  * \return Pointer to the start of the SDU (even if length=0)
  *
@@ -110,14 +110,15 @@ uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *                        
  * This helper function exists because the pandescriptor list is not simple to parse,
  * as each pandescriptor has a variable length.
  *
- * \param aPset - Pointer to the MLME_SCAN_confirm to be analysed
  * \param aIndex - Index of the pandescriptor to access
+ * \param aPset - Pointer to the MLME_SCAN_confirm to be analysed
  *
  * \return Pointer to the pandescriptor at that index (or NULL if out of range/invalid scan type)
  *
  */
 struct PanDescriptor *MLME_SCAN_confirm_get_pandescriptor(uint8_t aIndex, const struct MLME_SCAN_confirm_pset *aPset);
 
+#if CASCODA_CA_VER <= 8211
 /**
  * \brief Get a pointer to the start of the Key ID Lookup Descriptor list
  *
@@ -168,6 +169,7 @@ struct M_KeyDeviceDesc *KeyTableEntry_get_keydevicedescs(const struct M_KeyTable
  *
  */
 struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(const struct M_KeyTableEntryFixed *aKte);
+#endif // CASCODA_CA_VER <= 8211
 
 #ifdef __cplusplus
 }

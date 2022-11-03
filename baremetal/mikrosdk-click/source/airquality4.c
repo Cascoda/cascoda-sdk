@@ -49,7 +49,7 @@ static void long_transfer_delay(void);
  *
  */
 
-void write_data(airquality4_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len);
+static void write_data(airquality4_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len);
 
 // ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
 

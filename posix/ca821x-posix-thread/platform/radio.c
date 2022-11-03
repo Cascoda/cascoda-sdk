@@ -274,10 +274,10 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 	MLME_SET_request_sync(phyTransmitPower, 0, 1, &txPow, pDeviceRef);
 
 	// Enable poll indications when no data confirm is triggered.
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 	uint8_t pollIndMode = 2;
 	HWME_SET_request_sync(HWME_POLLINDMODE, 1, &pollIndMode, pDeviceRef);
-#endif
+#endif // CASCODA_CA_VER >= 8211
 
 	if (setDefaultPib)
 	{
@@ -289,11 +289,11 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 		uint8_t LQImode = HWME_LQIMODE_ED;
 		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
 
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 		//Increase the max indirect queue length to 8
 		uint8_t maxInd = 8;
 		HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &maxInd, pDeviceRef);
-#endif
+#endif // CASCODA_CA_VER >= 8211
 	}
 
 	return ConvertErrorMacToOt(error);
@@ -337,16 +337,21 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 {
 	ca_mac_status error;
 
-#if CASCODA_CA_VER == 8210
+#if CASCODA_CA_VER >= 8212
+	error = MLME_POLL_request(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
+	                          aPollRequest->FramveVersion,
+	                          (struct SecSpec *)&(aPollRequest->mSecurity),
+	                          pDeviceRef);
+#elif CASCODA_CA_VER == 8211
+	error = MLME_POLL_request_sync(
+	    *((struct FullAddr *)&(aPollRequest->mCoordAddress)), (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
+#else
 	uint8_t interval[2] = {0, 0};
 	error               = MLME_POLL_request_sync(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
                                    interval,
                                    (struct SecSpec *)&(aPollRequest->mSecurity),
                                    pDeviceRef);
-#else
-	error = MLME_POLL_request_sync(
-	    *((struct FullAddr *)&(aPollRequest->mCoordAddress)), (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
-#endif
+#endif // CASCODA_CA_VER >= 8212
 
 	return ConvertErrorMacToOt(error);
 }
@@ -355,6 +360,25 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 {
 	ca_mac_status error;
 
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0] |= TXOPT0_ACKREQ;
+	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,                   /* SrcAddrMode */
+	                          *(struct FullAddr *)&aDataReqeuest->mDst,     /* DstAddr */
+	                          aDataRequest->mHeaderIELength,                /* HeaderIELength */
+	                          aDataRequest->mPayloadIELength,               /* PayloadIELength */
+	                          aDataRequest->mMsduLength,                    /* MsduLength */
+	                          aDataRequest->mMsdu,                          /* pMsdu */
+	                          aDataRequest->mMsduHandle,                    /* MsduHandle */
+	                          aDataRequest->mTxOptions,                     /* pTxOptions */
+	                          aDataRequest->mSchTimestamp,                  /* SchTimestamp */
+	                          aDataRequest->mSchPeriod,                     /* SchPeriod */
+	                          aDataRequest->mTxChannel,                     /* TxChannel */
+	                          aDataRequest->mHeaderIEList,                  /* pHeaderIEList */
+	                          aDataRequest->mPayloadIEList,                 /* pPayloadIEList */
+	                          (struct SecSpec *)&(aDataRequest->mSecurity), /* pSecurity */
+	                          pDeviceRef);                                  /* pDeviceRef */
+#else
 	error = MCPS_DATA_request(aDataRequest->mSrcAddrMode,
 	                          *(struct FullAddr *)&aDataRequest->mDst,
 	                          aDataRequest->mMsduLength,
@@ -363,6 +387,7 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 	                          aDataRequest->mTxOptions,
 	                          (struct SecSpec *)&(aDataRequest->mSecurity),
 	                          pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	ca_log_debg("MCPS Data req - Error %d, Ind: %d, MH: %02x",
 	            error,
@@ -395,12 +420,39 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 	rssi                     = ((int16_t)params->MpduLinkQuality - 256) / 2; //convert to rssi
 	dataInd.mMpduLinkQuality = rssi;
 	dataInd.mDSN             = params->DSN;
+#if CASCODA_CA_VER >= 8212
+	dataInd.mHeaderIELength  = params->HeaderIELength;
+	dataInd.mPayloadIELength = params->PayloadIELength;
+
+	union DataIndVariable
+	{
+		uint8_t *ptr;
+		uint8_t *pHieList;
+		uint8_t *pPieList;
+		uint8_t *pMsdu;
+		uint8_t *pSec;
+	} data; //Moving pointer
+
+	data.ptr = params->Data;
+
+	memcpy(dataInd.mHeaderIEList, data.pHieList, dataInd.mHeaderIELength);
+	data.ptr += dataInd.mHeaderIELength;
+
+	memcpy(dataInd.mPayloadIELength, data.pPieList, dataInd.mPayloadIELength);
+	data.ptr += dataInd.mPayloadIELength;
+
+	memcpy(dataInd.mMsdu, data.pMsdu, dataInd.mMsduLength);
+	data.ptr += dataInd.mMsduLength;
+
+	memcpy(&(dataInd.mSecurity), data.pSec, sizeof(dataInd.mSecurity));
+#else
 	memcpy(dataInd.mMsdu, params->Msdu, dataInd.mMsduLength);
 	memcpy(&(dataInd.mSecurity), params->Msdu + params->MsduLength, sizeof(dataInd.mSecurity));
+#endif // CASCODA_CA_VER >= 8212
 
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 	dataInd.mIsFramePending = params->FramePending;
-#endif
+#endif // CASCODA_CA_VER >= 8211
 
 	if (dataInd.mSecurity.mSecurityLevel == 0)
 	{
@@ -423,6 +475,9 @@ static ca_error handlePollIndication(struct MLME_POLL_indication_pset *params, s
 	pollInd.mDst = *((struct otFullAddr *)&(params->Dst));
 	pollInd.mLQI = params->LQI;
 	pollInd.mDSN = params->DSN;
+#if CASCODA_CA_VER >= 8212
+	memset(&(pollInd.Timestamp), params->Timestamp, sizeof(pollInd.Timestamp));
+#endif // CASCODA_CA_VER >= 8212
 	memcpy(&(pollInd.mSecurity), &(params->Security), sizeof(pollInd.mSecurity));
 
 	if (pollInd.mSecurity.mSecurityLevel == 0)
@@ -436,6 +491,17 @@ static ca_error handlePollIndication(struct MLME_POLL_indication_pset *params, s
 
 	return CA_ERROR_SUCCESS;
 }
+
+#if CASCODA_CA_VER >= 8212
+static ca_error handlePollConfirm(struct MLME_POLL_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	otError error = ConvertErrorMacToOt((ca_mac_status)params->Status);
+
+	otPlatMlmePollConfirm(OT_INSTANCE, error);
+
+	return CA_ERROR_SUCCESS;
+}
+#endif // CASCODA_CA_VER >= 8212
 
 static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params,
                                            struct ca821x_dev *                      pDeviceRef)
@@ -612,9 +678,12 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 	pDeviceRef->callbacks.MLME_BEACON_NOTIFY_indication = &handleBeaconNotify;
 	pDeviceRef->callbacks.MLME_SCAN_confirm             = &handleScanConfirm;
 	pDeviceRef->callbacks.HWME_WAKEUP_indication        = &handleWakeupIndication;
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 	pDeviceRef->callbacks.MLME_POLL_indication = &handlePollIndication;
-#endif
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	pDeviceRef->callbacks.MLME_POLL_confirm = &handlePollConfirm;
+#endif // CASCODA_CA_VER >= 8212
 
 	//Reset the MAC to a default state
 	otPlatMlmeReset(NULL, true);
@@ -639,7 +708,7 @@ int PlatformRadioInit(void)
 		return -1;
 	}
 
-	if (ca821x_util_start_downstream_dispatch_worker())
+	if (ca821x_util_start_upstream_dispatch_worker())
 	{
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "Failed worker thread start");
 		return -1;

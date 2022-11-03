@@ -2,7 +2,7 @@
 project (ca821x-api-lib)
 
 # Set configuration variables -------------------------------------------------
-cascoda_dropdown(CASCODA_CA_VER "CA-xxxx Version number of target part" 8211 8210)
+cascoda_dropdown(CASCODA_CA_VER "CA-xxxx Version number of target part" 8211 8210 8212)
 
 cascoda_dropdown(CASCODA_LOG_LEVEL
 	"The minimum log level to print messages for (CRIT>WARN>NOTE>INFO>DEBG)"
@@ -30,13 +30,18 @@ add_custom_target(git-version ALL
 	)
 
 # Main library config ---------------------------------------------------------
+
+
 add_library(ca821x-api
 	${PROJECT_SOURCE_DIR}/source/ca821x_api.c
 	${PROJECT_SOURCE_DIR}/source/ca821x_api_helper.c
 	${PROJECT_SOURCE_DIR}/source/ca821x_error.c
 	${GIT_VERSION_FILE}
-	)
+)
+
+
 add_dependencies(ca821x-api git-version)
+
 target_include_directories(ca821x-api
 	PUBLIC
 		${PROJECT_SOURCE_DIR}/include
@@ -57,6 +62,7 @@ add_library(test15-4-api
 	${PROJECT_SOURCE_DIR}/test15_4/source/test15_4_phy_tests_mac.c
 	)
 
+
 target_include_directories(test15-4-api
 	PUBLIC
 		${PROJECT_SOURCE_DIR}/test15_4/include
@@ -66,6 +72,7 @@ target_link_libraries(test15-4-api
 	PUBLIC
 		ca821x-api
 	)
+
 cascoda_use_warnings(test15-4-api)
 
 # Tests

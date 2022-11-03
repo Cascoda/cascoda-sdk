@@ -211,6 +211,7 @@ static void ApplyCacheFlushFix(struct ca821x_dev *pDeviceRef)
 	CacheDecay();
 }
 
+#if CASCODA_CA_VER == 8211
 /** Fix pcps allocations on memory boundaries */
 static inline void ApplyPCPSHotFix(struct PCPS_DATA_request_pset *aPset, struct ca821x_dev *pDeviceRef)
 {
@@ -239,6 +240,7 @@ static inline void ApplyPCPSHotFix(struct PCPS_DATA_request_pset *aPset, struct 
 		break;
 	}
 }
+#endif // CASCODA_CA_VER == 8211
 
 /** Fix pcps allocations on memory boundaries - after command */
 static inline void ApplyPCPSPostFix(struct ca821x_dev *pDeviceRef)
@@ -312,7 +314,7 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct MAC_Message *respons
 		}
 		return CA_ERROR_ALREADY;
 	}
-	if ((msg->CommandId == SPI_MLME_GET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
+	else if ((msg->CommandId == SPI_MLME_GET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
 	{
 		status = TDME_GetTxPower(&val, pDeviceRef);
 		if (response)
@@ -440,7 +442,7 @@ static ca_error PreCheckFromCA821x(struct MAC_Message *aMessage)
 	{
 		CacheRemoveItem(aMessage->PData.DataCnf.MsduHandle, MDR_CacheTypeMCPS);
 	}
-	if (aMessage->CommandId == SPI_MLME_SCAN_CONFIRM || aMessage->CommandId == SPI_HWME_WAKEUP_INDICATION)
+	else if (aMessage->CommandId == SPI_MLME_SCAN_CONFIRM || aMessage->CommandId == SPI_HWME_WAKEUP_INDICATION)
 	{
 		isScanInProgress = false;
 	}
@@ -459,7 +461,7 @@ static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *
 {
 	ca_error ret;
 
-	ret = ca821x_downstream_dispatch(aMessage, pDeviceRef);
+	ret = ca821x_upstream_dispatch(aMessage, pDeviceRef);
 	if (ret != CA_ERROR_SUCCESS)
 	{
 		ca_log_crit("Err %s dispatching on SPI %02x!", ca_error_str(ret), aMessage->CommandId);

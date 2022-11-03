@@ -91,30 +91,8 @@ if(OC_DYNAMIC_ALLOCATION_ENABLED)
     target_compile_definitions(mbedcrypto PUBLIC OC_DYNAMIC_ALLOCATION)
 endif()
 
-# Compile Iotivity-Lite
+add_subdirectory(port)
 
-# Add the Iotivity port files, maintained by Cascoda
-add_library(iotivity-port INTERFACE)
-
-target_sources(iotivity-port INTERFACE
-    ${PROJECT_SOURCE_DIR}/port/abort.c
-    ${PROJECT_SOURCE_DIR}/port/clock.c
-    ${PROJECT_SOURCE_DIR}/port/ipadapter.c
-    ${PROJECT_SOURCE_DIR}/port/random.c
-    ${PROJECT_SOURCE_DIR}/port/storage.c
-    ${PROJECT_SOURCE_DIR}/port/uart.c
-)
-
-target_include_directories(iotivity-port INTERFACE
-    ${PROJECT_SOURCE_DIR}/port/
-
-    ${iotivitylite_SOURCE_DIR}/
-    ${iotivitylite_SOURCE_DIR}/include
-)
-
-target_link_libraries(iotivity-port INTERFACE openthread-plat-api tinycbor-master)
-
-# Iotivity API
 add_library(iotivity-api INTERFACE)
 
 target_sources(iotivity-api INTERFACE
@@ -197,7 +175,7 @@ target_include_directories(iotivity-common INTERFACE
     ${iotivitylite_SOURCE_DIR}/security
 )
 
-target_link_libraries(iotivity-common INTERFACE iotivity-port mbedtls tinycbor-master)
+target_link_libraries(iotivity-common INTERFACE mbedtls tinycbor-master)
 
 # Iotivity's implementation of CoAP
 add_library(iotivity-coap INTERFACE)
@@ -214,8 +192,6 @@ target_sources(iotivity-coap INTERFACE
 target_include_directories(iotivity-coap INTERFACE
     ${iotivitylite_SOURCE_DIR}/messaging/coap/
 )
-
-target_link_libraries(iotivity-coap INTERFACE iotivity-port)
 
 # Client and server versions of Iotivity
 add_library(iotivity-client INTERFACE)
@@ -251,13 +227,13 @@ endif()
 
 add_library(iotivity-unsecure-server)
 target_link_libraries(iotivity-unsecure-server PRIVATE iotivity-server)
-target_link_libraries(iotivity-unsecure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
+target_link_libraries(iotivity-unsecure-server PUBLIC ca821x-openthread-bm-plat cascoda-util iotivity-port)
 target_compile_definitions(iotivity-unsecure-server PUBLIC OC_SERVER)
 
 add_library(iotivity-secure-server)
 target_include_directories(iotivity-secure-server PUBLIC ${PROJECT_BINARY_DIR}/pki_certs)
 target_link_libraries(iotivity-secure-server PRIVATE iotivity-server)
-target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat cascoda-util)
+target_link_libraries(iotivity-secure-server PUBLIC ca821x-openthread-bm-plat cascoda-util iotivity-port)
 target_compile_definitions(iotivity-secure-server PUBLIC OC_SERVER OC_SECURITY)
 
 if(CASCODA_BUILD_OCF_PKI)

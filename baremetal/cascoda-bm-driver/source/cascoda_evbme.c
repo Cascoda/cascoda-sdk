@@ -41,6 +41,8 @@
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-bm/chili_test.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_rand.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
@@ -357,7 +359,8 @@ static void EVBMESendDownStream(const uint8_t *buf, struct ca821x_dev *pDeviceRe
 				pDeviceRef->lqi_mode = cmd->PData.HWMESetReq.HWAttributeValue[0];
 			break;
 		}
-#endif
+#endif // CASCODA_CA_VER == 8210
+
 		// Synchronous Confirms have to be sent upstream for interrupt driven handlers
 		if ((buf[0] != SPI_IDLE) && (buf[0] != SPI_NACK) && (buf[0] & SPI_SYN))
 		{
@@ -655,7 +658,7 @@ static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRe
 
 	if (device_id)
 	{
-		ca_log_note("Device ID: %08x%08x", (uint32_t)(device_id >> 32ULL), (uint32_t)device_id);
+		ca_log_note("Device ID: %08X%08X", (uint32_t)(device_id >> 32ULL), (uint32_t)device_id);
 	}
 
 	status = EVBME_ResetRF(50, pDeviceRef); // reset RF for 50 ms
@@ -850,6 +853,9 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 #endif /* USE_UART || USE_USB */
 	CA_OS_UnlockAPI();
 	CA_OS_Yield();
+
+	if (!CHILI_TEST_IsInTestMode())
+		TEST15_4_Handler(pDeviceRef);
 }
 
 ca_error EVBME_NotHandled(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
@@ -999,7 +1005,12 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 
 	pDeviceRef->callbacks.generic_dispatch = &EVBME_NotHandled;
 
-	RAND_SetCryptoEntropyDev(pDeviceRef);
+	if (status == CA_ERROR_SUCCESS)
+	{
+		RAND_SetCryptoEntropyDev(pDeviceRef);
+	}
+
+	TEST15_4_Initialise(pDeviceRef);
 
 	return status;
 }

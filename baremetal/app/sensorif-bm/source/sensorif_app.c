@@ -59,19 +59,21 @@
 u8_t SENSORIF_Initialise(struct ca821x_dev *pDeviceRef)
 {
 	u8_t status = 0;
-
 	/* select device-specific initialisation here */
 	SENSORIF_I2C_Init();
 #if (SENSORIF_TEST_SI7021)
 	; /* no initialisation */
 #endif
 #if (SENSORIF_TEST_MAX30205)
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	status |= SIF_MAX30205_Initialise();
 #endif
 #if (SENSORIF_TEST_LTR303ALS)
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	status |= SIF_LTR303ALS_Initialise();
 #endif
 #if (SENSORIF_TEST_TMP102)
+	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	status |= SIF_TMP102_Initialise();
 #endif
 	SENSORIF_I2C_Deinit(); /* disable interface */

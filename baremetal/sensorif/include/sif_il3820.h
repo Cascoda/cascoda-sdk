@@ -61,7 +61,7 @@ extern "C" {
 
 /* Pin configuration */
 #define SIF_IL3820_BUSY_PIN 31
-#define SIF_IL3820_RST_PIN 15
+#define SIF_IL3820_RST_PIN 5
 #define SIF_IL3820_DC_PIN 34
 //#define SIF_IL3820_CS_PIN 34
 

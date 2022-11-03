@@ -1,6 +1,10 @@
 # Global config ---------------------------------------------------------------
 project (ca821x-thread-dev)
 
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "NANO120")
+	return()
+endif()
+
 # Test app config -------------------------------------------------------------
 add_executable(ot-barebone-mtd
 	${PROJECT_SOURCE_DIR}/source/thread_dev_main.c

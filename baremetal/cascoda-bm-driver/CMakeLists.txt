@@ -54,10 +54,22 @@ add_library(cascoda-bm
 	${EXT_FLASH_SOURCE}
 	)
 
+if (CASCODA_BUILD_OCF)
+	target_sources(cascoda-bm PRIVATE
+		${PROJECT_SOURCE_DIR}/source/test15_4_evbme_dummy.c
+	)
+else()
+	target_sources(cascoda-bm PRIVATE
+		${PROJECT_SOURCE_DIR}/source/chili_test.c
+		${PROJECT_SOURCE_DIR}/source/test15_4_evbme.c
+	)
+endif()
+
 target_link_libraries(cascoda-bm
 	PUBLIC
 		ca821x-api
 		cascoda-bm-core
+		test15-4-api
 	PRIVATE
 		mbedcrypto
 	)
@@ -81,4 +93,3 @@ target_compile_definitions(cascoda-bm PUBLIC CASCODA_EINK_DISPLAY_PRESENT=$<BOOL
 
 
 cascoda_use_warnings(cascoda-bm)
-

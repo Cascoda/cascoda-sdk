@@ -44,17 +44,23 @@
 /* flag which sensors to include in test */
 #define MIKROSDK_TEST_AIRQUALITY4 0
 #define MIKROSDK_TEST_ENVIRONMENT2 0
+#define MIKROSDK_TEST_HVAC 0
 #define MIKROSDK_TEST_MOTION 0
 #define MIKROSDK_TEST_RELAY 0
 #define MIKROSDK_TEST_THERMO 0
 #define MIKROSDK_TEST_THERMO3 0
+#define MIKROSDK_TEST_SHT 0
+
+#define MIKROSDK_TEST_SPS30 0
 
 /* Decimal mask for temperature sensor */
 #define DECIMAL_MASK_FOUR_BITS 0x0F
 #define DECIMAL_MASK_TWO_BITS 0x03
 
-/* functions */
+/* Float to int conversion to required decimal places*/
+#define FLOAT_TO_INT_CONVERT 1
 
+/* functions */
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief MIKROSDK Initialisation
@@ -71,9 +77,11 @@ void MIKROSDK_Handler(struct ca821x_dev *pDeviceRef);
 
 void MIKROSDK_Handler_AIRQUALITY4(void);
 void MIKROSDK_Handler_ENVIRONMENT2(void);
+void MIKROSDK_Handler_HVAC(void);
 void MIKROSDK_Handler_MOTION(void);
 void MIKROSDK_Handler_RELAY(void);
 void MIKROSDK_Handler_THERMO(void);
 void MIKROSDK_Handler_THERMO3(void);
-
+void MIKROSDK_Handler_SHT(void);
+void MIKROSDK_Handler_SPS30(void);
 #endif // MIKROSDK_APP_H

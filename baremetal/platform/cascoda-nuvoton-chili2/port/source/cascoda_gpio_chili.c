@@ -91,7 +91,7 @@ static const struct pinlist ModulePinList[] = {
 /* module pin */
 /* port PX.Y */
 /* adc channel */
-#if (CASCODA_CHILI2_CONFIG == 0)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
     {5, PN_B, 12, 12},    /* PB.12 */
     {6, PN_B, 13, 13},    /* PB.13 */
     {11, PN_A, 13, P_NA}, /* PA.13 */
@@ -102,7 +102,7 @@ static const struct pinlist ModulePinList[] = {
 #if (CASCODA_EXTERNAL_FLASHCHIP_PRESENT == 0)
     {15, PN_A, 15, P_NA}, /* PA.15 */
 #endif
-#if (CASCODA_CHILI2_CONFIG == 0)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
     {17, PN_A, 12, P_NA}, /* PA.12 */
 #endif                    /* CASCODA_CHILI2_CONFIG */
 #if (!CASCODA_CHILI_DISABLE_CA821x)
@@ -111,7 +111,7 @@ static const struct pinlist ModulePinList[] = {
     {32, PN_B, 4, 4}, /* PB.4 */
     {33, PN_B, 3, 3}, /* PB.3 */
     {34, PN_B, 2, 2}, /* PB.2 */
-#if (CASCODA_CHILI2_CONFIG == 0)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
     {35, PN_B, 1, 1}, /* PB.1 */
     {36, PN_B, 0, 0}, /* PB.0 */
 #endif                /* CASCODA_CHILI2_CONFIG */
@@ -178,6 +178,7 @@ u8_t CHILI_ModuleGetPortNumFromPin(u8_t mpin)
 u8_t CHILI_ModuleGetIndexFromPin(u8_t mpin)
 {
 	u8_t i;
+
 	for (i = 0; i < NUM_MODULEPINS; ++i)
 	{
 		if (ModulePinList[i].pin == mpin)
@@ -379,6 +380,38 @@ ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled)
+{
+	u8_t    index;
+	GPIO_T *port;
+
+	/* pin in dynamic list ? */
+	if (((index = CHILI_ModuleGetIndexFromPin(mpin))) == P_NA)
+		return CA_ERROR_NO_ACCESS;
+
+	/* pin already registered or used ? */
+	if (ModulePinStatus[index].blocked)
+		return CA_ERROR_NO_ACCESS;
+
+	port = MGPIO_PORT(ModulePinList[index].portnum);
+
+	GPIO_SetMode(port, BITMASK(ModulePinList[index].portbit), GPIO_MODE_OPEN_DRAIN);
+	GPIO_SetPullCtl(port, BITMASK(ModulePinList[index].portbit), GPIO_PUSEL_DISABLE);
+
+	ModulePinStatus[index].blocked  = 1;
+	ModulePinStatus[index].io       = MODULE_PIN_DIR_OUT;
+	ModulePinStatus[index].pullup   = MODULE_PIN_PULLUP_OFF;
+	ModulePinStatus[index].debounce = MODULE_PIN_DEBOUNCE_OFF;
+	ModulePinStatus[index].isled    = isled;
+	ModulePinStatus[index].irq      = MODULE_PIN_IRQ_OFF;
+	ModulePinCallbacks[index]       = NULL;
+
+	return CA_ERROR_SUCCESS;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	u8_t    index;
@@ -427,7 +460,10 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val)
 
 	/* pin in dynamic list ? */
 	if (((index = CHILI_ModuleGetIndexFromPin(mpin))) == P_NA)
+	{
 		return CA_ERROR_NO_ACCESS;
+	}
+
 	/* pin not registered or not output ? */
 	if ((!ModulePinStatus[index].blocked) || (ModulePinStatus[index].io != MODULE_PIN_DIR_OUT))
 		return CA_ERROR_NO_ACCESS;

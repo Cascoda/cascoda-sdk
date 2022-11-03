@@ -286,7 +286,7 @@ exit:
  *
  * RFIRQ must be disabled when calling.
  */
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 static ca_error SPI_WaitSlave(void)
 {
 	u32_t T_Start, T_Now;
@@ -325,7 +325,7 @@ static ca_error SPI_WaitSlave(void)
 }
 #else
 #error "Need SPI_WaitSlave definition for CA_VER"
-#endif
+#endif // CASCODA_CA_VER >= 8211
 
 /**
  *\brief Exchange the first 2 bytes of a transaction (CommandId and Length)
@@ -335,7 +335,7 @@ static ca_error SPI_WaitSlave(void)
  *
  * RFIRQ must be disabled when calling.
  */
-#if CASCODA_CA_VER == 8211
+#if CASCODA_CA_VER >= 8211
 static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, const struct MAC_Message *pTxBuffer)
 {
 	uint8_t txBytes[] = {0xFF, 0xFF};
@@ -383,7 +383,7 @@ static ca_error SPI_GetFirst2Bytes(u8_t *ReadBytes, const struct MAC_Message *pT
 }
 #else
 #error "Need SPI_GetFirst2Bytes definition for CA_VER"
-#endif
+#endif // CASCODA_CA_VER >= 8211
 
 #if CASCODA_CA_VER == 8210
 static u8_t SPI_CA8210_Align(u8_t *ReadBytes, const struct MAC_Message *pTxBuffer)
@@ -411,7 +411,7 @@ static u8_t SPI_CA8210_Align(u8_t *ReadBytes, const struct MAC_Message *pTxBuffe
 	(void)pTxBuffer;
 	return 0;
 }
-#endif
+#endif // CASCODA_CA_VER == 8210
 
 ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pDeviceRef)
 {

@@ -81,6 +81,20 @@ Install:
 - [mingw-w64](https://sourceforge.net/projects/mingw-w64/)
 - [arm-none-eabi-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
 
+The simplest way to do this is by installing the Chocolatey Package Manager, by
+pasting the following into the ADMIN powershell:
+```bash
+Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+```
+
+Then restart the ADMIN powershell and paste the following:
+```bash
+choco install git -y
+choco install cmake -y --installargs 'ADD_CMAKE_TO_PATH=System'
+choco install mingw -y
+choco install gcc-arm-embedded -y
+```
+
 Note that if git was installed without adding to the PATH, then the build system will not be able to detect the version and will display 'unknown'. Add the git `cmd` directory to PATH using the same method as below to solve this.
 
 Make sure the git ``cmd`` directory, mingw ``bin`` directory, cmake ``bin`` directory, and the arm-none-eabi-gcc ``bin`` directory are added to your PATH environment variable. To add to path, take note of the installation directory during the install process. Then after installation:

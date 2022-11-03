@@ -30,6 +30,7 @@
 #include "motion.h"
 
 static motion_t              motion; //Click object.
+static motion_cfg_t          cfg;    //Click object.
 static motion_detect_state_t motion_state     = MOTION_NO_DETECT;
 static motion_detect_state_t motion_old_state = MOTION_DETECTED;
 
@@ -50,7 +51,6 @@ MOTION_RETVAL motion_init(motion_t *ctx, motion_cfg_t *cfg)
 	digital_out_init(&ctx->en, cfg->en);
 
 	// Input pins
-
 	digital_in_init(&ctx->out, cfg->out);
 
 	return MOTION_OK;
@@ -107,13 +107,14 @@ motion_detect_state_t motion_get_detected()
 	return 0xFF;
 }
 
+void motion_pin_mapping(uint8_t enable, uint8_t output)
+{
+	cfg.en  = enable;
+	cfg.out = output;
+}
+
 uint8_t MIKROSDK_MOTION_Initialise(void)
 {
-	motion_cfg_t cfg;
-
-	motion_cfg_setup(&cfg);
-	MOTION_MAP_MIKROBUS(cfg);
-
 	motion_init(&motion, &cfg);
 	motion_default_cfg(&motion);
 

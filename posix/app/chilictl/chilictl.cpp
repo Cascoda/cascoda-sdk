@@ -136,7 +136,7 @@ int main(int argc, const char *argv[])
 	sCommands.push_back(&flashCmd);
 	sCommands.push_back(&pipeCmd);
 
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	arg0 = argv[0];
 	while (argi < argc)

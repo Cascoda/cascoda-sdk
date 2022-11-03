@@ -49,7 +49,7 @@ static void initialise_ca821x(struct ca821x_dev *pDeviceRef)
 		sleep(1); //Wait while there isn't a device available to connect
 		printf(".");
 	}
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	printf("\r\nInitialised.\r\n\n");
 }

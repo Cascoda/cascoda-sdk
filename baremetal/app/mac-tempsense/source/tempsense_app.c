@@ -112,8 +112,12 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 		APP_PANId   = 0xFFFF;
 		memcpy(APP_LongAddress, (u8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 8);
 		APP_ShortAddress = 0xFFFF;
-		/* reset MAC PIB */
+/* reset MAC PIB */
+#if CASCODA_CA_VER >= 8212
+		if (MLME_SET_request_sync(macExtendedAddress, 0, 8, APP_LongAddress, pDeviceRef))
+#else
 		if (MLME_SET_request_sync(nsIEEEAddress, 0, 8, APP_LongAddress, pDeviceRef))
+#endif // CASCODA_CA_VER >= 8212
 		{
 #if APP_USE_DEBUG
 			APP_Debug_Error(0x01);
@@ -180,9 +184,15 @@ void TEMPSENSE_APP_InitPIB(struct ca821x_dev *pDeviceRef)
 		return;
 	}
 
-	MLME_SET_request_sync(phyCurrentChannel, 0, 1, &APP_Channel, pDeviceRef);    // set 15.4 Channel
-	MLME_SET_request_sync(macPANId, 0, 2, &APP_PANId, pDeviceRef);               // set local PANId
-	MLME_SET_request_sync(nsIEEEAddress, 0, 8, APP_LongAddress, pDeviceRef);     // set local long address
+	MLME_SET_request_sync(phyCurrentChannel, 0, 1, &APP_Channel, pDeviceRef); // set 15.4 Channel
+	MLME_SET_request_sync(macPANId, 0, 2, &APP_PANId, pDeviceRef);            // set local PANId
+
+#if CASCODA_CA_VER >= 8212
+	MLME_SET_request_sync(macExtendedAddress, 0, 8, APP_LongAddress, pDeviceRef); // set local long address
+#else
+	MLME_SET_request_sync(nsIEEEAddress, 0, 8, APP_LongAddress, pDeviceRef); // set local long address
+#endif // CASCODA_CA_VER >= 8212
+
 	MLME_SET_request_sync(macShortAddress, 0, 2, &APP_ShortAddress, pDeviceRef); // set local short address
 
 	/* change PIB defaults */

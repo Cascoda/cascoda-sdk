@@ -3,5 +3,5 @@
 .project
 .idea/
 .settings/
-/build/
+/build*/
 /Debug/

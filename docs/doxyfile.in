@@ -886,7 +886,7 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =*/vendor/* */third-party/* @CMAKE_SOURCE_DIR@/build/* @CASCODA_EXCLUDE_DOXYGEN@
+EXCLUDE_PATTERNS       =*/vendor/* */third-party/* *_deps* @CASCODA_EXCLUDE_DOXYGEN@ @CMAKE_SOURCE_DIR@/ocf/* @CMAKE_SOURCE_DIR@/knx-iot/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

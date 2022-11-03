@@ -28,10 +28,11 @@
  */
 
 #include "thermo3.h"
-#include <stdio.h>
+#include "cascoda-bm/cascoda_sensorif.h"
 #include "ca821x_api.h"
 
-static thermo3_t thermo3; // Click object
+static thermo3_t     thermo3; // Click object
+static thermo3_cfg_t cfg;
 
 void thermo3_cfg_setup(thermo3_cfg_t *cfg)
 {
@@ -128,8 +129,7 @@ u16_t get_temperature()
 
 uint8_t MIKROSDK_THERMO3_Initialise(void)
 {
-	thermo3_cfg_t cfg;
-	uint8_t       status;
+	uint8_t status;
 
 	//  Click initialization.
 	thermo3_cfg_setup(&cfg);

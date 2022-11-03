@@ -50,6 +50,8 @@ Build the [OCF](https://openconnectivity.org/) libraries and binaries, and inter
 
 Incompatible with CASCODA_BUILD_SECURE_LWM2M.
 
+This option also disables the Test15-4 low-level debug interface globally, which breaks targets such as `mac-dongle`. It also prevents running commands with Wing Commander.
+
 ### CASCODA_BUILD_LWIP
 
 Build the [LWIP](https://savannah.nongnu.org/projects/lwip/) libraries and binaries, and internally modify the build of other systems to support it.

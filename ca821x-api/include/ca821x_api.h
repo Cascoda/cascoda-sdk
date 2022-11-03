@@ -58,7 +58,7 @@
 extern "C" {
 #endif
 
-#if CASCODA_CA_VER != 8210 && CASCODA_CA_VER != 8211
+#if CASCODA_CA_VER != 8210 && CASCODA_CA_VER != 8211 && CASCODA_CA_VER != 8212
 #error "UNSUPPORTED CASCODA_CA_VER VERSION (or build incorrectly configured - use cmake)"
 #endif
 
@@ -91,7 +91,11 @@ struct ca821x_api_callbacks
 	PCPS_DATA_indication_callback PCPS_DATA_indication;
 	PCPS_DATA_confirm_callback    PCPS_DATA_confirm;
 	MLME_POLL_indication_callback MLME_POLL_indication;
-#endif
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+	MLME_POLL_confirm_callback         MLME_POLL_confirm;
+	MLME_IE_NOTIFY_indication_callback MLME_IE_NOTIFY_indication;
+#endif // CASCODA_CA_VER >= 8212
 	MLME_ASSOCIATE_indication_callback     MLME_ASSOCIATE_indication;
 	MLME_ASSOCIATE_confirm_callback        MLME_ASSOCIATE_confirm;
 	MLME_DISASSOCIATE_indication_callback  MLME_DISASSOCIATE_indication;
@@ -135,7 +139,7 @@ struct ca821x_dev
 	uint8_t  extaddr[8]; /**< Mirrors nsIEEEAddress in the PIB */
 	uint16_t shortaddr;  /**< Mirrors macShortAddress in the PIB */
 	uint8_t  lqi_mode;   /**< Mirrors lqi_mode on the CA8210 */
-#endif
+#endif                   // CASCODA_CA_VER == 8210
 
 	//MAC Workarounds for V1.1 and MPW silicon (V0.x)
 	uint8_t MAC_MPW; /**< Flag to enable workarounds for ca8210 v0.x */
@@ -155,9 +159,51 @@ struct ca821x_dev
 /****** MAC MCPS/MLME Downlink                                           ******/
 /******************************************************************************/
 
+#if CASCODA_CA_VER >= 8212
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief MCPS_DATA_request (Send Data) according to API Spec
+ * \brief MCPS_DATA_request (Send Data) according to CA8212 API Spec
+ *******************************************************************************
+ * \param SrcAddrMode - Source Addressing Mode
+ * \param DstAddr - Destination Address and PanId
+ * \param HeaderIELength - Length of Header IE List
+ * \param PayloadIELength - Length of Payload IE List
+ * \param MsduLength - Length of Data
+ * \param pMsdu - Pointer to Data
+ * \param MsduHandle - Handle of Data
+ * \param pTxOptions - Pointer to a 2-byte Tx Options Bit Field
+ * \param SchTimestamp - (optional) Time at which the frame should be sent.
+ *                       This will be ignored if the scheduling bit in TxOpts is not set.
+ * \param SchPeriod - (optional) Regular interval at which the frame will be sent again.
+ *                    This will be ignored if the scheduling bit in TxOpts is not set.
+ * \param TxChannel - Specific channel on which the frame will be transmitted.
+ * \param pHeaderIEList - Pointer to Header IE List or NULLP
+ * \param pPayloadIEList - Pointer to Payload IE List or NULLP
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
+                                struct FullAddr    DstAddr,
+                                uint8_t            HeaderIELength,
+                                uint8_t            PayloadIELength,
+                                uint8_t            MsduLength,
+                                uint8_t *          pMsdu,
+                                uint8_t            MsduHandle,
+                                uint8_t *          pTxOptions,
+                                uint32_t           SchTimestamp,
+                                uint16_t           SchPeriod,
+                                uint8_t            TxChannel,
+                                uint8_t *          pHeaderIEList,
+                                uint8_t *          pPayloadIEList,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef);
+#else
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MCPS_DATA_request (Send Data) according to CA8211 API Spec
  *******************************************************************************
  * \param SrcAddrMode - Source Addressing Mode
  * \param DstAddr - Destination Address and PanId
@@ -179,6 +225,7 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
                                 uint8_t            TxOptions,
                                 struct SecSpec *   pSecurity,
                                 struct ca821x_dev *pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -192,6 +239,32 @@ ca_mac_status MCPS_DATA_request(uint8_t            SrcAddrMode,
  ******************************************************************************/
 ca_mac_status MCPS_PURGE_request_sync(uint8_t *MsduHandle, struct ca821x_dev *pDeviceRef);
 
+#if CASCODA_CA_VER >= 8212
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief PCPS_DATA_request (Send Data) according to API Spec
+ *******************************************************************************
+ * \param PsduHandle - User-assigned handle to identify data request
+ * \param TxOpts - TxOpts (such as for sending indirectly or scheduling)
+ * \param PsduLength - Length of Data
+ * \param pPsdu - Pointer to Data
+ * \param SchTimestamp - (optional) Time at which the frame should be sent.
+ *                       This will be ignored if the scheduling bit in TxOpts is not set.
+ * \param SchPeriod - (optional) Regular interval at which the frame will be sent again.
+ *                    This will be ignored if the scheduling bit in TxOpts is not set.
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
+                                uint8_t            TxOpts,
+                                uint8_t            PsduLength,
+                                uint8_t *          pPsdu,
+                                uint32_t           SchTimestamp,
+                                uint16_t           SchPeriod,
+                                struct ca821x_dev *pDeviceRef);
+#else
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief PCPS_DATA_request (Send Data) according to API Spec
@@ -210,6 +283,7 @@ ca_mac_status PCPS_DATA_request(uint8_t            PsduHandle,
                                 uint8_t            PsduLength,
                                 uint8_t *          pPsdu,
                                 struct ca821x_dev *pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -404,10 +478,43 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
                                       struct SecSpec *   pBeaconSecurity,
                                       struct ca821x_dev *pDeviceRef);
 
-#if CASCODA_CA_VER == 8210
+#if CASCODA_CA_VER >= 8212
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief MLME_POLL_request/confirm according to API Spec
+ * \brief MLME_POLL_request/confirm according to  CA8212 API Spec (Asynchronous)
+ *******************************************************************************
+ * \param CoordAddress - Coordinator Address
+ * \param FrameVersion - Determines if the Data request frame to be sent is a 2015 
+ *                       frame (FrameVersion set to 1) 
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status MLME_POLL_request(struct FullAddr    CoordAddress,
+                                uint8_t            FrameVersion,
+                                struct SecSpec *   pSecurity,
+                                struct ca821x_dev *pDeviceRef);
+#elif CASCODA_CA_VER == 8211
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_POLL_request/confirm according to CA8211 API Spec
+ *******************************************************************************
+ * \param CoordAddress - Coordinator Address
+ * \param pSecurity - Pointer to Security Structure or NULLP
+ * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
+ *******************************************************************************
+ * \return 802.15.4 status of confirm
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status MLME_POLL_request_sync(struct FullAddr    CoordAddress,
+                                     struct SecSpec *   pSecurity,
+                                     struct ca821x_dev *pDeviceRef);
+#else
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief MLME_POLL_request/confirm according to CA8210 API Spec
  *******************************************************************************
  * \param CoordAddress - Coordinator Address
  * \param Interval - Polling Interval in 0.1 Seconds Resolution. 0 = poll once, 0xFFFF = stop polling.
@@ -421,22 +528,7 @@ ca_mac_status MLME_POLL_request_sync(struct FullAddr    CoordAddress,
                                      uint8_t            Interval[2],
                                      struct SecSpec *   pSecurity,
                                      struct ca821x_dev *pDeviceRef);
-#else
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief MLME_POLL_request/confirm according to API Spec
- *******************************************************************************
- * \param CoordAddress - Coordinator Address
- * \param pSecurity - Pointer to Security Structure or NULLP
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
- *******************************************************************************
- * \return 802.15.4 status of confirm
- *******************************************************************************
- ******************************************************************************/
-ca_mac_status MLME_POLL_request_sync(struct FullAddr    CoordAddress,
-                                     struct SecSpec *   pSecurity,
-                                     struct ca821x_dev *pDeviceRef);
-#endif
+#endif // CASCODA_CA_VER >= 8212
 
 /******************************************************************************/
 /****** HWME Downlink                                                    ******/
@@ -750,7 +842,7 @@ const char *ca821x_get_version_nodate(void);
  *         CA_ERROR_*: any other error
  *******************************************************************************
  ******************************************************************************/
-ca_error ca821x_downstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
+ca_error ca821x_upstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**

@@ -77,13 +77,13 @@ static void blacklist_test(void **state)
 	data_indication.CommandId                     = SPI_MCPS_DATA_INDICATION;
 	data_indication.PData.DataInd.Src.AddressMode = blacklisted_address.AddressMode;
 	memcpy(data_indication.PData.DataInd.Src.Address, blacklisted_address.Address, 2);
-	ca821x_downstream_dispatch(&data_indication, &device);
+	ca821x_upstream_dispatch(&data_indication, &device);
 	assert_true(received_data_indication == 0);
 
 	// Send a message from a non-blacklisted device and make sure it makes
 	// it through and calls the indication handler
 	data_indication.PData.DataInd.Src.Address[0] = 0xFF;
-	ca821x_downstream_dispatch(&data_indication, &device);
+	ca821x_upstream_dispatch(&data_indication, &device);
 	assert_true(received_data_indication == 1);
 
 	// Clear the blacklist and make sure you can receive the indication
@@ -91,7 +91,7 @@ static void blacklist_test(void **state)
 	received_data_indication                      = 0;
 	data_indication.PData.DataInd.Src.AddressMode = blacklisted_address.AddressMode;
 	memcpy(data_indication.PData.DataInd.Src.Address, blacklisted_address.Address, 2);
-	ca821x_downstream_dispatch(&data_indication, &device);
+	ca821x_upstream_dispatch(&data_indication, &device);
 	assert_true(received_data_indication == 1);
 #endif
 }

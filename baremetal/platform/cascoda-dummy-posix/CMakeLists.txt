@@ -18,13 +18,18 @@ else()
 endif()
 
 # Mark the device as being FTD-capable
-set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "")
+set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "" FORCE)
 
 # Main library config ---------------------------------------------------------
 add_library(cascoda-dummy
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_dummy.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_spi_dummy.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_time.c
+	)
+
+target_include_directories(cascoda-dummy
+	PUBLIC
+		${PROJECT_SOURCE_DIR}/port/include
 	)
 
 target_link_libraries(cascoda-dummy

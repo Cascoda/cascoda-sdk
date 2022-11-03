@@ -178,8 +178,9 @@ static void setStartTime(void);
 /**
  * Platform abstraction function to fill in the timing information for the pcap header.
  * @param pcapHeader A pointer to the pcap header to be filled.
+ * @param params A pointer to the received PCPS indication
  */
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader);
+static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params);
 
 /**
  * Platform abstraction function to configure the default system output.
@@ -353,9 +354,11 @@ static void setStartTime(void)
 	}
 }
 
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader)
+#if CASCODA_CA_VER <= 8211
+static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
 {
 	LARGE_INTEGER now;
+	(void)params;
 	if (QueryPerformanceCounter(&now) == 0)
 	{
 		perror("QueryPerformanceTimer");
@@ -369,6 +372,7 @@ static void fillTimestamp(pcaprec_hdr_t *pcapHeader)
 	now.QuadPart -= pcapHeader->ts_sec * 1000000;
 	pcapHeader->ts_usec = (uint32_t)now.QuadPart;
 }
+#endif // CASCODA_CA_VER <= 8211
 
 static void configure_io(void)
 {
@@ -380,7 +384,7 @@ static void io_raw(void)
 	setmode(STDOUT_FILENO, O_BINARY);
 }
 //End of windows abstraction
-#else  //posix abstraction
+#else //posix abstraction
 /**
  * Subtract one timespec from another.
  * @param t1 timespec 1
@@ -501,9 +505,12 @@ static void setStartTime(void)
 	}
 }
 
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader)
+#if CASCODA_CA_VER <= 8211
+static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
 {
 	struct timespec now;
+
+	(void)params;
 	if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
 	{
 		perror("clock gettime");
@@ -513,6 +520,7 @@ static void fillTimestamp(pcaprec_hdr_t *pcapHeader)
 	pcapHeader->ts_sec  = (uint32_t)(now.tv_sec);
 	pcapHeader->ts_usec = (uint32_t)(now.tv_nsec / 1000);
 }
+#endif // CASCODA_CA_VER <= 8211
 
 static void configure_io(void)
 {
@@ -523,6 +531,19 @@ static void io_raw(void)
 {
 }
 #endif //End of posix abstraction
+
+#if CASCODA_CA_VER >= 8212
+static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
+{
+	const uint64_t micros = 1000000;
+	uint32_t       ts     = GETLE32(params->Timestamp); // timestamp in symbols
+	uint64_t       ts_us  = (uint64_t)ts * aSymbolPeriod_us;
+	uint64_t       ts_s   = ts_us / micros;
+
+	pcapHeader->ts_sec  = (uint32_t)ts_s;
+	pcapHeader->ts_usec = (uint32_t)(ts_us - (ts_s * micros));
+}
+#endif // CASCODA_CA_VER >= 8212
 
 /**
  * Helper function to print the system time to the given output.
@@ -622,7 +643,7 @@ static ca_error handlePcpsDataIndication(struct PCPS_DATA_indication_pset *param
 		pcaprec_hdr_t hdr   = {0, 0, 0, 0};
 		ca_error      error = CA_ERROR_SUCCESS;
 
-		fillTimestamp(&hdr);
+		fillTimestamp(&hdr, params);
 		hdr.incl_len = params->PsduLength + sizeof(ethernet_header);
 		hdr.orig_len = params->PsduLength + sizeof(ethernet_header);
 
@@ -773,7 +794,7 @@ int main(int argc, char *argv[])
 	//Register callbacks for async messages
 	pDeviceRef->callbacks.PCPS_DATA_indication                    = &handlePcpsDataIndication;
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handleEvbmeMessage;
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	initialiseRadio(pDeviceRef);
 

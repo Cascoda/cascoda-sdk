@@ -45,28 +45,8 @@
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
+#include "cascoda-bm/test15_4_evbme.h"
 #include "sif_il3820.h"
-#include "test15_4_evbme.h"
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Dispatch function to process received serial messages
- *******************************************************************************
- * \param buf - serial buffer to dispatch
- * \param len - length of buf
- * \param pDeviceRef - pointer to a CA-821x Device reference struct
- *******************************************************************************
- * \return 1: consumed by driver 0: command to be sent downstream to spi
- *******************************************************************************
- ******************************************************************************/
-int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
-{
-	int ret = 0;
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
-	/* Insert Application-Specific Dispatches here in the same style */
-	return 0;
-}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -80,7 +60,7 @@ int main(void)
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
 	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
-	cascoda_serial_dispatch = test15_4_serial_dispatch;
+	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
@@ -88,7 +68,6 @@ int main(void)
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	/* Application-Specific Initialisation Routines */
-	TEST15_4_Initialise(&dev);
 	SIF_IL3820_Initialise(&lut_full_update);
 	SIF_IL3820_ClearAndDisplayImage(cascoda_img_2in9);
 
@@ -96,9 +75,6 @@ int main(void)
 	while (1)
 	{
 		cascoda_io_handler(&dev);
-
-		/* Application-Specific Event Handler */
-		TEST15_4_Handler(&dev);
 
 	} /* while(1) */
 }

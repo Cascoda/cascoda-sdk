@@ -345,7 +345,13 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 #endif /* APP_USE_DEBUG */
 		return;
 	}
+#if CASCODA_CA_VER >= 8212
+	//MSDU located after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	if ((params->Data[msdu_shift] != PT_MSDU_D_WAKEUP) && (params->Data[msdu_shift] != PT_MSDU_D_DATA))
+#else
 	if ((params->Msdu[0] != PT_MSDU_D_WAKEUP) && (params->Msdu[0] != PT_MSDU_D_DATA))
+#endif // CASCODA_CA_VER >= 8212
 	{
 		/* unknown packet type */
 		APP_DevState[devnum] = APP_CST_DONE;
@@ -355,8 +361,12 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 		return;
 	}
 
-	/* WAKEUP packet received */
+/* WAKEUP packet received */
+#if CASCODA_CA_VER >= 8212
+	if (params->Data[msdu_shift] == PT_MSDU_D_WAKEUP)
+#else
 	if (params->Msdu[0] == PT_MSDU_D_WAKEUP)
+#endif // CASCODA_CA_VER >= 8212
 	{
 		if (APP_DevState[devnum] != APP_CST_DONE)
 		{
@@ -378,9 +388,14 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 			return;
 		}
 
-		/* get device packet handle */
+/* get device packet handle */
+#if CASCODA_CA_VER >= 8212
+		serialnr = (u32_t)((params->Data[4 + msdu_shift] << 24) + (params->Data[3 + msdu_shift] << 16) +
+		                   (params->Data[2 + msdu_shift] << 8) + (params->Data[1 + msdu_shift]));
+#else
 		serialnr =
 		    (u32_t)((params->Msdu[4] << 24) + (params->Msdu[3] << 16) + (params->Msdu[2] << 8) + (params->Msdu[1]));
+#endif // CASCODA_CA_VER >= 8212
 
 		if (serialnr == APP_DevHandle[devnum])
 		{
@@ -399,6 +414,25 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 		msdu[0] = PT_MSDU_C_DATA;
 
 		/* send C_DATA packet direct to device */
+#if CASCODA_CA_VER >= 8212
+		uint8_t tx_op[2] = {0x00, 0x00};
+		tx_op[0] |= TXOPT0_ACKREQ;
+		status = MCPS_DATA_request(MAC_MODE_LONG_ADDR,              /* SrcAddrMode */
+		                           DeviceFAdd,                      /* DstAddr */
+		                           0,                               /* HeaderIELength */
+		                           0,                               /* PayloadIELength */
+		                           1,                               /* MsduLength */
+		                           msdu,                            /* pMsdu */
+		                           LS0_BYTE(APP_DevHandle[devnum]), /* MsduHandle */
+		                           tx_op,                           /* pTxOptions */
+		                           0,                               /* SchTimestamp */
+		                           0,                               /* SchPeriod */
+		                           0,                               /* TxChannel */
+		                           NULLP,                           /* pHeaderIEList */
+		                           NULLP,                           /* pPayloadIEList */
+		                           NULLP,                           /* pSecurity */
+		                           pDeviceRef);                     /* pDeviceRef */
+#else
 		status = MCPS_DATA_request(MAC_MODE_LONG_ADDR,              /* SrcAddrMode */
 		                           DeviceFAdd,                      /* DstAddr     */
 		                           1,                               /* MsduLength  */
@@ -407,6 +441,7 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 		                           TXOPT_ACKREQ,                    /* TxOptions   */
 		                           NULLP,                           /* *pSecurity  */
 		                           pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 		if (status)
 		{
@@ -427,8 +462,12 @@ void TEMPSENSE_APP_Coordinator_ProcessDataInd(struct MCPS_DATA_indication_pset *
 
 	} /* WAKEUP packet */
 
-	/* D_DATA packet received */
+/* D_DATA packet received */
+#if CASCODA_CA_VER >= 8212
+	if (params->Data[msdu_shift] == PT_MSDU_D_DATA)
+#else
 	if (params->Msdu[0] == PT_MSDU_D_DATA)
+#endif // CASCODA_CA_VER >= 8212
 	{
 		if (APP_DevState[devnum] != APP_CST_C_DATA_CONFIRMED)
 		{
@@ -514,7 +553,13 @@ void TEMPSENSE_APP_Coordinator_DisplayData(u8_t                              dev
 
 	/* temperature */
 	printf("; T: ");
+#if CASCODA_CA_VER >= 8212
+	//MSDU starts after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	temp               = params->Data[1 + msdu_shift];
+#else
 	temp = params->Msdu[1];
+#endif               // CASCODA_CA_VER >= 8212
 	if (temp & 0x80) /* 1s complement */
 	{
 		printf("-");
@@ -522,15 +567,28 @@ void TEMPSENSE_APP_Coordinator_DisplayData(u8_t                              dev
 	}
 	printf("%u'C", temp);
 
-	/* vbat */
+/* vbat */
+#if CASCODA_CA_VER >= 8212
+	vbat = (u16_t)(params->Data[3 + msdu_shift] << 8) + params->Data[2 + msdu_shift];
+#else
 	vbat = (u16_t)(params->Msdu[3] << 8) + params->Msdu[2];
+#endif // CASCODA_CA_VER >= 8212
+
 	TEMPSENSE_APP_Coordinator_CheckVbatt(vbat);
 
 	/* cs / lqi */
+#if CASCODA_CA_VER >= 8212
+	TEMPSENSE_APP_Coordinator_CheckLQI(params->Data[4 + msdu_shift], params->MpduLinkQuality);
+#else
 	TEMPSENSE_APP_Coordinator_CheckLQI(params->Msdu[4], params->MpduLinkQuality);
+#endif // CASCODA_CA_VER >= 8212
 
-	/* ed / rssi */
+/* ed / rssi */
+#if CASCODA_CA_VER >= 8212
+	TEMPSENSE_APP_Coordinator_CheckED(params->Data[5 + msdu_shift], edcoord);
+#else
 	TEMPSENSE_APP_Coordinator_CheckED(params->Msdu[5], edcoord);
+#endif // CASCODA_CA_VER >= 8212
 
 	printf("\n");
 

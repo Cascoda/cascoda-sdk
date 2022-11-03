@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
 
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
 	exchange_register_user_callback(handle_user_command, pDeviceRef);
-	ca821x_util_start_downstream_dispatch_worker();
+	ca821x_util_start_upstream_dispatch_worker();
 
 	while (1)
 	{

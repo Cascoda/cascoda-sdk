@@ -18,7 +18,7 @@
 ** DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
 ** OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 **  USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************
+****************************************************************************/
 
 /*!
  * @file environment2.h
@@ -101,7 +101,7 @@ extern "C" {
  * @brief Environment 2 device selection.
  * @details Specified selection for device slave address of
  * Environment 2 Click driver.
- */
+ **/
 #define ENVIRONMENT2_SEL_SGP40 0x00
 #define ENVIRONMENT2_SEL_SHT40 0x01
 
@@ -109,10 +109,10 @@ extern "C" {
  * @brief Environment 2 fixed point arithmetic parts.
  * @details Specified the fixed point arithmetic parts for VOC algorithm of
  * Environment 2 Click driver.
- */
+ **/
 #define F16(x) ((fix16_t)(((x) >= 0) ? ((x)*65536.0 + 0.5) : ((x)*65536.0 - 0.5)))
 #define VocAlgorithm_SAMPLING_INTERVAL (1.)
-#define VocAlgorithm_INITIAL_BLACKOUT (45.)
+#define VocAlgorithm_INITIAL_BLACKOUT (5.)
 #define VocAlgorithm_VOC_INDEX_GAIN (230.)
 #define VocAlgorithm_SRAW_STD_INITIAL (50.)
 #define VocAlgorithm_SRAW_STD_BONUS (220.)
@@ -149,7 +149,7 @@ extern "C" {
 /**
  * @brief Environment 2 SGP40 description setting.
  * @details Specified SGP40 setting for description of Environment 2 Click driver.
- */
+ **/
 #define ENVIRONMENT2_SGP40_TEST_PASSED 0xD400
 #define ENVIRONMENT2_SGP40_TEST_FAILED 0x4B00
 
@@ -167,10 +167,10 @@ extern "C" {
 
 /**
  * @brief MikroBUS pin mapping.
- * @details Mapping module pins of Environment 2 Click.
- */
-/* module pins are used for pin configuration 
-	- SCL = pin 31, SDA = pin 32*/
+ * @details Mapping pins of Environment 2 Click to the selected MikroBUS.
+ **/
+/* This is for code conventional purpose and 
+	has no effect on anything  */
 #define ENVIRONMENT2_MAP_MIKROBUS(cfg) \
 	cfg.scl = 31;                      \
 	cfg.sda = 32
@@ -181,7 +181,7 @@ extern "C" {
 /**
  * @brief Environment 2 Click context object.
  * @details Context object definition of Environment 2 Click driver.
- */
+ **/
 typedef struct
 {
 	// Modules
@@ -197,7 +197,7 @@ typedef struct
 /**
  * @brief Environment 2 Click configuration object.
  * @details Configuration object definition of Environment 2 Click driver.
- */
+ **/
 typedef struct
 {
 	pin_name_t scl; /**< Clock pin descriptor for I2C driver. */
@@ -213,7 +213,7 @@ typedef int32_t fix16_t;
 /**
  * @brief Environment 2 Click VOC algorithm object.
  * @details Struct to hold all the states of the VOC algorithm.
- */
+ **/
 typedef struct
 {
 	fix16_t mVoc_Index_Offset;
@@ -253,7 +253,7 @@ typedef struct
 /**
  * @brief Environment 2 Click return value data.
  * @details Predefined enum values for driver return values.
- */
+ **/
 typedef enum
 {
 	ENVIRONMENT2_OK    = 0,
@@ -277,7 +277,6 @@ typedef enum
  * @note The all used pins will be set to unconnected state.
  *
  */
-
 void environment2_cfg_setup(environment2_cfg_t *cfg);
 
 /**
@@ -295,7 +294,6 @@ void environment2_cfg_setup(environment2_cfg_t *cfg);
  * @note None.
  *
  */
-
 err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg);
 
 /**
@@ -314,7 +312,6 @@ err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg);
  * @note None.
  *
  */
-
 err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *tx_buf);
 
 /**
@@ -333,7 +330,6 @@ err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uin
  * @note None.
  *
  */
-
 err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *rx_buf);
 
 /**
@@ -352,7 +348,6 @@ err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint
  * @note None.
  *
  */
-
 err_t environment2_get_temp_hum(float *humidity, float *temperature);
 
 /**
@@ -369,7 +364,6 @@ err_t environment2_get_temp_hum(float *humidity, float *temperature);
  * @note None.
  *
  */
-
 err_t environment2_get_air_quality(uint16_t *air_quality);
 
 /**
@@ -388,7 +382,6 @@ err_t environment2_get_air_quality(uint16_t *air_quality);
  * @note None.
  *
  */
-
 uint16_t environment2_sgp40_measure_test(environment2_t *ctx);
 
 /**
@@ -405,7 +398,6 @@ uint16_t environment2_sgp40_measure_test(environment2_t *ctx);
  * @note None.
  *
  */
-
 err_t environment2_sgp40_heater_off(environment2_t *ctx);
 
 /**
@@ -423,7 +415,6 @@ err_t environment2_sgp40_heater_off(environment2_t *ctx);
  * After calling this command, the SGP40 will restart entering the idle mode.
  *
  */
-
 err_t environment2_sgp40_soft_reset(environment2_t *ctx);
 
 /**
@@ -437,7 +428,6 @@ err_t environment2_sgp40_soft_reset(environment2_t *ctx);
  * @note None
  *
  */
-
 err_t environment2_voc_algorithm_configuration(environment2_voc_algorithm_params *params);
 
 /**
@@ -451,7 +441,6 @@ err_t environment2_voc_algorithm_configuration(environment2_voc_algorithm_params
  * @note None.
  *
  */
-
 err_t environment2_config_sensors(void);
 
 /**
@@ -469,7 +458,6 @@ err_t environment2_config_sensors(void);
  * @note None.
  *
  */
-
 err_t environment2_voc_algorithm_process(environment2_voc_algorithm_params *params, int32_t sraw, int32_t *voc_index);
 
 /**
@@ -488,7 +476,6 @@ err_t environment2_voc_algorithm_process(environment2_voc_algorithm_params *para
  * @note None.
  *
  */
-
 err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
                                                int32_t *       voc_index,
                                                int32_t *       relative_humidity,
@@ -501,7 +488,7 @@ err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
  * and runs the gas signal through the VOC algorithm for
  * the final result.
  * See #environment2_t object definition for detailed explanation.
- * @param[out] voc_index : Pointer to buffer for measured VOC index. Range 0..500. 
+ * @param[out] voc_index : Pointer to buffer for measured VOC index. Range 0..500.
  * @return @li @c  0 - Success,
  *         @li @c -1 - Error.
  *
@@ -513,7 +500,7 @@ err_t environment2_get_voc_index(int32_t *voc_index);
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief ENVIRONMENT2: Initialise the air quality, humidity and temperature sensor
+ * \brief ENVIRONMENT2: Initialise the air quality sensor
  *******************************************************************************
  * \return status, 0 = success
  *******************************************************************************

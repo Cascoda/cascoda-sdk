@@ -2,16 +2,37 @@
 
 Example of MikroElectronika Click interfaces for adding external sensors or actuator support to applications. These modules abstract away the underlying I2C/SPI bus and present easy-to-use functions in C.
 
-### List of supported devices:
+### List of supported Mikroelectronikca devices:
 
-| Manufacturer      | Device               | Interface | Type | Declarations for Interface Functions | Tested |
-| :---------------- | :--------------------| :-------- | :--- | :------------- | :-------------|
-| MikroElektronika  | Air Quality 4 Click  | I2C | Air Quality (Gas) sensor | airquality4.h | Yes |
-| MikroElektronika  | Environment2 Click   | I2C | Air Quality, Temperature, and Humidity sensor | environment2.h | No |
-| MikroElektronika  | Motion Click         | GPIO | Motion sensor | motion.h| Yes |
-| MikroElektronika  | Relay Click          | GPIO | Relay | relay.h | Yes |
-| MikroElektronika  | Thermo Click         | SPI | Thermocouple Temperature sensor | thermo.h | Yes |
-| MikroElektronika  | Thermo3 Click        | I2C | Digital Temperature sensor | thermo3.h | Yes |
+Device               | Interface | Type | On-chip Sensors | Declarations for Interface Functions |
+:--------------------| :-------- | :--- |:-------------|:-------------|
+[Air Quality 4 Click](https://www.mikroe.com/air-quality-4-click)  | I2C | Air Quality (Gas) sensor |SGP30| airquality4.h  |
+[Environment2 Click](https://www.mikroe.com/environment-2-click)   | I2C | Air Quality, Temperature, and Humidity sensor | SHT40, SGP40 | environment2.h |
+[HVAC Click Bundle](https://www.mikroe.com/hvac-click-bundle)    | I2C | Particulate Matter, Air Quality sensor |SCD41, SPS30|  hvac.h |
+[SHT Click](https://www.mikroe.com/sht-click)    | I2C | Temperature and Humidity |SHT3x|  sht.h |
+[Motion Click](https://www.mikroe.com/motion-click)         | GPIO | Motion sensor |  PIR500B | motion.h |
+[Relay Click](https://www.mikroe.com/relay-click)    | GPIO | Relay |  G6D-1A-ASI DC5 | relay.h |
+[Thermo Click](https://www.mikroe.com/thermo-click)         | SPI | Thermocouple Temperature sensor | MAX31855K|  thermo.h |
+[Thermo 3 Click](https://www.mikroe.com/thermo-3-click)        | I2C | Digital Temperature sensor | TMP102| thermo3.h |
+
+### List of devices:
+Manufacturer | Device  | Click board | Usage | Tested |
+:--------------------|:--------------------|:--------------------| :-------- | :-------------|
+Sensirion | SGP30 | Air Quality 4 Click| TVOC, CO2 | Yes |
+Sensirion | SHT40 | Environment2 Click | Humidity, Temperature | Yes |
+Sensirion | SGP40 | Environment2 Click | VOC | Yes |
+Sensirion | SCD41 | HVAC Click Bundle | CO2 | Yes |
+Sensirion | SPS30 | HVAC Click Bundle | PM | No |
+Sensirion | SHT3x | SHT Click  | Humidity, Temperature | Yes |
+| - | PIR500B | Motion Click | Motion | Yes
+OMRON G6D | G6D-1A-ASI DC5 | Relay Click | Relay | Yes
+Maxim Integrated | MAX31855 | Thermo Click | Temperature | Yes |
+Texas Instruments | TMP102 | Thermo 3 Click | Temperature | Yes |
+
+
+
+ > The SPS30 files that reside in include and source folders are not tested due to malfunctioning of SPS30. They were devloped intended for the use of testing SPS30 via UART communcation.
+
 
  > The ``MAP_MIKROBUS`` function in all sensor header files gives the user a clear sense of the pin configuration of the current system. 
 

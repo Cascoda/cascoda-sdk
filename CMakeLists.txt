@@ -55,6 +55,9 @@ add_subdirectory(ocf)
 # Openthread
 add_subdirectory(openthread)
 
+# KNX-IoT port
+add_subdirectory(knx-iot)
+
 
 # Third party
 add_subdirectory(third-party EXCLUDE_FROM_ALL)

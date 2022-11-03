@@ -516,7 +516,7 @@ void CHILI_SystemReInit()
 
 	/* set interrupt priorities */
 	/* 0: highest  timers */
-	/* 1:          downstream dispatch and gpios */
+	/* 1:          upstream dispatch and gpios */
 	/* 2:          upstream   dispatch */
 	/* 3: lowest */
 	NVIC_SetPriority(TMR0_IRQn, 0);

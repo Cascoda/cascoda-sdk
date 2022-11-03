@@ -38,6 +38,7 @@
 #include "cascoda-bm/cascoda_os.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
@@ -122,6 +123,9 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 	{
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
+
+	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
+
 	return ret;
 }
 

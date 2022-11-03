@@ -1,6 +1,10 @@
 # Global config ---------------------------------------------------------------
 project (ca821x-openthread)
 
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "NANO120")
+	return()
+endif()
+
 # Main library config ---------------------------------------------------------
 add_library(ca821x-openthread-bm-plat OBJECT
 	${PROJECT_SOURCE_DIR}/platform/alarm.c
@@ -147,3 +151,4 @@ if(CASCODA_OPENTHREAD_FTD AND OT_COAP)
 	target_compile_definitions(ot-ncp PRIVATE OT_NCP=1)
 	cascoda_make_binary(ot-ncp)
 endif()
+

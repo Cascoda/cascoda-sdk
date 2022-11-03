@@ -103,8 +103,14 @@ uint8_t PHYTestMACTxInitialise(struct ca821x_dev *pDeviceRef)
 	if ((status = MLME_SET_request_sync(macPANId, 0, 2, &PHYPANId, pDeviceRef))) // set local PANId
 		return status;
 
+#if CASCODA_CA_VER >= 8212
+	if ((status =
+	         MLME_SET_request_sync(macExtendedAddress, 0, 8, PHYTxLongAddress, pDeviceRef))) // set local long address
+		return status;
+#else
 	if ((status = MLME_SET_request_sync(nsIEEEAddress, 0, 8, PHYTxLongAddress, pDeviceRef))) // set local long address
 		return status;
+#endif // CASCODA_CA_VER >= 8212
 
 	if ((status =
 	         MLME_SET_request_sync(macShortAddress, 0, 2, &PHYTxShortAddress, pDeviceRef))) // set local short address
@@ -137,8 +143,14 @@ uint8_t PHYTestMACRxInitialise(struct ca821x_dev *pDeviceRef)
 	if ((status = MLME_SET_request_sync(macPANId, 0, 2, &PHYPANId, pDeviceRef))) // set local PANId
 		return status;
 
+#if CASCODA_CA_VER >= 8212
+	if ((status =
+	         MLME_SET_request_sync(macExtendedAddress, 0, 8, PHYRxLongAddress, pDeviceRef))) // set local long address
+		return status;
+#else
 	if ((status = MLME_SET_request_sync(nsIEEEAddress, 0, 8, PHYRxLongAddress, pDeviceRef))) // set local long address
 		return status;
+#endif // CASCODA_CA_VER >= 8212
 
 	if ((status =
 	         MLME_SET_request_sync(macShortAddress, 0, 2, &PHYRxShortAddress, pDeviceRef))) // set local short address
@@ -204,6 +216,25 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	PUTLE16(PHYRxShortAddress, DstFAdd.Address);
 
 	/* convert TDME to MLME */
+#if CASCODA_CA_VER >= 8212
+	uint8_t tx_op[2] = {0x00, 0x00};
+	tx_op[0] |= TXOPT0_ACKREQ;
+	MCPS_DATA_request(MAC_MODE_SHORT_ADDR,                              /* SrcAddrMode */
+	                  DstFAdd,                                          /* DstAddr */
+	                  0,                                                /* HeaderIELength */
+	                  0,                                                /* PayloadIELength */
+	                  msg->PData.TDMETxPktReq.TestPacketLength,         /* MsduLength */
+	                  msg->PData.TDMETxPktReq.TestPacketData,           /* pMsdu */
+	                  msg->PData.TDMETxPktReq.TestPacketSequenceNumber, /* MsduHandle */
+	                  tx_op,                                            /* pTxOptions */
+	                  0,                                                /* SchTimestamp */
+	                  0,                                                /* SchPeriod */
+	                  0,                                                /* TxChannel */
+	                  NULL,                                             /* pHeaderIEList */
+	                  NULL,                                             /* pPayloadIEList */
+	                  NULL,                                             /* pSecurity */
+	                  pDeviceRef);                                      /* pDeviceRef */
+#else
 	MCPS_DATA_request(MAC_MODE_SHORT_ADDR,                              /* SrcAddrMode */
 	                  DstFAdd,                                          /* DstAddr */
 	                  msg->PData.TDMETxPktReq.TestPacketLength,         /* MsduLength */
@@ -212,6 +243,7 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	                  TXOPT_ACKREQ,                                     /* TxOptions */
 	                  NULL,                                             /* *pSecurity */
 	                  pDeviceRef);
+#endif // CASCODA_CA_VER >= 8212
 
 	return (status);
 } // End of PHY_TXPKT_MAC_request()
@@ -269,7 +301,13 @@ uint8_t PHY_RXPKT_MAC_indication(struct MCPS_DATA_indication_pset *params, struc
 	tdmeind.TestPacketCSValue    = params->MpduLinkQuality;
 	tdmeind.TestPacketFoffsValue = freqoffs;
 	tdmeind.TestPacketLength     = params->MsduLength;
+#if CASCODA_CA_VER >= 8212
+	//MSDU located after Header IEs and Payload IEs.
+	uint8_t msdu_shift = params->HeaderIELength + params->PayloadIELength;
+	memcpy(tdmeind.TestPacketData, params->Data + msdu_shift, params->MsduLength);
+#else
 	memcpy(tdmeind.TestPacketData, params->Msdu, params->MsduLength);
+#endif // CASCODA_CA_VER >= 8212
 
 	PHYTestStatistics(
 	    TEST_STAT_ACCUM, tdmeind.TestPacketEDValue, tdmeind.TestPacketCSValue, tdmeind.TestPacketFoffsValue);

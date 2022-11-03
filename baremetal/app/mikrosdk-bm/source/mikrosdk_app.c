@@ -32,6 +32,7 @@
 /*
  * Example application for external sensor interfaces
 */
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -50,6 +51,9 @@
 #if MIKROSDK_TEST_ENVIRONMENT2
 #include "environment2.h"
 #endif
+#if MIKROSDK_TEST_HVAC
+#include "hvac.h"
+#endif
 #if MIKROSDK_TEST_MOTION
 #include "motion.h"
 #endif
@@ -62,6 +66,12 @@
 #if MIKROSDK_TEST_THERMO3
 #include "thermo3.h"
 #endif
+#if MIKROSDK_TEST_SHT
+#include "sht.h"
+#endif
+#if MIKROSDK_TEST_SPS30
+#include "sps30.h"
+#endif
 
 u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 {
@@ -69,22 +79,39 @@ u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 	/* select device-specific initialisation here */
 
 #if (MIKROSDK_TEST_AIRQUALITY4)
+	SENSORIF_I2C_Config(1);
 	status |= MIKROSDK_AIRQUALITY4_Initialise();
 #endif
 #if (MIKROSDK_TEST_ENVIRONMENT2)
+	SENSORIF_I2C_Config(1);
 	status |= MIKROSDK_ENVIRONMENT2_Initialise();
 #endif
+#if (MIKROSDK_TEST_HVAC)
+	SENSORIF_I2C_Config(1);
+	status |= MIKROSDK_HVAC_Initialise();
+#endif
 #if (MIKROSDK_TEST_MOTION)
+	motion_pin_mapping(6, 5);
 	status |= MIKROSDK_MOTION_Initialise();
 #endif
 #if (MIKROSDK_TEST_RELAY)
+	relay_pin_mapping(35, 34);
 	status |= MIKROSDK_RELAY_Initialise();
 #endif
 #if (MIKROSDK_TEST_THERMO)
+	SENSORIF_SPI_Config(1);
 	status |= MIKROSDK_THERMO_Initialise();
 #endif
 #if (MIKROSDK_TEST_THERMO3)
+	SENSORIF_I2C_Config(1);
 	status |= MIKROSDK_THERMO3_Initialise();
+#endif
+#if (MIKROSDK_TEST_SHT)
+	SENSORIF_I2C_Config(1);
+	status |= MIKROSDK_SHT_Initialise();
+#endif
+#if (MIKROSDK_TEST_SPS30)
+	status |= MIKROSDK_SPS30_Initialise();
 #endif
 	return (status);
 }
@@ -99,6 +126,9 @@ void MIKROSDK_Handler(struct ca821x_dev *pDeviceRef)
 #if (MIKROSDK_TEST_ENVIRONMENT2)
 	MIKROSDK_Handler_ENVIRONMENT2();
 #endif
+#if (MIKROSDK_TEST_HVAC)
+	MIKROSDK_Handler_HVAC();
+#endif
 #if (MIKROSDK_TEST_MOTION)
 	MIKROSDK_Handler_MOTION();
 #endif
@@ -111,7 +141,28 @@ void MIKROSDK_Handler(struct ca821x_dev *pDeviceRef)
 #if (MIKROSDK_TEST_THERMO3)
 	MIKROSDK_Handler_THERMO3();
 #endif
+#if (MIKROSDK_TEST_SHT)
+	MIKROSDK_Handler_SHT();
+#endif
+#if (MIKROSDK_TEST_SPS30)
+	MIKROSDK_Handler_SPS30();
+#endif
 }
+
+/******************************************************************************/
+/*******************************************
+ * This function convert a floating point value to a number with 
+ * integer and decimal. User can define its precision
+*******************************************************************************
+ ******************************************************************************/
+
+#if (FLOAT_TO_INT_CONVERT)
+void float_to_fixed_point_conversion(float target, int num_decimals, uint16_t *value)
+{
+	value[0] = (uint16_t)floor(target);                                                    //integer part
+	value[1] = (uint16_t)round(target * 10 * num_decimals) - value[0] * 10 * num_decimals; //decimal part
+}
+#endif
 
 /******************************************************************************/
 /*******************************************
@@ -161,26 +212,26 @@ void MIKROSDK_Handler_AIRQUALITY4(void)
 /*******************************************
 ********************************/ /**
  * \brief MIKROSDK Handler Example for Environment2 Click
+ * It takes around 7 minutes for the VOC index output correctly.
+ * When the device outputs 0 for VOC index, the device starts to be set up.
+ * The expected stabilised value for VOC is rougly 100,
+ * NOTICE: this device outputs a relative VOC not absolute VOC.
  *******************************************************************************
  ******************************************************************************/
 
 #if (MIKROSDK_TEST_ENVIRONMENT2)
 void MIKROSDK_Handler_ENVIRONMENT2(void)
 {
-	uint16_t    air_quality;
-	float       humidity;
-	float       temperature;
-	int32_t     voc_index;
-	uint8_t     status;
 	static u8_t ticker  = 0;
 	static u8_t handled = 0;
 	u32_t       t1, t2;
 
-	// environment2_get_temp_hum(&humidity, &temperature );
-	// BSP_WaitTicks( 100 );
-
-	// printf( " Humidity    : %.2f %% \n", humidity );
-	// printf( " Temperature : %.2f C \n", temperature );
+	uint16_t air_quality;
+	uint16_t hum[2], temp[2];
+	float    humidity;
+	float    temperature;
+	int32_t  voc_index;
+	int      num_decimals = 2;
 
 	/* Note:
 	 * This is a tick based handler for polling only
@@ -188,25 +239,104 @@ void MIKROSDK_Handler_ENVIRONMENT2(void)
 	 */
 	if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
 	{
-		printf("Environment2 click\n");
+		printf("<< Environment2 click >>\n");
 		++ticker;
 		handled = 1;
 		printf("Meas %u:\n", ticker);
 
 		SENSORIF_I2C_Init();
+		environment2_get_temp_hum(&humidity, &temperature);
+
+		float_to_fixed_point_conversion(temperature, num_decimals, temp);
+		float_to_fixed_point_conversion(humidity, num_decimals, hum);
+		printf(" Humidity : %u.%02u %%RH\n", hum[0], hum[1]);
+		printf(" Temperature : %u.%02u 'C\n", temp[0], temp[1]);
+
 		environment2_get_air_quality(&air_quality);
 
-		BSP_WaitTicks(100);
-
-		printf(" Air Quality : %d \n", (uint16_t)air_quality);
-		printf("- - - - - - - - - -  - \n");
+		printf(" Air Quality : %u \n", (uint16_t)air_quality);
 
 		environment2_get_voc_index(&voc_index);
-		SENSORIF_I2C_Deinit();
-
-		printf(" VOC Index   : %d  \n", (uint16_t)voc_index);
+		printf(" VOC Index : %u\n", (uint16_t)voc_index);
 		printf("-----------------------\n");
-		//BSP_WaitTicks( 10000 );
+		SENSORIF_I2C_Deinit();
+		BSP_WaitTicks(2000);
+	}
+
+	if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
+	    (MIKROSDK_MEASUREMENT_PERIOD - MIKROSDK_MEASUREMENT_DELTA))
+	{
+		handled = 0;
+	}
+}
+#endif
+
+/******************************************************************************/
+/*******************************************
+********************************/ /**
+ * \brief MIKROSDK Handler Example for HVAC Click
+ *******************************************************************************
+ ******************************************************************************/
+
+#if (MIKROSDK_TEST_HVAC)
+void MIKROSDK_Handler_HVAC(void)
+{
+	static u8_t ticker  = 0;
+	static u8_t handled = 0;
+	u32_t       t1, t2;
+
+	measurement_data_t      hvac_data;
+	mass_and_num_cnt_data_t sps30_data;
+	uint16_t                hum[2], temp[2];
+	int                     num_decimals = 2;
+
+	/* Note:
+	 * This is a tick based handler for polling only
+	 * In applications this should be based on timer-interrupts.
+	 */
+	if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
+	{
+		SENSORIF_I2C_Init();
+		hvac_scd40_send_cmd(HVAC_MEASURE_SINGLE_SHOT);
+		BSP_WaitTicks(6000);
+
+		while (!hvac_scd40_get_ready_status())
+			;
+
+		hvac_scd40_read_measurement(&hvac_data);
+		BSP_WaitTicks(100);
+
+		float_to_fixed_point_conversion(hvac_data.temperature, num_decimals, temp);
+		float_to_fixed_point_conversion(hvac_data.r_humidity, num_decimals, hum);
+
+		printf("CO2 Concent = %u ppm\n", hvac_data.co2_concent);
+
+		printf("Temperature = %u.%02u 'C\n", temp[0], temp[1]);
+
+		printf("R. Humidity = %u.%02u %%RH\n", hum[0], hum[1]);
+		printf("- - - - - - - - - - - - - \n");
+
+		/* SPS30 is not working !!! */
+		// while ( HVAC_SPS30_NEW_DATA_IS_READY != hvac_sps30_get_ready_flag() );
+		// hvac_sps30_read_measured_data(&sps30_data );
+		// BSP_WaitTicks(100);
+
+		// printf( "   Mass Concentration :   \n" );
+		// printf( " PM 1.0 = %.2f ug/m3 \n", sps30_data.mass_pm_1_0 );
+		// printf( " PM 2.5 = %.2f ug/m3 \n", sps30_data.mass_pm_2_5 );
+		// printf( " PM 4.0 = %.2f ug/m3 \n", sps30_data.mass_pm_4_0 );
+		// printf( " PM 10  = %.2f ug/m3 \n", sps30_data.mass_pm_10 );
+		// printf( "-   -   -   -   -   -   - \n" );
+
+		// printf( "  Number Concentration :  \n" );
+		// printf( " PM 0.5 = %.2f n/cm3 \n", sps30_data.num_pm_0_5 );
+		// printf( " PM 1.0 = %.2f n/cm3 \n", sps30_data.num_pm_1_0 );
+		// printf( " PM 2.5 = %.2f n/cm3 \n", sps30_data.num_pm_2_5 );
+		// printf( " PM 4.0 = %.2f n/cm3 \n", sps30_data.num_pm_4_0 );
+		// printf( " PM 10  = %.2f n/cm3 \n", sps30_data.num_pm_10 );
+		// printf( "--------------------------\n" );
+
+		SENSORIF_I2C_Deinit();
 	}
 
 	if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
@@ -404,8 +534,8 @@ void MIKROSDK_Handler_THERMO3(void)
 {
 	static u8_t ticker  = 0;
 	static u8_t handled = 0;
-	u16_t       temp;
 	u32_t       t1, t2;
+	u16_t       temp;
 
 	/* Note:
 	 * This is a tick based handler for polling only
@@ -433,6 +563,110 @@ void MIKROSDK_Handler_THERMO3(void)
 
 		/* display 'C and 4 digits of 'C */
 		printf("%u.%04u'C", ((temp >> 8) & 0xFF), (((u32_t)((temp >> 4) & DECIMAL_MASK_FOUR_BITS) * 625)));
+
+#if SENSORIF_REPORT_TMEAS
+		printf("; TmeasT=%ums", (t2 - t1));
+#endif
+		printf("\n");
+	}
+	if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
+	    (MIKROSDK_MEASUREMENT_PERIOD - MIKROSDK_MEASUREMENT_DELTA))
+	{
+		handled = 0;
+	}
+}
+#endif
+
+/******************************************************************************/
+/*******************************************
+********************************/ /**
+ * \brief MIKROSDK Handler Example for SHT Click
+ *******************************************************************************
+ ******************************************************************************/
+
+#if (MIKROSDK_TEST_SHT)
+void MIKROSDK_Handler_SHT(void)
+{
+	static u8_t ticker       = 0;
+	static u8_t handled      = 0;
+	int         num_decimals = 2;
+	u32_t       t1, t2;
+	float       temperature, humidity;
+	u16_t       temp[2], hum[2];
+
+	/* Note:
+	 * This is a tick based handler for polling only
+	 * In applications this should be based on timer-interrupts.
+	 */
+	if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
+	{
+		printf("-----------------------\n");
+		printf("SHT click\n");
+		++ticker;
+		handled = 1;
+		printf("Meas %u:\n", ticker);
+
+		SENSORIF_I2C_Init();
+
+		float_to_fixed_point_conversion(sht_temp_ss(), num_decimals, temp);
+		printf(" Temperature : %u.%02u 'C\n", temp[0], temp[1]);
+		BSP_WaitTicks(500);
+		float_to_fixed_point_conversion(sht_hum_ss(), num_decimals, hum);
+		printf(" Humidity : %u.%02u %%RH\n", hum[0], hum[1]);
+		SENSORIF_I2C_Deinit();
+	}
+
+	if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
+	    (MIKROSDK_MEASUREMENT_PERIOD - MIKROSDK_MEASUREMENT_DELTA))
+	{
+		handled = 0;
+	}
+}
+#endif
+
+/******************************************************************************/
+/*******************************************
+********************************/ /**
+ * \brief MIKROSDK Handler Example for SPS30 Click
+ *******************************************************************************
+ ******************************************************************************/
+#if (MIKROSDK_TEST_SPS30)
+void MIKROSDK_Handler_SPS30(void)
+{
+	static u8_t ticker  = 0;
+	static u8_t handled = 0;
+	u32_t       t1, t2;
+	u8_t        rx_buf[21] = {0x00};
+	u8_t        iter;
+
+	/* Note:
+	 * This is a tick based handler for polling only
+	 * In applications this should be based on timer-interrupts.
+	 */
+
+	if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
+	{
+		printf("-------------------------------------\n");
+		printf("SPS30: \n");
+
+		++ticker;
+		handled = 1;
+		t1      = TIME_ReadAbsoluteTime();
+		sps30_uart_read_device_serial_number(rx_buf);
+		t2 = TIME_ReadAbsoluteTime();
+		printf("Deice serial number:  ");
+		if (rx_buf)
+		{
+			for (iter = 0; iter < sizeof(rx_buf); ++iter)
+			{
+				printf("%02X", rx_buf[iter]);
+			}
+			printf("\n");
+		}
+		else
+		{
+			printf("Received buffer is empty\n");
+		}
 
 #if SENSORIF_REPORT_TMEAS
 		printf("; TmeasT=%ums", (t2 - t1));

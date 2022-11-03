@@ -30,7 +30,11 @@
 
 struct SecSpec *MCPS_DATA_indication_get_secspec(const struct MCPS_DATA_indication_pset *aPset)
 {
+#if CASCODA_CA_VER >= 8212
+	return (struct SecSpec *)(aPset->Data + aPset->HeaderIELength + aPset->PayloadIELength + aPset->MsduLength);
+#else
 	return (struct SecSpec *)(aPset->Msdu + aPset->MsduLength);
+#endif // CASCODA_CA_VER >= 8212
 }
 
 static uint8_t *MLME_BEACON_NOTIFY_get_pendaddrspec(const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
@@ -117,6 +121,7 @@ exit:
 	return rval;
 }
 
+#if CASCODA_CA_VER <= 8211
 struct M_KeyIdLookupDesc *KeyTableEntry_get_keyidlookupdescs(const struct M_KeyTableEntryFixed *aKte)
 {
 	return (struct M_KeyIdLookupDesc *)(aKte->Key + 16);
@@ -141,3 +146,4 @@ struct M_KeyUsageDesc *KeyTableEntry_get_keyusagedescs(const struct M_KeyTableEn
 
 	return (struct M_KeyUsageDesc *)working;
 }
+#endif // CASCODA_CA_VER <= 8211

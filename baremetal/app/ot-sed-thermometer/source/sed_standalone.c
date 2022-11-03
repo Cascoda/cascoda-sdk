@@ -13,6 +13,7 @@
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/test15_4_evbme.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
@@ -309,6 +310,7 @@ int main(void)
 	otLinkModeConfig  linkMode = {0};
 
 	ca821x_api_init(&dev);
+	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);

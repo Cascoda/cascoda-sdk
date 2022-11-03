@@ -10,10 +10,9 @@ add_executable(mac-tempsense
 	${PROJECT_SOURCE_DIR}/source/tempsense_debug.c
 	${PROJECT_SOURCE_DIR}/source/tempsense_evbme.c
 	${PROJECT_SOURCE_DIR}/source/tempsense_main.c
-	${PROJECT_SOURCE_DIR}/source/chili_test.c
 	)
 
-target_link_libraries(mac-tempsense cascoda-bm test15-4)
+target_link_libraries(mac-tempsense cascoda-bm test15-4-api)
 
 target_include_directories( mac-tempsense
 	PRIVATE

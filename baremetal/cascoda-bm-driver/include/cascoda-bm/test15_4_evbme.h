@@ -29,7 +29,9 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+#include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
+#include "ca821x_api.h"
 
 #ifndef TEST15_4_EVBME_H
 #define TEST15_4_EVBME_H
@@ -126,13 +128,12 @@ void TEST15_4_SetupAwaitAssoc(uint8_t *pDeviceAddress, uint16_t AssocShortAddres
  ******************************************************************************/
 void TEST15_4_SetupAwaitOrphan(uint8_t *pDeviceAddress, uint16_t OrphanShortAddress);
 /* Callbacks */
-static ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params,
-                                             struct ca821x_dev *                    pDeviceRef);
-static ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
-static ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
-static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_AssociateIndication(struct MLME_ASSOCIATE_indication_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_OrphanIndication(struct MLME_ORPHAN_indication_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_MAC_TXPKT_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_PHY_RXPKT_indication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_MAC_RXPKT_indication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset *params, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -140,5 +141,18 @@ static ca_error TEST15_4_PHY_EDDET_indication(struct TDME_EDDET_indication_pset 
  *******************************************************************************
  ******************************************************************************/
 void TEST15_4_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Dispatch function to process received serial messages
+ *******************************************************************************
+ * \param buf - serial buffer to dispatch
+ * \param len - length of buf
+ * \param pDeviceRef - pointer to a CA-821x Device reference struct
+ *******************************************************************************
+ * \return 1: consumed by driver 0: command to be sent downstream to spi
+ *******************************************************************************
+ ******************************************************************************/
+int TEST15_4_SerialDispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
 
 #endif // TEST15_4_EVBME_H

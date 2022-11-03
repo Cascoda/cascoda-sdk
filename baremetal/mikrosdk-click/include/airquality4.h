@@ -49,8 +49,8 @@
  * \defgroup map_mikrobus MikroBUS
  * \{
  */
-/* module pins are used for pin configuration
-	- SCL = pin 31, SDA = pin 32 */
+/* This is for code conventional purpose and 
+	has no effect on anything  */
 #define AIRQUALITY4_MAP_MIKROBUS(cfg) \
 	cfg.scl = 31;                     \
 	cfg.sda = 32

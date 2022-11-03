@@ -50,12 +50,12 @@
  * \defgroup map_mikrobus MikroBUS
  * \{
  */
-/* module pins are used for pin configuration
-	- SCL = pin 31, SDA = pin 32, AL = pin 33 (unused)*/
+/* This is for code conventional purpose and 
+	has no effect on anything apart from al pin */
 #define THERMO3_MAP_MIKROBUS(cfg) \
-	cfg.scl = 31;                 \
-	cfg.sda = 32;                 \
-	cfg.al  = 33
+	cfg.scl = 2;                  \
+	cfg.sda = 4;                  \
+	cfg.al  = 5
 /** \} */
 
 /**

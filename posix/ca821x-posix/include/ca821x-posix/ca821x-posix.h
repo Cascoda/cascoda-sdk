@@ -147,8 +147,8 @@ ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef);
 
 /**
  * Generic function to poll the receive queue and call callbacks for received
- * commands. This function should only be used if ca821x_util_start_downstream_dispatch_worker
- * has not been called. If ca821x_util_start_downstream_dispatch_worker has been
+ * commands. This function should only be used if ca821x_util_start_upstream_dispatch_worker
+ * has not been called. If ca821x_util_start_upstream_dispatch_worker has been
  * called, the callbacks will be called immediately and asynchronously from another thread.
  *
  * It is recommended that if the return value is CA_ERROR_SUCCESS, this function should be
@@ -165,7 +165,7 @@ ca_error ca821x_util_reset(struct ca821x_dev *pDeviceRef);
 ca_error ca821x_util_dispatch_poll();
 
 /**
- * Start the downstream_dispatch worker, which asynchronously calls the message callbacks
+ * Start the upstream_dispatch worker, which asynchronously calls the message callbacks
  * (such as MCPS_DATA_indication) as they are received. These callbacks will be triggered
  * from a separate posix thread. Appropriate pthread locking should be used by the application
  * or else the application logic could suffer from threading related issues.
@@ -175,22 +175,22 @@ ca_error ca821x_util_dispatch_poll();
  * having to poll a function in the application.
  *
  * @returns status
- * @retval CA_ERROR_ALREADY Downstream dispatch worker already running.
+ * @retval CA_ERROR_ALREADY upstream dispatch worker already running.
  * @retval CA_ERROR_FAIL Failed to start thread
  * @retval CA_ERROR_SUCCESS Success
  */
-ca_error ca821x_util_start_downstream_dispatch_worker();
+ca_error ca821x_util_start_upstream_dispatch_worker();
 
 /**
- * Stop the downstream_dispatch worker, so callbacks will no longer be triggered
+ * Stop the upstream_dispatch worker, so callbacks will no longer be triggered
  * from a separate thread.
  *
  * @returns status
- * @retval CA_ERROR_ALREADY Downstream dispatch worker already stopped.
+ * @retval CA_ERROR_ALREADY upstream dispatch worker already stopped.
  * @retval CA_ERROR_FAIL Failed to stop thread
  * @retval CA_ERROR_SUCCESS Success
  */
-ca_error ca821x_util_stop_downstream_dispatch_worker();
+ca_error ca821x_util_stop_upstream_dispatch_worker();
 
 /**
  * Registers the callback to call for any non-ca821x commands that are sent over

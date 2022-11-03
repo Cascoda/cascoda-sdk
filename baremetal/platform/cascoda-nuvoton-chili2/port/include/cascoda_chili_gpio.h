@@ -74,6 +74,8 @@ typedef enum enPortnum
 #define PMFP_ADC 1
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
 #define PMFP_SPI 4
+#elif (CASCODA_CHILI2_REV == 1) /* Chili devboard */
+#define PMFP_SPI 4
 #elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 #define PMFP_SPI 6
 #elif (CASCODA_CHILI2_REV == -2) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
@@ -85,7 +87,7 @@ typedef enum enPortnum
 /******************************************************************************/
 /****** Hard Connected Ports / Pins                                      ******/
 /******************************************************************************/
-/****** Use CASCODA_CHILI_REV to specify Chili Rev. 1.x                  ******/
+/****** Use CASCODA_CHILI_REV to specify Chili Rev. 2.x                  ******/
 /******************************************************************************/
 /*
  * PORTNAME_PORT:	port module, i.e. PA
@@ -95,6 +97,51 @@ typedef enum enPortnum
  */
 
 #if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
+#if (CASCODA_CHILI_DISABLE_CA821x == 0)
+/* ZIG_RESET: PC.1 */
+#define ZIG_RESET_PORT PC
+#define ZIG_RESET_PNUM PN_C
+#define ZIG_RESET_PIN 1
+#define ZIG_RESET_PVAL PC1
+#else
+/* ZIG_INTERNAL_RESET: PC.1 */
+#define ZIG_INTERNAL_RESET_PORT PC
+#define ZIG_INTERNAL_RESET_PNUM PN_C
+#define ZIG_INTERNAL_RESET_PIN 1
+#define ZIG_INTERNAL_RESET_PVAL PC1
+/* ZIG_RESET: PB.5 */
+#define ZIG_RESET_PORT PB
+#define ZIG_RESET_PNUM PN_B
+#define ZIG_RESET_PIN 5
+#define ZIG_RESET_PVAL PB5
+#endif
+/* ZIG_IRQB: PC.0 */
+#define ZIG_IRQB_PORT PC
+#define ZIG_IRQB_PNUM PN_C
+#define ZIG_IRQB_PIN 0
+#define ZIG_IRQB_PVAL PC0
+#define ZIG_IRQB_IRQn GPC_IRQn
+/* SPI_MOSI: PA.0 */
+#define SPI_MOSI_PORT PA
+#define SPI_MOSI_PNUM PN_A
+#define SPI_MOSI_PIN 0
+#define SPI_MOSI_PVAL PA0
+/* SPI_MISO: PA.1 */
+#define SPI_MISO_PORT PA
+#define SPI_MISO_PNUM PN_A
+#define SPI_MISO_PIN 1
+#define SPI_MISO_PVAL PA1
+/* SPI_SCLK: PA.2 */
+#define SPI_SCLK_PORT PA
+#define SPI_SCLK_PNUM PN_A
+#define SPI_SCLK_PIN 2
+#define SPI_SCLK_PVAL PA2
+/* SPI_CS: PA.3 */
+#define SPI_CS_PORT PA
+#define SPI_CS_PNUM PN_A
+#define SPI_CS_PIN 3
+#define SPI_CS_PVAL PA3
+#elif (CASCODA_CHILI2_REV == 1) /* Chili devboard */
 #if (CASCODA_CHILI_DISABLE_CA821x == 0)
 /* ZIG_RESET: PC.1 */
 #define ZIG_RESET_PORT PC
