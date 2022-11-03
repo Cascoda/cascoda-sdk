@@ -71,6 +71,7 @@ binaries.**](https://github.com/Cascoda/cascoda-sdk/releases)
 ### Other Guides
 
 - [Development Environment Setup](docs/guides/development-setup.md)
+- [Arm GNU Toolchain Installation for Linux](docs/guides/arm-gnu-toolchain-installation.md)
 - [Thread Network Formation](docs/guides/thread-network-formation.md)
 - [Thread Commissioning](docs/guides/thread-commissioning.md)
 - [Flashing binaries to hardware](docs/guides/flashing.md)

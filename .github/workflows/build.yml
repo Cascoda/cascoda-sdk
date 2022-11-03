@@ -310,9 +310,17 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: Windows-SDK
-    - uses: actions/download-artifact@v1
+
+    - uses: dawidd6/action-download-artifact@v2.24.0
       with:
+        github_token: ${{secrets.CASCODA_PRIVATE}}
+        branch: master
         name: Chili2-Lib
+        path: ${{ github.workspace }}/build-chili2/lib
+        repo: Cascoda/cascoda-sdk-priv
+        workflow: build.yml
+        check_artifacts: true
+        search_artifacts: true
 
     # Zip them back up
     - name: Zip the release assets
