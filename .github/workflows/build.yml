@@ -316,7 +316,7 @@ jobs:
         github_token: ${{secrets.CASCODA_PRIVATE}}
         branch: master
         name: Chili2-Lib
-        path: ${{ github.workspace }}/build-chili2/lib
+        path: ./Chili2-Lib
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
         check_artifacts: true
@@ -328,7 +328,7 @@ jobs:
         zip -r Chili2D-USB.zip Chili2D-USB
         zip -r Chili2S-UART0-1Mbaud.zip Chili2S-UART0-1Mbaud
         zip -r Windows-SDK.zip Windows-SDK
-        zip -r Chili2-Lib.zip Chili2-Lib
+        zip Chili2-Lib.zip Chili2-Lib/*
 
     # Release the artifacts to the just created release
     - name: Release Chili USB

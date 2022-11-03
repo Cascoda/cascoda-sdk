@@ -1,13 +1,13 @@
 add_library(kis-port STATIC IMPORTED GLOBAL)
 
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/lib/libkis-port.a OR NOT EXISTS ${CMAKE_BINARY_DIR}/lib/v0.22-0-Chili2-Lib.zip)
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/lib/libkis-port.a OR NOT EXISTS ${CMAKE_BINARY_DIR}/lib/v0.22-2-Chili2-Lib.zip)
     file(DOWNLOAD
-        https://github.com/Cascoda/cascoda-sdk/releases/download/v0.22-0/Chili2-Lib.zip
-        ${CMAKE_BINARY_DIR}/lib/v0.22-0-Chili2-Lib.zip
+        https://github.com/Cascoda/cascoda-sdk/releases/download/v0.22-2/Chili2-Lib.zip
+        ${CMAKE_BINARY_DIR}/lib/v0.22-2-Chili2-Lib.zip
     )
 
     file(ARCHIVE_EXTRACT
-        INPUT ${CMAKE_BINARY_DIR}/lib/v0.22-0-Chili2-Lib.zip
+        INPUT ${CMAKE_BINARY_DIR}/lib/v0.22-2-Chili2-Lib.zip
         DESTINATION ${CMAKE_BINARY_DIR}/lib
     )
 endif()
