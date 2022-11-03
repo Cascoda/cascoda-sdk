@@ -10,6 +10,16 @@ if(NOT EXISTS ${CMAKE_BINARY_DIR}/lib/libkis-port.a OR NOT EXISTS ${CMAKE_BINARY
         INPUT ${CMAKE_BINARY_DIR}/lib/v0.22-2-Chili2-Lib.zip
         DESTINATION ${CMAKE_BINARY_DIR}/lib
     )
+
+    file(RENAME
+        ${CMAKE_BINARY_DIR}/lib/Chili2-Lib/libiotivity-port.a
+        ${CMAKE_BINARY_DIR}/lib/libiotivity-port.a
+    )
+
+    file(RENAME
+        ${CMAKE_BINARY_DIR}/lib/Chili2-Lib/libkis-port.a
+        ${CMAKE_BINARY_DIR}/lib/libkis-port.a
+    )
 endif()
 
 set_target_properties(kis-port PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libkis-port.a)
