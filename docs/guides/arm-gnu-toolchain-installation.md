@@ -4,12 +4,11 @@ The [GNU Arm Embedded Toolchain](https://developer.arm.com/Tools%20and%20Softwar
 
 ## Automatic Installation
 
-If you wish to automatically install the Arm GNU Toolchain for Linux, source the script called [arm_gnu_toolchain_setup.sh](/etc/arm_gnu_toolchain_setup.sh).
-Note: Sourcing a script (in contrast to executing a script) means running it in the following manner:
-
-```bash
-source /etc/arm_gnu_toolchain_setup.sh
+If you wish to automatically install the Arm GNU Toolchain for Linux, please run the following command:
 ```
+curl https://raw.githubusercontent.com/Cascoda/cascoda-sdk/master/etc/arm_gnu_toolchain_setup.sh | bash; source /etc/profile
+```
+
 If you wish to manually install the toolchain instead, follow the steps outlined below.
 
 ## Step 1 - Uninstall existing version

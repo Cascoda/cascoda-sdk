@@ -1,5 +1,5 @@
 # Global config ---------------------------------------------------------------
-cmake_minimum_required (VERSION 3.13.1)
+cmake_minimum_required (VERSION 3.18)
 project (cascoda-sdk)
 
 if (MSVC)

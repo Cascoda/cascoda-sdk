@@ -16,7 +16,7 @@ To develop with the Cascoda SDK, the development environment must be set up. Thi
 | plantuml          | Diagram generation tool for generating UML diagrams in documentation |
 
 Version Requirements:
-- CMake must be version 3.13 or newer.
+- CMake must be version 3.18 or newer.
 - clang-format must be version 6.0
 
 It is possible to use alternative tools such as ninja instead of make, or clang instead of gcc, but that is out of scope of this document.

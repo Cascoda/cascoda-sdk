@@ -98,7 +98,8 @@ jobs:
   # Build artifacts for macos - for build testing only, no artifacts
   macos:
     runs-on: macos-latest
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
+    if: false
 
     steps:
     - uses: actions/checkout@v2

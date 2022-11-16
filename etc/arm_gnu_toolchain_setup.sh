@@ -2,14 +2,6 @@
 
 # This script will properly install the latest version of the Arm GNU toolchain.
 
-# Make sure this script is only ever being sourced, and never being executed.
-if [[ "$(basename -- "$0")" == "arm_gnu_toolchain_setup.sh" ]];
-then
-	>&2 echo "Don't run $0, source it."
-	>&2 echo "(i.e. type \"source arm_gnu_toolchain_setup.sh\" instead of \"./arm_gnu_toolchain_setup.sh\")"
-	exit 1
-fi
-
 # Clean up function to be performed upon exit, regardless of success or failure
 cleanup () {
 	echo -e "\033[33;7mCleaning up...\033[0m"
@@ -21,12 +13,10 @@ cleanup () {
 	rm -rf gcc-arm-none-eabi.tar.bz2
 }
 
-
-
 # Uninstalls, if it exists, the current version of the toolchain which was previously installed using a package manager. 
 echo -e "\033[33;7mUninstalling previous installation done via package manager...\033[0m"
-sudo apt-get remove gcc-arm-none-eabi
-sudo apt-get autoremove
+sudo apt-get -y remove gcc-arm-none-eabi
+sudo apt-get -y autoremove
 
 # Grab the latest version number from the official website.
 echo -e "\033[33;7mInstalling latest version of Arm GNU Toolchain from official website...\033[0m"
@@ -62,7 +52,7 @@ fi
 
 # Install libncurses, which is a dependency necessary for arm-none-eabi-gdb.
 echo -e "\033[33;7mInstalling libncurses5 dependency for arm-none-eabi-gdb...\033[0m"
-sudo apt-get install libncurses5
+sudo apt-get -y install libncurses5
 
 # Check that arm-none-eabi-gdb has the required dependencies
 echo -e "\033[33;7mVerifying that arm-none-eabi-gdb has the required dependencies...\033[0m"
