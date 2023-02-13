@@ -290,7 +290,7 @@ static void showConnectedActuators(void)
 static void handleKeepAlive(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
@@ -343,8 +343,8 @@ exit:
  * \param aError - A result of the CoAP transaction.
  *******************************************************************************
  ******************************************************************************/
-static void handleActuatorDiscoverResponse(void *               aContext,
-                                           otMessage *          aMessage,
+static void handleActuatorDiscoverResponse(void                *aContext,
+                                           otMessage           *aMessage,
                                            const otMessageInfo *aMessageInfo,
                                            otError              aError)
 {
@@ -393,7 +393,7 @@ static void handleActuatorDiscoverResponse(void *               aContext,
 static otError sendActuatorDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 
@@ -441,8 +441,8 @@ exit:
  * \param aError - A result of the CoAP transaction.
  *******************************************************************************
  ******************************************************************************/
-static void handleControllerPostConfirm(void *               aContext,
-                                        otMessage *          aMessage,
+static void handleControllerPostConfirm(void                *aContext,
+                                        otMessage           *aMessage,
                                         const otMessageInfo *aMessageInfo,
                                         otError              aError)
 {
@@ -471,13 +471,13 @@ static void handleControllerPostConfirm(void *               aContext,
  * \param aError - A result of the CoAP transaction.
  *******************************************************************************
  ******************************************************************************/
-static void handleControllerGetConfirm(void *               aContext,
-                                       otMessage *          aMessage,
+static void handleControllerGetConfirm(void                *aContext,
+                                       otMessage           *aMessage,
                                        const otMessageInfo *aMessageInfo,
                                        otError              aError)
 {
 	//Handle the received payload
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	uint16_t    offset          = otMessageGetOffset(aMessage);
@@ -583,7 +583,7 @@ static otError sendControllerRequest(int                actuatorID,
                                      uint8_t            input_value2)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	uint8_t       brightness = 0;
 	uint8_t       colour_mix = 0;
@@ -716,8 +716,8 @@ static void actuatordemo_handler(void)
  * \param aError - A result of the CoAP transaction.
  *******************************************************************************
  ******************************************************************************/
-static void handleKeepAliveResponse(void *               aContext,
-                                    otMessage *          aMessage,
+static void handleKeepAliveResponse(void                *aContext,
+                                    otMessage           *aMessage,
                                     const otMessageInfo *aMessageInfo,
                                     otError              aError)
 {
@@ -746,7 +746,7 @@ static void handleKeepAliveResponse(void *               aContext,
 static otError sendKeepAlive(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 
 	//allocate message buffer
@@ -794,7 +794,7 @@ exit:
 static otError sendActuatorData(otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 
 	uint8_t     buffer[32];
@@ -856,7 +856,7 @@ exit:
 static void handleControllerRequest(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	uint16_t    offset          = otMessageGetOffset(aMessage);
@@ -969,23 +969,27 @@ exit:
  ******************************************************************************/
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
-	otInstance *OT_INSTANCE     = aContext;
+	otError               error           = OT_ERROR_NONE;
+	otMessage            *responseMessage = NULL;
+	otInstance           *OT_INSTANCE     = aContext;
+	otCoapOptionIterator *iterator;
+	const otCoapOption   *option;
+	char                  uri_query[6];
+	bool                  valid_query = false;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
-	// Find the URI Query
-	const otCoapOption *option;
-	char                uri_query[6];
-	bool                valid_query = false;
+	if (otCoapOptionIteratorInit(iterator, aMessage) != OT_ERROR_NONE)
+		return;
 
-	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	// Find the URI Query
+	for (option = otCoapOptionIteratorGetFirstOption(iterator); option != NULL;
+	     option = otCoapOptionIteratorGetNextOption(iterator))
 	{
 		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength <= 6)
 		{
-			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+			SuccessOrExit(otCoapOptionIteratorGetOptionValue(iterator, uri_query));
 
 			if (strncmp(uri_query, uriCascodaActuatorDiscoverQuery, 5) == 0)
 			{
@@ -1077,11 +1081,13 @@ static void unbind_actuator_resources()
 	otCoapRemoveResource(OT_INSTANCE, &sDiscoverResource);
 }
 
-void handle_cli_actuatordemo(int argc, char *argv[])
+void handle_cli_actuatordemo(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
+	(void)aContext;
+
 	enum actuatordemo_state prevState = actuatordemo_state;
 
-	if (argc == 0)
+	if (aArgsLength == 0)
 	{
 		switch (actuatordemo_state)
 		{
@@ -1097,16 +1103,16 @@ void handle_cli_actuatordemo(int argc, char *argv[])
 			break;
 		}
 	}
-	if (argc == 1)
+	if (aArgsLength == 1)
 	{
-		if (strcmp(argv[0], "actuator") == 0)
+		if (strcmp(aArgs[0], "actuator") == 0)
 		{
 			actuatordemo_state = ACTUATORDEMO_ACTUATOR;
 			bind_actuator_resources();
 			unbind_controller_resources();
 			ACTUATOR_UARTInit();
 		}
-		else if (strcmp(argv[0], "controller") == 0)
+		else if (strcmp(aArgs[0], "controller") == 0)
 		{
 			actuatordemo_state = ACTUATORDEMO_CONTROLLER;
 			bind_controller_resources();
@@ -1114,7 +1120,7 @@ void handle_cli_actuatordemo(int argc, char *argv[])
 			if (prevState == ACTUATORDEMO_ACTUATOR)
 				ACTUATOR_UARTDeinit();
 		}
-		else if (strcmp(argv[0], "stop") == 0)
+		else if (strcmp(aArgs[0], "stop") == 0)
 		{
 			actuatordemo_state = ACTUATORDEMO_STOPPED;
 			unbind_actuator_resources();
@@ -1122,15 +1128,15 @@ void handle_cli_actuatordemo(int argc, char *argv[])
 			if (prevState == ACTUATORDEMO_ACTUATOR)
 				ACTUATOR_UARTDeinit();
 		}
-		else if (strcmp(argv[0], "help") == 0)
+		else if (strcmp(aArgs[0], "help") == 0)
 		{
 			displayCommandHelpText();
 		}
-		else if (strcmp(argv[0], "children") == 0 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
+		else if (strcmp(aArgs[0], "children") == 0 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
 		{
 			showConnectedActuators();
 		}
-		else if (strcmp(argv[0], "discover") == 0 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
+		else if (strcmp(aArgs[0], "discover") == 0 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
 		{
 			sendActuatorDiscover();
 		}
@@ -1138,44 +1144,44 @@ void handle_cli_actuatordemo(int argc, char *argv[])
 			otPlatSettingsSet(
 			    OT_INSTANCE, actuatordemo_key, (uint8_t *)&actuatordemo_state, sizeof(actuatordemo_state));
 	}
-	else if (argc == 2 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
+	else if (aArgsLength == 2 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
 	{
-		bool actuatorIDWithinLimits   = atoi(argv[0]) < MAX_ACTUATORS;
-		bool validActuatorInfoCommand = (strcmp(argv[1], "actuator_info") == 0 || strcmp(argv[1], "i") == 0);
+		bool actuatorIDWithinLimits   = atoi(aArgs[0]) < MAX_ACTUATORS;
+		bool validActuatorInfoCommand = (strcmp(aArgs[1], "actuator_info") == 0 || strcmp(aArgs[1], "i") == 0);
 
 		if (actuatorIDWithinLimits && validActuatorInfoCommand)
 		{
-			sendControllerRequest(atoi(argv[0]), ACTUATOR_INFO, -1, -1);
+			sendControllerRequest(atoi(aArgs[0]), ACTUATOR_INFO, -1, -1);
 		}
 	}
-	else if (argc == 3 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
+	else if (aArgsLength == 3 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
 	{
-		bool actuatorIDWithinLimits         = atoi(argv[0]) < MAX_ACTUATORS;
-		bool validActuatorBrightnessCommand = (strcmp(argv[1], "brightness") == 0 || strcmp(argv[1], "b") == 0);
-		bool validActuatorColourMixCommand  = (strcmp(argv[1], "colour_mix") == 0 || strcmp(argv[1], "c") == 0);
-		bool valueWithinLimits              = atoi(argv[2]) <= 255;
+		bool actuatorIDWithinLimits         = atoi(aArgs[0]) < MAX_ACTUATORS;
+		bool validActuatorBrightnessCommand = (strcmp(aArgs[1], "brightness") == 0 || strcmp(aArgs[1], "b") == 0);
+		bool validActuatorColourMixCommand  = (strcmp(aArgs[1], "colour_mix") == 0 || strcmp(aArgs[1], "c") == 0);
+		bool valueWithinLimits              = atoi(aArgs[2]) <= 255;
 
 		if (actuatorIDWithinLimits && validActuatorBrightnessCommand && valueWithinLimits)
 		{
-			sendControllerRequest(atoi(argv[0]), ACTUATOR_BRIGHTNESS, (uint8_t)atoi(argv[2]), -1);
+			sendControllerRequest(atoi(aArgs[0]), ACTUATOR_BRIGHTNESS, (uint8_t)atoi(aArgs[2]), -1);
 		}
 		else if (actuatorIDWithinLimits && validActuatorColourMixCommand && valueWithinLimits)
 		{
-			sendControllerRequest(atoi(argv[0]), ACTUATOR_COLOUR_MIX, (uint8_t)atoi(argv[2]), -1);
+			sendControllerRequest(atoi(aArgs[0]), ACTUATOR_COLOUR_MIX, (uint8_t)atoi(aArgs[2]), -1);
 		}
 	}
-	else if (argc == 5 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
+	else if (aArgsLength == 5 && actuatordemo_state == ACTUATORDEMO_CONTROLLER)
 	{
-		bool actuatorIDWithinLimits         = atoi(argv[0]) < MAX_ACTUATORS;
-		bool validActuatorBrightnessCommand = (strcmp(argv[1], "brightness") == 0 || strcmp(argv[1], "b") == 0);
-		bool brightnessWithinLimits         = atoi(argv[2]) <= 255;
-		bool validActuatorColourMixCommand  = (strcmp(argv[3], "colour_mix") == 0 || strcmp(argv[3], "c") == 0);
-		bool colourMixWithinLimits          = atoi(argv[4]) <= 255;
+		bool actuatorIDWithinLimits         = atoi(aArgs[0]) < MAX_ACTUATORS;
+		bool validActuatorBrightnessCommand = (strcmp(aArgs[1], "brightness") == 0 || strcmp(aArgs[1], "b") == 0);
+		bool brightnessWithinLimits         = atoi(aArgs[2]) <= 255;
+		bool validActuatorColourMixCommand  = (strcmp(aArgs[3], "colour_mix") == 0 || strcmp(aArgs[3], "c") == 0);
+		bool colourMixWithinLimits          = atoi(aArgs[4]) <= 255;
 
 		if (actuatorIDWithinLimits && validActuatorBrightnessCommand && brightnessWithinLimits &&
 		    validActuatorColourMixCommand && colourMixWithinLimits)
 		{
-			sendControllerRequest(atoi(argv[0]), ACTUATOR_BOTH, (uint8_t)atoi(argv[2]), (uint8_t)atoi(argv[4]));
+			sendControllerRequest(atoi(aArgs[0]), ACTUATOR_BOTH, (uint8_t)atoi(aArgs[2]), (uint8_t)atoi(aArgs[4]));
 		}
 	}
 }

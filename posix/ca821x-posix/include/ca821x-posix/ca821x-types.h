@@ -158,8 +158,8 @@ enum ca821x_exchange_type
 struct buffer_queue_item
 {
 	size_t                    len;        //!< Length of buffer
-	uint8_t *                 buf;        //!< Buffer pointer
-	struct ca821x_dev *       pDeviceRef; //!< Data's target/originating device
+	uint8_t                  *buf;        //!< Buffer pointer
+	struct ca821x_dev        *pDeviceRef; //!< Data's target/originating device
 	struct buffer_queue_item *next;       //!< Next queue item
 };
 
@@ -208,11 +208,11 @@ struct ca821x_exchange_base
 struct ca_device_info
 {
 	enum ca821x_exchange_type exchange_type; //!< Exchange type for this device
-	const char *              path;          //!< Exchange & system specific 'path', unique to this device
-	const char *              device_name;   //!< Name of the device, eg 'Chili2'
-	const char *              app_name;      //!< Name of the application running on the device, eg 'ot-cli'
-	const char *              version;       //!< Version string of the device
-	const char *              serialno;      //!< Serial number of the device
+	const char	           *path;          //!< Exchange & system specific 'path', unique to this device
+	const char	           *device_name;   //!< Name of the device, eg 'Chili2'
+	const char	           *app_name;      //!< Name of the application running on the device, eg 'ot-cli'
+	const char	           *version;       //!< Version string of the device
+	const char	           *serialno;      //!< Serial number of the device
 
 	bool external_flash_available; //!< Does the device have an external flash chip
 	bool available;                //!< Is the device available for use (or not, eg. in use by other application)

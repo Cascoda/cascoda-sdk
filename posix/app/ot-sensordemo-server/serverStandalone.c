@@ -58,9 +58,9 @@
 static int            isRunning;
 static otCoapResource sSensorResource;
 static otCoapResource sDiscoverResource;
-static const char *   sSensorUri                    = "ca/se";
-static const char *   uriCascodaSensorDiscoverQuery = "t=sen";
-static const char *   sDiscoverUri                  = "ca/di";
+static const char    *sSensorUri                    = "ca/se";
+static const char    *uriCascodaSensorDiscoverQuery = "t=sen";
+static const char    *sDiscoverUri                  = "ca/di";
 
 void printf_time(const char *format, ...)
 {
@@ -79,22 +79,27 @@ void printf_time(const char *format, ...)
 
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError             error           = OT_ERROR_NONE;
-	otMessage *         responseMessage = NULL;
-	otInstance *        OT_INSTANCE     = aContext;
-	const otCoapOption *option;
-	char                uri_query[6];
-	bool                valid_query = false;
+	otError               error           = OT_ERROR_NONE;
+	otMessage            *responseMessage = NULL;
+	otInstance           *OT_INSTANCE     = aContext;
+	otCoapOptionIterator *iterator;
+	const otCoapOption   *option;
+	char                  uri_query[6];
+	bool                  valid_query = false;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
+	if (otCoapOptionIteratorInit(iterator, aMessage) != OT_ERROR_NONE)
+		return;
+
 	// Find the URI Query
-	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	for (option = otCoapOptionIteratorGetFirstOption(iterator); option != NULL;
+	     option = otCoapOptionIteratorGetNextOption(iterator))
 	{
 		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength <= 6)
 		{
-			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+			SuccessOrExit(otCoapOptionIteratorGetOptionValue(iterator, uri_query));
 
 			if (strncmp(uri_query, uriCascodaSensorDiscoverQuery, 5) == 0)
 			{
@@ -143,7 +148,7 @@ exit:
 static void handleSensorData(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	uint16_t    offset          = otMessageGetOffset(aMessage);
@@ -262,8 +267,8 @@ static void registerCoapResources(otInstance *aInstance)
 	sDiscoverResource.mContext = aInstance;
 	sDiscoverResource.mHandler = &handleDiscover;
 
-	SuccessOrExit(error = otCoapAddResource(aInstance, &sSensorResource));
-	SuccessOrExit(error = otCoapAddResource(aInstance, &sDiscoverResource));
+	otCoapAddResource(aInstance, &sSensorResource);
+	otCoapAddResource(aInstance, &sDiscoverResource);
 
 exit:
 	assert(error == OT_ERROR_NONE);
@@ -289,7 +294,7 @@ int main(int argc, char *argv[])
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	isRunning = 1;
 	signal(SIGINT, quit);

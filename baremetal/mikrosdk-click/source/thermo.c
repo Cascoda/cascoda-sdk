@@ -1,102 +1,90 @@
+/**
+ * @file
+ * @brief mikrosdk interface
+ */
 /*
- * MikroSDK - MikroE Software Development Kit
- * Copyright© 2020 MikroElektronika d.o.o.
- * 
- * Permission is hereby granted, free of charge, to any person 
- * obtaining a copy of this software and associated documentation 
- * files (the "Software"), to deal in the Software without restriction, 
- * including without limitation the rights to use, copy, modify, merge, 
- * publish, distribute, sublicense, and/or sell copies of the Software, 
- * and to permit persons to whom the Software is furnished to do so, 
- * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be 
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
- * OR OTHER DEALINGS IN THE SOFTWARE. 
- */
-
-/*!
- * \file
+ *  Copyright (c) 2022, Cascoda Ltd.
+ *  All rights reserved.
  *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
-#include "thermo.h"
-#include <stdio.h>
-#include "cascoda-bm/cascoda_interface_core.h"
+/*
+ * Example click interface driver
+*/
+
+/* include <device>_drv.h and <device>_click.h */
+#include "thermo_click.h"
+#include "thermo_drv.h"
+
+/* include cascoda-bm code if required */
 #include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_types.h"
-#include "cascoda-util/cascoda_time.h"
-#include "ca821x_api.h"
+#include "cascoda-bm/cascoda_wait.h"
 
-// ------------------------------------------------------------- PRIVATE MACROS
-
-#define THERMO_DUMMY 0
-
-// ---------------------------------------------- PRIVATE VARIABLES
-
-static thermo_t     thermo; // Click object
+/* declare <device>_t <device> and <device>_cfg_t cfg structures for click objects */
+static thermo_t     thermo;
 static thermo_cfg_t cfg;
 
-// ---------------------------------------------- PRIVATE FUNCTION DECLARATIONS
-
-static void transfer_delay(void);
-
-// ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
-
-void thermo_cfg_setup(thermo_cfg_t *cfg)
-{
-	cfg->sck  = HAL_PIN_NC;
-	cfg->miso = HAL_PIN_NC;
-	cfg->mosi = HAL_PIN_NC;
-	cfg->cs   = HAL_PIN_NC;
-
-	cfg->spi_speed   = 100000;
-	cfg->spi_mode    = SPI_MASTER_MODE_0;
-	cfg->cs_polarity = SPI_MASTER_CHIP_SELECT_POLARITY_ACTIVE_LOW;
-}
-
-THERMO_RETVAL thermo_init(thermo_t *ctx, thermo_cfg_t *cfg)
+/* driver initialisation */
+uint8_t MIKROSDK_THERMO_init(void)
 {
 	spi_master_config_t spi_cfg;
 
 	spi_master_configure_default(&spi_cfg);
-	spi_cfg.speed              = cfg->spi_speed;
-	spi_cfg.sck                = cfg->sck;
-	spi_cfg.miso               = cfg->miso;
-	spi_cfg.mosi               = cfg->mosi;
-	spi_cfg.default_write_data = THERMO_DUMMY;
+	spi_cfg.speed              = cfg.spi_speed;
+	spi_cfg.sck                = cfg.sck;
+	spi_cfg.miso               = cfg.miso;
+	spi_cfg.mosi               = cfg.mosi;
+	spi_cfg.default_write_data = 0;
 
-	digital_out_init(&ctx->cs, cfg->cs);
-	ctx->chip_select = cfg->cs;
+	digital_out_init(&thermo.cs, cfg.cs);
+	thermo.chip_select = cfg.cs;
 
-	if (spi_master_open(&ctx->spi, &spi_cfg) == SPI_MASTER_ERROR)
-	{
-		return THERMO_INIT_ERROR;
-	}
+	if (spi_master_open(&thermo.spi, &spi_cfg) == SPI_MASTER_ERROR)
+		return THERMO_ST_FAIL;
 
-	spi_master_set_default_write_data(&ctx->spi, THERMO_DUMMY);
-	spi_master_set_speed(&ctx->spi, cfg->spi_speed);
-	spi_master_set_mode(&ctx->spi, cfg->spi_mode);
-	spi_master_set_chip_select_polarity(cfg->cs_polarity);
+	spi_master_set_default_write_data(&thermo.spi, 0);
+	spi_master_set_speed(&thermo.spi, cfg.spi_speed);
+	spi_master_set_mode(&thermo.spi, cfg.spi_mode);
+	spi_master_set_chip_select_polarity(cfg.cs_polarity);
+	spi_master_deselect_device(thermo.chip_select);
 
-	return THERMO_OK;
+	return THERMO_ST_OK;
 }
 
-uint32_t thermo_read_data(thermo_t *ctx)
+/* modified read - no delays */
+static uint8_t MIKROSDK_THERMO_read_data(uint32_t *data)
 {
+	uint8_t  status;
 	uint8_t  buffer[4] = {0};
 	uint32_t result;
 
-	spi_master_select_device(ctx->chip_select);
-	spi_master_read(&ctx->spi, buffer, 4);
-	spi_master_deselect_device(ctx->chip_select);
+	spi_master_select_device(thermo.chip_select);
+	if (spi_master_read(&thermo.spi, buffer, 4))
+		status = THERMO_ST_FAIL;
+	else
+		status = THERMO_ST_OK;
+	spi_master_deselect_device(thermo.chip_select);
 
 	result = buffer[0];
 	result <<= 8;
@@ -106,111 +94,137 @@ uint32_t thermo_read_data(thermo_t *ctx)
 	result <<= 8;
 	result |= buffer[3];
 
-	return result;
+	*data = result;
+
+	return status;
 }
 
-uint16_t thermo_get_temperature(void)
+/* check fault condition in read data */
+uint8_t MIKROSDK_THERMO_check_fault(void)
 {
-	uint8_t  buffer[4] = {0};
+	uint32_t tmp;
+
+	if (MIKROSDK_THERMO_read_data(&tmp))
+		return THERMO_ST_FAIL;
+
+	tmp = (tmp >> 16) & 0x01;
+
+	if (tmp)
+		return THERMO_ST_FAIL;
+
+	return (THERMO_ST_OK);
+}
+
+/* get thermo couple temperature value - modified value aquisition function with unsigned integer return */
+/* Note: T('C) = compl(uint16_t / 4) */
+uint8_t MIKROSDK_THERMO_get_thermo_temperature(uint16_t *temperature)
+{
+	uint32_t all_data;
+	uint16_t temp_data = 0;
+
+	if (MIKROSDK_THERMO_read_data(&all_data))
+		return THERMO_ST_FAIL;
+
+	temp_data = (uint16_t)(0x3FFF & (all_data >> 18));
+	/* sign extension from 14 to 16 bit */
+	if (temp_data & 0x2000)
+		temp_data |= 0xC000;
+
+	*temperature = temp_data;
+
+	return (THERMO_ST_OK);
+}
+
+/* get junction temperature value - modified value aquisition function with unsigned integer return */
+/* Note: T('C) = compl(uint16_t / 16) */
+uint8_t MIKROSDK_THERMO_get_junction_temperature(uint16_t *temperature)
+{
+	uint32_t all_data;
+	uint16_t temp_data = 0;
+
+	if (MIKROSDK_THERMO_read_data(&all_data))
+		return THERMO_ST_FAIL;
+
+	temp_data = (uint16_t)(0x0FFF & (all_data >> 4));
+	/* sign extension from 12 to 16 bit */
+	if (temp_data & 0x800)
+		temp_data |= 0xF000;
+
+	*temperature = temp_data;
+
+	return (THERMO_ST_OK);
+}
+
+/* get both thermocouple and junction temperature values */
+/* Note: thermo_temperature:   T('C) = compl(uint16_t /  4) */
+/* Note: junction_temperature: T('C) = compl(uint16_t / 16) */
+uint8_t MIKROSDK_THERMO_get_all_temperatures(uint16_t *thermo_temperature, uint16_t *junction_temperature)
+{
+	uint32_t all_data;
 	uint16_t temp_data;
-	spi_master_select_device(thermo.chip_select);
-	spi_master_read(&thermo.spi, buffer, 4);
-	spi_master_deselect_device(thermo.chip_select);
 
-	temp_data = buffer[0];
-	temp_data <<= 8;
-	temp_data |= buffer[1];
+	if (MIKROSDK_THERMO_read_data(&all_data))
+		return THERMO_ST_FAIL;
 
-	return (temp_data >> 2);
+	temp_data = (uint16_t)(0x3FFF & (all_data >> 18));
+	/* sign extension from 14 to 16 bit */
+	if (temp_data & 0x2000)
+		temp_data |= 0xC000;
+
+	*thermo_temperature = temp_data;
+
+	temp_data = (uint16_t)(0x0FFF & (all_data >> 4));
+	/* sign extension from 12 to 16 bit */
+	if (temp_data & 0x800)
+		temp_data |= 0xF000;
+
+	*junction_temperature = temp_data;
+
+	return (THERMO_ST_OK);
 }
 
-uint16_t thermo_get_junction_temperature(void)
-{
-	uint32_t temp_all_data;
-	uint16_t temp_data;
-	float    temperature;
-
-	temp_all_data = thermo_read_data(&thermo);
-
-	temp_data = (uint16_t)temp_all_data;
-
-	return (temp_data >> 4);
-}
-
-uint8_t thermo_check_fault(thermo_t *ctx)
-{
-	uint32_t tmp = 1;
-
-	tmp = thermo_read_data(ctx);
-
-	tmp >>= 16;
-	tmp &= 0x01;
-
-	return tmp;
-}
-
-uint8_t thermo_short_circuited_vcc(void)
-{
-	uint32_t tmp;
-
-	tmp = thermo_read_data(&thermo);
-
-	tmp >>= 2;
-	tmp &= 0x01;
-
-	return tmp;
-}
-
-uint8_t thermo_short_circuited_gnd(void)
-{
-	uint32_t tmp;
-
-	tmp = thermo_read_data(&thermo);
-
-	tmp >>= 1;
-	tmp &= 0x01;
-
-	return tmp;
-}
-
-uint8_t thermo_check_connections(void)
-{
-	uint32_t tmp;
-
-	tmp = thermo_read_data(&thermo);
-
-	tmp &= 0x01;
-
-	return tmp;
-}
-
-void thermo_cs_config()
-{
-	cfg.cs = SENSORIF_SPI_Chip_Select();
-	printf("Chip select : %d\n", cfg.cs);
-}
-
+/* device initialisation */
 uint8_t MIKROSDK_THERMO_Initialise(void)
 {
-	SENSORIF_SPI_Init();
-	thermo_cs_config();
-	thermo_init(&thermo, &cfg);
-	if (thermo_check_fault(&thermo))
-	{
-		ca_log_warn("Unable to initialise THERMO click");
-	}
-	else
-	{
-		printf("Status OK\n");
-	}
-	SENSORIF_SPI_Deinit();
+	/* chip select configuration */
+	cfg.cs = SENSORIF_SPI_Chip_Select();
+
+	/* driver initialisation */
+	if (MIKROSDK_THERMO_init())
+		return THERMO_ST_FAIL;
+
+	if (MIKROSDK_THERMO_check_fault())
+		return THERMO_ST_FAIL;
+
+	SENSORIF_SPI_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return (THERMO_ST_OK);
 }
 
-// ----------------------------------------------- PRIVATE FUNCTION DEFINITIONS
-
-static void transfer_delay(void)
+/* device hardware reinitialisation for quick power-up */
+uint8_t MIKROSDK_THERMO_Reinitialise(void)
 {
-	BSP_WaitTicks(350);
+	WAIT_ms(THERMO_T_POWERUP);
+
+	SENSORIF_SPI_Init(); /* enable interface */
+
+	if (MIKROSDK_THERMO_check_fault())
+		return THERMO_ST_FAIL;
+
+	SENSORIF_SPI_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return (THERMO_ST_OK);
 }
 
-// ------------------------------------------------------------------------- END
+/* data acquisition */
+/* Note: thermo_temperature:   T('C) = compl(uint16_t /  4) */
+/* Note: junction_temperature: T('C) = compl(uint16_t / 16) */
+uint8_t MIKROSDK_THERMO_Acquire(uint16_t *thermo_temperature, uint16_t *junction_temperature)
+{
+	SENSORIF_SPI_Init(); /* enable interface */
+	if (MIKROSDK_THERMO_get_all_temperatures(thermo_temperature, junction_temperature))
+		return THERMO_ST_FAIL;
+	SENSORIF_SPI_Deinit(); /* disable interface */
+
+	return THERMO_ST_OK;
+}

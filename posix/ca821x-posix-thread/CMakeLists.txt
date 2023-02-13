@@ -78,19 +78,13 @@ add_executable(ot-cli-posix-mtd
 	${PROJECT_SOURCE_DIR}/example/main.c
 	)
 
-add_executable(ot-ncp-posix
-	${PROJECT_SOURCE_DIR}/example/ncpapp.c
-	)
-
 target_link_libraries(ot-cli-posix-ftd openthread-cli-ftd ca821x-openthread-posix-ftd)
 target_link_libraries(ot-cli-posix-mtd openthread-cli-mtd ca821x-openthread-posix-mtd)
-target_link_libraries(ot-ncp-posix openthread-ncp-ftd ca821x-openthread-posix-ftd)
 
 install(
 	TARGETS
 		ot-cli-posix-ftd
 		ot-cli-posix-mtd
-		ot-ncp-posix
 	COMPONENT
 		examples
 	RUNTIME DESTINATION

@@ -42,15 +42,18 @@ int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 	int ret;
 	ret = otApi_Dispatch((struct SerialBuffer *)(buf));
 
-	// switch clock otherwise chip is locking up as it looses external clock
+	// switch clock otherwise chip is locking up as it loses external clock
 	if (((buf[0] == EVBME_SET_REQUEST) && (buf[2] == EVBME_RESETRF)) || (buf[0] == EVBME_HOST_CONNECTED))
 	{
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
 
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
-
 	return ret;
+}
+
+int ot_reinitialise(struct ca821x_dev *pDeviceRef)
+{
+	otLinkSyncExternalMac(OT_INSTANCE);
 }
 
 void sleep_if_possible()
@@ -152,6 +155,7 @@ int main(void)
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
 	cascoda_serial_dispatch = ot_serial_dispatch;
+	cascoda_reinitialise    = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	// Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action

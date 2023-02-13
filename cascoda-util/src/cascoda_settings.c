@@ -283,7 +283,7 @@ exit:
 	return settingsSize - utilsFlashGetUsedSize(aInstance);
 }
 
-static ca_error addSettingVector(struct ca821x_dev *   aInstance,
+static ca_error addSettingVector(struct ca821x_dev    *aInstance,
                                  uint16_t              aKey,
                                  bool                  aIndex0,
                                  struct settingBuffer *aSetting,
@@ -452,8 +452,8 @@ void caUtilSettingsDeinit(struct ca821x_dev *aInstance)
 static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
                                    uint16_t           aKey,
                                    int                aIndex,
-                                   uint32_t *         aAddress,
-                                   uint16_t *         aValueLength)
+                                   uint32_t          *aAddress,
+                                   uint16_t          *aValueLength)
 {
 	ca_error error   = CA_ERROR_NOT_FOUND;
 	uint32_t address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
@@ -493,8 +493,8 @@ static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
 ca_error caUtilSettingsGet(struct ca821x_dev *aInstance,
                            uint16_t           aKey,
                            int                aIndex,
-                           uint8_t *          aValue,
-                           uint16_t *         aValueLength)
+                           uint8_t           *aValue,
+                           uint16_t          *aValueLength)
 {
 	ca_error error;
 	uint32_t address;
@@ -528,8 +528,8 @@ exit:
 ca_error caUtilSettingsGetAddress(struct ca821x_dev *aInstance,
                                   uint16_t           aKey,
                                   int                aIndex,
-                                  void **            aValue,
-                                  uint16_t *         aValueLength)
+                                  void             **aValue,
+                                  uint16_t          *aValueLength)
 {
 	uint32_t             relative_address;
 	struct ca_flash_info flash_info;
@@ -566,7 +566,7 @@ ca_error caUtilSettingsAdd(struct ca821x_dev *aInstance, uint16_t aKey, const ui
 	return addSettingVector(aInstance, aKey, index0, &setting, 1);
 }
 
-ca_error caUtilSettingsAddVector(struct ca821x_dev *   aInstance,
+ca_error caUtilSettingsAddVector(struct ca821x_dev    *aInstance,
                                  uint16_t              aKey,
                                  struct settingBuffer *aVector,
                                  size_t                aCount)

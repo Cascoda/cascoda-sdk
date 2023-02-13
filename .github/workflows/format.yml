@@ -6,7 +6,7 @@ jobs:
   format:
     name: Format the pull request if the '~format' comment is made
     if: ${{ github.event.issue.pull_request && contains(github.event.comment.body, '~format') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: octokit/graphql-action@v2.x
         id: get_branch
@@ -39,7 +39,7 @@ jobs:
       - name: build-docs
         run: |
           sudo apt-get update -y
-          sudo apt-get install clang-format-6.0
+          sudo apt-get install clang-format-13
           cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-format
           make -C ${{ github.workspace }}/build-format format
 

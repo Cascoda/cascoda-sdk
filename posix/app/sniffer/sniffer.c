@@ -111,7 +111,7 @@ LARGE_INTEGER start;
 LARGE_INTEGER frequency;
 #else  //posix
 struct timespec start;
-FILE *          output;
+FILE           *output;
 #endif // _WIN32
 
 /** Enable logging of extra info to stderr in pcap mode */
@@ -681,8 +681,8 @@ int main(int argc, char *argv[])
 {
 	struct ca821x_dev *pDeviceRef    = &(sDeviceRef);
 	ca_error           error         = CA_ERROR_SUCCESS;
-	char *             pipeName      = NULL;
-	char *             wiresharkPath = NULL;
+	char              *pipeName      = NULL;
+	char              *wiresharkPath = NULL;
 
 	char *serial_num = NULL;
 

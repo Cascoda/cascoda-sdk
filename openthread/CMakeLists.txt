@@ -16,23 +16,28 @@ else()
 	MESSAGE( ERROR "CA-${CASCODA_CA_VER} is not supported with this version of cascoda SDK")
 endif()
 
-# Since Iotivity-Lite requires its own patched version of mbedTLS, OpenThread's must be disabled when it is built.
 if(${CASCODA_BUILD_OCF})
-	set(OT_BUILTIN_MBEDTLS OFF CACHE BOOL "Enable builtin mbedTLS" FORCE)
+       set(OT_EXTERNAL_MBEDTLS "mbedtls" CACHE STRING "Specify external mbedtls library" FORCE)
 else()
-	set(OT_BUILTIN_MBEDTLS ON CACHE BOOL "Enable builtin mbedTLS" FORCE)
+       unset(OT_EXTERNAL_MBEDTLS CACHE)
 endif()
 
-mark_as_advanced(OT_BUILTIN_MBEDTLS)
+mark_as_advanced(OT_EXTERNAL_MBEDTLS)
 
 # Sub-project configuration ---------------------------------------------------
 include(FetchContent)
 
 # Use specific OpenThread commit, unless developing OpenThread
 if(CASCODA_OPENTHREAD_DEV)
-	set(OT_TAG ext-mac-dev)
+	set(OT_TAG thread-testcase-6.1.1-sed)
+#	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG 2432fb08e5e2219bc7f816334ef91817a8181140)
+	set(OT_TAG tini-joining-fix)
+	#set(OT_TAG tini-assert-fix)
+	# This is the old OpenThread commit, from before Elie's OpenThread update.
+	# It has not been tested with the changes to the Thread platform, and it is
+	# therefore deprecated.
+	# set(OT_TAG 8b4518581e4fd4d3daebd03ac264ebe8eee1bfe3)
 endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
@@ -45,6 +50,19 @@ FetchContent_Declare(
   GIT_REPOSITORY ${CASCODA_OPENTHREAD_REPO}
   GIT_TAG        ${OT_TAG}
 )
+
+set(OT_BUILD_EXECUTABLES OFF CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_PLATFORM "external" CACHE STRING "Needed for the Cascoda SDK - please do not change")
+set(OT_EXCLUDE_TCPLP_LIB ON CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_MAC_FILTER OFF CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_THREAD_VERSION "1.1" CACHE STRING "Needed for the Cascoda SDK - please do not change")
+set(OT_ASSERT ON CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_BORDER_AGENT "OFF" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_BORDER_ROUTER "OFF" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_DHCP_SERVER "OFF" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_SERVICE "OFF" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_ECDSA "ON" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
+set(OT_SRP_CLIENT "ON" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
 
 if(CASCODA_OPENTHREAD_FTD)
 	option(OT_BORDER_AGENT "enable border agent support" ON)
@@ -68,15 +86,16 @@ set(OPENTHREAD_USE_EXTERN_MAC ON)
 list(APPEND OT_PLATFORM_DEFINES
 	"OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD=1"
 	"OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE=${CASCODA_DEVICE_TABLE_SIZE}"
-	"OPENTHREAD_CONFIG_LOG_LEVEL=OT_LOG_LEVEL_${CASCODA_LOG_LEVEL}"
 	"OPENTHREAD_CONFIG_PLATFORM_INFO=\"cascoda-sdk\""
 	"OPENTHREAD_CONFIG_NCP_TX_BUFFER_SIZE=4096"
 	"OPENTHREAD_CONFIG_NUM_MESSAGE_BUFFERS=${CASCODA_OPENTHREAD_MESSAGE_BUFS}"
+	"OPENTHREAD_CONFIG_TCP_ENABLE=0"
+	"OPENTHREAD_CONFIG_MLE_IP_ADDRS_PER_CHILD=8"
 )
 
 if(NOT WIN32)
-	#Don't use NCP_SPINEL logging on windows, because it relies on weak symbols which are broken with mingw gcc!
-	list(APPEND OT_PLATFORM_DEFINES "OPENTHREAD_CONFIG_LOG_OUTPUT=OPENTHREAD_CONFIG_LOG_OUTPUT_NCP_SPINEL")
+	#Don't use APP logging on windows, because it relies on weak symbols which are broken with mingw gcc!
+	list(APPEND OT_PLATFORM_DEFINES "OPENTHREAD_CONFIG_LOG_OUTPUT=OPENTHREAD_CONFIG_LOG_OUTPUT_APP")
 endif()
 
 if(CASCODA_OPENTHREAD_FTD)
@@ -121,14 +140,17 @@ endif()
 if(CASCODA_BUILD_LWIP)
 	target_compile_definitions(mbedcrypto PUBLIC CASCODA_BUILD_LWIP)
 endif()
-
-if(${OT_BUILTIN_MBEDTLS})
-	target_include_directories(mbedcrypto
-		INTERFACE
-			${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include
-			${openthread_SOURCE_DIR}/third_party/mbedtls
-	)
+if(CASCODA_BUILD_KNX)
+	target_compile_definitions(mbedcrypto PUBLIC CASCODA_BUILD_KNX)
 endif()
+
+
+target_include_directories(mbedcrypto
+	INTERFACE
+		${openthread_SOURCE_DIR}/third_party/mbedtls/repo/include
+		${openthread_SOURCE_DIR}/third_party/mbedtls
+		${openthread_BINARY_DIR}/third_party/mbedtls
+)
 
 target_link_libraries(openthread-cli-ftd PUBLIC openthread-ftd-obj)
 target_link_libraries(openthread-cli-mtd PUBLIC openthread-mtd-obj)

@@ -73,7 +73,8 @@ static void connection_udp_receive(void *aContext, otMessage *aMessage, const ot
 
 static void connection_dns_callback(ca_error aError, const otIp6Address *aAddress, dns_index aIndex, void *aContext)
 {
-	connection_t *connection = aContext;
+	connection_t     *connection = aContext;
+	otNetifIdentifier netif      = OT_NETIF_THREAD;
 
 	if (aError == CA_ERROR_SUCCESS)
 	{
@@ -83,9 +84,9 @@ static void connection_dns_callback(ca_error aError, const otIp6Address *aAddres
 
 		aError = otUdpOpen(connection->otInstance, &(connection->socket), &connection_udp_receive, connection);
 		if (!aError)
-			aError = otUdpBind(&(connection->socket), &(connection->socket.mSockName));
+			aError = otUdpBind(connection->otInstance, &(connection->socket), &(connection->socket.mSockName), netif);
 		if (!aError)
-			aError = otUdpConnect(&(connection->socket), &sa);
+			aError = otUdpConnect(connection->otInstance, &(connection->socket), &sa);
 		//TODO: Signal connection complete to lwm2m layer
 	}
 
@@ -99,8 +100,8 @@ static void connection_dns_callback(ca_error aError, const otIp6Address *aAddres
 ca_error split_hostname(char *uri, char **hostp, char **portp)
 {
 	ca_error error = CA_ERROR_INVALID_ARGS;
-	char *   host;
-	char *   port;
+	char    *host;
+	char    *port;
 
 	// parse uri in the form "coaps://[host]:[port]"
 	if (0 == strncmp(uri, "coaps://", strlen("coaps://")))
@@ -140,16 +141,16 @@ exit:
 	return error;
 }
 
-connection_t *connection_create(otInstance *     aInstance,
+connection_t *connection_create(otInstance      *aInstance,
                                 lwm2m_context_t *lwm2mH,
-                                lwm2m_object_t * secObjectP,
+                                lwm2m_object_t  *secObjectP,
                                 uint16_t         secObjInstID)
 {
 	connection_t *connection = connection_new_incoming(aInstance, lwm2mH);
-	const char *  const_uri;
-	char *        uri = NULL;
-	char *        host;
-	char *        port;
+	const char   *const_uri;
+	char	     *uri = NULL;
+	char	     *host;
+	char	     *port;
 	int           porti = 0;
 	ca_error      error;
 
@@ -193,14 +194,14 @@ exit:
 
 void connection_free(connection_t *con)
 {
-	otUdpClose(&con->socket);
+	otUdpClose(con->otInstance, &con->socket);
 	con->inUse = false;
 }
 
 static ca_error connection_send(connection_t *connP, uint8_t *buffer, size_t length)
 {
 	otMessageInfo messageInfo;
-	otMessage *   msg = otUdpNewMessage(connP->otInstance, NULL);
+	otMessage    *msg = otUdpNewMessage(connP->otInstance, NULL);
 	otError       err;
 
 	if (length > LINK_MTU)
@@ -215,7 +216,7 @@ static ca_error connection_send(connection_t *connP, uint8_t *buffer, size_t len
 	if (err)
 		goto exit;
 
-	err = otUdpSend(&(connP->socket), msg, &messageInfo);
+	err = otUdpSend(connP->otInstance, &(connP->socket), msg, &messageInfo);
 	if (err)
 		goto exit;
 

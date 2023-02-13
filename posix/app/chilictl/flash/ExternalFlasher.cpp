@@ -221,7 +221,7 @@ exit:
 ca_error ExternalFlasher::program_done(ca_error status)
 {
 	size_t          writeLen;
-	char *          buffer = nullptr;
+	char           *buffer = nullptr;
 	static uint64_t hash   = basis64;
 
 	if (status)
@@ -372,7 +372,6 @@ ca_error ExternalFlasher::dfu_callback(EVBME_Message *params)
 		verify_done(status);
 		break;
 	case COMPLETE:
-		break;
 	case FAIL:
 	case INVALID:
 		break;

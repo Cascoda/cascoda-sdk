@@ -37,8 +37,10 @@
 #include <unistd.h>
 
 #include "ca821x-posix-thread/posix-platform.h"
-#include "openthread/platform/uart.h"
 #include "code_utils.h"
+
+extern void otPlatUartSendDone(void);
+extern void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength);
 
 #ifdef OPENTHREAD_TARGET_LINUX
 #include <sys/prctl.h>

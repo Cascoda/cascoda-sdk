@@ -58,9 +58,9 @@ typedef struct connection_t
 	mbedtls_ssl_context ssl;             //!< mbedtls ssl context and state
 	mbedtls_ssl_config  conf;            //!< mbedtls ssl config info
 	ca_tasklet          mbedtls_tasklet; //!< Tasklet for managing mbedtls timing
-	otInstance *        otInstance;      //!< Pointer to openthread instance
-	lwm2m_context_t *   lwm2mH;          //!< Pointer to instance of lwm2m
-	lwm2m_object_t *    securityObj;     //!< Pointer to lwm2m security instance
+	otInstance         *otInstance;      //!< Pointer to openthread instance
+	lwm2m_context_t    *lwm2mH;          //!< Pointer to instance of lwm2m
+	lwm2m_object_t     *securityObj;     //!< Pointer to lwm2m security instance
 	int                 cipherSuites[CIPHERSUITE_COUNT + 1]; //!< List of the cipher suites in use
 	int                 securityInstId;                      //!< lwm2m security instance ID
 	uint32_t            intermediateTime; //!< Used with mbedtls_tasklet to implement the intermediate time
@@ -81,9 +81,9 @@ typedef struct connection_t
  * @param instanceId  Security object instance ID
  * @return  Pointer to the connection created, or NULL if error.
  */
-connection_t *connection_create(otInstance *     aInstance,
+connection_t *connection_create(otInstance      *aInstance,
                                 lwm2m_context_t *lwm2mH,
-                                lwm2m_object_t * securityObj,
+                                lwm2m_object_t  *securityObj,
                                 int              instanceId);
 
 /**

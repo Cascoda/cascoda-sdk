@@ -25,11 +25,12 @@ It is possible to use alternative tools such as ninja instead of make, or clang 
 
 On a recent Debian/Ubuntu distro, you can set up the required development environment in two steps:
 
-First, follow [this guide](/docs/guides/arm-gnu-toolchain-installation.md) to install the latest version of the Arm GNU Toolchain, which is required for embedded development. _*Note: if you already have a version of this that was installed using your linux distribution's package manager, please follow the guide regardless to re-install the toolchain using the official Arm website. Not doing so has caused issues in the past and is unreliable.*_
+First, follow [this guide](arm-gnu-toolchain-installation.md) to install the latest version of the Arm GNU Toolchain, which is required for embedded development. _*Note: if you already have a version of this that was installed using your linux distribution's package manager, please follow the guide regardless to re-install the toolchain using the official Arm website. Not doing so has caused issues in the past and is unreliable.*_
 
 Second, run the following commands to install the remaining packages necessary:
 
 ```bash
+sudo apt update
 sudo apt install git cmake cmake-curses-gui gcc g++ build-essential clang-format-6.0 make libhidapi-dev
 #optional
 sudo apt install clang-tidy-8 doxygen graphviz ninja-build default-jre

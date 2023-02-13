@@ -344,6 +344,7 @@ void EVBME_Message_UART(char *pBuffer, size_t Count)
 	memcpy(SerialTxBuffer.SerialBuf.Data, pBuffer, Count);
 	BSP_SerialWriteAll(&SerialTxBuffer.SofPkt, Count + 3);
 	SerialSetTxTimeout();
+	BSP_SerialWaitWhileBusy(); /* for long printf buffer sometimes seems to be overwritten by next printf */
 } // End of EVBME_Message()
 
 void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer)

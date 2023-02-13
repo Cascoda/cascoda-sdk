@@ -19,7 +19,7 @@
 #include "knx_iot_virtual_sa.h"
 #include "knx_iot_wakeful_main_extern.h"
 
-#include "cascoda_devboard_btn.h"
+#include "devboard_btn.h"
 
 void set_led(int led_nr, bool value)
 {
@@ -30,7 +30,7 @@ void set_led(int led_nr, bool value)
 	printf("Set LED %d to %d\n", led_nr, value);
 }
 
-void post_callback(char *url)
+void put_callback(char *url)
 {
 	bool my_bool = app_retrieve_bool_variable(url);
 	if (strcmp(url, "/p/o_1_1") == 0)
@@ -52,7 +52,7 @@ void hardware_init()
 	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_2);
 
 	// Setup callbacks for the info datapoints on pb
-	app_set_post_cb(post_callback);
+	app_set_put_cb(put_callback);
 }
 
 void hardware_poll()

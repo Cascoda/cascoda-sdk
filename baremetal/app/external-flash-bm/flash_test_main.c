@@ -151,7 +151,6 @@ int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevic
 	if (buf[0] == 0xB2)
 		return 1;
 
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
 	/* Insert Application-Specific Dispatches here in the same style */
 	return 0;
 }

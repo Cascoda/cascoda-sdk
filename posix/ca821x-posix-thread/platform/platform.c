@@ -43,7 +43,6 @@
 
 #include "ca821x-posix-thread/posix-platform.h"
 #include "openthread/platform/alarm-milli.h"
-#include "openthread/platform/uart.h"
 #include "openthread/tasklet.h"
 #include "selfpipe.h"
 

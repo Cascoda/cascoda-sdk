@@ -104,6 +104,13 @@ void RAND_SeedFromDev(struct ca821x_dev *pDeviceRef);
  */
 ca_error RAND_GetCryptoBytes(uint16_t aNumBytes, void *aBytesOut);
 
+/**
+ * @brief
+ * Add the radio-based RNG as an entropy source used by mbedTLS
+ *
+ */
+void RAND_AddRadioEntropySource(void);
+
 #ifdef __cplusplus
 }
 #endif

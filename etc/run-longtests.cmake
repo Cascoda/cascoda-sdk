@@ -84,7 +84,7 @@ foreach(LINE IN LISTS EXPANDED_TEST_LIST)
 
 	# Run the test (up to 3 times)
 	append_summary("- ${TESTNAME} [")
-	foreach(i RANGE 1 3)
+	foreach(i RANGE 1 7)
 		message("Run ${i} of test ${TESTNAME}")
 		append_summary("${i}:")
 		execute_process(

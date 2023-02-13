@@ -19,8 +19,9 @@ target_link_libraries(ot-sed-eink-freertos
 	freertos
 	uzlib
 	sensorif
+	eink-image
 	tinycbor-master
 )
 
 cascoda_configure_memory(ot-sed-eink-freertos 0x800 0x7000)
-cascoda_make_binary(ot-sed-eink-freertos)
+cascoda_make_binary(ot-sed-eink-freertos CASCODA_BUILD_BINARIES)

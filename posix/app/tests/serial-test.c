@@ -57,7 +57,7 @@ uint32_t          position       = 0;
 uint8_t           previousHandle = 0;
 uint8_t           count          = 0;
 int               missedHandles  = 0;
-char *            resultsOption;
+char             *resultsOption;
 
 #ifndef _WIN32
 struct timespec *start;
@@ -393,7 +393,7 @@ static void initialise_ca821x(struct ca821x_dev *pDeviceRef)
 
 int main(int argc, char *argv[])
 {
-	struct ca821x_dev *             pDeviceRef = &(sDeviceRef);
+	struct ca821x_dev              *pDeviceRef = &(sDeviceRef);
 	struct EVBME_COMM_CHECK_request commCheckReq;
 	uint32_t                        posixWaitMs = 10;
 	struct timespec                 posixWait   = {};

@@ -13,9 +13,9 @@ extern void *__real_mbedtls_calloc(size_t nmemb, size_t size);
 
 struct metadata
 {
-	void * buffer_addr;
+	void  *buffer_addr;
 	size_t size;
-	void * return_addr;
+	void  *return_addr;
 };
 
 #define MAX_ALLOC_COUNT (1)

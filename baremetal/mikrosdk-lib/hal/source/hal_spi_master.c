@@ -242,7 +242,6 @@ err_t hal_spi_master_write(handle_t handle, uint8_t *write_data_buffer, size_t w
 err_t hal_spi_master_read(handle_t handle, uint8_t *read_data_buffer, size_t read_data_length)
 {
 	hal_spi_master_handle_register_t *hal_handle = (hal_spi_master_handle_register_t *)hal_is_handle_null(&handle);
-	err_t                             hal_status = HAL_SPI_MASTER_SUCCESS;
 
 	if (hal_handle == NULL)
 	{
@@ -254,16 +253,11 @@ err_t hal_spi_master_read(handle_t handle, uint8_t *read_data_buffer, size_t rea
 		return HAL_SPI_MASTER_ERROR;
 	}
 
-	if (hal_status != HAL_SPI_MASTER_SUCCESS)
-	{
-		return HAL_SPI_MASTER_ERROR;
-	}
-	else
-	{
-		hal_handle->init_state = true;
-	}
+	hal_handle->init_state = true;
 
 	SENSORIF_SPI_FULL_DUPLEX_RXONLY(read_data_buffer, (uint8_t)read_data_length);
+
+	return HAL_SPI_MASTER_SUCCESS;
 }
 
 err_t hal_spi_master_write_then_read(handle_t handle,
@@ -285,17 +279,12 @@ err_t hal_spi_master_write_then_read(handle_t handle,
 		return HAL_SPI_MASTER_ERROR;
 	}
 
-	if (hal_status != HAL_SPI_MASTER_SUCCESS)
-	{
-		return HAL_SPI_MASTER_ERROR;
-	}
-	else
-	{
-		hal_handle->init_state = true;
-	}
+	hal_handle->init_state = true;
 
 	SENSORIF_SPI_WRITE_THEN_READ(
 	    read_data_buffer, write_data_buffer, (uint8_t)length_read_data, (uint8_t)length_write_data);
+
+	return HAL_SPI_MASTER_SUCCESS;
 }
 
 err_t hal_spi_master_close(handle_t *handle)

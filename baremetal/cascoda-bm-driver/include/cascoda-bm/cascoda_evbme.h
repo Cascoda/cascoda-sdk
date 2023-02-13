@@ -71,7 +71,6 @@ extern u8_t EVBME_UseMAC;
 
 extern void (*EVBME_Message)(char *message, size_t len);
 extern void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
-extern int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /****** EVBME API Functions                                              ******/
@@ -122,6 +121,14 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief re-initialises CA821x / MAC PIB after powerdown. The function pointer
+ *        should be populated at the top level
+ *******************************************************************************
+ ******************************************************************************/
+extern int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
 * \brief Put the system into a state of power-down for a given time
 *******************************************************************************
 * \param mode - Power-Down Mode
@@ -156,7 +163,7 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
 /***************************************************************************/ /**
  * \brief Restarts Air Interface
  *******************************************************************************
- * Resets and re-initialises CAX, calls app_reinitialise callback.
+ * Resets and re-initialises CAX
  *******************************************************************************
  ******************************************************************************/
 void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);

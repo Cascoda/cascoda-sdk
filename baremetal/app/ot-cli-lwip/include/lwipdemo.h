@@ -7,9 +7,12 @@
 /***************************************************************************/ /**
  * \brief Process a CLI command to change the state of the lwip demo.
  * Should be linked to the openthread CLI using otCliSetUserCommands.
+ * \param aContext CLI Context
+ * \param aArgsLength size of aArgs string array
+ * \param aArgs array of arguments
  *******************************************************************************
  ******************************************************************************/
-void handle_cli_lwipdemo(int argc, char *argv[]);
+void handle_cli_lwipdemo(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 
 /******************************************************************************/
 /***************************************************************************/ /**

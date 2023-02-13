@@ -43,10 +43,11 @@
 #include "flash/Flash.hpp"
 #include "list/List.hpp"
 #include "pipe/Pipe.hpp"
+#include "reboot/Reboot.hpp"
 
 static ca::Args                   sArgParser;
 static std::vector<ca::Command *> sCommands;
-static const char *               arg0;
+static const char                *arg0;
 
 static void print_command_help_strings(FILE *out)
 {
@@ -129,12 +130,14 @@ int main(int argc, const char *argv[])
 	versOpt.SetCallback(&opt_print_version);
 	sArgParser.AddOption(versOpt);
 
-	ca::Flash flashCmd{};
-	ca::List  listCmd{};
-	ca::Pipe  pipeCmd{};
+	ca::Flash  flashCmd{};
+	ca::List   listCmd{};
+	ca::Pipe   pipeCmd{};
+	ca::Reboot rebootCmd{};
 	sCommands.push_back(&listCmd);
 	sCommands.push_back(&flashCmd);
 	sCommands.push_back(&pipeCmd);
+	sCommands.push_back(&rebootCmd);
 
 	ca821x_util_start_upstream_dispatch_worker();
 

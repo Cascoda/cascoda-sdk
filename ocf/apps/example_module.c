@@ -136,7 +136,7 @@ static char *g_varianturl_RESOURCE_PROPERTY_NAME_valuenumber = "valuenumber"; /*
 double       g_varianturl_valuenumber = 0; /* current value of property "valuenumber"  value number. */
 static char *g_varianturl_RESOURCE_PROPERTY_NAME_valuestring = "valuestring"; /* the name for the attribute */
 char         g_varianturl_valuestring[100]                   = ""
-                                     "";
+                                                               "";
 /* current value of property "valuestring" value string, using a different length than the default lenght. */ /* registration data variables for the resources */
 
 /* global resource variables for path: /queryurl */
@@ -173,12 +173,12 @@ int app_init(void)
 	                     NULL);
 
 #if defined(OC_IDD_API)
-	FILE *     fp;
-	uint8_t *  buffer;
+	FILE      *fp;
+	uint8_t   *buffer;
 	size_t     buffer_size;
 	const char introspection_error[] = "\tERROR Could not read 'server_introspection.cbor'\n"
 	                                   "\tIntrospection data not set.\n";
-	fp = fopen("./server_introspection.cbor", "rb");
+	fp                               = fopen("./server_introspection.cbor", "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);

@@ -26,4 +26,4 @@ add_executable(ot-sed-sensorif
 	)
 
 target_link_libraries(ot-sed-sensorif ca821x-openthread-bm-mtd sensorif tinycbor-master)
-cascoda_make_binary(ot-sed-sensorif)
+cascoda_make_binary(ot-sed-sensorif CASCODA_BUILD_BINARIES)

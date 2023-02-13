@@ -22,4 +22,4 @@ target_link_libraries(ot-sed-thermometer-freertos
 )
 
 cascoda_configure_memory(ot-sed-thermometer-freertos 0x800 0x7000)
-cascoda_make_binary(ot-sed-thermometer-freertos)
+cascoda_make_binary(ot-sed-thermometer-freertos CASCODA_BUILD_BINARIES)

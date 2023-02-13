@@ -19,5 +19,5 @@ target_include_directories(knx-iot-chilidev-therm
 
 target_compile_definitions(knx-iot-chilidev-therm PRIVATE NO_MAIN)
 
-cascoda_make_binary(knx-iot-chilidev-therm)
-cascoda_configure_memory(knx-iot-chilidev-therm 0x1500 0xc000)
+cascoda_make_binary(knx-iot-chilidev-therm CASCODA_BUILD_BINARIES)
+cascoda_configure_memory(knx-iot-chilidev-therm 0x1500 0xbc00)

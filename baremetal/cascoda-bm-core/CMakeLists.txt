@@ -2,11 +2,16 @@
 project (cascoda-bm-core)
 
 # External flash (shares SPI Bus with CA-821x & uses PA15 as /CS)
-if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "TWO_SIDED")
-	set(CASCODA_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL M2351)
+	if(NOT (CASCODA_CHILI2_CONFIG_STRING STREQUAL "ONE_SIDED"))
+		set(CASCODA_EXTERNAL_FLASHCHIP_PRESENT ON CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
+	else()
+		set(CASCODA_EXTERNAL_FLASHCHIP_PRESENT OFF CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
+	endif()
 else()
 	set(CASCODA_EXTERNAL_FLASHCHIP_PRESENT OFF CACHE BOOL "Enable internal logic for handling the external flash chip, sharing SPI bus with CA-821x and using PA15 as /CS.")
 endif()
+
 
 add_library(cascoda-bm-core
 	${PROJECT_SOURCE_DIR}/source/cascoda_log.c

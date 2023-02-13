@@ -49,7 +49,7 @@ extern "C" {
 /*
     Pin config for M2351:
     |---+- BUSY - Pin 31 (GPIO PB.5)
-    |---+- RST  - Pin 15 (GPIO PA.15)
+    |---+- RST  - Pin 15 (GPIO PA.15) on Chili2D, Pin 5 (GPIO PB.12) on Devboard
     |---+- DC   - Pin 34 (GPIO PB.2)
     |---+- CS   - GND
     |---+- CLK  - Pin 33 (GPIO PB.3)
@@ -61,7 +61,13 @@ extern "C" {
 
 /* Pin configuration */
 #define SIF_IL3820_BUSY_PIN 31
+
+#if (CASCODA_CHILI2_REV == 1)
 #define SIF_IL3820_RST_PIN 5
+#else
+#define SIF_IL3820_RST_PIN 15
+#endif
+
 #define SIF_IL3820_DC_PIN 34
 //#define SIF_IL3820_CS_PIN 34
 
@@ -96,26 +102,23 @@ extern const struct SIF_IL3820_lut lut_full_update;
  ********************************************************************************************/
 extern const struct SIF_IL3820_lut lut_partial_update;
 
-/* Example Images */
-/** Shelf edge display example */
-extern uint8_t lanpo_a1_img_2in9[];
-/** Shelf edge display example */
-extern uint8_t lanpo_a2_img_2in9[];
-/** Shelf edge display example */
-extern uint8_t lanpo_a4_img_2in9[];
-/** Cascoda Logo */
-extern uint8_t cascoda_img_2in9[];
-
 /* functions */
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief EINK Initialisation
- * \param lut - Pointer to the struct containing the LUT to use: 
+ * \param lut - Pointer to the struct containing the LUT to use:
  *              lut_full_update or lut_partial_update.
  *******************************************************************************
  ******************************************************************************/
 ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief EINK De-Initialisation
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_IL3820_Deinitialise(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -141,7 +144,7 @@ void SIF_IL3820_StrongClearDisplay(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Enter deep sleep mode. Device draws around 2uA in this mode. 
+ * \brief Enter deep sleep mode. Device draws around 2uA in this mode.
  *******************************************************************************
  ******************************************************************************/
 void SIF_IL3820_DeepSleep(void);
@@ -158,6 +161,20 @@ void SIF_IL3820_DeepSleep(void);
  *******************************************************************************
  ******************************************************************************/
 ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Creates a QR code and overlays it on top of a pre-existing image
+ *        at the given coordinates.
+ *******************************************************************************
+ * \param text  - The text string that is encoded into a QR symbol.
+ * \param image - The image that is overlaid by the QR symbol.
+ * \param scale - scaling of the image, 1 or 2 supported.
+ * \param x     - The x-coordinate of the top-left corner of the QR symbol.
+ * \param y     - The y-coordinate of the top-left corner of the QR symbol.
+ *******************************************************************************
+ ******************************************************************************/
+ca_error SIF_IL3820_overlay_qr_code_scale(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y);
 
 /******************************************************************************/
 /***************************************************************************/ /**

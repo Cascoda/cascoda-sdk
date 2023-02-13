@@ -1,6 +1,6 @@
 # chilictl
 
-A Chili control application for listing and flashing connected Chili devices.
+A Chili control application for listing, flashing, and erasing connected Chili devices.
 
 It can run on Windows or Posix and can be used for:
 - Listing all connected chilis
@@ -8,20 +8,19 @@ It can run on Windows or Posix and can be used for:
 - Flashing new applications to connected chili devices over USB, with and without support for OTA Upgrade
 - Flashing new DFU (Device Firmware Update) firmware to connected chili devices over USB
 - Flashing new applications using the external flash by simulating the OTA Upgrade procedure (mostly just a test tool)
+- Doing a full erase of connected chilis.
+- Rebooting connected chilis.
 
 Prebuilt Windows binaries of chilictl can be found in the [Windows release of the Cascoda SDK.](https://github.com/Cascoda/cascoda-sdk/releases/)
 
 Please make sure that you have set up the USB exchange [as detailed in the development setup guide.](../../../docs/guides/development-setup.md)
 
-Note that this tool is still under development, so may have undiscovered issues.
-
 Run ./chilictl with the ``--help`` argument to print the help page. This option is also available on the sub-commands.
 
 ```
-$ ./chilictl -h
 --- Chili Control Application ---
 SYNOPSIS
-        ./chilictl [options] <command> [command options]
+        C:\Users\Elie\Desktop\chilictl-reboot\sdk-win\bin\chilictl.exe [options] <command> [command options]
 OPTIONS
         -h, --help
                 Print this message to stdout and exit.
@@ -30,10 +29,19 @@ OPTIONS
 COMMANDS
         list
                 Utility for listing connected chili devices
+  type 'list -h' for more info
+
         flash
-                Utility for flashing new binaries to connected chili devices
+                Utility for flashing new binaries to connected chili devices, or to do a full erase
+  type 'flash -h' for more info
+
         pipe
                 Utility for piping binary commands to/from a connected chili device
+  type 'pipe -h' for more info
+
+        reboot
+                Utility for rebooting connected chili devices
+  type 'reboot -h' for more info
 ```
 
 ## Listing
@@ -97,11 +105,23 @@ To get the serial number for the 's' argument, the chilictl ``list`` sub command
 ### Flash help page
 
 ```
-# Check the output of --help for the latest help page
-$ ./chilictl flash -h
 --- Chili Control: Flashing Sub-Application ---
+
+EXAMPLE 1 - DFU region update (this only has to be done once before being able to flash applications)
+        $ ./chilictl flash -s FBC647CDB300A0DA -df "~/sdk-chili2/bin/ldrom-hid.bin"
+
+EXAMPLE 2 - Application flashing
+        $ ./chilictl flash -s FBC647CDB300A0DA -f "~/sdk-chili2/bin/mac-dongle.bin"
+
+EXAMPLE 3 - Clearing the application flash region
+        $ ./chilictl flash -s FBC647CDB300A0DA -c
+
+EXAMPLE 4 - Clearing the application flash region before flashing an application
+        $ ./chilictl flash -s FBC647CDB300A0DA -cf "~/sdk-chili2/bin/mac-dongle.bin"
+
 SYNOPSIS
         chilictl [options] flash [command options]
+
 COMMAND OPTIONS
         -h, --help
                 Print this message to stdout
@@ -113,10 +133,14 @@ COMMAND OPTIONS
                 Set the .bin application file to flash to the device(s)
         -o <filepath>, --ota-boot-file=<filepath>
                 Set the .bin ota bootloader file to flash to the device(s)
+        -m <filepath>, --manu-data-file=<filepath>
+                Set the .bin manufacturer data file to flash to the device(s)
         -d, --dfu-update
                 Update the DFU region itself, rather than the application.
         -e, --external-flash-update
                 Use the external flash update procedure (or OTA update) to flash the new binary. This is only supported by devices with a 2nd level bootloader (ota-bootloader.bin) flashed alongside an application binary which supports ota upgrade.
+        -c, --clear-aprom
+                Clear the entire application flash region.
         --ignore-version
                 Ignore the version check on the device to be flashed. Warning: Flashing will not work if device firmware is older than v0.14.
 ```
@@ -152,6 +176,8 @@ Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
 Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
 ```
 
+Note: By default, this will only erase as much flash as is needed to fit the new binary being flashed. However, it is possible do a [full erase](#full-erase) prior to flashing the new binary by adding the `-c` (long-form `--clear-aprom` to the above command).
+
 On a high level, the different phases are:
 
 | Phase    | Description |
@@ -163,9 +189,41 @@ On a high level, the different phases are:
 | VERIFY   | Verify that the flash was written correctly
 | VALIDATE | Validate that the device can successfully boot into application and communicate with chilictl. Set bootmode to application.
 
+### Full erase
+
+This application can also be used to do a full erase of the Chili. This can be done by itself, by specifying the `-c` flag.
+
+```
+$ ./chilictl flash -s FBC647CDB300A0DA -c
+2020-12-16 12:59:12.130 NOTE:  Cascoda SDK v0.14 Dec 16 2020
+Flasher [6134A7B7122944B5]: INIT -> REBOOT
+Flasher [6134A7B7122944B5]: REBOOT -> ERASE
+Flasher [6134A7B7122944B5]: ERASE -> VERIFY
+Flasher [6134A7B7122944B5]: VERIFY -> COMPLETE
+```
+
+As mentioned in the previous section, it is also possible to specify the `-c` flag with an `-f` flag followed by a path to a binary, in order to do a full erase (instead of partial erase) prior to flashing the new binary.
+
+### Flashing manufacturer data
+
+Chilictl can be used to flash manufacturer data to a device, without needing to build and flash an entirely new binary. For example, this can be used to give each device within a production run a different serial number. For KNX devices, you can use the [knx-gen-data tool](../knx-gen-data/Readme.md) to generate a binary file containing only the manufacturer data.
+
+```bash
+$ ./chilictl.exe flash -m .\knx-manufacturer-data.bin
+2023-01-12 13:17:39.809 NOTE:  Host Cascoda SDK v0.22 Jan 11 2023
+1 devices found.
+Flasher [31655F339ABDFB6B]: INIT -> REBOOT
+Flasher [31655F339ABDFB6B]: REBOOT -> ERASE
+Flasher [31655F339ABDFB6B]: ERASE -> FLASH
+Flasher [31655F339ABDFB6B]: FLASH -> VERIFY
+Flasher [31655F339ABDFB6B]: VERIFY -> VALIDATE
+Flasher [31655F339ABDFB6B]: VALIDATE -> COMPLETE
+```
+
 ### Future options
 
 In the future, applications will be able to support Over-The-Air upgrade (which would be enabled by setting the CMake cache variable CASCODA_OTA_UPGRADE_ENABLED to ON). To flash such applications using Chilictl, the process is slightly different, and there are three options, shown in the subsequent sections:
+
 - [Flashing of application with OTA Upgrade support](#flashing-an-application-with-ota-upgrade-support)
 - [Flashing of application with OTA Upgrade support using the external flash (for testing purposes only)](#flashing-an-application-with-ota-upgrade-support-using-the-external-flash)
 
@@ -251,4 +309,43 @@ The pipe subcommand is intended to be used in a binary pipeline such as a script
 $ echo '45020000' | xxd -r -p | ./chilictl.exe pipe -s FBE1D029210B662B | xxd -p
 2021-04-12 19:03:11.661 NOTE:  Host Cascoda SDK v0.16-56-g16333291-dirty Apr 12 2021
 68050000000112
+```
+
+
+## Rebooting
+
+The `Reboot` subcommand can be used to reboot connected chili devices.
+
+### Reboot help page
+
+
+```bash
+# Check the output of --help for the latest help page
+$ ./chilictl.exe reboot -h
+--- Chili Control: Rebooting Sub-Application ---
+
+EXAMPLE - To reboot the connected Chili device:
+        $ ./chilictl reboot -s FBC647CDB300A0DA
+
+SYNOPSIS
+        chilictl reboot [command options]
+
+COMMAND OPTIONS
+        -h, --help
+                Print this message to stdout.
+        -s <serialno>, --serialno=<serialno>
+                Reboot the device with the given serial number.
+        -b, --batch
+                Reboot all connected devices.
+```
+
+### Reboot example
+
+```bash
+# Note use of -b option to reboot all connected devices
+$ .\chilictl.exe reboot -b
+2023-02-13 09:35:06.878 NOTE:  Host Cascoda SDK v0.22-361-g873af65f-dirty Feb 13 2023
+2 devices found.
+[302875043BF556ED]: REBOOT -> DONE
+[6134A7B7122944B5]: REBOOT -> DONE
 ```

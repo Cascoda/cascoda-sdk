@@ -45,10 +45,11 @@ extern "C" {
 /** Description of the internal flash */
 struct ca_flash_info
 {
-	uint32_t apromFlashBaseAddr; //!< Base address of the APROM flash
-	uint32_t dataFlashBaseAddr;  //!< Base address of the dataflash
-	uint16_t pageSize;           //!< Size of each flash page (in bytes)
-	uint8_t  numPages;           //!< Number of flash pages that make up the user flash region
+	uint32_t apromFlashBaseAddr;            //!< Base address of the APROM flash
+	uint32_t dataFlashBaseAddr;             //!< Base address of the dataflash
+	uint32_t manufacturerDataFlashBaseAddr; //!< Base address of flash page reserved for constant manufacturer data
+	uint16_t pageSize;                      //!< Size of each flash page (in bytes)
+	uint8_t  numPages;                      //!< Number of flash pages that make up the user flash region
 };
 
 /**

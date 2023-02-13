@@ -4,21 +4,21 @@ project (cascoda-baremetal)
 # Baremetal platform
 add_subdirectory(cascoda-bm-core)
 add_subdirectory(cascoda-bm-driver)
-add_subdirectory(platform/cascoda-nuvoton-chili)
-add_subdirectory(platform/cascoda-nuvoton-chili2)
-add_subdirectory(platform/cascoda-dummy-posix)
+add_subdirectory(platform/chili)
+add_subdirectory(platform/chili2)
+add_subdirectory(platform/dummy-posix)
 
 
 # Baremetal Applications (If a suitable platform layer was configured)
 if(TARGET cascoda-bm-plat)
 	add_subdirectory(sensorif)
-	# MicroSDK only builds for the chili 2 at the moment
-	if(TARGET cascoda-chili2)
+	if(TARGET chili2)
 		add_subdirectory(mikrosdk-lib/hal)
 		add_subdirectory(mikrosdk-lib/drv)
 		add_subdirectory(mikrosdk-click)
 		add_subdirectory(app/mikrosdk-bm)
 		add_subdirectory(cascoda-bm-devboard)
+		add_subdirectory(app/pwm-led-dimming)
 	endif()
 	# Openthread platform
 	add_subdirectory(cascoda-bm-thread)

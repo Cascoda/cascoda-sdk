@@ -214,8 +214,8 @@ static uint8_t prv_discover(uint16_t instanceId, int *numDataP, lwm2m_data_t **d
 
 static uint8_t prv_write(uint16_t           instanceId,
                          int                numData,
-                         lwm2m_data_t *     dataArray,
-                         lwm2m_object_t *   objectP,
+                         lwm2m_data_t      *dataArray,
+                         lwm2m_object_t    *objectP,
                          lwm2m_write_type_t writeType)
 {
 	prv_instance_t *targetP;

@@ -29,7 +29,7 @@
  * Image data source file for application for E-ink display of images.
 */
 
-#include "sif_il3820.h"
+#include "sif_il3820_image.h"
 
 uint8_t lanpo_a1_img_2in9[] = {
     0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XF8, 0X00, 0X00, 0X00, 0X00, 0XFF, 0XFF, 0XFF,

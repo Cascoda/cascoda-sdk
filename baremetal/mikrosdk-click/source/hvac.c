@@ -1,651 +1,600 @@
-/****************************************************************************
-** Copyright (C) 2020 MikroElektronika d.o.o.
-** Contact: https://www.mikroe.com/contact
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-** The above copyright notice and this permission notice shall be
-** included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-** EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-** OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-** IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-** DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-** OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-**  USE OR OTHER DEALINGS IN THE SOFTWARE.
-****************************************************************************/
-
-/*!
- * @file hvac.c
- * @brief HVAC Click Driver.
+/**
+ * @file
+ * @brief mikrosdk interface
  */
-#include "hvac.h"
-#include <stdio.h>
-#include "cascoda-bm/cascoda_interface_core.h"
+/*
+ *  Copyright (c) 2022, Cascoda Ltd.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/*
+ * Example click interface driver
+*/
+
+/* include <device>_drv.h and <device>_click.h */
+#include "hvac_click.h"
+#include "hvac_drv.h"
+
+/* include cascoda-bm code if required */
 #include "cascoda-bm/cascoda_sensorif.h"
+#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-util/cascoda_time.h"
 
-// -------------------------------------------- PRIVATE VARIABLES
-static hvac_t  hvac; // the click object
-uint16_t       ser_num[3];
-feature_data_t version_data;
+/* declare <device>_t <device> and <device>_cfg_t cfg structures for click objects */
+static hvac_t     hvac;
+static hvac_cfg_t cfg;
 
-// -------------------------------------------- PRIVATE FUNCTION DECLARATIONS
-
-/**
- * @brief Calc CRC function.
- *
- * @details Function given an array and a number of bytes, 
- * this calculate CRC8 for those bytes.
- *
- * @note CRC is only calc'd on the data portion ( two bytes )
- * of the four bytes being sent.
- */
-uint8_t dev_calc_crc(uint8_t *data_data);
-
-/**
- * @brief Calc Serial CRC function.
- *
- * @details Function given an array and a number of bytes,
- * this calculate CRC8 for those bytes.
- *
- * @note CRC is only calc'd on the data portion ( two bytes )
- * of the four bytes being sent.
- */
-uint8_t dev_calc_uart_crc(uint8_t *data_data, uint8_t len);
-
-/**
- * @brief Calculate concentration function.
- *
- * @details Function calculate concentration.
- */
-uint32_t dev_calc_concent(hvac_t *ctx, uint8_t buf_num, uint8_t *tmp_buf);
-
-/**
- * @brief IEEE754 floating point converter.
- *
- * @details Function convert 32-bit value to float.
- */
-float dev_ieee_754_floating_point_convert(uint32_t fp_data);
-
-// --------------------------------------------------------- PUBLIC FUNCTIONS
-
-void hvac_cfg_setup(hvac_cfg_t *cfg)
-{
-	// Communication gpio pins
-	cfg->scl = HAL_PIN_NC;
-	cfg->sda = HAL_PIN_NC;
-
-	cfg->i2c_speed   = I2C_MASTER_SPEED_STANDARD;
-	cfg->i2c_address = HVAC_SCD40_SLAVE_ADDR;
-}
-
-err_t hvac_init(hvac_t *ctx, hvac_cfg_t *cfg)
+/* driver initialisation */
+static uint8_t MIKROSDK_HVAC_init(void)
 {
 	i2c_master_config_t i2c_cfg;
 
 	i2c_master_configure_default(&i2c_cfg);
 
-	i2c_cfg.scl = cfg->scl;
-	i2c_cfg.sda = cfg->sda;
+	i2c_cfg.scl = cfg.scl;
+	i2c_cfg.sda = cfg.sda;
 
-	ctx->slave_address = cfg->i2c_address;
+	hvac.slave_address = cfg.i2c_address;
 
-	if (I2C_MASTER_ERROR == i2c_master_open(&ctx->i2c, &i2c_cfg))
+	if (I2C_MASTER_ERROR == i2c_master_open(&hvac.i2c, &i2c_cfg))
+		return HVAC_ST_FAIL;
+
+	if (I2C_MASTER_ERROR == i2c_master_set_slave_address(&hvac.i2c, hvac.slave_address))
+		return HVAC_ST_FAIL;
+
+	if (I2C_MASTER_ERROR == i2c_master_set_speed(&hvac.i2c, cfg.i2c_speed))
+		return HVAC_ST_FAIL;
+
+	return HVAC_ST_OK;
+}
+
+/* scd41 modified i2c write addding i2c slave address to data and data structure specific to scd41 */
+static uint8_t MIKROSDK_HVAC_scd41_generic_write(uint16_t cmd, uint8_t *tx_buf, size_t len)
+{
+	uint8_t data_buf[SCD41_ADDLEN + SCD41_MAXDLEN];
+	uint8_t cnt;
+	size_t  length = len + 1;
+
+	data_buf[0] = hvac.slave_address;
+	data_buf[1] = (cmd >> 8) & 0xFF;
+	data_buf[2] = (cmd >> 0) & 0xFF;
+	for (cnt = 0; cnt < len; ++cnt) data_buf[3 + cnt] = tx_buf[cnt];
+
+	if (i2c_master_write(&hvac.i2c, data_buf, SCD41_ADDLEN + len))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 modified i2c read adding i2c slave address to data and data structure specific to scd41 */
+static uint8_t MIKROSDK_HVAC_scd41_generic_write_then_read(uint16_t cmd, uint8_t *rx_buf, size_t len)
+{
+	uint8_t wrbuf[SCD41_ADDLEN] = {0, 0, 0};
+
+	wrbuf[0] = hvac.slave_address;
+	wrbuf[1] = (cmd >> 8) & 0xFF;
+	wrbuf[2] = (cmd >> 0) & 0xFF;
+
+	if (i2c_master_write_then_read(&hvac.i2c, wrbuf, SCD41_ADDLEN, rx_buf, len))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
+}
+
+/* calculate outgoing crc for writes */
+static uint8_t MIKROSDK_HVAC_calc_crc(uint8_t data_0, uint8_t data_1)
+{
+	uint8_t i_cnt;
+	uint8_t j_cnt;
+	uint8_t crc_data[2];
+	uint8_t crc = 0xFF;
+
+	crc_data[0] = data_0;
+	crc_data[1] = data_1;
+
+	for (i_cnt = 0; i_cnt < 2; i_cnt++)
 	{
-		return I2C_MASTER_ERROR;
+		crc ^= crc_data[i_cnt];
+
+		for (j_cnt = 8; j_cnt > 0; --j_cnt)
+		{
+			if (crc & 0x80)
+				crc = (crc << 1) ^ 0x31u;
+			else
+				crc = (crc << 1);
+		}
 	}
 
-	if (I2C_MASTER_ERROR == i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address))
-	{
-		return I2C_MASTER_ERROR;
-	}
-
-	if (I2C_MASTER_ERROR == i2c_master_set_speed(&ctx->i2c, cfg->i2c_speed))
-	{
-		return I2C_MASTER_ERROR;
-	}
-	return I2C_MASTER_SUCCESS;
+	return crc;
 }
 
-err_t hvac_generic_write(hvac_t *ctx, uint8_t reg, uint8_t *tx_buf, uint8_t tx_len)
+/* convert scd41 2-byte temperature value to int16 */
+/* value is returned in ['C * 100] (resolution = 0.01) */
+/* Note: T('C)  = int16_t / 100 */
+static int16_t MIKROSDK_HVAC_convert_temperature(uint8_t *raw_data)
 {
-	uint8_t data_buf[257] = {0};
+	uint16_t regval;
+	int16_t  result;
 
-	data_buf[0] = reg;
+	regval = (raw_data[0] << 8) + raw_data[1];
+	result = (int16_t)(((regval * 17500) / 65535) - 4500);
 
-	for (uint8_t cnt = 1; cnt <= tx_len; cnt++)
-	{
-		data_buf[cnt] = tx_buf[cnt - 1];
-	}
-
-	return i2c_master_write(&ctx->i2c, data_buf, ++tx_len);
+	return (result);
 }
 
-err_t hvac_generic_read(hvac_t *ctx, uint8_t *rx_buf, uint8_t rx_len)
+/* convert scd41 2-byte humidity value to int16 */
+/* value is returned in [%RH * 100] (resolution = 0.01) */
+/* Note: H(%RH) = int16_t / 100 */
+static int16_t MIKROSDK_HVAC_convert_humidity(uint8_t *raw_data)
 {
-	return i2c_master_read(&ctx->i2c, rx_buf, rx_len);
+	uint16_t regval;
+	int16_t  result;
+
+	regval = (raw_data[0] << 8) + raw_data[1];
+	result = (int16_t)(((regval * 10000) / 65535));
+
+	return (result);
 }
 
-err_t hvac_generic_write_then_read(hvac_t * ctx,
-                                   uint8_t  slave_addr,
-                                   uint8_t *tx_buf,
-                                   uint8_t  tx_len,
-                                   uint8_t *rx_buf,
-                                   uint8_t  rx_len)
+/* scd41 start periodic measurement command */
+uint8_t MIKROSDK_HVAC_scd41_start_periodic_measurement(void)
 {
-	err_t err = I2C_MASTER_SUCCESS;
-	err       = hvac_generic_write(ctx, slave_addr, tx_buf, tx_len);
-	if (err)
-	{
-		return err;
-	}
-	err = hvac_generic_read(ctx, rx_buf, rx_len);
-	if (err)
-	{
-		return err;
-	}
-	return err;
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_START_PERIODIC_MEASUREMENT, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
 }
 
-err_t hvac_scd40_write_data(hvac_t *ctx, uint16_t cmd, uint16_t tx_data)
+/* scd41 start low power periodic measurement command */
+uint8_t MIKROSDK_HVAC_scd41_start_low_power_periodic_measurement(void)
 {
-	uint8_t temp[2];
-	uint8_t tx_buf[5];
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_START_LOW_POWER_PERIODIC_MEASUREMENT, NULL, 0))
+		return (HVAC_ST_FAIL);
 
-	tx_buf[0] = (uint8_t)(cmd >> 8);
-	tx_buf[1] = (uint8_t)cmd;
-
-	tx_buf[2] = (uint8_t)(tx_data >> 8);
-	tx_buf[3] = (uint8_t)tx_data;
-
-	temp[0] = tx_buf[2];
-	temp[1] = tx_buf[3];
-
-	tx_buf[4] = dev_calc_crc(&temp[0]);
-
-	err_t error_flag = hvac_generic_write(ctx, HVAC_SCD40_SLAVE_ADDR, tx_buf, 5);
-
-	return error_flag;
+	return (HVAC_ST_OK);
 }
 
-err_t hvac_scd40_read_data(hvac_t *ctx, uint16_t reg, uint16_t *rx_data)
+/* scd41 read measurement command */
+uint8_t MIKROSDK_HVAC_scd41_read_measurement(uint16_t *co2content, int16_t *temperature, int16_t *humidity)
 {
-	uint8_t  tx_buf[2];
-	uint8_t  rx_buf[3];
-	uint16_t result;
+	uint8_t rx_buf[9];
 
-	tx_buf[0] = (uint8_t)(reg >> 8);
-	tx_buf[1] = (uint8_t)reg;
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_READ_MEASUREMENT, rx_buf, 9))
+		return (HVAC_ST_FAIL);
 
-	err_t error_flag = hvac_generic_write_then_read(ctx, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2, rx_buf, 3);
+	*co2content  = (rx_buf[0] << 8) + rx_buf[1];
+	*temperature = MIKROSDK_HVAC_convert_temperature(rx_buf + 3);
+	*humidity    = MIKROSDK_HVAC_convert_humidity(rx_buf + 6);
 
-	result = rx_buf[0];
-	result <<= 8;
-	result |= rx_buf[1];
-
-	if (rx_buf[2] != dev_calc_crc(&rx_buf[0]))
-	{
-		error_flag = HVAC_ERROR;
-	}
-
-	*rx_data = result;
-
-	return error_flag;
+	return (HVAC_ST_OK);
 }
 
-void hvac_scd40_send_cmd(uint16_t cmd)
+/* scd41 stop periodic measurement command */
+uint8_t MIKROSDK_HVAC_scd41_stop_periodic_measurement(void)
 {
-	uint8_t tx_buf[2];
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_STOP_PERIODIC_MEASUREMENT, NULL, 0))
+		return (HVAC_ST_FAIL);
 
-	tx_buf[0] = (uint8_t)(cmd >> 8);
-	tx_buf[1] = (uint8_t)cmd;
+	WAIT_ms(SCD41_T_STOP);
 
-	hvac_generic_write(&hvac, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2);
+	return (HVAC_ST_OK);
 }
 
-void hvac_scd40_read_measurement(measurement_data_t *read_data)
+/* scd41 get data ready status command */
+uint8_t MIKROSDK_HVAC_scd41_get_data_ready_status(uint8_t *ready)
 {
-	uint8_t  tx_buf[2];
-	uint8_t  rx_buf[15];
-	uint16_t tmp;
-	float    f_temp;
-
-	tx_buf[0] = (uint8_t)(HVAC_READ_MEASUREMENT >> 8);
-	tx_buf[1] = (uint8_t)HVAC_READ_MEASUREMENT;
-
-	hvac_generic_write_then_read(&hvac, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2, rx_buf, 15);
-
-	tmp = rx_buf[0];
-	tmp <<= 8;
-	tmp |= rx_buf[1];
-
-	read_data->co2_concent = tmp;
-
-	tmp = rx_buf[3];
-	tmp <<= 8;
-	tmp |= rx_buf[4];
-
-	f_temp = (((float)tmp) * 175.0) / 65535.0;
-	f_temp -= 45.0;
-
-	read_data->temperature = f_temp;
-
-	tmp = rx_buf[6];
-	tmp <<= 8;
-	tmp |= rx_buf[7];
-
-	f_temp = (((float)tmp) * 100.0) / 65535.0;
-
-	read_data->r_humidity = f_temp;
-
-	tmp = rx_buf[9];
-	tmp <<= 8;
-	tmp |= rx_buf[10];
-
-	read_data->asc_update_count = tmp;
-
-	tmp = rx_buf[12];
-	tmp <<= 8;
-	tmp |= rx_buf[13];
-
-	read_data->asc_last_correction = tmp;
-}
-
-uint8_t hvac_scd40_get_ready_status()
-{
-	uint8_t tx_buf[2];
 	uint8_t rx_buf[3];
-	tx_buf[0] = (uint8_t)(HVAC_GET_DATA_READY_STATUS >> 8);
-	tx_buf[1] = (uint8_t)HVAC_GET_DATA_READY_STATUS;
-	hvac_generic_write_then_read(&hvac, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2, rx_buf, 3);
 
-	if (rx_buf[1] | (rx_buf[0] << 4))
-	{
-		return HVAC_SCD40_NEW_DATA_IS_READY;
-	}
-	return HVAC_SCD40_NEW_DATA_NOT_READY;
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_GET_DATA_READY_STATUS, rx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	if (((rx_buf[0] << 8) + rx_buf[1]) & 0x07FF)
+		*ready = HVAC_SCD41_NEW_DATA_IS_READY;
+	else
+		*ready = HVAC_SCD41_NEW_DATA_NOT_READY;
+
+	return (HVAC_ST_OK);
 }
 
-void hvac_scd40_get_serial_number(hvac_t *ctx, uint16_t *serial_number)
+/* scd41 set temperature offset command */
+/* Note: int16_t temperature value in ['C * 100] */
+uint8_t MIKROSDK_HVAC_scd41_set_temperature_offset(int16_t temp_offset)
 {
 	uint8_t  tx_buf[3];
-	uint8_t  rx_buf[9];
-	uint16_t tmp;
+	uint16_t write_val;
 
-	tx_buf[0] = (uint8_t)(HVAC_GET_SERIAL_NUMBER >> 8);
-	tx_buf[1] = (uint8_t)HVAC_GET_SERIAL_NUMBER;
+	/* calculate 16-bit register value */
+	write_val = (uint16_t)((uint32_t)(temp_offset * 65535) / 17500);
 
-	hvac_generic_write_then_read(ctx, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2, rx_buf, 9);
+	tx_buf[0] = (write_val >> 8) & 0xFF;
+	tx_buf[1] = (write_val)&0xFF;
+	tx_buf[2] = MIKROSDK_HVAC_calc_crc(tx_buf[0], tx_buf[1]);
 
-	tmp = rx_buf[0];
-	tmp <<= 8;
-	tmp |= rx_buf[1];
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_SET_TEMPERATURE_OFFSET, tx_buf, 3))
+		return (HVAC_ST_FAIL);
 
-	serial_number[0] = tmp;
-
-	tmp = rx_buf[3];
-	tmp <<= 8;
-	tmp |= rx_buf[4];
-
-	serial_number[1] = tmp;
-
-	tmp = rx_buf[6];
-	tmp <<= 8;
-	tmp |= rx_buf[7];
-
-	serial_number[2] = tmp;
+	return (HVAC_ST_OK);
 }
 
-void hvac_scd40_get_feature_set_version(hvac_t *ctx, feature_data_t *f_data)
+/* scd41 get temperature offset command */
+/* Note: int16_t temperature value in ['C * 100] */
+uint8_t MIKROSDK_HVAC_scd41_get_temperature_offset(int16_t *temp_offset)
+{
+	uint8_t  rx_buf[3];
+	uint16_t regval;
+
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_GET_TEMPERATURE_OFFSET, rx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	regval = (rx_buf[0] << 8) + rx_buf[1];
+
+	*temp_offset = (int16_t)((regval * 17500) / 65535);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 set sensor altitude command */
+/* Note: uint16_t altitude value in [m] */
+uint8_t MIKROSDK_HVAC_scd41_set_sensor_altitude(uint16_t altitude)
 {
 	uint8_t tx_buf[3];
+
+	tx_buf[0] = (altitude >> 8) & 0xFF;
+	tx_buf[1] = (altitude)&0xFF;
+	tx_buf[2] = MIKROSDK_HVAC_calc_crc(tx_buf[0], tx_buf[1]);
+
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_SET_SENSOR_ALTITUDE, tx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 get sensor altitude command */
+/* Note: uint16_t altitude value in [m] */
+uint8_t MIKROSDK_HVAC_scd41_get_sensor_altitude(uint16_t *altitude)
+{
 	uint8_t rx_buf[3];
 
-	tx_buf[0] = (uint8_t)(HVAC_GET_SERIAL_NUMBER >> 8);
-	tx_buf[1] = (uint8_t)HVAC_GET_SERIAL_NUMBER;
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_GET_SENSOR_ALTITUDE, rx_buf, 3))
+		return (HVAC_ST_FAIL);
 
-	hvac_generic_write(ctx, HVAC_SCD40_SLAVE_ADDR, tx_buf, 2);
-	hvac_generic_read(ctx, rx_buf, 3);
+	*altitude = (rx_buf[0] << 8) + rx_buf[1];
 
-	f_data->product_type          = rx_buf[0] >> 4;
-	f_data->platform_type         = rx_buf[0] >> 1;
-	f_data->product_major_version = rx_buf[1] >> 5;
-	f_data->product_minor_version = rx_buf[1];
+	return (HVAC_ST_OK);
 }
 
-void hvac_scd40_set_temperature_offset(hvac_t *ctx, float temp_offset)
+/* scd41 set ambient pressure command */
+/* Note: uint16_t pressure value in [P / 100] */
+uint8_t MIKROSDK_HVAC_scd41_set_ambient_pressure(uint16_t pressure)
 {
-	uint16_t temp_val;
+	uint8_t tx_buf[3];
 
-	temp_val = (uint16_t)(temp_offset * 374.0);
+	tx_buf[0] = (pressure >> 8) & 0xFF;
+	tx_buf[1] = (pressure)&0xFF;
+	tx_buf[2] = MIKROSDK_HVAC_calc_crc(tx_buf[0], tx_buf[1]);
 
-	hvac_scd40_write_data(ctx, HVAC_SET_TEMPERATURE_OFFSET, temp_val);
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_SET_AMBIENT_PRESSURE, tx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
 }
 
-float hvac_scd40_get_temperature_offset(hvac_t *ctx)
+/* scd41 perform forced calibration command */
+/* Note: uint16_t pressure value in [P / 100] */
+uint8_t MIKROSDK_HVAC_scd41_perform_forced_calibration(void)
 {
-	uint16_t rx_buf[1];
-	float    temp_offset;
-
-	hvac_scd40_read_data(ctx, HVAC_GET_TEMPERATURE_OFFSET, rx_buf);
-
-	temp_offset = (float)rx_buf[0];
-	temp_offset *= 175.0;
-	temp_offset /= 65535.0;
-
-	return temp_offset;
-}
-
-err_t hvac_sps30_i2c_write_data(hvac_t *ctx, uint16_t reg, uint16_t tx_data)
-{
-	uint8_t temp[2];
-	uint8_t tx_buf[5];
-
-	tx_buf[0] = (uint8_t)(reg >> 8);
-	tx_buf[1] = (uint8_t)reg;
-
-	tx_buf[2] = (uint8_t)(tx_data >> 8);
-	tx_buf[3] = (uint8_t)tx_data;
-
-	temp[0] = tx_buf[2];
-	temp[1] = tx_buf[3];
-
-	tx_buf[4] = dev_calc_crc(&temp[0]);
-
-	i2c_master_set_slave_address(&ctx->i2c, HVAC_SPS30_SLAVE_ADDR);
-
-	err_t error_flag = hvac_generic_write(ctx, HVAC_SPS30_SLAVE_ADDR, tx_buf, 5);
-
-	i2c_master_set_slave_address(&ctx->i2c, HVAC_SCD40_SLAVE_ADDR);
-
-	return error_flag;
-}
-
-err_t hvac_sps30_i2c_read_data(hvac_t *ctx, uint16_t reg, uint16_t *rx_data)
-{
-	uint8_t  tx_buf[2];
+	uint8_t  tx_buf[3];
 	uint8_t  rx_buf[3];
-	u32_t    num = 2;
 	uint16_t result;
-	err_t    error_flag;
 
-	tx_buf[0] = (uint8_t)(reg >> 8);
-	tx_buf[1] = (uint8_t)reg;
+	/* stop_periodic_measurement command has to be issued before this funtion */
+	tx_buf[0] = (SCD41_CO2_TARGET >> 8) & 0xFF;
+	tx_buf[1] = (SCD41_CO2_TARGET)&0xFF;
+	tx_buf[2] = MIKROSDK_HVAC_calc_crc(tx_buf[0], tx_buf[1]);
 
-	i2c_master_set_slave_address(&ctx->i2c, HVAC_SPS30_SLAVE_ADDR);
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_PERFORM_FORCED_RECALIBRATION, tx_buf, 3))
+		return (HVAC_ST_FAIL);
 
-	error_flag = hvac_generic_write(ctx, HVAC_SPS30_SLAVE_ADDR, tx_buf, 2);
-	error_flag |= hvac_generic_read(ctx, rx_buf, 3);
+	WAIT_ms(SCD41_T_CAL);
 
-	i2c_master_set_slave_address(&ctx->i2c, HVAC_SCD40_SLAVE_ADDR);
+	if (i2c_master_read(&hvac.i2c, rx_buf, 3))
+		return (HVAC_ST_FAIL);
 
-	result = rx_buf[0];
-	result <<= 8;
-	result |= rx_buf[1];
+	result = (rx_buf[0] << 8) + rx_buf[1];
 
-	if (rx_buf[2] != dev_calc_crc(&rx_buf[0]))
-	{
-		error_flag = HVAC_ERROR;
-	}
+	if (result == 0xFFFF)
+		return (HVAC_ST_FAIL);
 
-	*rx_data = result;
-
-	return error_flag;
+	return (HVAC_ST_OK);
 }
 
-void hvac_sps30_start_measurement(hvac_t *ctx)
+/* scd41 set automatic self calibration enabled command */
+/* Note: 1: enabled / 0: disabled */
+uint8_t MIKROSDK_HVAC_scd41_set_automatic_self_calibration_enabled(uint8_t enable)
 {
-	hvac_sps30_i2c_write_data(ctx, HVAC_SPS30_I2C_START_MEASUREMENT, HVAC_SPS30_I2C_READ_MEASURED_VALUE);
+	uint8_t tx_buf[3];
+
+	tx_buf[0] = 0x00;
+	if (enable)
+		tx_buf[1] = 0x01;
+	else
+		tx_buf[1] = 0x00;
+	tx_buf[2] = MIKROSDK_HVAC_calc_crc(tx_buf[0], tx_buf[1]);
+
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_SET_AUTOMATIC_SELF_CALIBRATION_ENABLED, tx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
 }
 
-void hvac_sps30_stop_measurement(hvac_t *ctx)
+/* scd41 get automatic self calibration enabled command */
+/* Note: 1: enabled / 0: disabled */
+uint8_t MIKROSDK_HVAC_scd41_get_automatic_self_calibration_enabled(uint8_t *enabled)
 {
-	hvac_sps30_i2c_write_data(ctx, HVAC_SPS30_I2C_STOP_MEASUREMENT, HVAC_SPS30_I2C_STOP_MEASUREMENT_DUMMY);
+	uint8_t rx_buf[3];
+
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_GET_AUTOMATIC_SELF_CALIBRATION_ENABLED, rx_buf, 3))
+		return (HVAC_ST_FAIL);
+
+	*enabled = rx_buf[1];
+
+	return (HVAC_ST_OK);
 }
 
-void hvac_sps30_device_reset(hvac_t *ctx)
+/* scd41 persist settings command */
+uint8_t MIKROSDK_HVAC_scd41_persist_settings(void)
 {
-	hvac_sps30_i2c_write_data(ctx, HVAC_SPS30_I2C_RESET, HVAC_SPS30_I2C_STOP_MEASUREMENT_DUMMY);
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_PERSIST_SETTINGS, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
 }
 
-uint8_t hvac_sps30_get_ready_flag()
+/* scd41 get serial number command */
+/* serial number is 3 16-bit (uint16_t) words */
+uint8_t MIKROSDK_HVAC_scd41_get_serial_number(uint16_t *serial_number)
 {
-	uint16_t rx_buf;
-	uint8_t  ready_flag;
+	uint8_t rx_buf[9];
 
-	hvac_sps30_i2c_read_data(&hvac, HVAC_SPS30_I2C_READ_DATA_RDY_FLAG, &rx_buf);
+	if (MIKROSDK_HVAC_scd41_generic_write_then_read(SCD41_CMD_GET_SERIAL_NUMBER, rx_buf, 9))
+		return (HVAC_ST_FAIL);
 
-	ready_flag = (uint8_t)rx_buf;
-	ready_flag &= 0x01;
+	serial_number[0] = (rx_buf[0] << 8) + rx_buf[1];
+	serial_number[1] = (rx_buf[3] << 8) + rx_buf[4];
+	serial_number[2] = (rx_buf[5] << 8) + rx_buf[7];
 
-	return ready_flag;
+	return (HVAC_ST_OK);
 }
 
-void hvac_sps30_read_measured_data(mass_and_num_cnt_data_t *m_n_c_data)
+/* scd41 perform self test command */
+uint8_t MIKROSDK_HVAC_scd41_perform_self_test(void)
 {
-	uint8_t  tx_buf[2];
-	uint8_t  rx_buf[60];
-	uint32_t temp;
+	uint8_t rx_buf[3];
 
-	tx_buf[0] = (uint8_t)(HVAC_SPS30_I2C_READ_MEASURED_VALUE >> 8);
-	tx_buf[1] = (uint8_t)HVAC_SPS30_I2C_READ_MEASURED_VALUE;
-	i2c_master_set_slave_address(&hvac.i2c, HVAC_SPS30_SLAVE_ADDR);
-	hvac_generic_write(&hvac, HVAC_SPS30_SLAVE_ADDR, tx_buf, 2);
-	hvac_generic_read(&hvac, rx_buf, 60);
-	i2c_master_set_slave_address(&hvac.i2c, HVAC_SCD40_SLAVE_ADDR);
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_PERFORM_SELF_TEST, NULL, 0))
+		return (HVAC_ST_FAIL);
 
-	temp                    = dev_calc_concent(&hvac, 1, rx_buf);
-	m_n_c_data->mass_pm_1_0 = dev_ieee_754_floating_point_convert(temp);
+	WAIT_ms(SCD41_T_SELF_TEST);
 
-	temp                    = dev_calc_concent(&hvac, 2, rx_buf);
-	m_n_c_data->mass_pm_2_5 = dev_ieee_754_floating_point_convert(temp);
+	if (i2c_master_read(&hvac.i2c, rx_buf, 3))
+		return (HVAC_ST_FAIL);
 
-	temp                    = dev_calc_concent(&hvac, 3, rx_buf);
-	m_n_c_data->mass_pm_4_0 = dev_ieee_754_floating_point_convert(temp);
+	if (rx_buf[0] || rx_buf[1])
+		return (HVAC_ST_FAIL);
 
-	temp                   = dev_calc_concent(&hvac, 4, rx_buf);
-	m_n_c_data->mass_pm_10 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                   = dev_calc_concent(&hvac, 5, rx_buf);
-	m_n_c_data->num_pm_0_5 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                   = dev_calc_concent(&hvac, 6, rx_buf);
-	m_n_c_data->num_pm_1_0 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                   = dev_calc_concent(&hvac, 7, rx_buf);
-	m_n_c_data->num_pm_2_5 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                   = dev_calc_concent(&hvac, 8, rx_buf);
-	m_n_c_data->num_pm_4_0 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                  = dev_calc_concent(&hvac, 9, rx_buf);
-	m_n_c_data->num_pm_10 = dev_ieee_754_floating_point_convert(temp);
-
-	temp                      = dev_calc_concent(&hvac, 10, rx_buf);
-	m_n_c_data->typ_ptcl_size = dev_ieee_754_floating_point_convert(temp);
+	return (HVAC_ST_OK);
 }
 
+/* scd41 perform factory reset command */
+uint8_t MIKROSDK_HVAC_scd41_perform_factory_reset(void)
+{
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_PERFORM_FACTORY_RESET, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	WAIT_ms(SCD41_T_FACTORY_RESET);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 reinit command */
+uint8_t MIKROSDK_HVAC_scd41_reinit(void)
+{
+	/* stop_periodic_measurement command has to be issued before this funtion */
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_REINIT, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	WAIT_ms(SCD41_T_REINIT);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 measure single shot command */
+/* only successful if periodic measurements have been stopped */
+uint8_t MIKROSDK_HVAC_scd41_measure_single_shot(void)
+{
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_MEASURE_SINGLE_SHOT, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	/* wait / check data_ready_status 5 seconds after command until data will be ready */
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 measure single shot rht only command */
+/* only successful if periodic measurements have been stopped */
+uint8_t MIKROSDK_HVAC_scd41_measure_single_shot_rht_only(void)
+{
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_MEASURE_SINGLE_SHOT_RHT_ONLY, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	WAIT_ms(SCD41_T_MEAS_SINGLE_RHT);
+	/* data should be available now */
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 power down command */
+/* idle mode -> sleep mode, power_down to be used in combination with wakeup */
+uint8_t MIKROSDK_HVAC_scd41_power_down(void)
+{
+	if (MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_POWER_DOWN, NULL, 0))
+		return (HVAC_ST_FAIL);
+
+	return (HVAC_ST_OK);
+}
+
+/* scd41 wake up command */
+/* sleep mode -> idle mode, power_down to be used in combination with wakeup */
+uint8_t MIKROSDK_HVAC_scd41_wake_up(void)
+{
+	/* note: causes i2c error 0x30 (transmit data NACKed), so don't check status */
+	MIKROSDK_HVAC_scd41_generic_write(SCD41_CMD_WAKE_UP, NULL, 0);
+
+	WAIT_ms(SCD41_T_WAKEUP);
+	/* first reading after waking up the sensor should be discarded */
+
+	return (HVAC_ST_OK);
+}
+
+/* interface device initialisation */
 uint8_t MIKROSDK_HVAC_Initialise(void)
 {
+	/* don't call hvac_cfg_setup() as this de-initialises pin mapping */
+	// hvac_cfg_setup(&cfg);
+	cfg.i2c_speed   = I2C_MASTER_SPEED_STANDARD;
+	cfg.i2c_address = HVAC_SCD40_SLAVE_ADDR;
+
+	if (MIKROSDK_HVAC_init())
+		return (HVAC_ST_FAIL);
+
+#if (HVAC_FACTORY_RESET)
+	if (MIKROSDK_HVAC_scd41_perform_factory_reset())
+		return (HVAC_ST_FAIL);
+#endif
+
+#if (HVAC_MODE == HVAC_MODE_PERIODIC)
+	if (MIKROSDK_HVAC_scd41_start_periodic_measurement())
+		return (HVAC_ST_FAIL);
+#endif
+
+#if (HVAC_MODE == HVAC_MODE_PERIODIC_LP)
+	if (MIKROSDK_HVAC_scd41_start_low_power_periodic_measurement())
+		return (HVAC_ST_FAIL);
+#endif
+
+	SENSORIF_I2C_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return HVAC_ST_OK;
+}
+
+/* device hardware reinitialisation for quick power-up */
+uint8_t MIKROSDK_HVAC_Reinitialise(void)
+{
+	WAIT_ms(SCD41_T_WAKEUP);
+
+	return HVAC_ST_OK;
+}
+
+/* data acquisition */
+/* Note: co2content: [ppm] (0-40000 ppm) */
+/* Note: temperature: T('C)  = int16_t / 100 */
+/* Note: humidity: H(%RH) = int16_t / 100 */
+uint8_t MIKROSDK_HVAC_Acquire(uint16_t *co2content, int16_t *humidity, int16_t *temperature)
+{
+	uint8_t status = HVAC_ST_OK;
+	uint8_t data_ready;
+
+#if ((HVAC_MODE == HVAC_MODE_SINGLE_WAIT) || (HVAC_MODE == HVAC_MODE_SINGLE_WAIT_SLEEP))
+	uint32_t twait;
+#endif
+#if (HVAC_MODE == HVAC_MODE_SINGLE_NEXT)
+	static uint8_t init = 1;
+#endif
+
 	SENSORIF_I2C_Init();
-	hvac_cfg_t              hvac_cfg; /**< Click config object. */
-	mass_and_num_cnt_data_t sps30_data;
 
-	hvac_cfg_setup(&hvac_cfg);
-	HVAC_MAP_MIKROBUS(hvac_cfg);
-	if (I2C_MASTER_ERROR == hvac_init(&hvac, &hvac_cfg))
+#if (HVAC_MODE == HVAC_MODE_SINGLE_WAIT_SLEEP)
+	if (MIKROSDK_HVAC_scd41_wake_up())
+		return (HVAC_ST_FAIL);
+#endif
+
+#if ((HVAC_MODE == HVAC_MODE_PERIODIC) || (HVAC_MODE == HVAC_MODE_PERIODIC_LP))
+	if (MIKROSDK_HVAC_scd41_get_data_ready_status(&data_ready))
+		return (HVAC_ST_FAIL);
+	if (!data_ready)
 	{
-		printf(" Communication init failed.");
-		return 0xFF;
+		status = HVAC_ST_WAITING;
+		return status;
 	}
+	if (MIKROSDK_HVAC_scd41_read_measurement(co2content, temperature, humidity))
+		return (HVAC_ST_FAIL);
+#endif
 
-	uint8_t tx_buf[2];
-	u32_t   num = 2;
-	tx_buf[0]   = (uint8_t)(HVAC_SPS30_I2C_STOP_MEASUREMENT >> 8);
-	tx_buf[1]   = (uint8_t)(HVAC_SPS30_I2C_STOP_MEASUREMENT);
+#if ((HVAC_MODE == HVAC_MODE_SINGLE_WAIT) || (HVAC_MODE == HVAC_MODE_SINGLE_WAIT_SLEEP))
+	if (MIKROSDK_HVAC_scd41_measure_single_shot())
+		return (HVAC_ST_FAIL);
+	twait = TIME_ReadAbsoluteTime();
+	if (MIKROSDK_HVAC_scd41_get_data_ready_status(&data_ready))
+		return (HVAC_ST_FAIL);
+	while (!data_ready)
+	{
+		if ((TIME_ReadAbsoluteTime() - twait) > SCD41_T_TIMEOUT)
+			return HVAC_ST_FAIL;
+		WAIT_ms(SCD41_T_WAITPOLL);
+		if (MIKROSDK_HVAC_scd41_get_data_ready_status(&data_ready))
+			return (HVAC_ST_FAIL);
+	}
+	if (MIKROSDK_HVAC_scd41_read_measurement(co2content, temperature, humidity))
+		return (HVAC_ST_FAIL);
+#endif
 
-	hvac_scd40_send_cmd(HVAC_PERFORM_FACTORY_RESET);
-	printf("  Perform Factory Reset   \r\n");
-	printf("--------------------------\r\n");
-	BSP_WaitTicks(2000);
+#if (HVAC_MODE == HVAC_MODE_SINGLE_NEXT)
+	if (MIKROSDK_HVAC_scd41_get_data_ready_status(&data_ready))
+		return (HVAC_ST_FAIL);
+	if (!data_ready)
+	{
+		status = HVAC_ST_WAITING;
+		if (!init)
+			return status;
+	}
+	if (!init)
+	{
+		if (MIKROSDK_HVAC_scd41_read_measurement(co2content, temperature, humidity))
+			return (HVAC_ST_FAIL);
+	}
+	init = 0;
+	if (MIKROSDK_HVAC_scd41_measure_single_shot())
+		return (HVAC_ST_FAIL);
+#endif
 
-	hvac_scd40_get_serial_number(&hvac, ser_num);
-	printf("   SCD40 - Serial Number : %.4d-%.4d-%.4d \r\n",
-	       (uint16_t)ser_num[0],
-	       (uint16_t)ser_num[1],
-	       (uint16_t)ser_num[2]);
-	printf("--------------------------\r\n");
-
-	BSP_WaitTicks(100);
-
-	hvac_sps30_start_measurement(&hvac);
+#if (HVAC_MODE == HVAC_MODE_SINGLE_WAIT_SLEEP)
+	if (MIKROSDK_HVAC_scd41_power_down())
+		return (HVAC_ST_FAIL);
+#endif
 
 	SENSORIF_I2C_Deinit();
-	return 0;
+
+	return status;
 }
-
-// --------------------------------------------- PRIVATE FUNCTION DEFINITIONS
-
-uint8_t dev_calc_crc(uint8_t *data_data)
-{
-	uint8_t crc = 0xFF;
-	uint8_t bit_bit;
-	uint8_t n_cnt;
-
-	for (n_cnt = 0; n_cnt < 2; n_cnt++)
-	{
-		crc ^= data_data[n_cnt];
-
-		for (bit_bit = 8; bit_bit > 0; --bit_bit)
-		{
-			if (crc & 0x80)
-			{
-				crc = (crc << 1) ^ 0x31u;
-			}
-			else
-			{
-				crc = (crc << 1);
-			}
-		}
-	}
-
-	return crc;
-}
-
-uint8_t dev_calc_uart_crc(uint8_t *data_data, uint8_t len)
-{
-	uint8_t crc = 0xFF;
-	uint8_t bit_bit;
-	uint8_t n_cnt;
-
-	for (n_cnt = 0; n_cnt < len; n_cnt++)
-	{
-		crc ^= data_data[n_cnt];
-
-		for (bit_bit = 8; bit_bit > 0; --bit_bit)
-		{
-			if (crc & 0x80)
-			{
-				crc = (crc << 1) ^ 0x31u;
-			}
-			else
-			{
-				crc = (crc << 1);
-			}
-		}
-	}
-
-	return crc;
-}
-
-uint32_t dev_calc_concent(hvac_t *ctx, uint8_t buf_num, uint8_t *tmp_buf)
-{
-	uint32_t result;
-	uint8_t  n_cnt;
-
-	if (buf_num < 1)
-	{
-		buf_num = 1;
-	}
-
-	if (buf_num > 10)
-	{
-		buf_num = 10;
-	}
-
-	buf_num--;
-
-	n_cnt = buf_num * 6;
-
-	result = tmp_buf[n_cnt];
-	result <<= 8;
-	result |= tmp_buf[n_cnt + 1];
-	result <<= 8;
-	result |= tmp_buf[n_cnt + 3];
-	result <<= 8;
-	result |= tmp_buf[n_cnt + 4];
-
-	return result;
-}
-
-float dev_ieee_754_floating_point_convert(uint32_t fp_data)
-{
-	uint8_t n_cnt_j;
-	uint8_t n_cnt_i;
-	float   tmp;
-	uint8_t bit_bit;
-	float   result;
-	int8_t  exp_tmp;
-	uint8_t sign_bit;
-	uint8_t exponent;
-	float   mantissa;
-
-	sign_bit = fp_data >> 31;
-	sign_bit &= 0x01;
-
-	exponent = (uint8_t)((fp_data >> 23) & 0xFF);
-
-	if (exponent > 127)
-	{
-		exponent -= 127;
-	}
-
-	mantissa = 1.0;
-
-	for (n_cnt_i = 1; n_cnt_i < 23; n_cnt_i++)
-	{
-		bit_bit = fp_data >> (23 - n_cnt_i);
-		bit_bit &= 0x01;
-
-		if (bit_bit == 1)
-		{
-			tmp = 1.0;
-
-			for (n_cnt_j = 0; n_cnt_j < n_cnt_i; n_cnt_j++)
-			{
-				tmp *= 0.5;
-			}
-
-			mantissa += tmp;
-		}
-	}
-
-	result = 1.0;
-
-	while (exponent > 0)
-	{
-		result *= 2.0;
-		exponent--;
-	}
-
-	result *= mantissa;
-
-	return result;
-}
-
-// ------------------------------------------------------------------------- END

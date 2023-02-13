@@ -72,8 +72,8 @@
 struct usb_exchange_priv
 {
 	struct ca821x_exchange_base base;          //!< Exchange base struct
-	hid_device *                hid_dev;       //!< hidapi device reference struct
-	wchar_t *                   serial_number; //!< chili serial number
+	hid_device                 *hid_dev;       //!< hidapi device reference struct
+	wchar_t                    *serial_number; //!< chili serial number
 
 #if CASCODA_RASPI_USB_WORKAROUND
 	struct timespec prev_send; //!< The time that the previous usb packet was sent
@@ -497,8 +497,8 @@ static void add_sdev(struct ca821x_dev *pDeviceRef)
 	}
 
 	//dev array full, increase allocation
-	mem_increase = sdev_inc * sizeof(s_devs[0]);
-	s_devs       = realloc(s_devs, s_maxdevcount * sizeof(s_devs[0]) + mem_increase);
+	mem_increase = sdev_inc * sizeof(struct ca821x_dev *);
+	s_devs       = realloc(s_devs, s_maxdevcount * sizeof(struct ca821x_dev *) + mem_increase);
 	if (s_devs == NULL)
 	{
 		ca_log_crit("usb exchange realloc failed. Device not tracked.");
@@ -540,7 +540,7 @@ static struct hid_device_info *get_next_hid(struct hid_device_info *hid_cur)
 static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef)
 {
 	struct usb_exchange_priv *priv   = pDeviceRef->exchange_context;
-	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
+	struct hid_device_info   *hid_ll = NULL, *hid_cur = NULL;
 	ca_error                  error = CA_ERROR_SUCCESS;
 
 	assert_usb_exchange(pDeviceRef);
@@ -647,12 +647,12 @@ static ca_error unlock_device(struct ca821x_dev *pDeviceRef)
 #endif
 
 ca_error usb_exchange_init(ca821x_errorhandler callback,
-                           const char *        path,
-                           struct ca821x_dev * pDeviceRef,
-                           char *              serial_num)
+                           const char         *path,
+                           struct ca821x_dev  *pDeviceRef,
+                           char               *serial_num)
 {
-	struct hid_device_info *  hid_ll = NULL, *hid_cur = NULL;
-	hid_device *              dev        = NULL;
+	struct hid_device_info   *hid_ll = NULL, *hid_cur = NULL;
+	hid_device	           *dev        = NULL;
 	struct usb_exchange_priv *priv       = NULL;
 	ca_error                  error      = CA_ERROR_SUCCESS;
 	size_t                    len        = 0;
@@ -810,7 +810,7 @@ ca_error usb_exchange_enumerate(util_device_found aCallback, void *aContext)
 	while (hid_cur)
 	{
 		struct ca_device_info devi = {0};
-		char *                devpath, *devname, *serialno;
+		char                 *devpath, *devname, *serialno;
 		size_t                pathlen = strlen(hid_cur->path);
 
 		devi.exchange_type = ca821x_exchange_usb;

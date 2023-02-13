@@ -297,6 +297,7 @@ err_t hal_i2c_master_write_then_read(handle_t handle,
 
 	hal_status = SENSORIF_I2C_Write(addr, wdata, &num_w);
 	hal_status = SENSORIF_I2C_Read(addr, read_data_buf, &num_r);
+	SLAVE_ADDR = addr;
 
 	if (hal_status != HAL_I2C_MASTER_SUCCESS)
 	{

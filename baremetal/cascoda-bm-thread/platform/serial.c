@@ -34,9 +34,10 @@
 #include "cascoda-bm/cascoda_serial.h"
 #include "cascoda-bm/cascoda_types.h"
 
-#include "openthread/platform/uart.h"
-
 #include "platform.h"
+
+extern void otPlatUartSendDone(void);
+extern void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength);
 
 otError otPlatUartEnable(void)
 {

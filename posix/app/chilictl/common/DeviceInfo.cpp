@@ -76,7 +76,7 @@ void DeviceInfo::copy_from(const ca_device_info *aDeviceInfo)
 	size_t verlen     = aDeviceInfo->version ? 1 + strlen(aDeviceInfo->version) : 0;
 	size_t serlen     = aDeviceInfo->serialno ? 1 + strlen(aDeviceInfo->serialno) : 0;
 	size_t buflen     = pathlen + devnamelen + appnamelen + verlen + serlen + 1;
-	char * fillptr    = nullptr;
+	char  *fillptr    = nullptr;
 
 	mBuffer    = new char[buflen];
 	mBuffer[0] = '\0';

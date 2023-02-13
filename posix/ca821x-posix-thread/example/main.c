@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	isRunning = 1;
 	signal(SIGINT, quit);

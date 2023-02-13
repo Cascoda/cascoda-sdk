@@ -34,6 +34,7 @@
 
 #include "cbor.h"
 #include "sif_il3820.h"
+#include "sif_il3820_image.h"
 #include "uzlib.h"
 
 #define SuccessOrExit(aCondition) \
@@ -71,7 +72,7 @@ char        uriCascodaImageRequestQuery[10];
 /******************************************************************************/
 /****** Single instance                                                  ******/
 /******************************************************************************/
-otInstance *      OT_INSTANCE;
+otInstance       *OT_INSTANCE;
 struct ca821x_dev sDeviceRef;
 
 static bool         isConnected  = false;
@@ -94,6 +95,11 @@ static uint16_t message_length = 0;
 static unsigned char image_buffer[IMAGE_SIZE];
 
 void initialise_communications();
+
+int ot_reinitialise(struct ca821x_dev *pDeviceRef)
+{
+	otLinkSyncExternalMac(OT_INSTANCE);
+}
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -132,8 +138,8 @@ void otTaskletsSignalPending(otInstance *aInstance)
  * locally.
  *******************************************************************************
  ******************************************************************************/
-static void handleServerDiscoverResponse(void *               aContext,
-                                         otMessage *          aMessage,
+static void handleServerDiscoverResponse(void                *aContext,
+                                         otMessage           *aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
@@ -193,7 +199,7 @@ exit:
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 	otExtAddress  eui64;
@@ -372,7 +378,7 @@ exit:
 static otError sendImageRequest(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 
 	//allocate message buffer
@@ -470,7 +476,7 @@ void initialise_communications()
 	char             tcQR[TCQR_BUFFER_SIZE] = {};
 
 	ca821x_api_init(&sDeviceRef);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
+	cascoda_reinitialise    = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
@@ -479,6 +485,8 @@ void initialise_communications()
 	App_Initialise(StartupStatus, &sDeviceRef);
 	PlatformRadioInitWithDev(&sDeviceRef);
 	OT_INSTANCE = otInstanceInitSingle();
+
+	SENSORIF_SPI_Config(1);
 
 	if (!otDatasetIsCommissioned(OT_INSTANCE))
 	{
@@ -501,8 +509,7 @@ void initialise_communications()
 		PlatformSleep(30000);
 	} while (1);
 
-	linkMode.mRxOnWhenIdle       = true;
-	linkMode.mSecureDataRequests = true;
+	linkMode.mRxOnWhenIdle = true;
 	otLinkSetPollPeriod(OT_INSTANCE, 5000);
 	otThreadSetChildTimeout(OT_INSTANCE, 5);
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);

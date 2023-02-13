@@ -129,6 +129,7 @@ static otError ConvertErrorMacToOt(ca_mac_status aMacError)
 
 otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t *aLen, uint8_t *aBuf)
 {
+	(void)aInstance;
 	uint8_t error;
 	otError otErr;
 
@@ -137,7 +138,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc  = {0};
-		otKeyTableEntry *             otKeyDesc  = (otKeyTableEntry *)aBuf;
+		otKeyTableEntry              *otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
 		error = MLME_GET_request_sync(aAttr, aIndex, aLen, (uint8_t *)(&caKeyDesc), pDeviceRef);
@@ -192,6 +193,7 @@ exit:
 
 otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t aLen, const uint8_t *aBuf)
 {
+	(void)aInstance;
 	uint8_t error;
 	otError otErr;
 
@@ -200,7 +202,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc  = {0};
-		const otKeyTableEntry *       otKeyDesc  = (otKeyTableEntry *)aBuf;
+		const otKeyTableEntry        *otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
 		caKeyDesc.Fixed.KeyIdLookupListEntries = otKeyDesc->mKeyIdLookupListEntries;
@@ -249,6 +251,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 
 otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 {
+	(void)aInstance;
 	ca_mac_status error;
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
@@ -285,6 +288,7 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 
 otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 {
+	(void)aInstance;
 	ca_mac_status error;
 	otError       otErr;
 
@@ -306,6 +310,7 @@ otError otPlatMlmeStart(otInstance *aInstance, otStartRequest *aStartReq)
 
 otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 {
+	(void)aInstance;
 	ca_mac_status error;
 
 	error = MLME_SCAN_request(aScanRequest->mScanType,
@@ -319,6 +324,7 @@ otError otPlatMlmeScan(otInstance *aInstance, otScanRequest *aScanRequest)
 
 otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest)
 {
+	(void)aInstance;
 	ca_mac_status error;
 
 #if CASCODA_CA_VER >= 8212
@@ -352,6 +358,7 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 
 otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest)
 {
+	(void)aInstance;
 	ca_mac_status error;
 
 #if CASCODA_CA_VER >= 8212
@@ -388,6 +395,7 @@ otError otPlatMcpsDataRequest(otInstance *aInstance, otDataRequest *aDataRequest
 
 otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 {
+	(void)aInstance;
 	ca_mac_status error;
 
 	error = MCPS_PURGE_request_sync(&aMsduHandle, pDeviceRef);
@@ -395,8 +403,9 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 	return ConvertErrorMacToOt(error);
 }
 
-static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *aDeviceRef)
 {
+	(void)aDeviceRef;
 	int16_t rssi;
 	//TODO: Move this off the stack
 	otDataIndication dataInd = {0};
@@ -456,8 +465,9 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 	return CA_ERROR_SUCCESS;
 }
 
-static ca_error handlePollIndication(struct MLME_POLL_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handlePollIndication(struct MLME_POLL_indication_pset *params, struct ca821x_dev *aDeviceRef)
 {
+	(void)aDeviceRef;
 	//TODO: Move this off the stack
 	otPollIndication pollInd = {0};
 
@@ -496,8 +506,9 @@ static ca_error handlePollConfirm(struct MLME_POLL_confirm_pset *params, struct 
 #endif // CASCODA_CA_VER >= 8212
 
 static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params,
-                                           struct ca821x_dev *                      pDeviceRef)
+                                           struct ca821x_dev                       *pDeviceRef)
 {
+	(void)pDeviceRef;
 	//TODO: Move this off the stack
 	otCommStatusIndication commInd = {0};
 
@@ -520,8 +531,9 @@ static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_ps
 	return CA_ERROR_SUCCESS;
 }
 
-static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *aDeviceRef) //Async
 {
+	(void)aDeviceRef;
 	otError error = ConvertErrorMacToOt((ca_mac_status)params->Status);
 
 	otPlatMcpsDataConfirm(OT_INSTANCE, params->MsduHandle, error);
@@ -530,8 +542,9 @@ static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct 
 }
 
 static ca_error handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
-                                   struct ca821x_dev *                        pDeviceRef) //Async
+                                   struct ca821x_dev                         *pDeviceRef) //Async
 {
+	(void)pDeviceRef;
 	//TODO: Move this off the stack
 	otBeaconNotify beaconNotify = {0};
 	uint8_t        sduLenOffset;
@@ -553,8 +566,9 @@ static ca_error handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *pa
 	return CA_ERROR_SUCCESS;
 }
 
-static ca_error handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
+static ca_error handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *aDeviceRef) //Async
 {
+	(void)aDeviceRef;
 	otPlatMlmeScanConfirm(OT_INSTANCE, (otScanConfirm *)params);
 
 	return CA_ERROR_SUCCESS;
@@ -562,25 +576,25 @@ static ca_error handleScanConfirm(struct MLME_SCAN_confirm_pset *params, struct 
 
 void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 {
-	memcpy(aIeeeEui64, sIeeeEui64, sizeof(sIeeeEui64));
-
 	(void)aInstance;
+	memcpy(aIeeeEui64, sIeeeEui64, sizeof(sIeeeEui64));
 }
 
 int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance)
 {
+	(void)aInstance;
 	return -105;
 }
 
-static int driverErrorCallback(int error_number, struct ca821x_dev *pDeviceRef)
-{
-	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
-
-	//TODO: Fail gracefully
-
-	abort();
-	return 0;
-}
+//static int driverErrorCallback(int error_number)
+//{
+//	otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_MAC, "DRIVER FAILED WITH ERROR %d\n\r", error_number);
+//
+//	//TODO: Fail gracefully
+//
+//	abort();
+//	return 0;
+//}
 
 void PlatformRadioStop(void)
 {
@@ -600,8 +614,9 @@ void initIeeeEui64()
 	sIeeeEui64[0] |= 2;  //Set local bit
 }
 
-static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *aDeviceRef)
 {
+	(void)aDeviceRef;
 	ca_log_info("Woke Up with status %02x", params->WakeUpCondition);
 	return CA_ERROR_SUCCESS;
 }
@@ -652,11 +667,13 @@ int PlatformRadioInit(void)
 
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
+	(void)aInstance;
 	return sNoiseFloor;
 }
 
 otError otPlatRadioEnable(otInstance *aInstance)
 {
+	(void)aInstance;
 	otError error = OT_ERROR_NONE;
 	OT_INSTANCE   = aInstance;
 
@@ -665,6 +682,7 @@ otError otPlatRadioEnable(otInstance *aInstance)
 
 bool otPlatRadioIsEnabled(otInstance *aInstance)
 {
+	(void)aInstance;
 	return (OT_INSTANCE != NULL);
 }
 

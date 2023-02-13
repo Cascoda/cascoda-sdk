@@ -184,7 +184,7 @@ ca_error EVBME_DFU_ERASE_request(uint32_t aStartAddr, uint32_t aEraseLen, struct
  */
 ca_error EVBME_DFU_WRITE_request(uint32_t           aStartAddr,
                                  size_t             aWriteLen,
-                                 void *             aWriteData,
+                                 void              *aWriteData,
                                  struct ca821x_dev *pDeviceRef);
 
 /**
@@ -245,8 +245,8 @@ ca_error EVBME_DFU_BOOTMODE_request(enum evbme_dfu_rebootmode aBootMode, struct 
  */
 ca_error EVBME_SET_request_sync(enum evbme_attribute aAttrId,
                                 size_t               aAttrLen,
-                                uint8_t *            aAttrData,
-                                struct ca821x_dev *  pDeviceRef);
+                                uint8_t             *aAttrData,
+                                struct ca821x_dev   *pDeviceRef);
 
 /**
  * Send an EVBME GET request to get the value of an EVBME attribute
@@ -264,9 +264,9 @@ ca_error EVBME_SET_request_sync(enum evbme_attribute aAttrId,
  */
 ca_error EVBME_GET_request_sync(enum evbme_attribute aAttrId,
                                 size_t               aMaxAttrLen,
-                                uint8_t *            aAttrData,
-                                uint8_t *            aAttrLen,
-                                struct ca821x_dev *  pDeviceRef);
+                                uint8_t             *aAttrData,
+                                uint8_t             *aAttrLen,
+                                struct ca821x_dev   *pDeviceRef);
 
 /**
  * Compares two input version strings and returns the result.
@@ -283,8 +283,8 @@ ca_error EVBME_GET_request_sync(enum evbme_attribute aAttrId,
  * @retval 1     aVersion1 is newer (i.e. the version number is higher) than aVersion2
  * @retval -1	 aVersion1 is older (i.e. the version number is lower) than aVersion2
  */
-int EVBME_CompareVersions(const char *              aVersion1,
-                          const char *              aVersion2,
+int EVBME_CompareVersions(const char               *aVersion1,
+                          const char               *aVersion2,
                           struct ca_version_number *aVersion1Number,
                           struct ca_version_number *aVersion2Number);
 

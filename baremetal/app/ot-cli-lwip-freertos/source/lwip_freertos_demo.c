@@ -72,7 +72,7 @@
 /******************************************************************************/
 /****** Single instance                                                  ******/
 /******************************************************************************/
-otInstance *             OT_INSTANCE;
+otInstance              *OT_INSTANCE;
 static struct ca821x_dev sDeviceRef;
 
 /******************************************************************************/
@@ -124,8 +124,6 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
 
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
-
 	return ret;
 }
 
@@ -144,7 +142,7 @@ static void System_Init()
 	//Openthread Init
 	PlatformRadioInitWithDev(&sDeviceRef);
 	OT_INSTANCE = otInstanceInitSingle();
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	//LWIP init
 	LWIP_NetifInit(OT_INSTANCE);
@@ -168,7 +166,7 @@ static void CommsTask(void *unused)
 	System_Init();
 
 	// Initialise the lwip demo application
-	init_lwipdemo(OT_INSTANCE, &sDeviceRef);
+	init_lwipdemo_freertos(OT_INSTANCE, &sDeviceRef);
 
 	for (;;)
 	{

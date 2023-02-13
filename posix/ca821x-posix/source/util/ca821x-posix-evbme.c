@@ -40,7 +40,7 @@ static struct ca_version_number string_to_ca_version_number(const char *aVersion
 {
 	char temp[50];
 	temp[49]                                = '\0';
-	char *                   strtokrContext = NULL;
+	char                    *strtokrContext = NULL;
 	struct ca_version_number result;
 
 	//Parse the string into 'ca_version_number' format
@@ -195,8 +195,8 @@ ca_error EVBME_DFU_BOOTMODE_request(enum evbme_dfu_rebootmode aBootMode, struct 
 
 ca_error EVBME_SET_request_sync(enum evbme_attribute aAttrId,
                                 size_t               aAttrLen,
-                                uint8_t *            aAttrData,
-                                struct ca821x_dev *  pDeviceRef)
+                                uint8_t             *aAttrData,
+                                struct ca821x_dev   *pDeviceRef)
 {
 	ca_error             status = CA_ERROR_SUCCESS;
 	struct EVBME_Message msg;
@@ -225,9 +225,9 @@ ca_error EVBME_SET_request_sync(enum evbme_attribute aAttrId,
 
 ca_error EVBME_GET_request_sync(enum evbme_attribute aAttrId,
                                 size_t               aMaxAttrLen,
-                                uint8_t *            aAttrData,
-                                uint8_t *            aAttrLen,
-                                struct ca821x_dev *  pDeviceRef)
+                                uint8_t             *aAttrData,
+                                uint8_t             *aAttrLen,
+                                struct ca821x_dev   *pDeviceRef)
 {
 	ca_error             status = CA_ERROR_SUCCESS;
 	struct EVBME_Message msg;
@@ -270,8 +270,8 @@ exit:
 	return status;
 }
 
-int EVBME_CompareVersions(const char *              aVersion1,
-                          const char *              aVersion2,
+int EVBME_CompareVersions(const char               *aVersion1,
+                          const char               *aVersion2,
                           struct ca_version_number *aVersion1Number,
                           struct ca_version_number *aVersion2Number)
 {
@@ -302,7 +302,7 @@ int EVBME_CompareVersions(const char *              aVersion1,
 ca_error EVBME_CheckVersion(const char *aMinVerString, struct ca821x_dev *pDeviceRef)
 {
 	ca_error                 status = CA_ERROR_SUCCESS;
-	const char *             hostVerString;
+	const char              *hostVerString;
 	uint8_t                  evbmeVerString[50]      = {};
 	bool                     evbmeVerNumLessThan0_11 = false;
 	struct ca_version_number hostVerNumber, evbmeVerNumber;
@@ -375,7 +375,7 @@ ca_error ca821x_evbme_dispatch(uint8_t *aBuf, size_t aBufLen, struct ca821x_dev 
 {
 	struct ca821x_exchange_base *base     = pDeviceRef->exchange_context;
 	EVBME_Message_callback       callback = NULL;
-	struct EVBME_Message *       rxMsg    = (struct EVBME_Message *)aBuf;
+	struct EVBME_Message        *rxMsg    = (struct EVBME_Message *)aBuf;
 	ca_error                     error    = CA_ERROR_NOT_HANDLED;
 
 	if (aBufLen != (size_t)(rxMsg->mLen) + 2)

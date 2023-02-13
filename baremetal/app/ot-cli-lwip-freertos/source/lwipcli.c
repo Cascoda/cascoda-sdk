@@ -69,7 +69,7 @@ enum
 struct CliCommand
 {
 	size_t argc;
-	char * argv[CLI_MAXARGS];
+	char  *argv[CLI_MAXARGS];
 	char   buf[CLI_MAXLEN];
 };
 
@@ -144,14 +144,11 @@ static void demosocket_thread(void *arg)
 	}
 }
 
-/**
- * Handle lwip CLI command using the socket api.
- * @param argc argcount
- * @param argv argvector
- */
-void handle_cli_lwipdemo(int argc, char *argv[])
+void handle_cli_lwipdemo(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc <= 0)
+	(void)aContext;
+
+	if (aArgsLength <= 0)
 	{
 		LockCommsThread();
 		otCliOutputFormat("lwip - print help\r\n");
@@ -165,9 +162,9 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 		return;
 	}
 
-	if (strcmp(argv[0], "tcp") == 0)
+	if (strcmp(aArgs[0], "tcp") == 0)
 	{
-		if (argc <= 1)
+		if (aArgsLength <= 1)
 		{
 			LockCommsThread();
 			otCliOutputFormat("incoming socket ");
@@ -185,7 +182,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			return;
 		}
 		//strncmp is used so 'con', 'connect' etc are all accepted
-		if (strncmp(argv[1], "con", 3) == 0)
+		if (strncmp(aArgs[1], "con", 3) == 0)
 		{
 			struct sockaddr_in6 daddr = {};
 
@@ -193,7 +190,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			daddr.sin6_family = AF_INET6;
 			daddr.sin6_port   = htons(DEMO_PORT);
 
-			if (argc < 3)
+			if (aArgsLength < 3)
 			{
 				COMMS_LOCKED(otCliOutputFormat("'tcp con' expects IP address argument\r\n"));
 				return;
@@ -203,7 +200,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 				COMMS_LOCKED(otCliOutputFormat("CLI demo program only supports single outgoing TCP connection\r\n"));
 				return;
 			}
-			if (inet_pton(AF_INET6, argv[2], &(daddr.sin6_addr)) != 1)
+			if (inet_pton(AF_INET6, aArgs[2], &(daddr.sin6_addr)) != 1)
 			{
 				COMMS_LOCKED(otCliOutputFormat("Invalid IP address\r\n"));
 				return;
@@ -224,7 +221,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			}
 		}
 		//strncmp is used so 'sen', 'send' etc are all accepted
-		else if (strncmp(argv[1], "sen", 3) == 0)
+		else if (strncmp(aArgs[1], "sen", 3) == 0)
 		{
 			int err = 0;
 			if (demo_osocket == -1)
@@ -233,12 +230,12 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 				return;
 			}
 
-			for (int i = 2; i < argc; i++)
+			for (int i = 2; i < aArgsLength; i++)
 			{
 				u8_t flags  = TCP_WRITE_FLAG_COPY;
-				bool isLast = (i == argc - 1);
+				bool isLast = (i == aArgsLength - 1);
 
-				err = send(demo_osocket, argv[i], strlen(argv[i]), MSG_MORE);
+				err = send(demo_osocket, aArgs[i], strlen(aArgs[i]), MSG_MORE);
 
 				if (err == -1)
 					break;
@@ -259,7 +256,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			}
 		}
 		//strncmp is used so 'clo', 'close' etc are all accepted
-		else if (strncmp(argv[1], "clo", 3) == 0)
+		else if (strncmp(aArgs[1], "clo", 3) == 0)
 		{
 			int err      = close(demo_osocket);
 			demo_osocket = -1;
@@ -270,9 +267,9 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 				COMMS_LOCKED(otCliOutputFormat("Closed outgoing TCP Socket\r\n"));
 		}
 	}
-	else if (strcmp(argv[0], "dns") == 0)
+	else if (strcmp(aArgs[0], "dns") == 0)
 	{
-		if (argc == 2)
+		if (aArgsLength == 2)
 		{
 			struct addrinfo  ai_in  = {};
 			struct addrinfo *ai_out = NULL;
@@ -281,7 +278,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			ai_in.ai_family = AF_INET6;
 			ai_in.ai_flags  = (AI_V4MAPPED | AI_ADDRCONFIG);
 
-			rval = getaddrinfo(argv[1], NULL, &ai_in, &ai_out);
+			rval = getaddrinfo(aArgs[1], NULL, &ai_in, &ai_out);
 
 			if (rval == 0)
 			{
@@ -307,11 +304,11 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			freeaddrinfo(ai_out);
 		}
 		//strncmp is used so 'ser', 'server' etc are all accepted
-		else if (argc == 3 && strncmp(argv[1], "ser", 3) == 0)
+		else if (aArgsLength == 3 && strncmp(aArgs[1], "ser", 3) == 0)
 		{
 			ip_addr_t dnsServer = {};
 
-			if (otIp6AddressFromString(argv[2], (otIp6Address *)(&dnsServer)) == OT_ERROR_NONE)
+			if (otIp6AddressFromString(aArgs[2], (otIp6Address *)(&dnsServer)) == OT_ERROR_NONE)
 			{
 #if LWIP_IPV4
 				dnsServer.type = IPADDR_TYPE_V6;
@@ -345,7 +342,7 @@ static void app_thread(void *arg)
 	{
 		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 		xSemaphoreTake(sCliMutex, portMAX_DELAY);
-		handle_cli_lwipdemo(sCliCmd.argc, sCliCmd.argv);
+		handle_cli_lwipdemo(NULL, sCliCmd.argc, sCliCmd.argv);
 		xSemaphoreGive(sCliMutex);
 	}
 }
@@ -353,20 +350,18 @@ static void app_thread(void *arg)
 /**
  * The cli command is handled in the Comms Thread, which is not compatible with the socket api.
  * Therefore we pass the command to the app thread, which handles requesting the transmission.
- * @param argc
- * @param argv
  */
-static void handle_cli_copy(int argc, char *argv[])
+static void handle_cli_copy(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	static char * curPos  = &sCliCmd.buf[0];
+	static char  *curPos  = &sCliCmd.buf[0];
 	static size_t bufLeft = sizeof(sCliCmd.buf);
 
 	xSemaphoreTake(sCliMutex, portMAX_DELAY);
 
-	sCliCmd.argc = argc;
-	for (int i = 0; i < argc; i++)
+	sCliCmd.argc = aArgsLength;
+	for (int i = 0; i < aArgsLength; i++)
 	{
-		size_t arglen = strlen(argv[i]) + 1;
+		size_t arglen = strlen(aArgs[i]) + 1;
 
 		if (arglen > bufLeft)
 		{
@@ -375,7 +370,7 @@ static void handle_cli_copy(int argc, char *argv[])
 		}
 
 		sCliCmd.argv[i] = curPos;
-		memcpy(sCliCmd.argv[i], argv[i], arglen);
+		memcpy(sCliCmd.argv[i], aArgs[i], arglen);
 		bufLeft -= arglen;
 		curPos += arglen;
 	}
@@ -384,7 +379,7 @@ static void handle_cli_copy(int argc, char *argv[])
 	xTaskNotifyGive(sAppTask);
 }
 
-ca_error init_lwipdemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
+ca_error init_lwipdemo_freertos(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 {
 	sCliMutex = xSemaphoreCreateMutex();
 
@@ -393,7 +388,7 @@ ca_error init_lwipdemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 
 	sOtCliCommand.mCommand = handle_cli_copy;
 	sOtCliCommand.mName    = "lwip";
-	otCliSetUserCommands(&sOtCliCommand, 1);
+	otCliSetUserCommands(&sOtCliCommand, 1, OT_INSTANCE);
 
 	return CA_ERROR_SUCCESS;
 }

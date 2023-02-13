@@ -75,7 +75,7 @@ ca_error TASKLET_ScheduleDelta(ca_tasklet *aTasklet, uint32_t aTimeDelta, void *
 
 ca_error TASKLET_ScheduleAbs(ca_tasklet *aTasklet, uint32_t aTimeNow, uint32_t aTimeAbs, void *aContext)
 {
-	ca_tasklet * cur   = sTaskletHead;  //Current tasklet being processed
+	ca_tasklet  *cur   = sTaskletHead;  //Current tasklet being processed
 	ca_tasklet **prevn = &sTaskletHead; //'Previous next', the pointer that points to the current tasklet
 
 	if (TASKLET_IsQueued(aTasklet))
@@ -127,7 +127,7 @@ ca_error TASKLET_GetScheduledTimeDelta(ca_tasklet *aTasklet, uint32_t *aTimeDelt
 
 ca_error TASKLET_Cancel(ca_tasklet *aTasklet)
 {
-	ca_tasklet * cur   = sTaskletHead;  //Current tasklet being processed
+	ca_tasklet  *cur   = sTaskletHead;  //Current tasklet being processed
 	ca_tasklet **prevn = &sTaskletHead; //'Previous next', the pointer that points to the current tasklet
 
 	if (!TASKLET_IsQueued(aTasklet))

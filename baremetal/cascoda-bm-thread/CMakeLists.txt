@@ -38,6 +38,7 @@ target_compile_definitions(ca821x-openthread-bm-plat PRIVATE CASCODA_SNTP_INTERV
 target_include_directories(ca821x-openthread-bm-plat
 	PRIVATE
 		${openthread_SOURCE_DIR}/src/core
+		${openthread_SOURCE_DIR}/examples
 		${PROJECT_SOURCE_DIR}/platform
 	PUBLIC
 		${openthread_SOURCE_DIR}/include
@@ -139,16 +140,6 @@ if(CASCODA_OPENTHREAD_FTD AND OT_COAP)
 		)
 	target_link_libraries(ot-cli openthread-cli-ftd ca821x-openthread-bm-ftd tinycbor-master)
 	target_compile_definitions(ot-cli PRIVATE OT_CLI=1)
-	cascoda_make_binary(ot-cli)
-
-	add_executable(ot-ncp
-		${PROJECT_SOURCE_DIR}/example/thread_bm.c
-		)
-	target_include_directories(ot-ncp
-		PRIVATE ${PROJECT_SOURCE_DIR}/platform
-		)
-	target_link_libraries(ot-ncp ca821x-openthread-bm-ftd openthread-ncp-ftd)
-	target_compile_definitions(ot-ncp PRIVATE OT_NCP=1)
-	cascoda_make_binary(ot-ncp)
+	cascoda_make_binary(ot-cli CASCODA_BUILD_BINARIES)
 endif()
 

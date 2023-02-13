@@ -67,13 +67,13 @@ struct uart_exchange_priv
 struct uart_device
 {
 	struct uart_device *next;   //!< Next device in linked list
-	const char *        device; //!< path to uart device
+	const char         *device; //!< path to uart device
 	int                 baud;   //!< Baudrate to be used for uart comms
 };
 
 static int                 s_devcount         = 0;
 static int                 s_initialised      = 0;
-static char *              s_CASCODA_UART     = NULL;
+static char               *s_CASCODA_UART     = NULL;
 static struct uart_device *s_uart_device_head = NULL;
 
 //! Start of frame delimiter
@@ -226,9 +226,9 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	int                        nfds;
 	ssize_t                    len;
 	int                        error  = 0;
-	uint8_t *                  som    = priv->rx_buf;
-	uint8_t *                  cmdid  = priv->rx_buf + 1;
-	uint8_t *                  cmdlen = priv->rx_buf + 2;
+	uint8_t                   *som    = priv->rx_buf;
+	uint8_t                   *cmdid  = priv->rx_buf + 1;
+	uint8_t                   *cmdlen = priv->rx_buf + 2;
 
 	assert_uart_exchange(pDeviceRef);
 
@@ -612,9 +612,9 @@ static ca_error setup_port(int fd, int baudrate)
 ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef)
 {
 	struct uart_exchange_priv *priv = NULL;
-	struct uart_device *       uartdev;
-	struct uart_device *       path_uartdev = NULL;
-	char *                     path_dup     = NULL;
+	struct uart_device        *uartdev;
+	struct uart_device        *path_uartdev = NULL;
+	char                      *path_dup     = NULL;
 	ca_error                   error        = 0;
 
 	error = init_statics();
@@ -767,7 +767,7 @@ ca_error uart_exchange_enumerate(util_device_found aCallback, void *aContext)
 	while (uartdev)
 	{
 		struct ca_device_info devi    = {0};
-		char *                pathout = NULL;
+		char                 *pathout = NULL;
 		size_t pathlen = strlen(uartdev->device) + 20; //+20 is for the baud rate integer and colon and null terminator
 
 		devi.exchange_type = ca821x_exchange_uart;

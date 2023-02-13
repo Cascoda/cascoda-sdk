@@ -927,45 +927,45 @@ struct M_KeyDescriptor
 struct ca821x_dev;
 
 typedef ca_error (*HWME_WAKEUP_indication_callback)(struct HWME_WAKEUP_indication_pset *params,
-                                                    struct ca821x_dev *                 pDeviceRef);
+                                                    struct ca821x_dev                  *pDeviceRef);
 typedef ca_error (*MLME_ASSOCIATE_indication_callback)(struct MLME_ASSOCIATE_indication_pset *params,
-                                                       struct ca821x_dev *                    pDeviceRef);
+                                                       struct ca821x_dev                     *pDeviceRef);
 typedef ca_error (*MLME_ASSOCIATE_confirm_callback)(struct MLME_ASSOCIATE_confirm_pset *params,
-                                                    struct ca821x_dev *                 pDeviceRef);
+                                                    struct ca821x_dev                  *pDeviceRef);
 typedef ca_error (*MLME_DISASSOCIATE_indication_callback)(struct MLME_DISASSOCIATE_indication_pset *params,
-                                                          struct ca821x_dev *                       pDeviceRef);
+                                                          struct ca821x_dev                        *pDeviceRef);
 typedef ca_error (*MLME_DISASSOCIATE_confirm_callback)(struct MLME_DISASSOCIATE_confirm_pset *params,
-                                                       struct ca821x_dev *                    pDeviceRef);
+                                                       struct ca821x_dev                     *pDeviceRef);
 typedef ca_error (*MLME_BEACON_NOTIFY_indication_callback)(struct MLME_BEACON_NOTIFY_indication_pset *params,
-                                                           struct ca821x_dev *                        pDeviceRef);
+                                                           struct ca821x_dev                         *pDeviceRef);
 typedef ca_error (*MLME_ORPHAN_indication_callback)(struct MLME_ORPHAN_indication_pset *params,
-                                                    struct ca821x_dev *                 pDeviceRef);
+                                                    struct ca821x_dev                  *pDeviceRef);
 typedef ca_error (*MLME_COMM_STATUS_indication_callback)(struct MLME_COMM_STATUS_indication_pset *params,
-                                                         struct ca821x_dev *                      pDeviceRef);
+                                                         struct ca821x_dev                       *pDeviceRef);
 typedef ca_error (*MLME_SYNC_LOSS_indication_callback)(struct MLME_SYNC_LOSS_indication_pset *params,
-                                                       struct ca821x_dev *                    pDeviceRef);
+                                                       struct ca821x_dev                     *pDeviceRef);
 typedef ca_error (*MLME_POLL_indication_callback)(struct MLME_POLL_indication_pset *params,
-                                                  struct ca821x_dev *               pDeviceRef);
+                                                  struct ca821x_dev                *pDeviceRef);
 #if CASCODA_CA_VER >= 8212
 typedef ca_error (*MLME_POLL_confirm_callback)(struct MLME_POLL_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 typedef ca_error (*MLME_IE_NOTIFY_indication_callback)(struct MLME_IE_NOTIFY_indication_pset *params,
-                                                       struct ca821x_dev *                    pDeviceRef);
+                                                       struct ca821x_dev                     *pDeviceRef);
 #endif // CASCODA_CA_VER >= 8212
 typedef ca_error (*MLME_SCAN_confirm_callback)(struct MLME_SCAN_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 typedef ca_error (*MCPS_DATA_indication_callback)(struct MCPS_DATA_indication_pset *params,
-                                                  struct ca821x_dev *               pDeviceRef);
+                                                  struct ca821x_dev                *pDeviceRef);
 typedef ca_error (*MCPS_DATA_confirm_callback)(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 #if CASCODA_CA_VER >= 8211
 typedef ca_error (*PCPS_DATA_indication_callback)(struct PCPS_DATA_indication_pset *params,
-                                                  struct ca821x_dev *               pDeviceRef);
+                                                  struct ca821x_dev                *pDeviceRef);
 typedef ca_error (*PCPS_DATA_confirm_callback)(struct PCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
 #endif // CASCODA_CA_VER >= 8211
 typedef ca_error (*TDME_RXPKT_indication_callback)(struct TDME_RXPKT_indication_pset *params,
-                                                   struct ca821x_dev *                pDeviceRef);
+                                                   struct ca821x_dev                 *pDeviceRef);
 typedef ca_error (*TDME_EDDET_indication_callback)(struct TDME_EDDET_indication_pset *params,
-                                                   struct ca821x_dev *                pDeviceRef);
+                                                   struct ca821x_dev                 *pDeviceRef);
 typedef ca_error (*TDME_ERROR_indication_callback)(struct TDME_ERROR_indication_pset *params,
-                                                   struct ca821x_dev *                pDeviceRef);
+                                                   struct ca821x_dev                 *pDeviceRef);
 typedef ca_error (*ca821x_generic_callback)(void *params, struct ca821x_dev *pDeviceRef);
 
 /** Union of all compatible callback types */

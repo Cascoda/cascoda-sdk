@@ -259,7 +259,7 @@ the secure binary, and a default one for non-TrustZone targets. If different sec
 characteristics are required, the partition file of the secure binary should be
 modified. The partition file of the default secure binary (the `chili2-default-secure`
 target) can be found at
-`baremetal\platform\cascoda-nuvoton-chili2\port\include_tz\partition_M2351.h`.
+`baremetal\platform\chili2\port\include_tz\partition_M2351.h`.
 
 To change the allocation of ROM and RAM, the
 `SCU_SECURE_SRAM_SIZE` and `FMC_SECURE_ROM_SIZE` within the

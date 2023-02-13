@@ -16,5 +16,5 @@ target_include_directories(mikrosdk-test
 target_link_libraries(mikrosdk-test test15-4-api cascoda-bm mikrosdk-click)
 
 # convert to bin file format
-cascoda_make_binary(mikrosdk-test)
+cascoda_make_binary(mikrosdk-test CASCODA_BUILD_BINARIES)
 cascoda_put_subdir(test mikrosdk-test)

@@ -19,5 +19,5 @@ target_include_directories(knx-iot-chilidev-pb
 
 target_compile_definitions(knx-iot-chilidev-pb PRIVATE NO_MAIN)
 
-cascoda_make_binary(knx-iot-chilidev-pb)
-cascoda_configure_memory(knx-iot-chilidev-pb 0x1500 0xc000)
+cascoda_make_binary(knx-iot-chilidev-pb CASCODA_BUILD_BINARIES)
+cascoda_configure_memory(knx-iot-chilidev-pb 0x1500 0xbc00)

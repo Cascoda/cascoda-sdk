@@ -15,7 +15,7 @@ target_link_libraries(ocf-cli-thermometer
 target_include_directories(ocf-cli-thermometer BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include_thermometer)
 
 cascoda_configure_memory(ocf-cli-thermometer 0x1700 0xb000)
-cascoda_make_binary(ocf-cli-thermometer)
+cascoda_make_binary(ocf-cli-thermometer CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-sleepy-thermometer
     ${PROJECT_SOURCE_DIR}/example_sleepy_thermometer.c
@@ -33,7 +33,7 @@ target_include_directories(ocf-sleepy-thermometer BEFORE PUBLIC ${PROJECT_SOURCE
 
 cascoda_configure_memory(ocf-sleepy-thermometer 0x1700 0xb000)
 target_compile_definitions(ocf-sleepy-thermometer PRIVATE)
-cascoda_make_binary(ocf-sleepy-thermometer)
+cascoda_make_binary(ocf-sleepy-thermometer CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-wakeful-thermometer
     ${PROJECT_SOURCE_DIR}/example_wakeful_thermometer.c
@@ -53,7 +53,7 @@ target_compile_definitions(ocf-wakeful-thermometer PRIVATE NO_MAIN)
 
 cascoda_configure_memory(ocf-wakeful-thermometer 0x1700 0xb000)
 target_compile_definitions(ocf-wakeful-thermometer PRIVATE)
-cascoda_make_binary(ocf-wakeful-thermometer)
+cascoda_make_binary(ocf-wakeful-thermometer CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-sensorif
     ${PROJECT_SOURCE_DIR}/example_sensorif.c
@@ -72,7 +72,7 @@ target_include_directories(ocf-sensorif BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/incl
 
 cascoda_configure_memory(ocf-sensorif 0x1700 0xb000)
 target_compile_definitions(ocf-sensorif PRIVATE)
-cascoda_make_binary(ocf-sensorif)
+cascoda_make_binary(ocf-sensorif CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-sensorif-unsecure
     ${PROJECT_SOURCE_DIR}/example_sensorif.c
@@ -91,7 +91,7 @@ target_include_directories(ocf-sensorif-unsecure BEFORE PUBLIC ${PROJECT_SOURCE_
 
 cascoda_configure_memory(ocf-sensorif-unsecure 0x1700 0xb000)
 target_compile_definitions(ocf-sensorif-unsecure PRIVATE)
-cascoda_make_binary(ocf-sensorif-unsecure)
+cascoda_make_binary(ocf-sensorif-unsecure CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-light
     ${PROJECT_SOURCE_DIR}/example_light.c
@@ -111,7 +111,7 @@ target_include_directories(ocf-light BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_compile_definitions(ocf-light PRIVATE NO_MAIN)
 
 cascoda_configure_memory(ocf-light 0x1700 0xc400)
-cascoda_make_binary(ocf-light)
+cascoda_make_binary(ocf-light CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-reed-light
     ${PROJECT_SOURCE_DIR}/example_light.c
@@ -129,8 +129,8 @@ target_include_directories(ocf-reed-light BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/in
 
 target_compile_definitions(ocf-reed-light PRIVATE NO_MAIN)
 
-cascoda_configure_memory(ocf-reed-light 0x1700 0xba00)
-cascoda_make_binary(ocf-reed-light)
+cascoda_configure_memory(ocf-reed-light 0x1600 0xb700)
+cascoda_make_binary(ocf-reed-light CASCODA_BUILD_BINARIES)
 
 add_executable(ocf-reed-module
     ${PROJECT_SOURCE_DIR}/example_module.c
@@ -148,5 +148,6 @@ target_include_directories(ocf-reed-module BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/i
 
 target_compile_definitions(ocf-reed-module PRIVATE NO_MAIN)
 
-cascoda_configure_memory(ocf-reed-module 0x1700 0xba00)
-cascoda_make_binary(ocf-reed-module)
+cascoda_configure_memory(ocf-reed-module 0x1600 0xb700)
+
+cascoda_make_binary(ocf-reed-module CASCODA_BUILD_BINARIES)

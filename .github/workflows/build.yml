@@ -68,17 +68,15 @@ jobs:
         path: ${{ github.workspace }}/build-ocf-chili2-win/lib
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
-        check_artifacts: true
-        search_artifacts: true
 
-    - name: configure OCF chili build on windows
-      run: |
-        arm-none-eabi-gcc --version
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-ocf-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_LOG_LEVEL=CRIT
+    # - name: configure OCF chili build on windows
+    #   run: |
+    #     arm-none-eabi-gcc --version
+    #     cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-ocf-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_LOG_LEVEL=CRIT
 
-    - name: build OCF chili binaries on windows
-      run: |
-        mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4
+    # - name: build OCF chili binaries on windows
+    #   run: |
+    #     mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4
 
 
     - name: configure KNX chili build on windows
@@ -86,8 +84,7 @@ jobs:
         arm-none-eabi-gcc --version
         New-Item -Type dir ${{ github.workspace }}\build-knx-chili2-win\lib
         Copy-Item -Path ${{ github.workspace }}\build-ocf-chili2-win\lib\libkis-port.a -Destination ${{ github.workspace }}\build-knx-chili2-win\lib
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
-        cmake.exe -B "${{ github.workspace }}\build-knx-chili2-win"
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_REV=1 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
       continue-on-error: true
 
     - name: build KNX chili binaries on windows
@@ -120,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OCF_TARGETS: 'ocf-light ocf-reed-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sensorif ocf-sensorif-unsecure ocf-reed-module'
-      KNX_TARGETS: 'knx-iot-chilidev-pb knx-iot-chilidev-sa knx-iot-chilidev-therm knx-iot-lamp knx-iot-lamp-dev knx-iot-pb2 knx-iot-wiska'
+      KNX_TARGETS: 'knx-iot-chilidev-pb knx-iot-chilidev-sa knx-iot-chilidev-therm'
 
     steps:
     - uses: actions/checkout@v2
@@ -174,19 +171,16 @@ jobs:
         path: ${{ github.workspace }}/build-chili2/lib
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
-        check_artifacts: true
-        search_artifacts: true
 
-    - name: build Chili2S-UART0-1Mbaud-OCF
-      run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
-        make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
-        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-uart
+    # - name: build Chili2S-UART0-1Mbaud-OCF
+    #   run: |
+    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
+    #     make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
+    #     cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-uart
 
     - name: clean up build directory
       run: |
         rm -rf ${{ github.workspace }}/build-chili2
-        mkdir ${{ github.workspace }}/build-chili2
 
     - name: download static libs after cleanup
       uses: dawidd6/action-download-artifact@v2.24.0
@@ -197,15 +191,13 @@ jobs:
         path: ${{ github.workspace }}/build-chili2/lib
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
-        check_artifacts: true
-        search_artifacts: true
 
     # We configure non-ocf chili build first because building OCF adds bloat to MBedTls, which increases all openthread binary sizes.
     - name: configure Chili2D-USB
       run: |
         arm-none-eabi-gcc --version
         #TODO: Temporary workaround, shouldnt need to do this
-        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=OFF -DCASCODA_BUILD_SECURE_LWM2M=ON -DCASCODA_BUILD_KNX=ON || true
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=OFF -DCASCODA_BUILD_SECURE_LWM2M=ON || true
         #TODO: Temporary workaround, shouldn't need to configure twice.
         cmake ${{ github.workspace }}/build-chili2
         mkdir ${{ github.workspace }}/upload-usb
@@ -220,6 +212,14 @@ jobs:
         popd
         cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/upload-usb
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/upload-usb/readme.txt
+
+    # For continuous integration only. Will not yet create an artifact for release.
+
+    - name: build Chili2D-USB-KNX
+      run: |
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_CHILI2_REV=1 -DCASCODA_BUILD_KNX=ON
+        make -C ${{ github.workspace }}/build-chili2 -j4 $KNX_TARGETS
+        cp ${{ github.workspace }}/build-chili2/bin/knx-*.bin ${{ github.workspace }}/upload-usb
         
         # copy knx port library
         if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
@@ -227,18 +227,16 @@ jobs:
           cp ${{ github.workspace }}/build-chili2/lib/libkis-port.a ${{ github.workspace }}/upload-lib
         fi
 
-    # For continuous integration only. Will not yet create an artifact for release.
+    # - name: build Chili2D-USB-OCF
+    #   run: |
+    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_KNX=OFF -DCASCODA_CHILI2_CONFIG_STRING=TWO_SIDED -DCASCODA_CHILI2_REV=0 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16 
+    #     make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
+    #     cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-usb
 
-    - name: build Chili2D-USB-OCF
-      run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16 -DCASCODA_BUILD_KNX=OFF
-        make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
-        cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-usb
-
-        if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
-        then
-          cp ${{ github.workspace }}/build-chili2/lib/libiotivity-port.a ${{ github.workspace }}/upload-lib
-        fi
+    #     if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
+    #     then
+    #       cp ${{ github.workspace }}/build-chili2/lib/libiotivity-port.a ${{ github.workspace }}/upload-lib
+    #     fi
 
 
     - name: Upload Chili2S-UART0-1Mbaud
@@ -320,8 +318,6 @@ jobs:
         path: ./Chili2-Lib
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
-        check_artifacts: true
-        search_artifacts: true
 
     # Zip them back up
     - name: Zip the release assets

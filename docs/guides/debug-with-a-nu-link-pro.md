@@ -1,6 +1,6 @@
 # Nuvoton OpenOCD Guide #
 
-[OpenOCD-Nuvoton.zip](https://github.com/Cascoda/cascoda-sdk-priv/files/3596028/OpenOCD-Nuvoton.zip)
+[OpenOCD-Nuvoton.zip](https://github.com/Cascoda/cascoda-sdk/files/10031853/OpenOCD-Nuvoton.zip)
 
 This archive contains all the necessary files for running Nuvoton's OpenOCD
 build on 32- and 64-bit Windows machine. Unfortunately, GitHub does not allow

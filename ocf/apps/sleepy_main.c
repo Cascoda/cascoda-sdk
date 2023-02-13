@@ -183,7 +183,6 @@ int main(void)
 		PlatformSleep(30000);
 	} while (1);
 
-	linkMode.mSecureDataRequests = true;
 	otLinkSetPollPeriod(OT_INSTANCE, 500);
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
 

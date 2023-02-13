@@ -36,13 +36,13 @@
 namespace ca {
 
 List::List()
-    : Command("list", "Utility for listing connected chili devices\n  type 'list -h' for more info")
+    : Command("list", "Utility for listing connected chili devices\n  type 'list -h' for more info\n")
     , mArgParser()
     , mHelpArg('h', "help")
-    , mAvailableArg('\0', "available", ArgOpt::OPTIONAL)
-    , mExtFlashAvailableArg('\0', "ext-flash-available", ArgOpt::OPTIONAL)
-    , mSerialArg('s', "serialno", ArgOpt::MANDATORY)
-    , mMinVersionArg('v', "min-version", ArgOpt::MANDATORY)
+    , mAvailableArg('\0', "available", ArgOpt::OPTIONAL_ARG)
+    , mExtFlashAvailableArg('\0', "ext-flash-available", ArgOpt::OPTIONAL_ARG)
+    , mSerialArg('s', "serialno", ArgOpt::MANDATORY_ARG)
+    , mMinVersionArg('v', "min-version", ArgOpt::MANDATORY_ARG)
     , mDeviceList()
     , mDeviceListFilter()
     , mExitBeforeWork(false)

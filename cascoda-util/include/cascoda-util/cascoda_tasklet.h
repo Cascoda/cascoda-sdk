@@ -65,8 +65,8 @@ typedef ca_error (*ca_tasklet_callback)(void *context);
 typedef struct ca_tasklet
 {
 	ca_tasklet_callback callback; //!< Internal: The callback that will be called when the tasklet is triggered
-	void *              context;  //!< Internal: The context that will be passed to the callback when it is called.
-	struct ca_tasklet * next; //!< Internal: The next tasklet in the sorted tasklet linkedlist. NULL when not queued.
+	void               *context;  //!< Internal: The context that will be passed to the callback when it is called.
+	struct ca_tasklet  *next; //!< Internal: The next tasklet in the sorted tasklet linkedlist. NULL when not queued.
 	uint32_t            fireTime;      //!< Internal: The next time at which the tasklet is due to trigger
 	uint8_t             scheduled : 1; //!< Internal: Is this tasklet scheduled?
 } ca_tasklet;

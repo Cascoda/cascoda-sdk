@@ -207,8 +207,8 @@ static uint8_t prv_firmware_read(uint16_t instanceId, int *numDataP, lwm2m_data_
 
 static uint8_t prv_firmware_write(uint16_t           instanceId,
                                   int                numData,
-                                  lwm2m_data_t *     dataArray,
-                                  lwm2m_object_t *   objectP,
+                                  lwm2m_data_t      *dataArray,
+                                  lwm2m_object_t    *objectP,
                                   lwm2m_write_type_t writeType)
 {
 	int     i;
@@ -258,7 +258,7 @@ static uint8_t prv_firmware_write(uint16_t           instanceId,
 
 static uint8_t prv_firmware_execute(uint16_t        instanceId,
                                     uint16_t        resourceId,
-                                    uint8_t *       buffer,
+                                    uint8_t        *buffer,
                                     int             length,
                                     lwm2m_object_t *objectP)
 {

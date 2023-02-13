@@ -73,9 +73,13 @@ static otError convertError(ca_error error)
 }
 
 // settings API
-void otPlatSettingsInit(otInstance *aInstance)
+void otPlatSettingsInit(otInstance *aInstance, const uint16_t *aSensitiveKeys, uint16_t aSensitiveKeysLength)
 {
 	OT_UNUSED_VARIABLE(aInstance);
+	(void)aSensitiveKeys;
+	(void)aSensitiveKeysLength;
+
+	// TODO only works on baremetal?
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	caUtilSettingsInit(pDevice, "otConfig", 1);
 }
@@ -152,11 +156,12 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 
 void otPlatSettingsWipe(otInstance *aInstance)
 {
+	OT_UNUSED_VARIABLE(aInstance);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	//Wipe the settings, caching the joiner credential, which persists.
 	const char *cred = PlatformGetJoinerCredential(aInstance);
 
 	caUtilSettingsWipe(pDevice, "otConfig", 1);
 
-	caUtilSettingsSet(pDevice, joiner_credential_key, cred, strlen(cred));
+	caUtilSettingsSet(pDevice, joiner_credential_key, (const uint8_t *)cred, strlen(cred));
 }

@@ -1,6 +1,4 @@
 # cascoda-bm-driver
-This directory contains portable firmware for baremetal platforms using a CA-821x transceiver.
-
 The cascoda-bm-core module contains the base functionality for communicating with a CA-821x using the ca821x-api. This module contains extended functionality including the device side of the EVBME commands and other system control.
 
 ## Usage

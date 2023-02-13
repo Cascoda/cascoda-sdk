@@ -73,7 +73,7 @@ typedef struct
 	u16_t               pageSize;         //!< Size (in bytes) of a page in the external flash
 	ExtFlashAPICallback otaCallback;      //!< Callback set internally for the OTA upgrade procedure
 	ExtFlashAPICallback upstreamCallback; //!< User-defined callback used to specify an upstream response
-	u8_t *              data;             //!< Data to write
+	u8_t               *data;             //!< Data to write
 } ExtFlashWriteInfo;
 
 /****** Information used for reading and checking procedures ******/

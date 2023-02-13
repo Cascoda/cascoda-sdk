@@ -421,7 +421,7 @@ int main(void)
 	otIp6AddressFromString("fd00:db8::", &address);
 	otIp6SubscribeMulticastAddress(OT_INSTANCE, &address);
 
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	if (otDatasetIsCommissioned(OT_INSTANCE))
 		otThreadSetEnabled(OT_INSTANCE, true);

@@ -30,7 +30,6 @@
 #include <stdlib.h>
 
 #include "openthread/platform/spi-slave.h"
-#include "openthread/platform/uart.h"
 
 #include "ca821x-posix-thread/posix-platform.h"
 
@@ -38,7 +37,7 @@
 
 otError otPlatSpiSlaveEnable(otPlatSpiSlaveTransactionCompleteCallback aCallback,
                              otPlatSpiSlaveTransactionProcessCallback  aProcessCallback,
-                             void *                                    aContext)
+                             void                                     *aContext)
 {
 	(void)aCallback;
 	(void)aProcessCallback;

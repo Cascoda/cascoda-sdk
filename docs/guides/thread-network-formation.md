@@ -21,20 +21,11 @@ After forming a network, new devices can be added to it by following [the commis
 
 ### Forming a network using the OR-BR Web UI
 
-The OT-BR Forming process uses the OpenThread Border Router web portal. It provides an example for how a production border router might allow a customer to form a new Thread Network.
-
-1. Browse to the OpenThread border router web GUI, which is hosted at the local IP address of the border router, port 80
-2. Navigate to the Form tab on the left hand side
-3. Fill in the fields, choosing random values for Extended PAN ID, PAN ID and Network Key. The 'passphrase' field is the Commissioner Credential/Admin Password.
-
+1. Browse to the Border Router Web GUI, which is hosted http://openwrt.local. (Note: If you have renamed your border router, replace "openwrt" with that name.)
+1. Navigate to the "Thread" section, found under "Network" under the navigation tab, and press the "Create" button.
+2. Fill in the fields, choosing random values for Extended PAN ID, PAN ID and Network Key. The "Network Password" field must contain the Pre-Shared Key for the Commissioner (PSKc). This is generated using the `pskc` tool included on the Border Router, under `System - Custom Commands`. [The documentation for using this tool lives on the OpenThread website.](https://openthread.io/guides/border-router/tools#pskc_generator)
+1. Click "Save and Apply"
 <p align="center"><img src="img/thread-form/form-web-gui.png" width="80%" align="center"></p>
-
-4. Click 'Form'
-
-#### Known issues
-
-The Web UI is a development tool, and forces the user to choose parameters (such as network key) which should be randomly generated.
-This allows flexibility for development & debugging purposes, but should not be the case for real world border routers.
 
 ### Forming a network using the OpenThread CLI
 

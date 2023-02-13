@@ -216,8 +216,8 @@ static bool prv_add_ac_val(acc_ctrl_oi_t *accCtrlOiP, uint16_t acResId, uint16_t
 
 static uint8_t prv_write_resources(uint16_t           instanceId,
                                    int                numData,
-                                   lwm2m_data_t *     tlvArray,
-                                   lwm2m_object_t *   objectP,
+                                   lwm2m_data_t      *tlvArray,
+                                   lwm2m_object_t    *objectP,
                                    bool               doCreate,
                                    lwm2m_write_type_t writeType)
 {
@@ -471,8 +471,8 @@ static uint8_t prv_write_resources(uint16_t           instanceId,
 
 static uint8_t prv_write(uint16_t           instanceId,
                          int                numData,
-                         lwm2m_data_t *     tlvArray,
-                         lwm2m_object_t *   objectP,
+                         lwm2m_data_t      *tlvArray,
+                         lwm2m_object_t    *objectP,
                          lwm2m_write_type_t writeType)
 {
 	return prv_write_resources(instanceId, numData, tlvArray, objectP, false, writeType);

@@ -96,10 +96,10 @@ exit:
 	return error;
 }
 
-ca_error ca821x_util_init_path(struct ca821x_dev *       pDeviceRef,
+ca_error ca821x_util_init_path(struct ca821x_dev        *pDeviceRef,
                                ca821x_errorhandler       errorHandler,
                                enum ca821x_exchange_type exchangeType,
-                               const char *              path)
+                               const char               *path)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 
@@ -160,7 +160,7 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef)
 struct dev_info_context
 {
 	util_device_found callback; //!< User callback
-	void *            context;  //!< Context to provide to user callback
+	void             *context;  //!< Context to provide to user callback
 	ca_error          status;   //!< Status of the enumeration
 };
 

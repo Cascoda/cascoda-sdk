@@ -56,15 +56,7 @@
  ******************************************************************************/
 static int tempsense_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
-	int ret = 0;
-	if ((ret = TEST15_4_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
-	/* Insert Application-Specific Dispatches here in the same style */
-	if ((ret = CHILI_TEST_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
-	if ((ret = TEMPSENSE_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef)))
-		return ret;
-	return 0;
+	return (TEMPSENSE_UpStreamDispatch((struct SerialBuffer *)(buf), pDeviceRef));
 }
 
 /******************************************************************************/
@@ -87,21 +79,13 @@ int main(void)
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
 	/* Insert Application-Specific Initialisation Routines here */
 	TEMPSENSE_Initialise(StartupStatus, &dev);
-	CHILI_TEST_Initialise(StartupStatus, &dev);
 
 	/* Endless Polling Loop */
 	while (1)
 	{
 		cascoda_io_handler(&dev);
 
-		// Insert Application-Specific Event Handlers here
-		if (CHILI_TEST_IsInTestMode())
-		{
-			CHILI_TEST_Handler(&dev);
-		}
-		else
-		{
-			TEMPSENSE_Handler(&dev);
-		}
+		TEMPSENSE_Handler(&dev);
+
 	} // while(1)
 }

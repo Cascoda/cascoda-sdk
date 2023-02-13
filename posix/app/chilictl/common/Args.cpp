@@ -43,9 +43,9 @@ ArgOpt::ArgOpt(char aShortArg, const char *aLongArg, ArgPerm aArgPerm)
     , callback()
     , count(0)
 {
-	if (aArgPerm == ArgPerm::OPTIONAL)
+	if (aArgPerm == ArgPerm::OPTIONAL_ARG)
 		optional_arg = true;
-	if (aArgPerm == ArgPerm::MANDATORY)
+	if (aArgPerm == ArgPerm::MANDATORY_ARG)
 		mandatory_arg = true;
 }
 
@@ -205,7 +205,7 @@ ca_error Args::process_long_opt(int &argi, int argc, const char *argv[])
 	const char *nextarg   = (argi + 1) < argc ? argv[argi + 1] : NULL;
 	size_t      optlen    = 0;
 	size_t      arglen    = 0;
-	ArgOpt *    found_opt = NULL;
+	ArgOpt     *found_opt = NULL;
 	(void)argc;
 
 	argi += 1;

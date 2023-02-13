@@ -197,14 +197,14 @@ exit:
 	return error;
 }
 
-/**
+/*
  * Handle the lwip cli command from the openthread CLI using the lwip callback api.
- * @param argc arg count
- * @param argv arg vector
  */
-void handle_cli_lwipdemo(int argc, char *argv[])
+void handle_cli_lwipdemo(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc <= 0)
+	(void)aContext;
+
+	if (aArgsLength <= 0)
 	{
 		otCliOutputFormat("lwip - print help\r\n");
 		otCliOutputFormat("lwip tcp - print status\r\n");
@@ -216,9 +216,9 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 		return;
 	}
 
-	if (strcmp(argv[0], "tcp") == 0)
+	if (strcmp(aArgs[0], "tcp") == 0)
 	{
-		if (argc <= 1)
+		if (aArgsLength <= 1)
 		{
 			otCliOutputFormat("incoming socket ");
 			if (demo_isocket)
@@ -234,10 +234,10 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			return;
 		}
 		//strncmp is used so 'con', 'connect' etc are all accepted
-		if (strncmp(argv[1], "con", 3) == 0)
+		if (strncmp(aArgs[1], "con", 3) == 0)
 		{
 			ip_addr_t daddr;
-			if (argc < 3)
+			if (aArgsLength < 3)
 			{
 				otCliOutputFormat("'tcp con' expects IP address argument\r\n");
 				return;
@@ -247,7 +247,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 				otCliOutputFormat("CLI demo program only supports single outgoing TCP connection\r\n");
 				return;
 			}
-			if (!ipaddr_aton(argv[2], &daddr))
+			if (!ipaddr_aton(aArgs[2], &daddr))
 			{
 				otCliOutputFormat("Invalid IP address\r\n");
 				return;
@@ -261,15 +261,15 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			tcp_err(demo_osocket, &demo_tcperr);
 		}
 		//strncmp is used so 'sen', 'send' etc are all accepted
-		else if (strncmp(argv[1], "sen", 3) == 0)
+		else if (strncmp(aArgs[1], "sen", 3) == 0)
 		{
-			for (int i = 2; i < argc; i++)
+			for (int i = 2; i < aArgsLength; i++)
 			{
 				err_t err    = ERR_OK;
 				u8_t  flags  = TCP_WRITE_FLAG_COPY;
-				bool  isLast = (i == argc - 1);
+				bool  isLast = (i == aArgsLength - 1);
 
-				err = tcp_write(demo_osocket, argv[i], strlen(argv[i]), TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE);
+				err = tcp_write(demo_osocket, aArgs[i], strlen(aArgs[i]), TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE);
 
 				if (isLast)
 					err = tcp_write(demo_osocket, "\0", 1, TCP_WRITE_FLAG_COPY);
@@ -279,7 +279,7 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 			tcp_output(demo_osocket);
 		}
 		//strncmp is used so 'clo', 'close' etc are all accepted
-		else if (strncmp(argv[1], "clo", 3) == 0)
+		else if (strncmp(aArgs[1], "clo", 3) == 0)
 		{
 			err_t err    = tcp_close(demo_osocket);
 			demo_osocket = NULL;
@@ -290,28 +290,28 @@ void handle_cli_lwipdemo(int argc, char *argv[])
 				otCliOutputFormat("Closed outgoing TCP Socket\r\n");
 		}
 	}
-	else if (strcmp(argv[0], "dns") == 0)
+	else if (strcmp(aArgs[0], "dns") == 0)
 	{
-		if (argc == 2)
+		if (aArgsLength == 2)
 		{
 			err_t     rval = ERR_OK;
 			ip_addr_t ip_in;
 
-			rval = dns_gethostbyname(argv[1], &ip_in, &demo_dnsfound, NULL);
+			rval = dns_gethostbyname(aArgs[1], &ip_in, &demo_dnsfound, NULL);
 
 			if (rval == ERR_OK)
-				demo_dnsfound(argv[1], &ip_in, NULL);
+				demo_dnsfound(aArgs[1], &ip_in, NULL);
 			else if (rval == ERR_INPROGRESS)
 				otCliOutputFormat("Resolving...\r\n");
 			else
-				demo_dnsfound(argv[1], NULL, NULL);
+				demo_dnsfound(aArgs[1], NULL, NULL);
 		}
 		//strncmp is used so 'ser', 'server' etc are all accepted
-		else if (argc == 3 && strncmp(argv[1], "ser", 3) == 0)
+		else if (aArgsLength == 3 && strncmp(aArgs[1], "ser", 3) == 0)
 		{
 			ip_addr_t dnsServer = {};
 
-			if (otIp6AddressFromString(argv[2], (otIp6Address *)(&dnsServer)) == OT_ERROR_NONE)
+			if (otIp6AddressFromString(aArgs[2], (otIp6Address *)(&dnsServer)) == OT_ERROR_NONE)
 			{
 #if LWIP_IPV4
 				dnsServer.type = IPADDR_TYPE_V6;

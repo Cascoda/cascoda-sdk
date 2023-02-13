@@ -109,7 +109,7 @@ u8_t SerialGetCommand(void)
 {
 	//TODO: Rval not useful
 	u8_t        Count;
-	u8_t *      UsbRxFrag;
+	u8_t       *UsbRxFrag;
 	static u8_t SerialCount = 0;
 
 	if (SerialRxPending)

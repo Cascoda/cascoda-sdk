@@ -117,3 +117,19 @@ ca_error RAND_GetCryptoBytes(uint16_t aNumBytes, void *aBytesOut)
 
 	return CA_ERROR_FAIL;
 }
+
+void RAND_AddRadioEntropySource(void)
+{
+	static bool                    isInitialised = false;
+	static mbedtls_entropy_context sEntropy;
+
+	assert(entropyDev);
+
+	if (!isInitialised)
+	{
+		mbedtls_entropy_init(&sEntropy);
+		mbedtls_entropy_add_source(
+		    &sEntropy, &getEntropy, entropyDev, MBEDTLS_ENTROPY_MIN_HARDWARE, MBEDTLS_ENTROPY_SOURCE_STRONG);
+		isInitialised = true;
+	}
+}

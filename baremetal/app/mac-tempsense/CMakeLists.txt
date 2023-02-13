@@ -20,4 +20,4 @@ target_include_directories( mac-tempsense
 	)
 
 # convert to bin file format
-cascoda_make_binary(mac-tempsense)
+cascoda_make_binary(mac-tempsense CASCODA_BUILD_BINARIES)

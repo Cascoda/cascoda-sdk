@@ -46,31 +46,31 @@
 #include "mikrosdk_app.h"
 
 #if MIKROSDK_TEST_AIRQUALITY4
-#include "airquality4.h"
+#include "airquality4_click.h"
 #endif
 #if MIKROSDK_TEST_ENVIRONMENT2
-#include "environment2.h"
+#include "environment2_click.h"
 #endif
 #if MIKROSDK_TEST_HVAC
-#include "hvac.h"
+#include "hvac_click.h"
 #endif
 #if MIKROSDK_TEST_MOTION
-#include "motion.h"
+#include "motion_drv_click.h"
 #endif
 #if MIKROSDK_TEST_RELAY
-#include "relay.h"
+#include "relay_click.h"
 #endif
 #if MIKROSDK_TEST_THERMO
-#include "thermo.h"
+#include "thermo_click.h"
 #endif
 #if MIKROSDK_TEST_THERMO3
-#include "thermo3.h"
+#include "thermo3_click.h"
 #endif
 #if MIKROSDK_TEST_SHT
-#include "sht.h"
+#include "sht_click.h"
 #endif
 #if MIKROSDK_TEST_SPS30
-#include "sps30.h"
+#include "sps30_click.h"
 #endif
 
 u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
@@ -91,7 +91,7 @@ u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 	status |= MIKROSDK_HVAC_Initialise();
 #endif
 #if (MIKROSDK_TEST_MOTION)
-	motion_pin_mapping(6, 5);
+	MIKROSDK_MOTION_pin_mapping(6, 5);
 	status |= MIKROSDK_MOTION_Initialise();
 #endif
 #if (MIKROSDK_TEST_RELAY)
@@ -103,6 +103,7 @@ u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 	status |= MIKROSDK_THERMO_Initialise();
 #endif
 #if (MIKROSDK_TEST_THERMO3)
+	MIKROSDK_THERMO3_pin_mapping(5);
 	SENSORIF_I2C_Config(1);
 	status |= MIKROSDK_THERMO3_Initialise();
 #endif
@@ -151,7 +152,7 @@ void MIKROSDK_Handler(struct ca821x_dev *pDeviceRef)
 
 /******************************************************************************/
 /*******************************************
- * This function convert a floating point value to a number with 
+ * This function convert a floating point value to a number with
  * integer and decimal. User can define its precision
 *******************************************************************************
  ******************************************************************************/
@@ -358,10 +359,10 @@ void MIKROSDK_Handler_HVAC(void)
 #if (MIKROSDK_TEST_MOTION)
 void MIKROSDK_Handler_MOTION(void)
 {
-	static u8_t           ticker = 0;
-	u32_t                 t1, t2;
-	static u8_t           handled = 0;
-	motion_detect_state_t state;
+	static u8_t                   ticker = 0;
+	u32_t                         t1, t2;
+	static u8_t                   handled = 0;
+	motion_detect_state_changes_t state;
 
 	/* Note:
 	 * This is a tick based handler for polling only
@@ -374,28 +375,28 @@ void MIKROSDK_Handler_MOTION(void)
 		++ticker;
 		handled = 1;
 		t1      = TIME_ReadAbsoluteTime();
-		state   = motion_get_detected(); /* detect motion */
+		state   = MIKROSDK_MOTION_get_detected(); /* detect motion */
 		t2      = TIME_ReadAbsoluteTime();
 		printf("Meas %u:", ticker);
 
 		switch (state)
 		{
-		case MOTION_NO_DETECT:
+		case MOTION_CH_NO_DETECT:
 			printf(" Number: %d \n", ticker);
 			printf("  There is no movement\n");
 			printf("-------------------------\n");
 			break;
-		case MOTION_NOT_PRESENCE:
+		case MOTION_CH_NOT_PRESENT:
 			printf(" Number: %d \n", ticker);
 			printf("  No movement presence\n");
 			printf("-------------------------\n");
 			break;
-		case MOTION_DETECTED:
+		case MOTION_CH_DETECTED:
 			printf(" Number: %d \n", ticker);
 			printf(" > Motion detected! <\n");
 			printf("-------------------------\n");
 			break;
-		case MOTION_PRESENCE:
+		case MOTION_CH_PRESENT:
 			printf(" Number: %d \n", ticker);
 			printf(" > Ongoing Motion detected! <\n");
 			printf("-------------------------\n");
@@ -548,9 +549,9 @@ void MIKROSDK_Handler_THERMO3(void)
 		++ticker;
 		handled = 1;
 		SENSORIF_I2C_Init(); /* enable interface */
-		t1   = TIME_ReadAbsoluteTime();
-		temp = get_temperature(); /* read TMP102 temperature */
-		t2   = TIME_ReadAbsoluteTime();
+		t1 = TIME_ReadAbsoluteTime();
+		MIKROSDK_THERMO3_get_temperature(&temp); /* read TMP102 temperature */
+		t2 = TIME_ReadAbsoluteTime();
 		SENSORIF_I2C_Deinit(); /* disable interface */
 		printf("Meas %u:", ticker);
 		printf("; Temperature=");

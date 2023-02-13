@@ -6,7 +6,7 @@ if(NOT OT_COAP)
 endif()
 
 #Only build the actuator demo on the chili2
-if(TARGET cascoda-chili2)
+if(TARGET chili2)
 	add_executable(ot-cli-actuator
 		${PROJECT_SOURCE_DIR}/source/thread_actuator_bm.c
 		${PROJECT_SOURCE_DIR}/source/actuatordemo.c
@@ -15,5 +15,5 @@ if(TARGET cascoda-chili2)
 		PRIVATE ${PROJECT_SOURCE_DIR}/include
 		)
 	target_link_libraries(ot-cli-actuator openthread-cli-ftd ca821x-openthread-bm-ftd tinycbor-master)
-	cascoda_make_binary(ot-cli-actuator)
+	cascoda_make_binary(ot-cli-actuator CASCODA_BUILD_BINARIES)
 endif()

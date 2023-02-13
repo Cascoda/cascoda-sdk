@@ -27,8 +27,11 @@
 #include "mbedtlsconnection.h"
 #include "object_security.h"
 
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/entropy.h"
+
 static connection_t conpool[CONPOOL_SIZE] = {}; //!< Pool of connection data structs
-static otMessage *  rxMessage; //!< Receive message pointer, only used to pass received message to callback.
+static otMessage   *rxMessage; //!< Receive message pointer, only used to pass received message to callback.
 
 static connection_t *GetFreeCon()
 {
@@ -188,7 +191,7 @@ static int mbedtls_ssl_send(void *ctx, const unsigned char *buf, size_t len)
 {
 	connection_t *connection = ctx;
 	otMessageInfo messageInfo;
-	otMessage *   msg = otUdpNewMessage(connection->otInstance, NULL);
+	otMessage    *msg = otUdpNewMessage(connection->otInstance, NULL);
 	otError       err;
 
 	if (len > LINK_MTU)
@@ -203,7 +206,7 @@ static int mbedtls_ssl_send(void *ctx, const unsigned char *buf, size_t len)
 	if (err)
 		goto exit;
 
-	err = otUdpSend(&(connection->socket), msg, &messageInfo);
+	err = otUdpSend(connection->otInstance, &(connection->socket), msg, &messageInfo);
 	if (err)
 		goto exit;
 
@@ -258,6 +261,9 @@ static int mbedtls_ssl_recv(void *ctx, unsigned char *buf, size_t len)
 	return length;
 }
 
+static mbedtls_entropy_context  entropy_ctx;
+static mbedtls_ctr_drbg_context ctr_drbg_ctx;
+
 static void connection_dns_callback(ca_error aError, const otIp6Address *aAddress, dns_index aIndex, void *aContext)
 {
 	connection_t *connection = aContext;
@@ -274,9 +280,10 @@ static void connection_dns_callback(ca_error aError, const otIp6Address *aAddres
 
 		otErr = otUdpOpen(connection->otInstance, &(connection->socket), &connection_udp_receive, connection);
 		if (!otErr)
-			otErr = otUdpBind(&(connection->socket), &(connection->socket.mSockName));
+			otErr = otUdpBind(
+			    connection->otInstance, &(connection->socket), &(connection->socket.mSockName), OT_NETIF_UNSPECIFIED);
 		if (!otErr)
-			otErr = otUdpConnect(&(connection->socket), &sa);
+			otErr = otUdpConnect(connection->otInstance, &(connection->socket), &sa);
 
 		if (otErr)
 		{
@@ -292,7 +299,12 @@ static void connection_dns_callback(ca_error aError, const otIp6Address *aAddres
 		    &connection->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_DATAGRAM, MBEDTLS_SSL_PRESET_DEFAULT);
 		//mbedtls_ssl_conf_authmode(&connection->conf, MBEDTLS_SSL_VERIFY_REQUIRED); //Pick one! (probably this one for prod)
 		mbedtls_ssl_conf_authmode(&connection->conf, MBEDTLS_SSL_VERIFY_NONE); //Pick one!
-		mbedtls_ssl_conf_rng(&connection->conf, mbedtls_ctr_drbg_random, otRandomCryptoMbedTlsContextGet());
+
+		mbedtls_ctr_drbg_init(&ctr_drbg_ctx);
+		mbedtls_entropy_init(&entropy_ctx);
+		mbedtls_ctr_drbg_seed(&ctr_drbg_ctx, mbedtls_entropy_func, &entropy_ctx, NULL, 0);
+
+		mbedtls_ssl_conf_rng(&connection->conf, mbedtls_ctr_drbg_random, &ctr_drbg_ctx);
 		mbedtls_ssl_conf_min_version(&connection->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 		mbedtls_ssl_conf_max_version(&connection->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 
@@ -363,8 +375,8 @@ exit:
 ca_error split_hostname(char *uri, char **hostp, char **portp)
 {
 	ca_error error = CA_ERROR_INVALID_ARGS;
-	char *   host;
-	char *   port;
+	char    *host;
+	char    *port;
 
 	// parse uri in the form "coaps://[host]:[port]"
 	if (0 == strncmp(uri, "coaps://", strlen("coaps://")))
@@ -404,16 +416,16 @@ exit:
 	return error;
 }
 
-connection_t *connection_create(otInstance *     aInstance,
+connection_t *connection_create(otInstance      *aInstance,
                                 lwm2m_context_t *lwm2mH,
-                                lwm2m_object_t * securityObj,
+                                lwm2m_object_t  *securityObj,
                                 int              instanceId)
 {
 	connection_t *connection = connection_new_incoming(aInstance, lwm2mH);
-	const char *  const_uri;
-	char *        uri = NULL;
-	char *        host;
-	char *        port;
+	const char   *const_uri;
+	char	     *uri = NULL;
+	char	     *host;
+	char	     *port;
 	int           porti = 0;
 	ca_error      error;
 
@@ -461,7 +473,7 @@ void connection_free(connection_t *con)
 {
 	mbedtls_ssl_free(&con->ssl);
 	mbedtls_ssl_config_free(&con->conf);
-	otUdpClose(&con->socket);
+	otUdpClose(con->otInstance, &con->socket);
 	con->inUse    = false;
 	con->isSecure = false;
 	TASKLET_Cancel(&con->mbedtls_tasklet);
@@ -470,7 +482,7 @@ void connection_free(connection_t *con)
 static ca_error connection_send(connection_t *connP, uint8_t *buffer, size_t length)
 {
 	otMessageInfo messageInfo;
-	otMessage *   msg = otUdpNewMessage(connP->otInstance, NULL);
+	otMessage    *msg = otUdpNewMessage(connP->otInstance, NULL);
 	otError       err;
 
 	if (length > LINK_MTU)
@@ -485,7 +497,7 @@ static ca_error connection_send(connection_t *connP, uint8_t *buffer, size_t len
 	if (err)
 		goto exit;
 
-	err = otUdpSend(&(connP->socket), msg, &messageInfo);
+	err = otUdpSend(connP->otInstance, &(connP->socket), msg, &messageInfo);
 	if (err)
 		goto exit;
 

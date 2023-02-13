@@ -1,3 +1,4 @@
+#include <string.h>
 #include <unistd.h>
 
 #include <openthread/diag.h>
@@ -19,8 +20,10 @@
 
 #include "knx_iot_wakeful_main_extern.h"
 
+#include "api/oc_knx_dev.h"
 #include "port/oc_assert.h"
 #include "port/oc_clock.h"
+#include "manufacturer_storage.h"
 #include "oc_api.h"
 #include "oc_buffer_settings.h"
 #include "oc_core_res.h"
@@ -28,10 +31,10 @@
 #include "sntp_helper.h"
 
 // Used for knxctl (not yet implemented)
-#define KNX_COMMAND (0x00)
-#define KNX_COMMAND_RFOTM (0x01)
-#define KNX_COMMAND_POWER (0x02)
-#define KNX_COMMAND_FACTORY (0x03)
+#define KNX_COMMAND (0xB0)
+#define KNX_COMMAND_STORAGE_RESET (0x00)
+#define KNX_COMMAND_POWER (0x01)
+#define KNX_COMMAND_FACTORY (0x02)
 
 void exit(int e)
 {
@@ -43,6 +46,9 @@ void exit(int e)
 }
 
 otInstance *OT_INSTANCE;
+// Defer publishing of the service until you have the correct IP address
+// to advertise
+void knx_srp_add_service(void);
 
 // To be implemented by the application
 void register_resources(void);
@@ -50,8 +56,9 @@ void factory_presets_cb(size_t device_index, void *data);
 void reset_cb(size_t device_index, int reset_value, void *data);
 void restart_cb(size_t device_index, void *data);
 void hostname_cb(size_t device_index, oc_string_t host_name, void *data);
-void swu_cb(size_t device_index, size_t offset, uint8_t *payload, size_t len, void *data);
-int  app_init(void);
+// void swu_cb(size_t device_index, size_t offset, uint8_t *payload, size_t len, void *data);
+int app_set_serial_number(char *serial_number);
+int app_init(void);
 
 /**
  * @file
@@ -78,14 +85,12 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 {
 	int ret = 0;
 
-	// KNX Commands, to be used with the "knxctl" POSIX application
 	if (buf[0] == KNX_COMMAND)
 	{
 		switch (buf[2])
 		{
-		case KNX_COMMAND_RFOTM:
-			// TODO how reset in knx???
-			// oc_reset();
+		case KNX_COMMAND_STORAGE_RESET:
+			oc_knx_device_storage_reset(0, 2);
 			break;
 		case KNX_COMMAND_POWER:
 			BSP_SystemReset(SYSRESET_APROM);
@@ -114,9 +119,13 @@ static void ot_state_changed(uint32_t flags, void *context)
 	{
 		otDeviceRole role = otThreadGetDeviceRole(OT_INSTANCE);
 		PRINT("Role: %d\n", role);
+	}
+	bool must_update_rtc = (SNTP_GetState() == NO_TIME);
 
-		bool must_update_rtc = (SNTP_GetState() == NO_TIME);
-		if ((role != OT_DEVICE_ROLE_DISABLED && role != OT_DEVICE_ROLE_DETACHED) && must_update_rtc)
+	if (flags & (OT_CHANGED_IP6_ADDRESS_ADDED | OT_CHANGED_IP6_ADDRESS_REMOVED))
+	{
+		knx_srp_add_service();
+		if (must_update_rtc)
 			SNTP_Update();
 	}
 }
@@ -168,7 +177,7 @@ int main(void)
 		cascoda_io_handler(&dev);
 
 		// If the timer has expired, try to join the network
-		if (joinCooldownTimer == 10)
+		if (joinCooldownTimer == 60)
 		{
 			printf("Trying to join Thread network...\n");
 
@@ -183,7 +192,7 @@ int main(void)
 
 		joinCooldownTimer += 1;
 
-		WAIT_ms(50);
+		WAIT_ms(200);
 	} while (1);
 
 	otThreadSetEnabled(OT_INSTANCE, true);
@@ -209,12 +218,39 @@ int main(void)
 
 	oc_storage_config("./knx_iot_creds");
 
+	/* configure the serial number */
+	uint8_t sn[6];
+	int     error = knx_get_stored_serial_number(sn);
+
+	if (error)
+	{
+		PRINT("ERROR: Unique serial number not found! Using default value...\n");
+		PRINT(
+		    "Please create the data file using knx-gen-data and flash it with chilictl in order to fix this issue.\n");
+	}
+	else
+	{
+		// turn binary to hexadecimal
+		char serial_number_str[13];
+		snprintf(serial_number_str,
+		         sizeof(serial_number_str),
+		         "%02X%02X%02X%02X%02X%02X",
+		         sn[0],
+		         sn[1],
+		         sn[2],
+		         sn[3],
+		         sn[4],
+		         sn[5]);
+
+		app_set_serial_number(serial_number_str);
+	}
+
 	/* set the application callbacks */
 	oc_set_hostname_cb(hostname_cb, NULL);
 	oc_set_reset_cb(reset_cb, NULL);
 	oc_set_restart_cb(restart_cb, NULL);
 	oc_set_factory_presets_cb(factory_presets_cb, NULL);
-	oc_set_swu_cb(swu_cb, (void *)"image_name");
+	// oc_set_swu_cb(swu_cb, (void *)"image_name");
 
 	/* start the stack */
 	init = oc_main_init(&handler);

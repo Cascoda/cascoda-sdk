@@ -130,7 +130,7 @@ void *_sbrk(int incr)
 	extern char __HeapLimit;
 
 	static char *heap_end = &__HeapBase; /* Previous end of heap or 0 if none */
-	char *       prev_heap;
+	char        *prev_heap;
 
 	prev_heap = heap_end;
 	heap_end += incr;

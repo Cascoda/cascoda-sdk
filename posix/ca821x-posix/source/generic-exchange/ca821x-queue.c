@@ -89,9 +89,9 @@ void flush_queue(struct buffer_queue *buffer_queue)
 }
 
 size_t pop_from_queue(struct buffer_queue *buffer_queue,
-                      uint8_t *            destBuf,
+                      uint8_t             *destBuf,
                       size_t               maxlen,
-                      struct ca821x_dev ** pDeviceRef_out)
+                      struct ca821x_dev  **pDeviceRef_out)
 {
 	if (pthread_mutex_lock(&buffer_queue->q_mutex) == 0)
 	{

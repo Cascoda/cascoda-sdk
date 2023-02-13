@@ -57,7 +57,6 @@ int main(void)
 {
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */

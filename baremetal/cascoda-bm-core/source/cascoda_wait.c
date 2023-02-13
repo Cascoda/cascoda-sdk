@@ -40,7 +40,7 @@
 #include "mac_messages.h"
 
 static union ca821x_api_callback sTargetCallback;
-static void *                    sCallbackContext    = NULL;
+static void                     *sCallbackContext    = NULL;
 static bool                      sWaitCalled         = false;
 static bool                      sWaitCallbackActive = false;
 static bool                      sWaiting            = false;
@@ -68,8 +68,8 @@ static ca_error WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRe
 
 static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
                                      uint32_t                   aTimeoutMs,
-                                     void *                     aCallbackContext,
-                                     struct ca821x_dev *        pDeviceRef)
+                                     void                      *aCallbackContext,
+                                     struct ca821x_dev         *pDeviceRef)
 {
 	ca_error status    = CA_ERROR_SUCCESS;
 	uint32_t startTime = TIME_ReadAbsoluteTime();
@@ -122,8 +122,8 @@ exit:
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
                            uint32_t                aTimeoutMs,
-                           void *                  aCallbackContext,
-                           struct ca821x_dev *     pDeviceRef)
+                           void                   *aCallbackContext,
+                           struct ca821x_dev      *pDeviceRef)
 {
 	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
 	union ca821x_api_callback  oldCallback;

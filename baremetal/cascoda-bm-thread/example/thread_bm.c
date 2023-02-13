@@ -66,7 +66,7 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 	{
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
+
 	return ret;
 }
 
@@ -118,10 +118,10 @@ int main(void)
 	OT_INSTANCE = otInstanceInitSingle();
 
 #if OT_NCP
-	otNcpInit(OT_INSTANCE);
+	otAppNcpInit(OT_INSTANCE);
 	otIp6SetMulticastPromiscuousEnabled(OT_INSTANCE, true);
 #elif OT_CLI
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 	init_sensordemo(OT_INSTANCE, &dev);
 #else
 #error "Build system error, neither OT_NCP or OT_CLI defined."

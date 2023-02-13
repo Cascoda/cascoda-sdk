@@ -72,9 +72,11 @@ static otError convertError(ca_error error)
 }
 
 // settings API
-void otPlatSettingsInit(otInstance *aInstance)
+void otPlatSettingsInit(otInstance *aInstance, const uint16_t *aSensitiveKeys, uint16_t aSensitiveKeysLength)
 {
 	OT_UNUSED_VARIABLE(aInstance);
+	OT_UNUSED_VARIABLE(aSensitiveKeys);
+	OT_UNUSED_VARIABLE(aSensitiveKeysLength);
 	struct ca821x_dev *pDevice = PlatformGetDeviceRef();
 	caUtilSettingsInit(pDevice, "otConfig", NODE_ID);
 }

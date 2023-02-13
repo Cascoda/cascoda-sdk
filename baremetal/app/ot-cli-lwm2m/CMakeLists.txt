@@ -2,7 +2,7 @@
 project (ot-cli-lwm2m)
 
 #Only build on the chili2
-if(TARGET cascoda-chili2)
+if(TARGET chili2)
 	add_executable(ot-cli-lwm2m
 		${PROJECT_SOURCE_DIR}/client/lwm2mclient.c
 		${PROJECT_SOURCE_DIR}/client/object_access_control.c
@@ -36,7 +36,7 @@ if(TARGET cascoda-chili2)
 			${PROJECT_SOURCE_DIR}/client
 			${PROJECT_SOURCE_DIR}/shared
 		)
-	target_link_libraries(ot-cli-lwm2m openthread-cli-ftd ca821x-openthread-bm-ftd wakaama-client)
+	target_link_libraries(ot-cli-lwm2m openthread-cli-ftd ca821x-openthread-bm-ftd wakaama-client mbedtls)
 	cascoda_configure_memory(ot-cli-lwm2m 0x1000 0x9000)
-	cascoda_make_binary(ot-cli-lwm2m)
+	cascoda_make_binary(ot-cli-lwm2m CASCODA_BUILD_BINARIES)
 endif()

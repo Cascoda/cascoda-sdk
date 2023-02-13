@@ -6,8 +6,8 @@ The following platforms are currently implemented:
 
 | Platform | Module / Board | MCU |
 | :--- | :--- | :--- |
-| cascoda-nuvoton-chili | Chili 1 | Nuvoton Nano120 |
-| cascoda-nuvoton-chili2 | Chili 2 | Nuvoton M2351 |
-| cascoda-dummy-posix |dummy posix platform for test purposes | -|
+| chili | Chili 1 | Nuvoton Nano120 |
+| chili2 | Chili 2 | Nuvoton M2351 |
+| dummy-posix |dummy posix platform for test purposes | -|
 
 Support for additional MCUs and modules will be added here.

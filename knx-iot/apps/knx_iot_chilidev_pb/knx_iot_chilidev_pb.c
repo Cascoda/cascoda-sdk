@@ -22,7 +22,7 @@
 #include "api/oc_knx_dev.h"
 #include "api/oc_knx_fp.h"
 
-#include "cascoda_devboard_btn.h"
+#include "devboard_btn.h"
 
 void set_led(int led_nr, bool value)
 {
@@ -59,23 +59,27 @@ void generic_button_cb(char url[])
 	oc_do_s_mode_with_scope(5, url, "w");
 }
 
-void button0_cb()
+void button0_cb(void *context)
 {
+	(void)context;
 	generic_button_cb("/p/o_1_1");
 }
 
-void button1_cb()
+void button1_cb(void *context)
 {
+	(void)context;
 	generic_button_cb("/p/o_3_3");
 }
 
-void button2_cb()
+void button2_cb(void *context)
 {
+	(void)context;
 	generic_button_cb("/p/o_5_5");
 }
 
-void button3_cb()
+void button3_cb(void *context)
 {
+	(void)context;
 	generic_button_cb("/p/o_7_7");
 }
 
@@ -87,10 +91,10 @@ void hardware_init()
 	DVBD_RegisterButtonInput(LED_BTN_2, JUMPER_POS_2);
 	DVBD_RegisterButtonInput(LED_BTN_3, JUMPER_POS_2);
 
-	DVBD_SetButtonShortPressCallback(LED_BTN_0, &button0_cb);
-	DVBD_SetButtonShortPressCallback(LED_BTN_1, &button1_cb);
-	DVBD_SetButtonShortPressCallback(LED_BTN_2, &button2_cb);
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button3_cb);
+	DVBD_SetButtonShortPressCallback(LED_BTN_0, &button0_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(LED_BTN_1, &button1_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(LED_BTN_2, &button2_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button3_cb, NULL, BTN_SHORTPRESS_PRESSED);
 
 	// Setup callbacks for the info datapoints on pb
 	app_set_post_cb(post_callback);

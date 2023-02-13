@@ -888,14 +888,10 @@ uint8_t PHY_TESTMODE_request(uint8_t testmode, struct ca821x_dev *pDeviceRef)
 		tdme_testmode = TDME_TEST_OFF;
 		break;
 	case PHY_TEST_TX_PKT:
-		tdme_testmode = TDME_TEST_TX;
-		break;
 	case PHY_TEST_TX_CONT:
 		tdme_testmode = TDME_TEST_TX;
 		break;
 	case PHY_TEST_RX_PER:
-		tdme_testmode = TDME_TEST_RX;
-		break;
 	case PHY_TEST_RX_PSN:
 		tdme_testmode = TDME_TEST_RX;
 		break;

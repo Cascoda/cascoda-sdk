@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.11)
 
-# Helper function to print binary section sizes - Auto-invoked when cascoda_make_binary is used
+# Helper function to print binary section sizes - Auto-invoked when cascoda_make_binary( is used CASCODA_BUILD_BINARIES)
 macro(cascoda_print_sizes a_target)
 	if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
 		add_custom_command(TARGET ${a_target} POST_BUILD
@@ -12,7 +12,7 @@ macro(cascoda_print_sizes a_target)
 endmacro()
 
 # Helper function to generate a binary file for baremetal targets
-macro(cascoda_make_binary a_target)
+macro(cascoda_make_binary a_target a_include_condition)
 	set(cascoda_made_binary $<TARGET_FILE_DIR:${a_target}>/${a_target}.bin)
 	if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc AND CMAKE_OBJCOPY)
 		add_custom_command(TARGET ${a_target} POST_BUILD
@@ -24,7 +24,7 @@ macro(cascoda_make_binary a_target)
 			)
 	endif()
 	cascoda_print_sizes(${a_target})
-	if(NOT CASCODA_BUILD_BINARIES)
+	if(NOT ${a_include_condition})
 		set_target_properties(${a_target} PROPERTIES EXCLUDE_FROM_ALL ON)
 	endif()
 	unset(cascoda_made_binary)

@@ -53,6 +53,16 @@ enum
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Radio reinitialisation after sleep
+ *******************************************************************************
+ ******************************************************************************/
+int ot_reinitialise(struct ca821x_dev *pDeviceRef)
+{
+	otLinkSyncExternalMac(OT_INSTANCE);
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Checks current device status and goes to sleep if nothing is happening
  *******************************************************************************
  ******************************************************************************/
@@ -125,8 +135,8 @@ void otTaskletsSignalPending(otInstance *aInstance)
  * locally.
  *******************************************************************************
  ******************************************************************************/
-static void handleServerDiscoverResponse(void *               aContext,
-                                         otMessage *          aMessage,
+static void handleServerDiscoverResponse(void                *aContext,
+                                         otMessage           *aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
@@ -155,7 +165,7 @@ static void handleServerDiscoverResponse(void *               aContext,
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 
@@ -216,7 +226,7 @@ static void handleSensorConfirm(void *aContext, otMessage *aMessage, const otMes
 static otError sendSensorData(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature = BSP_GetTemperature();
 	uint8_t       buffer[32];
@@ -310,7 +320,7 @@ int main(void)
 	otLinkModeConfig  linkMode = {0};
 
 	ca821x_api_init(&dev);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
+	cascoda_reinitialise    = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
@@ -334,7 +344,6 @@ int main(void)
 	} while (1);
 
 	otLinkSetPollPeriod(OT_INSTANCE, 5000);
-	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
 
 	otThreadSetEnabled(OT_INSTANCE, true);

@@ -203,7 +203,7 @@ void TEMPSENSE_APP_Coordinator_ProcessScanCnf(struct MLME_SCAN_confirm_pset *par
 } // End of TEMPSENSE_APP_Coordinator_ProcessScanCnf()
 
 void TEMPSENSE_APP_Coordinator_AssociateResponse(struct MLME_ASSOCIATE_indication_pset *params,
-                                                 struct ca821x_dev *                    pDeviceRef)
+                                                 struct ca821x_dev                     *pDeviceRef)
 {
 	u8_t  i;
 	u8_t  status;
@@ -543,7 +543,7 @@ void TEMPSENSE_APP_Coordinator_ProcessDataCnf(struct MCPS_DATA_confirm_pset *par
 void TEMPSENSE_APP_Coordinator_DisplayData(u8_t                              device,
                                            u8_t                              edcoord,
                                            struct MCPS_DATA_indication_pset *params,
-                                           struct ca821x_dev *               pDeviceRef)
+                                           struct ca821x_dev                *pDeviceRef)
 {
 	u8_t  temp;
 	u16_t vbat;

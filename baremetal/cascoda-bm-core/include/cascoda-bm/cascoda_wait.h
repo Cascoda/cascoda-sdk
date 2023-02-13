@@ -116,8 +116,8 @@ ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackC
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
                            uint32_t                aTimeoutMs,
-                           void *                  aCallbackContext,
-                           struct ca821x_dev *     pDeviceRef);
+                           void                   *aCallbackContext,
+                           struct ca821x_dev      *pDeviceRef);
 
 /**
  * \brief Get the callback context from within a callback being waited for

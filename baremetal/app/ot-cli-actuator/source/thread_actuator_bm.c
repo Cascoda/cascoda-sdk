@@ -43,8 +43,6 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 		EVBME_SwitchClock(pDeviceRef, 0);
 	}
 
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
-
 	return ret;
 }
 
@@ -65,11 +63,11 @@ int main(void)
 	PlatformRadioInitWithDev(&dev);
 	OT_INSTANCE = otInstanceInitSingle();
 
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
-	sCliCommand.mCommand = handle_cli_actuatordemo;
+	sCliCommand.mCommand = &handle_cli_actuatordemo;
 	sCliCommand.mName    = "actuatordemo";
-	otCliSetUserCommands(&sCliCommand, 1);
+	otCliSetUserCommands(&sCliCommand, 1, OT_INSTANCE);
 
 	init_actuatordemo(OT_INSTANCE, &dev);
 

@@ -144,6 +144,18 @@ void BSP_SPIExchange(u8_t *RxBuf, const u8_t *TxBuf, u8_t RxLen, u8_t TxLen);
  */
 bool BSP_IsInsideInterrupt(void);
 
+/**
+ * \brief Connect MOSI port to SPI MOSI and disable pull-up
+ *
+ */
+void BSP_SetSPIMOSIOutput(void);
+
+/**
+ * \brief Disconnect MOSI port from SPI MOSI and put to tristate with pull-up
+ *
+ */
+void BSP_SetSPIMOSITristate(void);
+
 #endif // CASCODA_INTERFACE_CORE_H
 
 /**

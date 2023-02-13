@@ -199,8 +199,8 @@ static void quit(int sig)
 static ca_error driverErrorCallback(ca_error error, struct ca821x_dev *pDeviceRef)
 {
 	struct inst_priv *priv          = pDeviceRef->context;
-	pthread_mutex_t * confirm_mutex = &(priv->confirm_mutex);
-	pthread_cond_t *  confirm_cond  = &(priv->confirm_cond);
+	pthread_mutex_t  *confirm_mutex = &(priv->confirm_mutex);
+	pthread_cond_t   *confirm_cond  = &(priv->confirm_cond);
 
 	printf(COLOR_SET(RED, "DRIVER FAILED FOR %x WITH ERROR %d") "\n\r", priv->mAddress, (int)error);
 	printf(COLOR_SET(BLUE, "Attempting restart...") "\n\r");
@@ -306,8 +306,8 @@ static void fillIndirectJunk(struct inst_priv *priv)
 static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef) //Async
 {
 	struct inst_priv *other, *priv = pDeviceRef->context;
-	pthread_mutex_t * confirm_mutex = &(priv->confirm_mutex);
-	pthread_cond_t *  confirm_cond  = &(priv->confirm_cond);
+	pthread_mutex_t  *confirm_mutex = &(priv->confirm_mutex);
+	pthread_cond_t   *confirm_cond  = &(priv->confirm_cond);
 	uint16_t          dstAddr;
 
 	//Catch expiring junk
@@ -425,12 +425,12 @@ static ca_error handleGenericDispatchFrame(const struct MAC_Message *msg, struct
 
 static void *inst_worker(void *arg)
 {
-	struct inst_priv * priv       = arg;
+	struct inst_priv  *priv       = arg;
 	struct ca821x_dev *pDeviceRef = &(priv->pDeviceRef);
 	uint32_t           payload;
 
 	pthread_mutex_t *confirm_mutex = &(priv->confirm_mutex);
-	pthread_cond_t * confirm_cond  = &(priv->confirm_cond);
+	pthread_cond_t  *confirm_cond  = &(priv->confirm_cond);
 
 	payload = getRand(0, 0x7FFFFFFF);
 
@@ -713,7 +713,7 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < numInsts; i++)
 	{
-		struct inst_priv * cur        = &insts[i];
+		struct inst_priv  *cur        = &insts[i];
 		struct ca821x_dev *pDeviceRef = &(cur->pDeviceRef);
 		cur->mAddress                 = atoi(argv[i + 1]);
 		cur->confirm_done             = 1;

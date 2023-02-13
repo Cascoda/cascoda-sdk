@@ -1,10 +1,28 @@
-# Cascoda Development Board
+# cascoda-bm-devboard
 
-This is built for cascoda development board only with Chili2S. It has examples for controlling LEDs and sensors on board.
+The cascoda-bm-devboard module contains the functionality for using the [Cascoda Development Board](../../docs/how-to/howto-devboard.md). This includes interacting with the devboard LEDs and buttons, as well as interacting with externally connected peripherals, sensors and actuators.
 
-To correctly build for the chili development board:
+## Examples
+
+This module contains two example applications to demonstrate the use of the APIs for interacting with the intrinsic devboard features (LEDs and buttons) and for interacting with external peripherals:
+
+| Binary name | Application source code |  Description|
+| --- | --- | --- |
+| evboard-btn | `examples/devboard_app_btn.c` | Example app demonstrating intrinsic devboard features: LEDs and buttons. |
+| devboard-click | `examples/devboard_app_click.c` | Example app demonstrating how the devboard can communicate with externally connected peripherals. |
+| devboard-eink | `examples/devboard_app_eink.c` | Example app demonstrating how the devboard can show images on an eink display. |
+| devboard-gfx | `examples/devboard_app_gfx.c` | Example app demonstrating how the devboard can show graphics (menu) on an eink display. |
+| devboard-sleep | `examples/devboard_app_sleep.c`  | Example app demonstrating the sleep modes. |
+
+## Building instructions
+
+Assuming that you have already [set up your build directories](../../README.md#building), in order to get the devboard example binaries to build, you need to change the CMake configuration as follows: 
+
 ```CMake
-# Edit CMakeCache.txt in sdk-chili2 directory
 CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD
 CASCODA_CHILI2_REV:STRING=1
 ```
+
+The recommended method of doing this is [using the tools that come with CMake](https://cmake.org/runningcmake/). However, if you know what you are doing, then you can alternatively edit the `CMakeCache.txt` file yourself to make those changes.
+
+After building, the example binaries will be found in `bin/devboard/` in your build directory. 

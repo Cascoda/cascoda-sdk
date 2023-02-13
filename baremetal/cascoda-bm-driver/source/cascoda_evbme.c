@@ -65,8 +65,8 @@ static u8_t        CLKExternal; //!< Nonzero if the CA821x is supplying a 4MHz c
 void (*EVBME_Message)(char *message, size_t len);
 /** Function pointer for sending API commands upstream. */
 void (*MAC_Message)(u8_t CommandId, u8_t Count, const u8_t *pBuffer);
-/** Function pointer for reinitialising the app upon a restart **/
-int (*app_reinitialise)(struct ca821x_dev *pDeviceRef);
+/** Function pointer for reinitialising the CA821X upon a restart/reset **/
+int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
 
 // serial dispatch function
 int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDeviceRef);
@@ -840,6 +840,11 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 		}
 		if (EVBMEUpStreamDispatch(&SerialRxBuffer, pDeviceRef) > 0)
 			handled = true;
+		// production test (CHILI_TEST) and PHY test (TEST15_4) included
+		if (TEST15_4_UpStreamDispatch(&SerialRxBuffer, pDeviceRef) > 0)
+			handled = true;
+		if (CHILI_TEST_UpStreamDispatch(&SerialRxBuffer, pDeviceRef) > 0)
+			handled = true;
 		if (!handled)
 		{
 			EVBMESendDownStream(&SerialRxBuffer.CmdId, pDeviceRef);
@@ -854,7 +859,10 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef)
 	CA_OS_UnlockAPI();
 	CA_OS_Yield();
 
-	if (!CHILI_TEST_IsInTestMode())
+	// production test (CHILI_TEST) and PHY test (TEST15_4) included
+	if (CHILI_TEST_IsInTestMode())
+		CHILI_TEST_Handler(pDeviceRef);
+	else
 		TEST15_4_Handler(pDeviceRef);
 }
 
@@ -900,6 +908,24 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
 void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef)
 {
 	u8_t CLKExternal_saved;
+	u8_t restarted = 0;
+	u8_t framecounter[4];
+	u8_t attlen;
+	u8_t dsn[1];
+
+	// preserve running counter values from MAC
+	if ((mode == PDM_POWERDOWN) || (mode == PDM_POWEROFF))
+	{
+		MLME_GET_request_sync(macFrameCounter, 0, &attlen, framecounter, pDeviceRef);
+		MLME_GET_request_sync(macDSN, 0, &attlen, dsn, pDeviceRef);
+	}
+
+#if defined(USE_USB)
+	BSP_DisableUSB();
+#endif /* USE_USB */
+#if defined(USE_USB) || defined(USE_UART)
+	BSP_SystemConfig(BSP_GetSystemFrequency(), 0);
+#endif /* USE_UART || USE_USB */
 
 	// save external clock status
 	CLKExternal_saved = CLKExternal;
@@ -912,18 +938,25 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 
 	// power down
 	if (mode == PDM_DPD) // mode has to use CAX sleep timer
-		BSP_PowerDown(sleeptime_ms, 0, 1, pDeviceRef);
+	{
+		BSP_PowerDown(sleeptime_ms, 0, 1);
+		DISPATCH_ReadCA821x(pDeviceRef); /* read downstream message that has woken up device */
+	}
 	else if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
-		BSP_PowerDown(sleeptime_ms, 0, 0, pDeviceRef);
+	{
+		BSP_PowerDown(sleeptime_ms, 0, 0);
+		DISPATCH_ReadCA821x(pDeviceRef); /* read downstream message that has woken up device */
+	}
 	else if (mode == PDM_ALLON)
 		WAIT_ms(sleeptime_ms);
 	else
-		BSP_PowerDown(sleeptime_ms, 1, 0, pDeviceRef);
+		BSP_PowerDown(sleeptime_ms, 1, 0);
 
 	// wake up CAX
 	if ((mode == PDM_POWEROFF) && BSP_IsWatchdogTriggered())
 	{
 		EVBME_CAX_Restart(pDeviceRef);
+		restarted = 1;
 	}
 	else
 	{
@@ -932,12 +965,34 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 			if (EVBME_CAX_Wakeup(mode, sleeptime_ms, pDeviceRef) != CA_ERROR_SUCCESS)
 			{
 				EVBME_CAX_Restart(pDeviceRef);
+				restarted = 1;
 			}
 		}
 	}
 
 	// restore external clock status
 	EVBME_SwitchClock(pDeviceRef, CLKExternal_saved);
+
+	// call application specific re-initialisation
+	if ((mode == PDM_POWERDOWN) || (mode == PDM_POWEROFF) || restarted)
+	{
+		if (cascoda_reinitialise)
+			cascoda_reinitialise(pDeviceRef);
+	}
+
+#if defined(USE_USB) || defined(USE_UART)
+	BSP_SystemConfig(BSP_GetSystemFrequency(), 1);
+#endif /* USE_UART || USE_USB */
+#if defined(USE_USB)
+	BSP_EnableUSB();
+#endif /* USE_USB */
+
+	// restore running counter values to MAC
+	if ((mode == PDM_POWERDOWN) || (mode == PDM_POWEROFF))
+	{
+		MLME_SET_request_sync(macFrameCounter, 0, 4, framecounter, pDeviceRef);
+		MLME_SET_request_sync(macDSN, 0, 1, dsn, pDeviceRef);
+	}
 
 } // End of EVBME_PowerDown()
 
@@ -962,10 +1017,6 @@ void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef)
 		ca_log_crit("CA-821X restart: ChipInit fail");
 		return;
 	}
-
-	// call application specific re-initialisation
-	if (app_reinitialise)
-		app_reinitialise(pDeviceRef);
 }
 
 ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
@@ -1010,7 +1061,10 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 		RAND_SetCryptoEntropyDev(pDeviceRef);
 	}
 
-	TEST15_4_Initialise(pDeviceRef);
+	// production test (CHILI_TEST) and PHY test (TEST15_4) included
+	CHILI_TEST_Initialise(status, pDeviceRef); /* status used for test fail so keep outside check */
+	if (!status)
+		TEST15_4_Initialise(pDeviceRef);
 
 	return status;
 }

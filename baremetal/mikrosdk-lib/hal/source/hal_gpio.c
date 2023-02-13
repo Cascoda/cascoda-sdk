@@ -189,7 +189,7 @@ void hal_gpio_clear_pin_output(hal_gpio_pin_t *pin)
 
 /*---------------------Unused Functions--------------------------------*/
 
-void hal_gpio_configure_port(hal_gpio_port_t *    port,
+void hal_gpio_configure_port(hal_gpio_port_t     *port,
                              hal_port_name_t      name,
                              hal_gpio_mask_t      mask,
                              hal_gpio_direction_t direction)

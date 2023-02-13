@@ -375,8 +375,8 @@ static uint8_t prv_server_read(uint16_t instanceId, int *numDataP, lwm2m_data_t 
 }
 
 static uint8_t prv_server_discover(uint16_t        instanceId,
-                                   int *           numDataP,
-                                   lwm2m_data_t ** dataArrayP,
+                                   int            *numDataP,
+                                   lwm2m_data_t  **dataArrayP,
                                    lwm2m_object_t *objectP)
 {
 	server_instance_t *targetP;
@@ -634,8 +634,8 @@ static uint8_t prv_set_int_value(lwm2m_data_t *dataArray, uint32_t *data)
 
 static uint8_t prv_server_write(uint16_t           instanceId,
                                 int                numData,
-                                lwm2m_data_t *     dataArray,
-                                lwm2m_object_t *   objectP,
+                                lwm2m_data_t      *dataArray,
+                                lwm2m_object_t    *objectP,
                                 lwm2m_write_type_t writeType)
 {
 	server_instance_t *targetP;
@@ -931,7 +931,7 @@ static uint8_t prv_server_write(uint16_t           instanceId,
 
 static uint8_t prv_server_execute(uint16_t        instanceId,
                                   uint16_t        resourceId,
-                                  uint8_t *       buffer,
+                                  uint8_t        *buffer,
                                   int             length,
                                   lwm2m_object_t *objectP)
 

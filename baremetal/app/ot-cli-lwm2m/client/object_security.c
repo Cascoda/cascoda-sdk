@@ -56,14 +56,14 @@ typedef struct _security_instance_
 {
 	struct _security_instance_ *next;       // matches lwm2m_list_t::next
 	uint16_t                    instanceId; // matches lwm2m_list_t::id
-	char *                      uri;
+	char                       *uri;
 	bool                        isBootstrap;
 	uint8_t                     securityMode;
-	char *                      publicIdentity;
+	char                       *publicIdentity;
 	uint16_t                    publicIdLen;
-	char *                      serverPublicKey;
+	char                       *serverPublicKey;
 	uint16_t                    serverPublicKeyLen;
-	char *                      secretKey;
+	char                       *secretKey;
 	uint16_t                    secretKeyLen;
 	uint16_t                    shortID;
 	uint32_t                    clientHoldOffTime;
@@ -170,8 +170,8 @@ static uint8_t prv_security_read(uint16_t instanceId, int *numDataP, lwm2m_data_
 
 static uint8_t prv_security_write(uint16_t           instanceId,
                                   int                numData,
-                                  lwm2m_data_t *     dataArray,
-                                  lwm2m_object_t *   objectP,
+                                  lwm2m_data_t      *dataArray,
+                                  lwm2m_object_t    *objectP,
                                   lwm2m_write_type_t writeType)
 {
 	security_instance_t *targetP;
@@ -515,8 +515,8 @@ void clean_security_object(lwm2m_object_t *objectP)
 
 lwm2m_object_t *get_security_object(int         serverId,
                                     const char *serverUri,
-                                    char *      bsPskId,
-                                    char *      psk,
+                                    char       *bsPskId,
+                                    char       *psk,
                                     uint16_t    pskLen,
                                     bool        isBootstrap)
 {

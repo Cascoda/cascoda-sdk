@@ -768,9 +768,9 @@ int api_functions_test(void)
 	struct FullAddr   full_address;
 	struct ca821x_dev test_dev;
 	struct SecSpec    test_secspec = {.SecurityLevel = TEST_SECURITYLEVEL,
-                                   .KeyIdMode     = TEST_KEYIDMODE,
-                                   .KeySource     = {TEST_KEYSOURCE},
-                                   .KeyIndex      = TEST_KEYINDEX};
+	                                  .KeyIdMode     = TEST_KEYIDMODE,
+	                                  .KeySource     = {TEST_KEYSOURCE},
+	                                  .KeyIndex      = TEST_KEYINDEX};
 	printf(ANSI_COLOR_CYAN "Testing API functions...\n" ANSI_COLOR_RESET);
 	/* TODO: check return */
 	ca821x_api_init(&test_dev);
@@ -987,7 +987,7 @@ ca_error test_MLME_ASSOCIATE_confirm(struct MLME_ASSOCIATE_confirm_pset *params,
  *******************************************************************************
  ******************************************************************************/
 ca_error test_MLME_DISASSOCIATE_indication(struct MLME_DISASSOCIATE_indication_pset *params,
-                                           struct ca821x_dev *                       pDeviceRef)
+                                           struct ca821x_dev                        *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.disassoc_ind)
@@ -1030,7 +1030,7 @@ ca_error test_MLME_DISASSOCIATE_confirm(struct MLME_DISASSOCIATE_confirm_pset *p
  *******************************************************************************
  ******************************************************************************/
 ca_error test_MLME_BEACON_NOTIFY_indication(struct MLME_BEACON_NOTIFY_indication_pset *params,
-                                            struct ca821x_dev *                        pDeviceRef)
+                                            struct ca821x_dev                         *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.beacon_notify_ind)
@@ -1094,7 +1094,7 @@ ca_error test_MLME_SCAN_confirm(struct MLME_SCAN_confirm_pset *params, struct ca
  *******************************************************************************
  ******************************************************************************/
 ca_error test_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
-                                          struct ca821x_dev *                      pDeviceRef)
+                                          struct ca821x_dev                       *pDeviceRef)
 {
 	struct test_context *tcontext = pDeviceRef->context;
 	if (tcontext->dflags.comm_status_ind)

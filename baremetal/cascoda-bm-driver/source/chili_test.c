@@ -41,6 +41,10 @@
 #include "cascoda-bm/chili_test.h"
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
+#include "cascoda_chili_config.h"
+#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#include "devboard_btn.h"
+#endif
 
 /******************************************************************************/
 /****** Global Variables                                                 ******/
@@ -50,38 +54,41 @@ static u8_t  CHILI_TEST_RESULT  = 0xFF;                /* test result */
 static u8_t  CHILI_TEST_CState  = CHILI_TEST_CST_DONE; /* communication state */
 static u32_t CHILI_TEST_Timeout = 0;                   /* device timeout */
 
+/* static functions */
+static void     CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_REF_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef);
+static ca_error CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                    struct ca821x_dev                *pDeviceRef);
+static ca_error CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
+                                                    struct ca821x_dev                *pDeviceRef);
+static ca_error CHILI_TEST_REF_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef);
+static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
+                                                       struct ca821x_dev                       *pDeviceRef);
+static void     CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
+static void     CHILI_TEST_LEDComplete(uint8_t status);
+
+#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+static void CHILI_TEST_LEDInit(void);
+static void CHILI_TEST_LEDResult(uint8_t status);
+#endif
+
 void CHILI_TEST_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 {
-	u8_t                     swval        = 1;
-	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
-
-	if (!BSP_ModuleIsGPIOPinRegistered(special_pins.SWITCH))
-	{
-		/* register SWITCH */
-		BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
-		    special_pins.SWITCH, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
-		/* register LED_G */
-		BSP_ModuleRegisterGPIOOutput(special_pins.LED_GREEN, MODULE_PIN_TYPE_LED);
-		/* register LED_R */
-		BSP_ModuleRegisterGPIOOutput(special_pins.LED_RED, MODULE_PIN_TYPE_LED);
-	}
+	(void)pDeviceRef;
 
 	/* store no-comms status */
 	if (status == CA_ERROR_FAIL)
 	{
 		CHILI_TEST_RESULT = CHILI_TEST_ST_NOCOMMS;
 		return;
-	}
-	/* reference device */
-	if (BSP_IsUSBPresent())
-	{
-		if (BSP_ModuleSenseGPIOPin(special_pins.SWITCH, &swval) != CA_ERROR_SUCCESS)
-			return;
-		if (swval == 0)
-		{
-			CHILI_TEST_MODE = CHILI_TEST_REF;
-			CHILI_TEST_TestInit(pDeviceRef);
-		}
 	}
 } // End of CHILI_TEST_Initialise()
 
@@ -100,7 +107,6 @@ void CHILI_TEST_Handler(struct ca821x_dev *pDeviceRef)
 			if (CHILI_TEST_CState != CHILI_TEST_CST_DUT_FINISHED)
 				CHILI_TEST_DUT_CheckTimeout(pDeviceRef);
 		}
-		CHILI_TEST_LED_Handler();
 	}
 } // End of CHILI_TEST_Handler()
 
@@ -135,7 +141,17 @@ int CHILI_TEST_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca82
 	return 0;
 } // End of CHILI_TEST_UpStreamDispatch()
 
-void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef)
+u8_t CHILI_TEST_IsInTestMode(void)
+{
+	return (CHILI_TEST_MODE);
+} // End of CHILI_TEST_IsInTestMode()
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Production Test Start of Test Device Initialisation
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef)
 {
 	CHILI_TEST_CState  = CHILI_TEST_CST_DONE;
 	CHILI_TEST_Timeout = 0;
@@ -144,9 +160,18 @@ void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef)
 	CHILI_TEST_RESULT = 0xFF;
 	/* dynamically register callbacks */
 	CHILI_TEST_RegisterCallbacks(pDeviceRef);
+#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+	if (CHILI_TEST_MODE != CHILI_TEST_REF)
+		CHILI_TEST_LEDInit();
+#endif
 } // End of CHILI_TEST_TestInit()
 
-void CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Chili Production Test Initialisation of MAC PIB
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef)
 {
 	u8_t  param8;
 	u16_t param16;
@@ -176,14 +201,24 @@ void CHILI_TEST_InitPIB(struct ca821x_dev *pDeviceRef)
 	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &param8, pDeviceRef);
 } // End of CHILI_TEST_InitPIB()
 
-void CHILI_TEST_REF_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reference Device Process incoming Data Confirm
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_REF_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	(void)params;
 	/* reset test */
 	CHILI_TEST_TestInit(pDeviceRef);
 } // End of CHILI_TEST_REF_ProcessDataCnf()
 
-void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reference Device Process incoming Data Indication
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	u16_t           shortadd, panid;
 	u8_t            cs_ref = 0;
@@ -253,7 +288,12 @@ void CHILI_TEST_REF_ProcessDataInd(struct MCPS_DATA_indication_pset *params, str
 
 } // End of CHILI_TEST_REF_ProcessDataInd()
 
-void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Data Exchange
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef)
 {
 	struct FullAddr REFAdd;
 	u8_t            msdu[1];
@@ -303,7 +343,12 @@ void CHILI_TEST_DUT_ExchangeData(struct ca821x_dev *pDeviceRef)
 
 } // End of CHILI_TEST_DUT_ExchangeData()
 
-void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Process incoming Data Indication
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_DUT_ProcessDataInd(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	u16_t shortadd, panid;
 	u8_t  cs_ref = 0;
@@ -367,7 +412,12 @@ exit:
 
 } // End of CHILI_TEST_DUT_ProcessDataInd()
 
-void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Process incoming Data Confirm
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct ca821x_dev *pDeviceRef)
 {
 	(void)pDeviceRef;
 	u8_t status;
@@ -399,7 +449,12 @@ void CHILI_TEST_DUT_ProcessDataCnf(struct MCPS_DATA_confirm_pset *params, struct
 
 } // End of CHILI_TEST_DUT_ProcessDataCnf()
 
-void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Timeout Check
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef)
 {
 	(void)pDeviceRef;
 	u32_t tnow;
@@ -424,7 +479,12 @@ void CHILI_TEST_DUT_CheckTimeout(struct ca821x_dev *pDeviceRef)
 
 } // End of CHILI_TEST_DUT_CheckTimeout()
 
-void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief DUT Display Test Result
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef)
 {
 	if (CHILI_TEST_RESULT == CHILI_TEST_ST_SUCCESS)
 	{
@@ -443,12 +503,9 @@ void CHILI_TEST_DUT_DisplayResult(struct ca821x_dev *pDeviceRef)
 	/* reset transceiver MAC */
 	MLME_RESET_request_sync(1, pDeviceRef);
 
-} // End of CHILI_TEST_DUT_DisplayResult()
+	CHILI_TEST_LEDComplete(CHILI_TEST_RESULT);
 
-u8_t CHILI_TEST_IsInTestMode(void)
-{
-	return (CHILI_TEST_MODE);
-} // End of CHILI_TEST_IsInTestMode()
+} // End of CHILI_TEST_DUT_DisplayResult()
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -456,7 +513,7 @@ u8_t CHILI_TEST_IsInTestMode(void)
  *******************************************************************************
  ******************************************************************************/
 static ca_error CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
-                                                    struct ca821x_dev *               pDeviceRef)
+                                                    struct ca821x_dev                *pDeviceRef)
 {
 	CHILI_TEST_REF_ProcessDataInd(params, pDeviceRef);
 	return CA_ERROR_SUCCESS;
@@ -468,7 +525,7 @@ static ca_error CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_
  *******************************************************************************
  ******************************************************************************/
 static ca_error CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
-                                                    struct ca821x_dev *               pDeviceRef)
+                                                    struct ca821x_dev                *pDeviceRef)
 {
 	CHILI_TEST_DUT_ProcessDataInd(params, pDeviceRef);
 	return CA_ERROR_SUCCESS;
@@ -502,7 +559,7 @@ static ca_error CHILI_TEST_DUT_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *
  *******************************************************************************
  ******************************************************************************/
 static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_indication_pset *params,
-                                                       struct ca821x_dev *                      pDeviceRef)
+                                                       struct ca821x_dev                       *pDeviceRef)
 {
 	(void)params;
 	(void)pDeviceRef;
@@ -510,7 +567,12 @@ static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_i
 	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_MLME_COMM_STATUS_indication()
 
-void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Dynamically Register Callbacks for CHILI_TEST_MODE
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 {
 	if (CHILI_TEST_MODE == CHILI_TEST_REF)
 	{
@@ -532,54 +594,59 @@ void CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef)
 	}
 } // End of CHILI_TEST_RegisterCallbacks()
 
-void CHILI_TEST_LED_Handler(void)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Test complete, avoid to jump into application code
+ *******************************************************************************
+ ******************************************************************************/
+static void CHILI_TEST_LEDComplete(uint8_t status)
 {
-	u32_t                    ledtime_g, ledtime_r;
-	u32_t                    TON_G, TOFF_G;
-	u32_t                    TON_R, TOFF_R;
-	u32_t                    TD_R;
-	struct ModuleSpecialPins special_pins = BSP_GetModuleSpecialPins();
-
-	if (CHILI_TEST_MODE == CHILI_TEST_REF)
+	/* this is hanging up intentionally - nothing to do after test */
+	while (1)
 	{
-		TON_G  = 1000;
-		TOFF_G = 1000;
-		TON_R  = 1000;
-		TOFF_R = 1000;
-		TD_R   = 1000;
+#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+		CHILI_TEST_LEDResult(status);
+#else
+		(void)status;
+#endif
+		/* allowed here, as nothing more to do but potentially blink */
+		BSP_WaitTicks(200);
 	}
-	else
-	{
-		if (CHILI_TEST_RESULT == CHILI_TEST_ST_SUCCESS)
-		{
-			TON_G  = 350;
-			TOFF_G = 350;
-			TON_R  = 350;
-			TOFF_R = 350;
-			TD_R   = 350;
-		}
-		else
-		{
-			TON_G  = 0;
-			TOFF_G = 1000;
-			TON_R  = 1000;
-			TOFF_R = 0;
-			TD_R   = 0;
-		}
-	}
-
-	ledtime_g = TIME_ReadAbsoluteTime() % (TON_G + TOFF_G);
-	ledtime_r = TIME_ReadAbsoluteTime() % (TON_R + TOFF_R);
-
-	/* green */
-	if (ledtime_g < TON_G)
-		BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
-	else
-		BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_OFF);
-
-	/* red */
-	if ((ledtime_r - TD_R) < TON_R)
-		BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_ON);
-	else
-		BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
 }
+
+// Cascoda Devboard specific
+#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+static void CHILI_TEST_LEDInit(void)
+{
+	/* All LEDs on */
+	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_1);
+	DVBD_SetLED(LED_BTN_0, LED_ON);
+	DVBD_SetLED(LED_BTN_1, LED_ON);
+	DVBD_SetLED(LED_BTN_2, LED_ON);
+	DVBD_SetLED(LED_BTN_3, LED_ON);
+}
+
+// devboard specific test result
+static void CHILI_TEST_LEDResult(uint8_t status)
+{
+	u8_t ledstate;
+
+	/* this is hanging up intentionally - nothing to do after test */
+	if (status)
+	{
+		ledstate = LED_OFF;
+	}
+	else
+	{
+		DVBD_Sense(LED_BTN_0, &ledstate);
+		ledstate = 1 - ledstate;
+	}
+	DVBD_SetLED(LED_BTN_0, ledstate);
+	DVBD_SetLED(LED_BTN_1, ledstate);
+	DVBD_SetLED(LED_BTN_2, ledstate);
+	DVBD_SetLED(LED_BTN_3, ledstate);
+}
+#endif

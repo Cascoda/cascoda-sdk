@@ -60,12 +60,14 @@ bool SleepEnabled = 1;
 
 void otPlatReset(otInstance *aInstance)
 {
+	(void)aInstance;
 	PlatformRadioStop();
 	BSP_SystemReset(SYSRESET_APROM);
 }
 
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
+	(void)aInstance;
 	return OT_PLAT_RESET_REASON_POWER_ON;
 }
 
@@ -77,20 +79,7 @@ void otPlatWakeHost(void)
 otError PlatformSleep(uint32_t aSleepTime)
 {
 	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
-	u8_t               framecounter[4];
-	u8_t               fclen;
-	u8_t               dsn[1];
-
-	// Get frame counter from MAC
-	MLME_GET_request_sync(macFrameCounter, 0, &fclen, framecounter, pDeviceRef);
-	MLME_GET_request_sync(macDSN, 0, &fclen, dsn, pDeviceRef);
-
 	EVBME_PowerDown(PDM_POWEROFF, aSleepTime, pDeviceRef);
-
-	otLinkSyncExternalMac(OT_INSTANCE);
-	MLME_SET_request_sync(macFrameCounter, 0, 4, framecounter, pDeviceRef);
-	MLME_SET_request_sync(macDSN, 0, 1, dsn, pDeviceRef);
-
 	return OT_ERROR_NONE;
 }
 
@@ -135,9 +124,12 @@ static void HandleJoinerCallback(otError aError, void *aContext)
  */
 static void genJoinerCred(char *aPskd, uint8_t len)
 {
-	ca_static_assert(sizeof(joiner_alphabet) == 32); //For the shift below
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs" //Suppresses warnings
+	ca_static_assert(sizeof(joiner_alphabet) == 32);     //For the shift below
+#pragma GCC diagnostic pop
 
-	otRandomCryptoFillBuffer(aPskd, len);
+	otRandomCryptoFillBuffer((uint8_t *)aPskd, len);
 	for (uint8_t i = 0; i < len; i++)
 	{
 		/* Instead of just taking the modulo/masking we're shifting down the higher bits.
@@ -153,7 +145,7 @@ static void genJoinerCred(char *aPskd, uint8_t len)
 static bool isValidJoinerCredChar(char aChar)
 {
 	bool rval = false;
-	for (int i = 0; i < sizeof(joiner_alphabet); i++)
+	for (size_t i = 0; i < sizeof(joiner_alphabet); i++)
 	{
 		if (aChar == joiner_alphabet[i])
 		{
@@ -193,11 +185,12 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance)
 #endif
 
 	//Generate or get the joiner credential
-	if (otPlatSettingsGet(aInstance, joiner_credential_key, 0, joiner_credential, &cred_len) != OT_ERROR_NONE ||
+	if (otPlatSettingsGet(aInstance, joiner_credential_key, 0, (uint8_t *)joiner_credential, &cred_len) !=
+	        OT_ERROR_NONE ||
 	    !isValidJoinerCred(joiner_credential, cred_len))
 	{
 		genJoinerCred(joiner_credential, JOINER_CREDENTIAL_LEN);
-		otPlatSettingsSet(aInstance, joiner_credential_key, joiner_credential, JOINER_CREDENTIAL_LEN);
+		otPlatSettingsSet(aInstance, joiner_credential_key, (uint8_t *)joiner_credential, JOINER_CREDENTIAL_LEN);
 	}
 	ca_log_info("Joiner Credential: %s", joiner_credential);
 
@@ -207,36 +200,36 @@ const char *PlatformGetJoinerCredential(otInstance *aInstance)
 /**
  * DEVELOPMENT ONLY function to inject credentials into a baremetal platform at build time.
  * @param aInstance Openthread instance
- * @return ca_error
- * @retval CA_ERROR_SUCCESS Successfully injected credentials
+ * @return otError
+ * @retval OT_ERROR_NONE Successfully injected credentials
  * @retval CA_ERROR_NOT_FOUND Credentials were not configured for injection
  */
 static otError PlatformInjectCreds(otInstance *aInstance)
 {
 #ifdef INJECT_CREDS
-	otMasterKey key = {INJECT_MASTERKEY};
+	otNetworkKey key = {INJECT_MASTERKEY};
 
 	assert(otLinkSetPanId(aInstance, INJECT_PANID) == OT_ERROR_NONE);
 	assert(otLinkSetChannel(aInstance, INJECT_CHANNEL) == OT_ERROR_NONE);
-	assert(otThreadSetMasterKey(aInstance, &key) == OT_ERROR_NONE);
+	assert(otThreadSetNetworkKey(aInstance, &key) == OT_ERROR_NONE);
 
 	ca_log_warn("Injecting openthread credentials! Not for production use!");
 
-	return CA_ERROR_SUCCESS;
+	return OT_ERROR_NONE;
 #else
 	(void)aInstance;
-	return CA_ERROR_NOT_FOUND;
+	return OT_ERROR_NOT_FOUND;
 #endif
 }
 
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 {
 	struct join_status join_status = {0, 0};
-	const char *       aPskd;
+	const char        *aPskd;
 
 	otIp6SetEnabled(OT_INSTANCE, true);
 
-	if (PlatformInjectCreds(aInstance) == CA_ERROR_SUCCESS)
+	if (PlatformInjectCreds(aInstance) == OT_ERROR_NONE)
 	{
 		return OT_ERROR_ALREADY;
 	}
@@ -274,7 +267,7 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
 
 	otLinkGetFactoryAssignedIeeeEui64(aInstance, &extAddress);
 	printf("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(aInstance));
-	for (int i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
+	for (size_t i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
 	printf("\n");
 
 #if defined(USE_USB)
@@ -307,8 +300,8 @@ ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, 
 		attrlen = sizeof(extAddress);
 		break;
 	case EVBME_OT_JOINCRED:
-		attr    = PlatformGetJoinerCredential(OT_INSTANCE);
-		attrlen = strlen(attr) + 1;
+		attr    = (const uint8_t *)PlatformGetJoinerCredential(OT_INSTANCE);
+		attrlen = strlen((const char *)attr) + 1;
 		break;
 	default:
 		error = CA_ERROR_UNKNOWN;
@@ -350,7 +343,7 @@ otError PlatformGetQRString(char *aBufOut, size_t bufferSize, otInstance *aInsta
 	strcpy(aBufOut, "v=1&&eui=");
 	bufferLen = strlen(aBufOut);
 
-	for (int i = 0; i < sizeof(eui64); i++)
+	for (size_t i = 0; i < sizeof(eui64); i++)
 	{
 		sprintf(aBufOut + bufferLen, "%02x", eui64.m8[i]);
 		bufferLen += 2;

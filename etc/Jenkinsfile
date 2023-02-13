@@ -217,10 +217,12 @@ pipeline {
 						)
 
 						/* Build with Iotivity enabled */
+						/*
 						cmake_build_helper(
 							cmakeArgs: '-DCASCODA_BM_INTERFACE=USB -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON -DCASCODA_BUILD_SECURE_LWM2M=OFF',
 							steps: [[args: '']]
 						)
+						*/
 					}
 				}
 			}

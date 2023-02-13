@@ -69,7 +69,7 @@ static ca_error deinit_generic_statics(void);
 
 static int ca821x_run_upstream_dispatch()
 {
-	struct ca821x_dev *          pDeviceRef;
+	struct ca821x_dev           *pDeviceRef;
 	struct ca821x_exchange_base *priv;
 	uint8_t                      buffer[MAX_BUF_SIZE];
 	ca_error                     rval;
@@ -392,7 +392,7 @@ static inline ca_error ca821x_try_write(struct ca821x_dev *pDeviceRef)
 
 void *ca821x_io_worker(void *arg)
 {
-	struct ca821x_dev *          pDeviceRef = arg;
+	struct ca821x_dev           *pDeviceRef = arg;
 	struct ca821x_exchange_base *priv       = pDeviceRef->exchange_context;
 
 	priv->flush_func(pDeviceRef);
@@ -419,7 +419,7 @@ ca_error ca821x_exchange_commands(const uint8_t *buf, size_t len, uint8_t *respo
 {
 	const uint8_t                isSynchronous = ((buf[0] & SPI_SYN) && response);
 	struct ca821x_exchange_base *priv          = pDeviceRef->exchange_context;
-	struct ca821x_dev *          ref_out       = pDeviceRef;
+	struct ca821x_dev           *ref_out       = pDeviceRef;
 	size_t                       success       = 0;
 
 	if (!generic_initialised)

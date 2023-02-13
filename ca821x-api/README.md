@@ -9,7 +9,7 @@ The API models the SAP interface of the 802.15.4 specification (MCPS+MLME) as we
 
 The API also defines a mechanism to handle 'indications' which arrive from the CA-821x without a requesting command, such as the MCPS Data Indication for received data. This is also used for Asynchronous responses - see the ``ca821x_api_callbacks`` struct.
 
-The API is based on IEEE 802.15.4-2006, please see the IEEE specification and the Cascoda datasheets [CA-8210](https://www.cascoda.com/wp-content/uploads/2018/11/CA-8210_datasheet_0418.pdf) & [CA8211](https://www.cascoda.com/wp-content/uploads/2019/01/CA-8211_datasheet_0119.pdf) (section 5) for more detailed information.
+The API is based on IEEE 802.15.4-2006, please see the IEEE specification and the Cascoda datasheets [CA-8210](https://www.cascoda.com/wp-content/uploads/2018/11/CA-8210_datasheet_0418.pdf) & [CA8211](https://www.cascoda.com/wp-content/uploads/2019/06/CA-8211_datasheet_0119.pdf) (section 5) for more detailed information.
 
 ## Application Usage
 

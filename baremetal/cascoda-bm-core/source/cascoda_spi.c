@@ -532,6 +532,9 @@ ca_error SPI_Send(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDevice
 	bool     sync   = (buf[0] & SPI_SYN) && (buf[0] != SPI_IDLE);
 
 	BSP_DisableRFIRQ();
+
+	BSP_SetSPIMOSIOutput();
+
 	if (sync)
 	{
 		SPI_Wait_Buf            = (struct MAC_Message *)response;
@@ -547,6 +550,9 @@ ca_error SPI_Send(const uint8_t *buf, u8_t *response, struct ca821x_dev *pDevice
 		BSP_EnableRFIRQ();
 		goto exit;
 	}
+
+	BSP_SetSPIMOSITristate();
+
 	BSP_EnableRFIRQ();
 
 	if (sync)

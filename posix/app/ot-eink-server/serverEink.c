@@ -59,8 +59,8 @@
 static int            isRunning;
 static otCoapResource sDiscoverResource;
 static otCoapResource sImageResource;
-static const char *   sDiscoverUri = "ca/di";
-static const char *   sImageUri    = "ca/img";
+static const char    *sDiscoverUri = "ca/di";
+static const char    *sImageUri    = "ca/img";
 
 static char         imageBuffer[1024] = {0};
 static otCliCommand sCliCommands[2];
@@ -72,13 +72,15 @@ struct connected_device
 	int            deviceID;
 	bool           isConnected;
 	struct timeval last_wakeup;
-	char *         fileName;
+	char          *fileName;
 };
 
 #define MAX_CONNECTED_DEVICES_LIST 50
 static time_t                  TIMEOUT_S                           = 600;
 static int                     num_of_connected_devices            = 0;
 static struct connected_device devices[MAX_CONNECTED_DEVICES_LIST] = {};
+
+otInstance *OT_INSTANCE;
 
 void printf_time(const char *format, ...)
 {
@@ -124,8 +126,8 @@ static int getDeviceID(struct connected_device *device)
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError      error           = OT_ERROR_NONE;
-	otMessage *  responseMessage = NULL;
-	otInstance * OT_INSTANCE     = aContext;
+	otMessage   *responseMessage = NULL;
+	otInstance  *OT_INSTANCE     = aContext;
 	otExtAddress eui64;
 	//including CBOR variables
 	uint8_t    buffer[64];
@@ -311,20 +313,24 @@ exit:
 static void handleImageRequest(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	//including CBOR variables
 	uint8_t     buffer[1024] = {0};
 	CborError   err;
 	CborEncoder encoder, mapEncoder;
 
-	char                filename[FILENAME_SIZE] = {0};
-	char                deviceIdString[10];
-	char                uri_query[10];
-	bool                valid_query = false;
-	const otCoapOption *option;
+	char                  filename[FILENAME_SIZE] = {0};
+	char                  deviceIdString[10];
+	char                  uri_query[10];
+	bool                  valid_query = false;
+	otCoapOptionIterator *iterator;
+	const otCoapOption   *option;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
+		return;
+
+	if (otCoapOptionIteratorInit(iterator, aMessage) != OT_ERROR_NONE)
 		return;
 
 	printf_time("Server received GET Request from [%x:%x:%x:%x:%x:%x:%x:%x]\r\n",
@@ -337,11 +343,12 @@ static void handleImageRequest(void *aContext, otMessage *aMessage, const otMess
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 12),
 	            GETBE16(aMessageInfo->mPeerAddr.mFields.m8 + 14));
 
-	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	for (option = otCoapOptionIteratorGetFirstOption(iterator); option != NULL;
+	     option = otCoapOptionIteratorGetNextOption(iterator))
 	{
 		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength < sizeof(uri_query))
 		{
-			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+			SuccessOrExit(otCoapOptionIteratorGetOptionValue(iterator, uri_query));
 			valid_query = true;
 			break;
 		}
@@ -462,8 +469,8 @@ static void registerCoapResources(otInstance *aInstance)
 	sImageResource.mContext = aInstance;
 	sImageResource.mHandler = &handleImageRequest;
 
-	SuccessOrExit(error = otCoapAddResource(aInstance, &sDiscoverResource));
-	SuccessOrExit(error = otCoapAddResource(aInstance, &sImageResource));
+	otCoapAddResource(aInstance, &sDiscoverResource);
+	otCoapAddResource(aInstance, &sImageResource);
 
 exit:
 	assert(error == OT_ERROR_NONE);
@@ -503,9 +510,11 @@ static void list_error(void)
 	otCliOutputFormat("Parse error, usage: list devices\r\n");
 }
 
-static void handle_cli_list(int argc, char *argv[])
+static void handle_cli_list(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc == 1 && strcmp(argv[0], "devices") == 0)
+	(void)aContext;
+
+	if (aArgsLength == 1 && strcmp(aArgs[0], "devices") == 0)
 	{
 		listConnectedDevice();
 	}
@@ -521,9 +530,11 @@ static void assign_error(void)
 	otCliOutputFormat("Parse error, usage: assign [Device ID] [image.gz]\r\n");
 }
 
-static void handle_cli_assign(int argc, char *argv[])
+static void handle_cli_assign(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc != 2)
+	(void)aContext;
+
+	if (aArgsLength != 2)
 	{
 		assign_error();
 		return;
@@ -532,10 +543,10 @@ static void handle_cli_assign(int argc, char *argv[])
 	else
 	{
 		//assign <ID> <filename>
-		char *      fileLabel = argv[1];
+		char       *fileLabel = aArgs[1];
 		int         len       = strlen(fileLabel);
 		const char *gzip      = &fileLabel[len - 3];
-		int         inputId   = atoi(argv[0]);
+		int         inputId   = atoi(aArgs[0]);
 
 		bool deviceIDWithinLimits = (inputId >= 0 && inputId <= MAX_CONNECTED_DEVICES_LIST);
 
@@ -577,7 +588,7 @@ ca_error init_sed_eink_commands(otInstance *aInstance)
 	sCliCommands[1].mCommand = &handle_cli_assign;
 	sCliCommands[1].mName    = "assign";
 
-	otCliSetUserCommands(sCliCommands, 2);
+	otCliSetUserCommands(sCliCommands, 2, OT_INSTANCE);
 }
 
 static void quit(int sig)
@@ -599,7 +610,7 @@ int main(int argc, char *argv[])
 	posixPlatformSetOrigArgs(argc, argv);
 	while (posixPlatformInit() < 0) sleep(1);
 	OT_INSTANCE = otInstanceInitSingle();
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	isRunning = 1;
 	signal(SIGINT, quit);

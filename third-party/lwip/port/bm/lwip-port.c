@@ -262,12 +262,12 @@ static void processStateChange(otChangedFlags aFlags, void *aContext)
 	}
 }
 
-static void processAddress(const otIp6Address *aAddress, uint8_t aPrefixLength, bool aIsAdded, void *aContext)
+static void processAddress(const otIp6AddressInfo *aAddressInfo, bool aIsAdded, void *aContext)
 {
 	(void)aContext;
 
 	// All multicast addresses have prefix ff00::/8
-	bool isMulticast = (aAddress->mFields.m8[0] == 0xff);
+	bool isMulticast = (aAddressInfo->mAddress->mFields.m8[0] == 0xff);
 
 	ca_log_info("address changed");
 
@@ -275,22 +275,22 @@ static void processAddress(const otIp6Address *aAddress, uint8_t aPrefixLength, 
 	{
 		if (isMulticast)
 		{
-			addMulticastAddress(aAddress);
+			addMulticastAddress(aAddressInfo->mAddress);
 		}
 		else
 		{
-			addAddress(aAddress);
+			addAddress(aAddressInfo->mAddress);
 		}
 	}
 	else
 	{
 		if (isMulticast)
 		{
-			delMulticastAddress(aAddress);
+			delMulticastAddress(aAddressInfo->mAddress);
 		}
 		else
 		{
-			delAddress(aAddress);
+			delAddress(aAddressInfo->mAddress);
 		}
 	}
 }

@@ -305,9 +305,9 @@ static void nonschedule_test(void **state)
 static void multi_init(ca_tasklet *testTasklet,
                        ca_tasklet *testTasklet2,
                        ca_tasklet *testTasklet3,
-                       void *      contextPtr,
-                       void *      contextPtr2,
-                       void *      contextPtr3)
+                       void       *contextPtr,
+                       void       *contextPtr2,
+                       void       *contextPtr3)
 {
 	uint32_t timeAbs, timeDelta;
 	ca_error status;

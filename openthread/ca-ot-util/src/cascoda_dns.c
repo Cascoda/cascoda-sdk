@@ -40,11 +40,13 @@
 // 2. Full IPv6 connectivity to the internet (and probably/possibly NAT64)
 // 3. IPv4 connectivity to the internet via NAT64
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "openthread/dns.h"
+#include "openthread/dns_client.h"
 
 #include "ca-ot-util/cascoda_dns.h"
 #include "ca821x_log.h"
@@ -79,8 +81,8 @@ struct dnsServer
 struct dns_context
 {
 	dns_index    server;      //!< Index of the DNS server used
-	void *       context;     //!< User context to be provided to the callback
-	otInstance * instance;    //!< Openthread instance
+	void        *context;     //!< User context to be provided to the callback
+	otInstance  *instance;    //!< Openthread instance
 	dns_callback callback;    //!< User callback to call upon completion
 	uint8_t      retry_count; //!< Number of retries left to attempt
 	char         hostname[];  //!< Variable length hostname
@@ -155,32 +157,37 @@ static void dns_register_timeout(dns_index aIndex)
 }
 
 /**
- * Handle the DNS callback from the openthread stack
- * @param aContext  dns_context pointer, must be freed in here
- * @param aHostname host name string
- * @param aAddress  address that has been resolved
- * @param aTtl      DNS ttl for caching
- * @param aResult   openthread error code
+ * Handle the DNS callback from the openthread stack.
+ * @param aError    The result of the DNS transaction.
+ * @param aResponse A pointer to the response (it is always non-NULL).
+ * @param aContext  dns_context pointer, must be freed in here.
  */
-static void dns_handle_response(void *              aContext,
-                                const char *        aHostname,
-                                const otIp6Address *aAddress,
-                                uint32_t            aTtl,
-                                otError             aResult)
+static void dns_handle_response(otError aError, const otDnsAddressResponse *aResponse, void *aContext)
 {
 	struct dns_context *context = aContext;
+	char                hostName[OT_DNS_MAX_NAME_SIZE];
+	otIp6Address        address;
+	uint32_t            ttl;
 
-	(void)aHostname;
-	(void)aTtl;
+	ca_log_debg("DNS Response error %s", otThreadErrorToString(aError));
 
-	ca_log_debg("DNS Response error %s", otThreadErrorToString(aResult));
+	assert(otDnsAddressResponseGetHostName(aResponse, hostName, sizeof(hostName)) == OT_ERROR_NONE);
+	ca_log_info("DNS response for %s - ", hostName);
 
-	if (aResult == OT_ERROR_NONE)
+	if (aError == OT_ERROR_NONE)
 	{
 		DNS_RegisterSuccess(context->server);
-		context->callback(CA_ERROR_SUCCESS, aAddress, context->server, context->context);
+
+		uint16_t index = 0;
+
+		while (otDnsAddressResponseGetAddress(aResponse, index, &address, &ttl) == OT_ERROR_NONE)
+		{
+			index++;
+		}
+
+		context->callback(CA_ERROR_SUCCESS, &address, context->server, context->context);
 	}
-	else if (aResult == OT_ERROR_RESPONSE_TIMEOUT)
+	else if (aError == OT_ERROR_RESPONSE_TIMEOUT)
 	{
 		dns_register_timeout(context->server);
 		if (context->retry_count)
@@ -215,28 +222,27 @@ static void dns_handle_response(void *              aContext,
  */
 static ca_error dns_query_next_server(otInstance *aInstance, struct dns_context *aContext)
 {
-	ca_error      error = CA_ERROR_SUCCESS;
-	otDnsQuery    dnsQuery;
-	otMessageInfo messageInfo;
-	otError       oterr;
-	bool          dns64;
+	ca_error          error = CA_ERROR_SUCCESS;
+	otDnsQueryConfig  queryConfig;
+	otDnsQueryConfig *config;
+	otError           oterr;
+	bool              dns64;
 
-	memset(&dnsQuery, 0, sizeof(dnsQuery));
-	memset(&messageInfo, 0, sizeof(messageInfo));
+	memset(&queryConfig, 0, sizeof(queryConfig));
+	config = &queryConfig;
 
-	dnsQuery.mMessageInfo = &messageInfo;
-	messageInfo.mPeerPort = 53;
-	error                 = dns_get_server(&(messageInfo.mPeerAddr), &(aContext->server));
+	config->mServerSockAddr.mPort = 53;
+	error                         = dns_get_server(&(config->mServerSockAddr.mAddress), &(aContext->server));
+
 	if (error)
 		goto exit;
 
-	dns64              = aContext->server->useDns64;
-	dnsQuery.mHostname = aContext->hostname;
+	dns64 = aContext->server->useDns64;
 	ca_log_debg("Sending %s request to DNS server %d", dns64 ? "DNS64" : "DNS", aContext->server - dns_servers);
 	if (aContext->server->useDns64)
-		oterr = otDnsClientQueryDNS64(aInstance, &dnsQuery, &dns_handle_response, aContext);
+		oterr = otDnsClientResolveIp4Address(aInstance, aContext->hostname, &dns_handle_response, aContext, config);
 	else
-		oterr = otDnsClientQuery(aInstance, &dnsQuery, &dns_handle_response, aContext);
+		oterr = otDnsClientResolveAddress(aInstance, aContext->hostname, &dns_handle_response, aContext, config);
 
 	if (oterr)
 	{
@@ -394,11 +400,11 @@ void DNS_Init(otInstance *aInstance)
 	(void)aInstance;
 
 	//Cloudflare DNS64 IPv6 (true IPv6)
-	otIp6AddressFromString("2606:4700:4700::64", &addr);
+	assert(otIp6AddressFromString("2606:4700:4700::64", &addr) == OT_ERROR_NONE);
 	DNS_AddServer(&addr, 7, false);
 
 	//Cloudflare DNS IPv4 (with NAT64 well known prefix)
-	otIp6AddressFromString(NAT64_PREFIX "1.1.1.1", &addr);
+	assert(otIp6AddressFromString(NAT64_PREFIX "1.1.1.1", &addr) == OT_ERROR_NONE);
 	DNS_AddServer(&addr, 6, true);
 
 	/*

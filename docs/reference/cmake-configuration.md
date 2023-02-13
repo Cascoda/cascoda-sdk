@@ -70,3 +70,4 @@ Set the target configuration for the firmware.
 | ----- | ------- |
 | TWO_SIDED | Configured for the Chili2D
 | ONE_SIDED | Configured for the Chili2S
+| DEV_BOARD | Configured for the [Development Board](../how-to/howto-devboard.md)

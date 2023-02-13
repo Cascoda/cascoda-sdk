@@ -157,7 +157,7 @@ otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc  = {0};
-		otKeyTableEntry *             otKeyDesc  = (otKeyTableEntry *)aBuf;
+		otKeyTableEntry              *otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
 		error = MLME_GET_request_sync(aAttr, aIndex, aLen, (uint8_t *)(&caKeyDesc), pDeviceRef);
@@ -218,7 +218,7 @@ otError otPlatMlmeSet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, ui
 	if (aAttr == OT_PIB_MAC_KEY_TABLE)
 	{
 		struct M_KeyDescriptor_thread caKeyDesc  = {0};
-		const otKeyTableEntry *       otKeyDesc  = (otKeyTableEntry *)aBuf;
+		const otKeyTableEntry        *otKeyDesc  = (otKeyTableEntry *)aBuf;
 		uint8_t                       flagOffset = 0;
 
 		caKeyDesc.Fixed.KeyIdLookupListEntries = otKeyDesc->mKeyIdLookupListEntries;
@@ -504,7 +504,7 @@ static ca_error handlePollConfirm(struct MLME_POLL_confirm_pset *params, struct 
 #endif // CASCODA_CA_VER >= 8212
 
 static ca_error handleCommStatusIndication(struct MLME_COMM_STATUS_indication_pset *params,
-                                           struct ca821x_dev *                      pDeviceRef)
+                                           struct ca821x_dev                       *pDeviceRef)
 {
 	//TODO: Move this off the stack
 	otCommStatusIndication commInd = {0};
@@ -544,7 +544,7 @@ static ca_error handleDataConfirm(struct MCPS_DATA_confirm_pset *params, struct 
 }
 
 static ca_error handleBeaconNotify(struct MLME_BEACON_NOTIFY_indication_pset *params,
-                                   struct ca821x_dev *                        pDeviceRef) //Async
+                                   struct ca821x_dev                         *pDeviceRef) //Async
 {
 	//TODO: Move this off the stack
 	otBeaconNotify beaconNotify = {0};
@@ -624,7 +624,7 @@ void initIeeeEui64()
 {
 	int     file;
 	uint8_t create      = false;
-	char *  dataDir     = posixGetDataDir(NODE_ID);
+	char   *dataDir     = posixGetDataDir(NODE_ID);
 	size_t  fileNameLen = sizeof(IeeeEuiFile) + strlen(dataDir) + 1; //"datadir/filename"
 	char    fileName[fileNameLen];
 

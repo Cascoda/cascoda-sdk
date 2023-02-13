@@ -44,8 +44,11 @@ public:
 	 */
 	enum FlashType
 	{
-		APROM = 0, //!< Rewrite the APROM (application)
-		DFU   = 1, //!< Rewrite the DFU area (boot loader)
+		APROM_CLEAR             = 0, //!< Clear the APROM (application)
+		APROM_PROGRAM           = 1, //!< Rewrite the APROM while preserving persistent APROM data
+		APROM_CLEAR_AND_PROGRAM = 2, //!< Rewrite the APROM and delete persistent APROM data
+		DFU                     = 3, //!< Rewrite the DFU area (boot loader)
+		MANUFACTURER            = 4, //!< Rewrite the manufacturer reserved page
 	};
 
 	/**
@@ -89,13 +92,15 @@ public:
 
 	/**
 	 * Construct a flasher instance
-	 * @param aAppFilePath     Path to the binary file of the application to be flashed
-	 * @param aOtaBootFilePath Path to the binary file of the ota bootloader to be flashed
-	 * @param aDeviceInfo      Reference to a deviceInfo struct of the device to be reflashed
-	 * @param aFlashType       Type of reflashing to execute (Update application or bootloader?)
+	 * @param aAppFilePath              Path to the binary file of the application to be flashed
+	 * @param aOtaBootFilePath          Path to the binary file of the ota bootloader to be flashed
+	 * @param aManufacturerDataFilePath Path to the binary file of the manufacturer data file to be flashed
+	 * @param aDeviceInfo               Reference to a deviceInfo struct of the device to be reflashed
+	 * @param aFlashType                Type of reflashing to execute (Update application or bootloader?)
 	 */
-	Flasher(const char *      aAppFilePath,
-	        const char *      aOtaBootFilePath,
+	Flasher(const char       *aAppFilePath,
+	        const char       *aOtaBootFilePath,
+	        const char       *aManufacturerDataFilePath,
 	        const DeviceInfo &aDeviceInfo,
 	        FlashType         aFlashType);
 
@@ -142,14 +147,18 @@ private:
 	std::mutex    mMutex;
 	std::ifstream mAppFile;
 	std::ifstream mOtaBootFile;
+	std::ifstream mManuDataFile;
 	size_t        mAppFileSize;
 	size_t        mOtaBootFileSize;
+	size_t        mManuDataFileSize;
 	size_t        mAppMaxFileSize;
-	size_t        mCombinedFileSize;
 	size_t        mOtaBootMaxFileSize;
-	size_t        mPageSize;
+	size_t        mManuDataMaxFileSize;
 	uint32_t      mAppStartAddr;
 	uint32_t      mOtaBootStartAddr;
+	uint32_t      mManuDataStartAddr;
+	size_t        mCombinedFileSize;
+	size_t        mPageSize;
 	ca821x_dev    mDeviceRef;
 	DeviceInfo    mDeviceInfo;
 	uint32_t      mCounter;
@@ -181,9 +190,9 @@ private:
 	static ca_error handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef);
 
 	ca_error send_reboot_request();
-	void     configure_max_binsize();
-	size_t   get_page_count() { return (mCombinedFileSize + (mPageSize - 1)) / mPageSize; }
-	uint32_t get_start_address() { return mOtaBootFilePresent ? mOtaBootStartAddr : mAppStartAddr; }
+	void     configure_size_and_addresses();
+	size_t   get_page_count_for_erase();
+	uint32_t get_start_address();
 
 	static const char *state_string(State aState);
 };

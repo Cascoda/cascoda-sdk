@@ -81,7 +81,7 @@ const struct SIF_IL3820_lut lut_partial_update = {{0x10, 0x18, 0x18, 0x08, 0x18,
  * \param command_byte - The command byte to send
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_SendCommand(uint8_t command_byte)
+void SIF_IL3820_SendCommand(uint8_t command_byte)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 0);
@@ -97,7 +97,7 @@ static void SIF_IL3820_SendCommand(uint8_t command_byte)
  * \param data_byte - The data byte to send
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_SendData(uint8_t data_byte)
+void SIF_IL3820_SendData(uint8_t data_byte)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 1);
@@ -116,7 +116,7 @@ static void SIF_IL3820_SendData(uint8_t data_byte)
  * \param Yend   - End position of the window address in the Y direction.
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Yend)
+void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Yend)
 {
 	SIF_IL3820_SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
 	SIF_IL3820_SendData((Xstart >> 3) & 0xFF);
@@ -136,7 +136,7 @@ static void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Y
  * \param Ystart - Initial settings for the RAM Y address in the address counter.
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_SetCursor(u16_t Xstart, u16_t Ystart)
+void SIF_IL3820_SetCursor(u16_t Xstart, u16_t Ystart)
 {
 	SIF_IL3820_SendCommand(SET_RAM_X_ADDRESS_COUNTER);
 	SIF_IL3820_SendData((Xstart >> 3) & 0xFF);
@@ -167,7 +167,7 @@ static void SIF_IL3820_WaitUntilIdle(void)
  * \brief Turns on the display
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_TurnOnDisplay(void)
+void SIF_IL3820_TurnOnDisplay(void)
 {
 	SIF_IL3820_SendCommand(DISPLAY_UPDATE_CONTROL_2);
 	SIF_IL3820_SendData(0xC4);
@@ -182,7 +182,7 @@ static void SIF_IL3820_TurnOnDisplay(void)
  * \brief Resets Eink Panel
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_Reset(void)
+void SIF_IL3820_Reset(void)
 {
 	BSP_ModuleSetGPIOPin(SIF_IL3820_RST_PIN, 1);
 	WAIT_ms(2);
@@ -199,19 +199,21 @@ static void SIF_IL3820_Reset(void)
  *******************************************************************************
  * \param qrcode - The array containing the QR code data.
  * \param image  - The image array that will be modified.
+ * \param scale  - The image scaling, currently supported 1 & 2.
  * \param x_pos  - The x-coordinate of the top-left corner of the QR symbol.
  * \param y_pos  - The y-coordinate of the top-left corner of the QR symbol.
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_embed_qr(const uint8_t *qrcode, uint8_t *image, uint8_t x_pos, uint8_t y_pos)
+static void SIF_IL3820_embed_qr(const uint8_t *qrcode, uint8_t *image, uint8_t scale, uint8_t x_pos, uint8_t y_pos)
 {
-	int size = qrcodegen_getSize(qrcode);
+	int size        = qrcodegen_getSize(qrcode);
+	int size_scaled = size * scale;
 
-	for (int y = y_pos; y < y_pos + size; y++)
+	for (int y = y_pos; y < y_pos + size_scaled; y++)
 	{
-		for (int x = x_pos; x < x_pos + size; x++)
+		for (int x = x_pos; x < x_pos + size_scaled; x++)
 		{
-			if (!qrcodegen_getModule(qrcode, x - x_pos, y - y_pos))
+			if (!qrcodegen_getModule(qrcode, (x - x_pos) / scale, (y - y_pos) / scale))
 				image[(x + (y * SIF_IL3820_WIDTH)) / 8] |= (1 << (7 - (x % 8)));
 			else
 				image[(x + (y * SIF_IL3820_WIDTH)) / 8] &= ~(1 << (7 - (x % 8)));
@@ -226,6 +228,10 @@ ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut)
 	/*****************************************/
 	/*** Configure GPIO input and outputs  ***/
 	/*****************************************/
+	/* De-register all non-SPI pins first in case they are used */
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_RST_PIN);
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_DC_PIN);
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_BUSY_PIN);
 	/* BUSY - Pin 31 */
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
@@ -291,6 +297,23 @@ ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut)
 	//BSP_ModuleSetGPIOPin(SIF_IL3820_CS_PIN, 1);
 
 	return CA_ERROR_SUCCESS;
+}
+
+void SIF_IL3820_Deinitialise(void)
+{
+	/* tristate and pull-up interface pins */
+
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_RST_PIN);
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
+	    SIF_IL3820_RST_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
+
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_DC_PIN);
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
+	    SIF_IL3820_DC_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
+
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_BUSY_PIN);
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
+	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
 }
 
 void SIF_IL3820_Display(const uint8_t *image)
@@ -363,6 +386,11 @@ void SIF_IL3820_DeepSleep(void)
 
 ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y)
 {
+	return SIF_IL3820_overlay_qr_code_scale(text, image, 1, x, y);
+}
+
+ca_error SIF_IL3820_overlay_qr_code_scale(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y)
+{
 	enum qrcodegen_Ecc errCorLvl = qrcodegen_Ecc_LOW; // Error correction level
 
 	// Make the QR Code symbol
@@ -372,7 +400,7 @@ ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x,
         text, tempBuffer, qrcode, errCorLvl, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
 	if (success)
 	{
-		SIF_IL3820_embed_qr(qrcode, image, x, y);
+		SIF_IL3820_embed_qr(qrcode, image, scale, x, y);
 		return CA_ERROR_SUCCESS;
 	}
 	return CA_ERROR_FAIL;

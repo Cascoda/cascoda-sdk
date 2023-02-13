@@ -1,270 +1,76 @@
-/****************************************************************************
-** Copyright (C) 2020 MikroElektronika d.o.o.
-** Contact: https://www.mikroe.com/contact
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-** The above copyright notice and this permission notice shall be
-** included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-** EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-** OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-** IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-** DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-** OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-**  USE OR OTHER DEALINGS IN THE SOFTWARE.
-****************************************************************************/
-
-/*!
- * @file environment2.c
- * @brief Environment 2 Click Driver.
+/**
+ * @file
+ * @brief mikrosdk interface
  */
-#include "environment2.h"
-#include <stdio.h>
-#include "cascoda-bm/cascoda_interface_core.h"
+/*
+ *  Copyright (c) 2022, Cascoda Ltd.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+/*
+ * Example click interface driver
+*/
+
+/* include <device>_drv.h and <device>_click.h */
+#include "environment2_click.h"
+#include "environment2_drv.h"
+
+/* include cascoda-bm code if required */
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
-#include "math.h"
 
-/**
- * @brief Environment 2 the maximum value of fix16_t.
- *
- */
-#define FIX16_MAXIMUM 0x7FFFFFFF
+/* declare <device>_t <device> and <device>_cfg_t cfg structures for click objects */
+static environment2_t     environment2;
+static environment2_cfg_t cfg;
 
-/**
- * @brief Environment 2 the minimum value of fix16_t.
- *
- */
-#define FIX16_MINIMUM 0x80000000
+/* timing values */
+static uint32_t sgp40_t_init = 0; /* initialisation time */
 
-/**
- * @brief Environment 2 the value used to indicate overflows when 
- * FIXMATH_NO_OVERFLOW is not specified.
- *
- */
-#define FIX16_OVERFLOW 0x80000000
-
-/**
- * @brief Environment 2 fix16_t value of 1.
- *
- */
-#define FIX16_ONE 0x00010000
-
-static environment2_voc_algorithm_params voc_algorithm_params;
-static environment2_t                    environment2;
-
-// ---------------------------------------------- PRIVATE FUNCTION DECLARATIONS
-static fix16_t dev_voc_algorithm_mox_model_process(environment2_voc_algorithm_params *params, fix16_t sraw);
-
-static fix16_t dev_voc_algorithm_sigmoid_scaled_process(environment2_voc_algorithm_params *params, fix16_t sample);
-
-static fix16_t dev_voc_algorithm_adaptive_lowpass_process(environment2_voc_algorithm_params *params, fix16_t sample);
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_sigmoid_process(environment2_voc_algorithm_params *params,
-                                                                         fix16_t                            sample);
-
-static void dev_voc_algorithm_mean_variance_estimator_calculate_gamma(environment2_voc_algorithm_params *params,
-                                                                      fix16_t voc_index_from_prior);
-
-static void dev_voc_algorithm_mean_variance_estimator_process(environment2_voc_algorithm_params *params,
-                                                              fix16_t                            sraw,
-                                                              fix16_t                            voc_index_from_prior);
-
-static void dev_voc_algorithm_mox_model_set_parameters(environment2_voc_algorithm_params *params,
-                                                       fix16_t                            sraw_std,
-                                                       fix16_t                            sraw_mean);
-
-static void dev_voc_algorithm_mean_variance_estimator_set_parameters(environment2_voc_algorithm_params *params,
-                                                                     fix16_t                            std_initial,
-                                                                     fix16_t tau_mean_variance_hours,
-                                                                     fix16_t gating_max_duration_minutes);
-
-static void dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(environment2_voc_algorithm_params *params,
-                                                                             fix16_t                            l_val,
-                                                                             fix16_t                            x0_val,
-                                                                             fix16_t                            k_val);
-
-static void dev_voc_algorithm_mean_variance_estimator_sigmoid_init(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_mean_variance_estimator_init_instances(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_mean_variance_estimator_init(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_mox_model_init(environment2_voc_algorithm_params *params);
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_get_std(environment2_voc_algorithm_params *params);
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_get_mean(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_sigmoid_scaled_set_parameters(environment2_voc_algorithm_params *params, fix16_t offset);
-
-static void dev_voc_algorithm_sigmoid_scaled_init(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_adaptive_lowpass_set_parameters(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_adaptive_lowpass_init(environment2_voc_algorithm_params *params);
-
-static void dev_voc_algorithm_init_instances(environment2_voc_algorithm_params *params);
-
-inline fix16_t fix16_from_int(int32_t a)
-{
-	return a * FIX16_ONE;
-}
-
-inline int32_t fix16_cast_to_int(fix16_t a)
-{
-	return (a >> 16);
-}
-
-/**
- * @brief Environment 2 multiplies the two given fix16_t's function.
- * @details Multiplies the two given fix16_t's and returns the result.
- * @return Multiplies two fix16_t's.
- *
- * @note None.
- *
- */
-static fix16_t dev_fix16_mul(fix16_t in_arg0, fix16_t in_arg1);
-
-/**
- * @brief Environment 2 divides the first given fix16_t by the second function.
- * @details Divides the first given fix16_t by the second and returns the result.
- * @return Division quotient.
- *
- * @note None.
- *
- */
-static fix16_t dev_fix16_div(fix16_t in_arg0, fix16_t in_arg1);
-
-/**
- * @brief Environment 2 square root function.
- * @details Returns the square root of the given fix16_t.
- * @return Square root.
- *
- * @note None.
- *
- */
-static fix16_t dev_fix16_sqrt(fix16_t in_value);
-
-/**
- * @brief Environment 2 exponent function.
- * @details Returns the exponent (e^) of the given fix16_t.
- * @return Exponent.
- *
- * @note None.
- *
- */
-static fix16_t dev_fix16_exp(fix16_t in_value);
-
-/**
- * @brief Environment 2 duration of raw data measurement delay.
- * @details Reset delay for 30 milliseconds.
- * @return Nothing.
- *
- * @note None.
- *
- */
-static void dev_measurement_duration_raw_delay(void);
-
-/**
- * @brief Environment 2 duration of self-test delay.
- * @details Reset delay for 250 milliseconds.
- * @return Nothing.
- *
- * @note None.
- *
- */
-static void dev_measurement_duration_test_delay(void);
-
-/**
- * @brief Environment 2 duration of temperature and relative humidity data measurement delay.
- * @details Reset delay for 10 milliseconds.
- * @return Nothing.
- *
- * @note None.
- *
- */
-static void dev_measurement_duration_temp_hum_delay(void);
-
-/**
- * @brief Environment 2 CRC checksum calculation.
- * @details Generated by the CRC algorithm according to the 
- * properties as stated.
- * @return CRC checksum.
- *
- * @note None.
- *
- */
-static uint8_t dev_calc_crc(uint8_t data_0, uint8_t data_1);
-
-/**
- * @brief Environment 2 set device slave address.
- * @details This function sets I2C address of the subordinate I2C device.
- * @param[in] ctx : Click context object.
- * See #environment2_t object definition for detailed explanation.
- * @param[in] select_device : 
- *         @li @c 0x00 ( ENVIRONMENT2_SEL_SGP40 ) - Sets I2C address of the SGP40 Sensor,
- *         @li @c 0x01 ( ENVIRONMENT2_SEL_SHT40 ) - Sets I2C address of the SHT40 Sensor.
- * @return @li @c  0 - Success,
- *         @li @c -1 - Error.
- *
- * See #err_t definition for detailed explanation.
- * @note None.
- * 
- */
-static err_t dev_set_device_slave_address(environment2_t *ctx, uint8_t select_device);
-
-/**
- * @brief Write data to slave
- * @details This function append the slave address to the first byte of data buffer.
- * @param[in] i2c : i2c handle.
- * @param[in] tx_buf : data buffer .
- * @param[in] len : data buffer length.
- *
- */
-static void write_data(i2c_master_t *i2c, uint8_t *tx_buf, size_t len);
-// ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
-
-void environment2_cfg_setup(environment2_cfg_t *cfg)
-{
-	// Communication gpio pins
-
-	cfg->scl = HAL_PIN_NC;
-	cfg->sda = HAL_PIN_NC;
-
-	cfg->i2c_speed   = I2C_MASTER_SPEED_STANDARD;
-	cfg->i2c_address = ENVIRONMENT2_SGP40_SET_DEV_ADDR;
-}
-
-err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg)
+err_t MIKROSDK_ENVIRONMENT2_init(void)
 {
 	i2c_master_config_t i2c_cfg;
 
 	i2c_master_configure_default(&i2c_cfg);
 
-	i2c_cfg.scl = cfg->scl;
-	i2c_cfg.sda = cfg->sda;
+	i2c_cfg.scl = cfg.scl;
+	i2c_cfg.sda = cfg.sda;
 
-	ctx->slave_address = cfg->i2c_address;
+	environment2.slave_address = cfg.i2c_address;
 
-	if (i2c_master_open(&ctx->i2c, &i2c_cfg) == I2C_MASTER_ERROR)
+	if (i2c_master_open(&environment2.i2c, &i2c_cfg) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
 	}
 
-	if (i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address) == I2C_MASTER_ERROR)
+	if (i2c_master_set_slave_address(&environment2.i2c, environment2.slave_address) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
 	}
 
-	if (i2c_master_set_speed(&ctx->i2c, cfg->i2c_speed) == I2C_MASTER_ERROR)
+	if (i2c_master_set_speed(&environment2.i2c, cfg.i2c_speed) == I2C_MASTER_ERROR)
 	{
 		return I2C_MASTER_ERROR;
 	}
@@ -272,970 +78,46 @@ err_t environment2_init(environment2_t *ctx, environment2_cfg_t *cfg)
 	return I2C_MASTER_SUCCESS;
 }
 
-err_t environment2_generic_write(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *tx_buf)
+/* determine sgp40 read status */
+static uint8_t MIKROSDK_ENVIRONMENT2_status(void)
 {
-	err_t status;
+	uint8_t  status;
+	uint32_t tmeas;
 
-	status = ENVIRONMENT2_ERROR;
+	tmeas = TIME_ReadAbsoluteTime();
 
+	if (sgp40_t_init == SGP40_T_SLEEP)
+		status = ENVIRONMENT2_ST_SLEEP;
+	else if ((tmeas - sgp40_t_init) < SGP40_T_INIT)
+		status = ENVIRONMENT2_ST_INIT;
+	else if ((tmeas - sgp40_t_init) < SGP40_T_SETTLING)
+		status = ENVIRONMENT2_ST_SETTLING;
+	else
+		status = ENVIRONMENT2_ST_OK;
+
+	return (status);
+}
+
+/* internal switching i2c slave address between sht40 and sgp40 */
+static void MIKROSDK_ENVIRONMENT2_set_device_slave_address(uint8_t select_device)
+{
 	if (select_device == ENVIRONMENT2_SEL_SGP40)
 	{
-		if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
-		{
-			tx_buf[0] = (uint8_t)(cmd >> 8);
-			tx_buf[1] = (uint8_t)cmd;
-
-			write_data(&ctx->i2c, tx_buf, 2);
-
-			status = ENVIRONMENT2_OK;
-		}
+		environment2.slave_address = ENVIRONMENT2_SGP40_SET_DEV_ADDR;
+		i2c_master_set_slave_address(&environment2.i2c, environment2.slave_address);
 	}
-
-	return status;
-}
-
-err_t environment2_generic_read(environment2_t *ctx, uint8_t select_device, uint16_t cmd, uint8_t *rx_buf)
-{
-	uint8_t tx_buf[2];
-	err_t   status;
-
-	status = ENVIRONMENT2_ERROR;
-
-	if (select_device == ENVIRONMENT2_SEL_SGP40)
+	else /* ENVIRONMENT2_SEL_SHT40 */
 	{
-		tx_buf[0] = (uint8_t)(cmd >> 8);
-		tx_buf[1] = (uint8_t)cmd;
-
-		write_data(&ctx->i2c, tx_buf, 2);
-		dev_measurement_duration_test_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, 3);
-
-		status = ENVIRONMENT2_OK;
-	}
-	else if (select_device == ENVIRONMENT2_SEL_SHT40)
-	{
-		tx_buf[0] = (uint8_t)cmd;
-
-		write_data(&ctx->i2c, tx_buf, 1);
-		dev_measurement_duration_temp_hum_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, 6);
-
-		status = ENVIRONMENT2_OK;
-	}
-
-	return status;
-}
-
-err_t environment2_get_temp_hum(float *humidity, float *temperature)
-{
-	uint8_t  tx_buf[1];
-	uint8_t  rx_buf[6];
-	uint16_t t_ticks;
-	uint16_t rh_ticks;
-	err_t    status;
-
-	status = ENVIRONMENT2_OK;
-
-	tx_buf[0] = ENVIRONMENT2_SHT40_CMD_MEASURE_T_RH_HIGH_PRECISION;
-
-	if (dev_set_device_slave_address(&environment2, ENVIRONMENT2_SEL_SHT40) == ENVIRONMENT2_OK)
-	{
-		write_data(&environment2.i2c, tx_buf, 1);
-		dev_measurement_duration_temp_hum_delay();
-		i2c_master_read(&environment2.i2c, rx_buf, 6);
-
-		t_ticks = rx_buf[0];
-		t_ticks <<= 8;
-		t_ticks |= rx_buf[1];
-
-		rh_ticks = rx_buf[3];
-		rh_ticks <<= 8;
-		rh_ticks |= rx_buf[4];
-
-		*temperature = (175 * (((float)t_ticks) / 65535)) - 45;
-		*humidity    = (125 * (((float)rh_ticks) / 65535)) - 6;
-	}
-	else
-	{
-		status = ENVIRONMENT2_ERROR;
-	}
-
-	return status;
-}
-
-err_t environment2_get_air_quality(uint16_t *air_quality)
-{
-	uint8_t  tx_buf[8];
-	uint8_t  rx_buf[3];
-	uint16_t tmp_hum;
-	uint16_t tmp_temp;
-	float    temperature;
-	float    humidity;
-	uint16_t result;
-	err_t    status;
-
-	status = ENVIRONMENT2_OK;
-	environment2_get_temp_hum(&humidity, &temperature);
-
-	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_RAW >> 8);
-	tx_buf[1] = (uint8_t)ENVIRONMENT2_SGP40_CMD_MEASURE_RAW;
-
-	tmp_hum = (uint16_t)(humidity * (65535.0 / 100.0));
-
-	tx_buf[2] = (uint8_t)(tmp_hum >> 8);
-	tx_buf[3] = (uint8_t)tmp_hum;
-	tx_buf[4] = dev_calc_crc(tx_buf[2], tx_buf[3]);
-
-	tmp_temp = (uint16_t)((temperature + 45.0) * (65535.0 / 175.0));
-
-	tx_buf[5] = (uint8_t)(tmp_temp >> 8);
-	tx_buf[6] = (uint8_t)tmp_temp;
-	tx_buf[7] = dev_calc_crc(tx_buf[5], tx_buf[6]);
-
-	if (dev_set_device_slave_address(&environment2, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
-	{
-		write_data(&environment2.i2c, tx_buf, 8);
-		dev_measurement_duration_raw_delay();
-		i2c_master_read(&environment2.i2c, rx_buf, 3);
-
-		result = rx_buf[0];
-		result <<= 8;
-		result |= rx_buf[1];
-
-		*air_quality = result;
-	}
-	else
-	{
-		status = ENVIRONMENT2_ERROR;
-	}
-
-	return status;
-}
-
-uint16_t environment2_sgp40_measure_test(environment2_t *ctx)
-{
-	uint8_t  tx_buf[2];
-	uint8_t  rx_buf[3];
-	uint16_t result;
-
-	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_TEST >> 8);
-	tx_buf[1] = (uint8_t)ENVIRONMENT2_SGP40_CMD_MEASURE_TEST;
-
-	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
-	{
-		write_data(&ctx->i2c, tx_buf, 2);
-		dev_measurement_duration_test_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, 3);
-
-		result = rx_buf[0];
-		result <<= 8;
-		result |= rx_buf[1];
-	}
-
-	return result;
-}
-
-err_t environment2_sgp40_heater_off(environment2_t *ctx)
-{
-	uint8_t tx_buf[2];
-	err_t   status;
-
-	status = ENVIRONMENT2_OK;
-
-	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_HEATER_OFF >> 8);
-	tx_buf[1] = (uint8_t)ENVIRONMENT2_SGP40_CMD_HEATER_OFF;
-
-	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
-	{
-		write_data(&ctx->i2c, tx_buf, 2);
-	}
-	else
-	{
-		status = ENVIRONMENT2_ERROR;
-	}
-
-	return status;
-}
-
-err_t environment2_sgp40_soft_reset(environment2_t *ctx)
-{
-	uint8_t tx_buf[2];
-	err_t   status;
-
-	status = ENVIRONMENT2_OK;
-
-	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_SOFT_RESET >> 8);
-	tx_buf[1] = (uint8_t)ENVIRONMENT2_SGP40_CMD_SOFT_RESET;
-
-	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SGP40) == ENVIRONMENT2_OK)
-	{
-		write_data(&ctx->i2c, tx_buf, 2);
-	}
-	else
-	{
-		status = ENVIRONMENT2_ERROR;
-	}
-
-	return status;
-}
-
-err_t environment2_voc_algorithm_configuration(environment2_voc_algorithm_params *params)
-{
-	params->mVoc_Index_Offset            = F16(VocAlgorithm_VOC_INDEX_OFFSET_DEFAULT);
-	params->mTau_Mean_Variance_Hours     = F16(VocAlgorithm_TAU_MEAN_VARIANCE_HOURS);
-	params->mGating_Max_Duration_Minutes = F16(VocAlgorithm_GATING_MAX_DURATION_MINUTES);
-	params->mSraw_Std_Initial            = F16(VocAlgorithm_SRAW_STD_INITIAL);
-	params->mUptime                      = F16(0.);
-	params->mSraw                        = F16(0.);
-	params->mVoc_Index                   = 0;
-	dev_voc_algorithm_init_instances(params);
-
-	return ENVIRONMENT2_OK;
-}
-
-err_t environment2_config_sensors(void)
-{
-	environment2_voc_algorithm_configuration(&voc_algorithm_params);
-
-	return ENVIRONMENT2_OK;
-}
-
-err_t environment2_voc_algorithm_process(environment2_voc_algorithm_params *params, int32_t sraw, int32_t *voc_index)
-{
-	if ((params->mUptime <= F16(VocAlgorithm_INITIAL_BLACKOUT)))
-	{
-		params->mUptime = (params->mUptime + F16(VocAlgorithm_SAMPLING_INTERVAL));
-	}
-	else
-	{
-		if (((sraw > 0) && (sraw < 65000)))
-		{
-			if ((sraw < 20001))
-			{
-				sraw = 20001;
-			}
-			else if ((sraw > 52767))
-			{
-				sraw = 52767;
-			}
-			params->mSraw = (fix16_from_int((sraw - 20000)));
-		}
-		params->mVoc_Index = dev_voc_algorithm_mox_model_process(params, params->mSraw);
-		params->mVoc_Index = dev_voc_algorithm_sigmoid_scaled_process(params, params->mVoc_Index);
-		params->mVoc_Index = dev_voc_algorithm_adaptive_lowpass_process(params, params->mVoc_Index);
-
-		if ((params->mVoc_Index < F16(0.5)))
-		{
-			params->mVoc_Index = F16(0.5);
-		}
-
-		if ((params->mSraw > F16(0.)))
-		{
-			dev_voc_algorithm_mean_variance_estimator_process(params, params->mSraw, params->mVoc_Index);
-			dev_voc_algorithm_mox_model_set_parameters(params,
-			                                           dev_voc_algorithm_mean_variance_estimator_get_std(params),
-			                                           dev_voc_algorithm_mean_variance_estimator_get_mean(params));
-		}
-	}
-	*voc_index = (fix16_cast_to_int((params->mVoc_Index + F16(0.5))));
-
-	return ENVIRONMENT2_OK;
-}
-
-err_t environment2_measure_voc_index_with_rh_t(environment2_t *ctx,
-                                               int32_t *       voc_index,
-                                               int32_t *       relative_humidity,
-                                               int32_t *       temperature)
-{
-	int32_t  int_temperature, int_humidity;
-	uint16_t sraw;
-	uint8_t  tx_buf[1];
-	uint8_t  rx_buf[6];
-	uint16_t t_ticks;
-	uint16_t rh_ticks;
-	err_t    status;
-
-	status = ENVIRONMENT2_OK;
-
-	tx_buf[0] = ENVIRONMENT2_SHT40_CMD_MEASURE_T_RH_HIGH_PRECISION;
-
-	if (dev_set_device_slave_address(ctx, ENVIRONMENT2_SEL_SHT40) == ENVIRONMENT2_OK)
-	{
-		write_data(&ctx->i2c, tx_buf, 1);
-		dev_measurement_duration_temp_hum_delay();
-		i2c_master_read(&ctx->i2c, rx_buf, 6);
-
-		t_ticks = rx_buf[0];
-		t_ticks <<= 8;
-		t_ticks |= rx_buf[1];
-
-		rh_ticks = rx_buf[3];
-		rh_ticks <<= 8;
-		rh_ticks |= rx_buf[4];
-
-		*temperature       = ((21875 * (int32_t)t_ticks) >> 13) - 45000;
-		*relative_humidity = ((12500 * (int32_t)rh_ticks) >> 13);
-	}
-	else
-	{
-		status = ENVIRONMENT2_ERROR;
-	}
-
-	environment2_get_air_quality(&sraw);
-	dev_measurement_duration_raw_delay();
-
-	environment2_voc_algorithm_process(&voc_algorithm_params, sraw, voc_index);
-	return ENVIRONMENT2_OK;
-}
-
-err_t environment2_get_voc_index(int32_t *voc_index)
-{
-	int32_t  int_temperature, int_humidity;
-	uint16_t sraw;
-	err_t    status;
-
-	status = environment2_get_air_quality(&sraw);
-	dev_measurement_duration_raw_delay();
-	environment2_voc_algorithm_process(&voc_algorithm_params, sraw, voc_index);
-	return ENVIRONMENT2_OK;
-}
-
-uint8_t MIKROSDK_ENVIRONMENT2_Initialise(void)
-{
-	SENSORIF_I2C_Init();
-	environment2_cfg_t environment2_cfg; /**< Click config object. */
-	environment2_cfg_setup(&environment2_cfg);
-	ENVIRONMENT2_MAP_MIKROBUS(environment2_cfg);
-	err_t init_flag = environment2_init(&environment2, &environment2_cfg);
-
-	if (environment2_sgp40_measure_test(&environment2) != ENVIRONMENT2_SGP40_TEST_PASSED)
-	{
-		printf("  One or more tests have failed\r\n");
-	}
-
-	printf("-----------------------\r\n");
-	environment2_sgp40_heater_off(&environment2);
-	environment2_config_sensors();
-	SENSORIF_I2C_Deinit();
-}
-
-// ----------------------------------------------- PRIVATE FUNCTION DEFINITIONS
-
-static fix16_t dev_voc_algorithm_mox_model_process(environment2_voc_algorithm_params *params, fix16_t sraw)
-{
-	return (dev_fix16_mul((dev_fix16_div((sraw - params->m_Mox_Model__Sraw_Mean),
-	                                     (-(params->m_Mox_Model__Sraw_Std + F16(VocAlgorithm_SRAW_STD_BONUS))))),
-	                      F16(VocAlgorithm_VOC_INDEX_GAIN)));
-}
-
-static fix16_t dev_voc_algorithm_sigmoid_scaled_process(environment2_voc_algorithm_params *params, fix16_t sample)
-{
-	fix16_t x;
-	fix16_t shift;
-
-	x = (dev_fix16_mul(F16(VocAlgorithm_SIGMOID_K), (sample - F16(VocAlgorithm_SIGMOID_X0))));
-	if ((x < F16(-50.)))
-	{
-		return F16(VocAlgorithm_SIGMOID_L);
-	}
-	else if ((x > F16(50.)))
-	{
-		return F16(0.);
-	}
-	else
-	{
-		if ((sample >= F16(0.)))
-		{
-			shift = (dev_fix16_div(
-			    (F16(VocAlgorithm_SIGMOID_L) - (dev_fix16_mul(F16(5.), params->m_Sigmoid_Scaled__Offset))), F16(4.)));
-			return ((dev_fix16_div((F16(VocAlgorithm_SIGMOID_L) + shift), (F16(1.) + dev_fix16_exp(x)))) - shift);
-		}
-		else
-		{
-			return (dev_fix16_mul(
-			    (dev_fix16_div(params->m_Sigmoid_Scaled__Offset, F16(VocAlgorithm_VOC_INDEX_OFFSET_DEFAULT))),
-			    (dev_fix16_div(F16(VocAlgorithm_SIGMOID_L), (F16(1.) + dev_fix16_exp(x))))));
-		}
+		environment2.slave_address = ENVIRONMENT2_SHT40_SET_DEV_ADDR;
+		i2c_master_set_slave_address(&environment2.i2c, environment2.slave_address);
 	}
 }
 
-static fix16_t dev_voc_algorithm_adaptive_lowpass_process(environment2_voc_algorithm_params *params, fix16_t sample)
+/* modified i2c write addding i2c slave address to data */
+static uint8_t MIKROSDK_ENVIRONMENT2_write(uint8_t *tx_buf, size_t len)
 {
-	fix16_t abs_delta;
-	fix16_t F1;
-	fix16_t tau_a;
-	fix16_t a3;
-
-	if ((params->m_Adaptive_Lowpass___Initialized == false))
-	{
-		params->m_Adaptive_Lowpass___X1          = sample;
-		params->m_Adaptive_Lowpass___X2          = sample;
-		params->m_Adaptive_Lowpass___X3          = sample;
-		params->m_Adaptive_Lowpass___Initialized = true;
-	}
-	params->m_Adaptive_Lowpass___X1 =
-	    ((dev_fix16_mul((F16(1.) - params->m_Adaptive_Lowpass__A1), params->m_Adaptive_Lowpass___X1)) +
-	     (dev_fix16_mul(params->m_Adaptive_Lowpass__A1, sample)));
-	params->m_Adaptive_Lowpass___X2 =
-	    ((dev_fix16_mul((F16(1.) - params->m_Adaptive_Lowpass__A2), params->m_Adaptive_Lowpass___X2)) +
-	     (dev_fix16_mul(params->m_Adaptive_Lowpass__A2, sample)));
-	abs_delta = (params->m_Adaptive_Lowpass___X1 - params->m_Adaptive_Lowpass___X2);
-	if ((abs_delta < F16(0.)))
-	{
-		abs_delta = (-abs_delta);
-	}
-	F1    = dev_fix16_exp((dev_fix16_mul(F16(VocAlgorithm_LP_ALPHA), abs_delta)));
-	tau_a = ((dev_fix16_mul(F16((VocAlgorithm_LP_TAU_SLOW - VocAlgorithm_LP_TAU_FAST)), F1)) +
-	         F16(VocAlgorithm_LP_TAU_FAST));
-	a3    = (dev_fix16_div(F16(VocAlgorithm_SAMPLING_INTERVAL), (F16(VocAlgorithm_SAMPLING_INTERVAL) + tau_a)));
-	params->m_Adaptive_Lowpass___X3 =
-	    ((dev_fix16_mul((F16(1.) - a3), params->m_Adaptive_Lowpass___X3)) + (dev_fix16_mul(a3, sample)));
-
-	return params->m_Adaptive_Lowpass___X3;
-}
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_sigmoid_process(environment2_voc_algorithm_params *params,
-                                                                         fix16_t                            sample)
-{
-	fix16_t x;
-
-	x = (dev_fix16_mul(params->m_Mean_Variance_Estimator___Sigmoid__K,
-	                   (sample - params->m_Mean_Variance_Estimator___Sigmoid__X0)));
-	if ((x < F16(-50.)))
-	{
-		return params->m_Mean_Variance_Estimator___Sigmoid__L;
-	}
-	else if ((x > F16(50.)))
-	{
-		return F16(0.);
-	}
-	else
-	{
-		return (dev_fix16_div(params->m_Mean_Variance_Estimator___Sigmoid__L, (F16(1.) + dev_fix16_exp(x))));
-	}
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_calculate_gamma(environment2_voc_algorithm_params *params,
-                                                                      fix16_t voc_index_from_prior)
-{
-	fix16_t uptime_limit;
-	fix16_t sigmoid_gamma_mean;
-	fix16_t gamma_mean;
-	fix16_t gating_threshold_mean;
-	fix16_t sigmoid_gating_mean;
-	fix16_t sigmoid_gamma_variance;
-	fix16_t gamma_variance;
-	fix16_t gating_threshold_variance;
-	fix16_t sigmoid_gating_variance;
-
-	uptime_limit = F16((VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__FIX16_MAX - VocAlgorithm_SAMPLING_INTERVAL));
-	if ((params->m_Mean_Variance_Estimator___Uptime_Gamma < uptime_limit))
-	{
-		params->m_Mean_Variance_Estimator___Uptime_Gamma =
-		    (params->m_Mean_Variance_Estimator___Uptime_Gamma + F16(VocAlgorithm_SAMPLING_INTERVAL));
-	}
-	if ((params->m_Mean_Variance_Estimator___Uptime_Gating < uptime_limit))
-	{
-		params->m_Mean_Variance_Estimator___Uptime_Gating =
-		    (params->m_Mean_Variance_Estimator___Uptime_Gating + F16(VocAlgorithm_SAMPLING_INTERVAL));
-	}
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(
-	    params, F16(1.), F16(VocAlgorithm_INIT_DURATION_MEAN), F16(VocAlgorithm_INIT_TRANSITION_MEAN));
-	sigmoid_gamma_mean = dev_voc_algorithm_mean_variance_estimator_sigmoid_process(
-	    params, params->m_Mean_Variance_Estimator___Uptime_Gamma);
-	gamma_mean = (params->m_Mean_Variance_Estimator___Gamma +
-	              (dev_fix16_mul((params->m_Mean_Variance_Estimator___Gamma_Initial_Mean -
-	                              params->m_Mean_Variance_Estimator___Gamma),
-	                             sigmoid_gamma_mean)));
-	gating_threshold_mean =
-	    (F16(VocAlgorithm_GATING_THRESHOLD) +
-	     (dev_fix16_mul(F16((VocAlgorithm_GATING_THRESHOLD_INITIAL - VocAlgorithm_GATING_THRESHOLD)),
-	                    dev_voc_algorithm_mean_variance_estimator_sigmoid_process(
-	                        params, params->m_Mean_Variance_Estimator___Uptime_Gating))));
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(
-	    params, F16(1.), gating_threshold_mean, F16(VocAlgorithm_GATING_THRESHOLD_TRANSITION));
-	sigmoid_gating_mean = dev_voc_algorithm_mean_variance_estimator_sigmoid_process(params, voc_index_from_prior);
-	params->m_Mean_Variance_Estimator__Gamma_Mean = (dev_fix16_mul(sigmoid_gating_mean, gamma_mean));
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(
-	    params, F16(1.), F16(VocAlgorithm_INIT_DURATION_VARIANCE), F16(VocAlgorithm_INIT_TRANSITION_VARIANCE));
-	sigmoid_gamma_variance = dev_voc_algorithm_mean_variance_estimator_sigmoid_process(
-	    params, params->m_Mean_Variance_Estimator___Uptime_Gamma);
-	gamma_variance = (params->m_Mean_Variance_Estimator___Gamma +
-	                  (dev_fix16_mul((params->m_Mean_Variance_Estimator___Gamma_Initial_Variance -
-	                                  params->m_Mean_Variance_Estimator___Gamma),
-	                                 (sigmoid_gamma_variance - sigmoid_gamma_mean))));
-	gating_threshold_variance =
-	    (F16(VocAlgorithm_GATING_THRESHOLD) +
-	     (dev_fix16_mul(F16((VocAlgorithm_GATING_THRESHOLD_INITIAL - VocAlgorithm_GATING_THRESHOLD)),
-	                    dev_voc_algorithm_mean_variance_estimator_sigmoid_process(
-	                        params, params->m_Mean_Variance_Estimator___Uptime_Gating))));
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(
-	    params, F16(1.), gating_threshold_variance, F16(VocAlgorithm_GATING_THRESHOLD_TRANSITION));
-	sigmoid_gating_variance = dev_voc_algorithm_mean_variance_estimator_sigmoid_process(params, voc_index_from_prior);
-	params->m_Mean_Variance_Estimator__Gamma_Variance = (dev_fix16_mul(sigmoid_gating_variance, gamma_variance));
-	params->m_Mean_Variance_Estimator___Gating_Duration_Minutes =
-	    (params->m_Mean_Variance_Estimator___Gating_Duration_Minutes +
-	     (dev_fix16_mul(F16((VocAlgorithm_SAMPLING_INTERVAL / 60.)),
-	                    ((dev_fix16_mul((F16(1.) - sigmoid_gating_mean), F16((1. + VocAlgorithm_GATING_MAX_RATIO)))) -
-	                     F16(VocAlgorithm_GATING_MAX_RATIO)))));
-	if ((params->m_Mean_Variance_Estimator___Gating_Duration_Minutes < F16(0.)))
-	{
-		params->m_Mean_Variance_Estimator___Gating_Duration_Minutes = F16(0.);
-	}
-	if ((params->m_Mean_Variance_Estimator___Gating_Duration_Minutes >
-	     params->m_Mean_Variance_Estimator__Gating_Max_Duration_Minutes))
-	{
-		params->m_Mean_Variance_Estimator___Uptime_Gating = F16(0.);
-	}
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_process(environment2_voc_algorithm_params *params,
-                                                              fix16_t                            sraw,
-                                                              fix16_t                            voc_index_from_prior)
-{
-	fix16_t delta_sgp;
-	fix16_t c;
-	fix16_t additional_scaling;
-
-	if ((params->m_Mean_Variance_Estimator___Initialized == false))
-	{
-		params->m_Mean_Variance_Estimator___Initialized = true;
-		params->m_Mean_Variance_Estimator___Sraw_Offset = sraw;
-		params->m_Mean_Variance_Estimator___Mean        = F16(0.);
-	}
-	else
-	{
-		if (((params->m_Mean_Variance_Estimator___Mean >= F16(100.)) ||
-		     (params->m_Mean_Variance_Estimator___Mean <= F16(-100.))))
-		{
-			params->m_Mean_Variance_Estimator___Sraw_Offset =
-			    (params->m_Mean_Variance_Estimator___Sraw_Offset + params->m_Mean_Variance_Estimator___Mean);
-			params->m_Mean_Variance_Estimator___Mean = F16(0.);
-		}
-		sraw = (sraw - params->m_Mean_Variance_Estimator___Sraw_Offset);
-		dev_voc_algorithm_mean_variance_estimator_calculate_gamma(params, voc_index_from_prior);
-		delta_sgp = (dev_fix16_div((sraw - params->m_Mean_Variance_Estimator___Mean),
-		                           F16(VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING)));
-		if ((delta_sgp < F16(0.)))
-		{
-			c = (params->m_Mean_Variance_Estimator___Std - delta_sgp);
-		}
-		else
-		{
-			c = (params->m_Mean_Variance_Estimator___Std + delta_sgp);
-		}
-		additional_scaling = F16(1.);
-		if ((c > F16(1440.)))
-		{
-			additional_scaling = F16(4.);
-		}
-		params->m_Mean_Variance_Estimator___Std = (dev_fix16_mul(
-		    dev_fix16_sqrt((dev_fix16_mul(additional_scaling,
-		                                  (F16(VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING) -
-		                                   params->m_Mean_Variance_Estimator__Gamma_Variance)))),
-		    dev_fix16_sqrt(
-		        ((dev_fix16_mul(params->m_Mean_Variance_Estimator___Std,
-		                        (dev_fix16_div(params->m_Mean_Variance_Estimator___Std,
-		                                       (dev_fix16_mul(F16(VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING),
-		                                                      additional_scaling)))))) +
-		         (dev_fix16_mul(
-		             (dev_fix16_div((dev_fix16_mul(params->m_Mean_Variance_Estimator__Gamma_Variance, delta_sgp)),
-		                            additional_scaling)),
-		             delta_sgp))))));
-		params->m_Mean_Variance_Estimator___Mean =
-		    (params->m_Mean_Variance_Estimator___Mean +
-		     (dev_fix16_mul(params->m_Mean_Variance_Estimator__Gamma_Mean, delta_sgp)));
-	}
-}
-
-static void dev_voc_algorithm_mox_model_set_parameters(environment2_voc_algorithm_params *params,
-                                                       fix16_t                            SRAW_STD,
-                                                       fix16_t                            SRAW_MEAN)
-{
-	params->m_Mox_Model__Sraw_Std  = SRAW_STD;
-	params->m_Mox_Model__Sraw_Mean = SRAW_MEAN;
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_set_parameters(environment2_voc_algorithm_params *params,
-                                                                     fix16_t                            std_initial,
-                                                                     fix16_t tau_mean_variance_hours,
-                                                                     fix16_t gating_max_duration_minutes)
-{
-	params->m_Mean_Variance_Estimator__Gating_Max_Duration_Minutes = gating_max_duration_minutes;
-	params->m_Mean_Variance_Estimator___Initialized                = false;
-	params->m_Mean_Variance_Estimator___Mean                       = F16(0.);
-	params->m_Mean_Variance_Estimator___Sraw_Offset                = F16(0.);
-	params->m_Mean_Variance_Estimator___Std                        = std_initial;
-	params->m_Mean_Variance_Estimator___Gamma                      = (dev_fix16_div(
-        F16((VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING * (VocAlgorithm_SAMPLING_INTERVAL / 3600.))),
-        (tau_mean_variance_hours + F16((VocAlgorithm_SAMPLING_INTERVAL / 3600.)))));
-	params->m_Mean_Variance_Estimator___Gamma_Initial_Mean =
-	    F16(((VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING * VocAlgorithm_SAMPLING_INTERVAL) /
-	         (VocAlgorithm_TAU_INITIAL_MEAN + VocAlgorithm_SAMPLING_INTERVAL)));
-	params->m_Mean_Variance_Estimator___Gamma_Initial_Variance =
-	    F16(((VocAlgorithm_MEAN_VARIANCE_ESTIMATOR__GAMMA_SCALING * VocAlgorithm_SAMPLING_INTERVAL) /
-	         (VocAlgorithm_TAU_INITIAL_VARIANCE + VocAlgorithm_SAMPLING_INTERVAL)));
-	params->m_Mean_Variance_Estimator__Gamma_Mean               = F16(0.);
-	params->m_Mean_Variance_Estimator__Gamma_Variance           = F16(0.);
-	params->m_Mean_Variance_Estimator___Uptime_Gamma            = F16(0.);
-	params->m_Mean_Variance_Estimator___Uptime_Gating           = F16(0.);
-	params->m_Mean_Variance_Estimator___Gating_Duration_Minutes = F16(0.);
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(environment2_voc_algorithm_params *params,
-                                                                             fix16_t                            L,
-                                                                             fix16_t                            X0,
-                                                                             fix16_t                            K)
-{
-	params->m_Mean_Variance_Estimator___Sigmoid__L  = L;
-	params->m_Mean_Variance_Estimator___Sigmoid__K  = K;
-	params->m_Mean_Variance_Estimator___Sigmoid__X0 = X0;
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_sigmoid_init(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_set_parameters(params, F16(0.), F16(0.), F16(0.));
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_init_instances(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_mean_variance_estimator_sigmoid_init(params);
-}
-
-static void dev_voc_algorithm_mean_variance_estimator_init(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_mean_variance_estimator_set_parameters(params, F16(0.), F16(0.), F16(0.));
-	dev_voc_algorithm_mean_variance_estimator_init_instances(params);
-}
-
-static void dev_voc_algorithm_mox_model_init(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_mox_model_set_parameters(params, F16(1.), F16(0.));
-}
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_get_std(environment2_voc_algorithm_params *params)
-{
-	return params->m_Mean_Variance_Estimator___Std;
-}
-
-static fix16_t dev_voc_algorithm_mean_variance_estimator_get_mean(environment2_voc_algorithm_params *params)
-{
-	return (params->m_Mean_Variance_Estimator___Mean + params->m_Mean_Variance_Estimator___Sraw_Offset);
-}
-
-static void dev_voc_algorithm_sigmoid_scaled_set_parameters(environment2_voc_algorithm_params *params, fix16_t offset)
-{
-	params->m_Sigmoid_Scaled__Offset = offset;
-}
-
-static void dev_voc_algorithm_sigmoid_scaled_init(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_sigmoid_scaled_set_parameters(params, F16(0.));
-}
-
-static void dev_voc_algorithm_adaptive_lowpass_set_parameters(environment2_voc_algorithm_params *params)
-{
-	params->m_Adaptive_Lowpass__A1 =
-	    F16((VocAlgorithm_SAMPLING_INTERVAL / (VocAlgorithm_LP_TAU_FAST + VocAlgorithm_SAMPLING_INTERVAL)));
-	params->m_Adaptive_Lowpass__A2 =
-	    F16((VocAlgorithm_SAMPLING_INTERVAL / (VocAlgorithm_LP_TAU_SLOW + VocAlgorithm_SAMPLING_INTERVAL)));
-	params->m_Adaptive_Lowpass___Initialized = false;
-}
-
-static void dev_voc_algorithm_adaptive_lowpass_init(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_adaptive_lowpass_set_parameters(params);
-}
-
-static void dev_voc_algorithm_init_instances(environment2_voc_algorithm_params *params)
-{
-	dev_voc_algorithm_mean_variance_estimator_init(params);
-	dev_voc_algorithm_mean_variance_estimator_set_parameters(
-	    params, params->mSraw_Std_Initial, params->mTau_Mean_Variance_Hours, params->mGating_Max_Duration_Minutes);
-	dev_voc_algorithm_mox_model_init(params);
-	dev_voc_algorithm_mox_model_set_parameters(params,
-	                                           dev_voc_algorithm_mean_variance_estimator_get_std(params),
-	                                           dev_voc_algorithm_mean_variance_estimator_get_mean(params));
-	dev_voc_algorithm_sigmoid_scaled_init(params);
-	dev_voc_algorithm_sigmoid_scaled_set_parameters(params, params->mVoc_Index_Offset);
-	dev_voc_algorithm_adaptive_lowpass_init(params);
-	dev_voc_algorithm_adaptive_lowpass_set_parameters(params);
-}
-
-static fix16_t dev_fix16_mul(fix16_t inArg0, fix16_t inArg1)
-{
-	int32_t  A = (inArg0 >> 16), C = (inArg1 >> 16);
-	uint32_t B = (inArg0 & 0xFFFF), D = (inArg1 & 0xFFFF);
-	int32_t  AC         = A * C;
-	int32_t  AD_CB      = A * D + C * B;
-	uint32_t BD         = B * D;
-	int32_t  product_hi = AC + (AD_CB >> 16);
-	uint32_t ad_cb_temp = AD_CB << 16;
-	uint32_t product_lo = BD + ad_cb_temp;
-
-	if (product_lo < BD)
-		product_hi++;
-
-#ifndef FIXMATH_NO_OVERFLOW
-	if (product_hi >> 31 != product_hi >> 15)
-		return FIX16_OVERFLOW;
-#endif
-
-#ifdef FIXMATH_NO_ROUNDING
-	return (product_hi << 16) | (product_lo >> 16);
-#else
-	uint32_t product_lo_tmp = product_lo;
-	product_lo -= 0x8000;
-	product_lo -= (uint32_t)product_hi >> 31;
-	if (product_lo > product_lo_tmp)
-		product_hi--;
-
-	fix16_t result = (product_hi << 16) | (product_lo >> 16);
-	result += 1;
-	return result;
-#endif
-}
-
-static fix16_t dev_fix16_div(fix16_t a, fix16_t b)
-{
-	if (b == 0)
-		return FIX16_MINIMUM;
-
-	uint32_t remainder = (a >= 0) ? a : (-a);
-	uint32_t divider   = (b >= 0) ? b : (-b);
-
-	uint32_t quotient = 0;
-	uint32_t _bit     = 0x10000;
-
-	while (divider < remainder)
-	{
-		divider <<= 1;
-		_bit <<= 1;
-	}
-
-#ifndef FIXMATH_NO_OVERFLOW
-	if (!_bit)
-		return FIX16_OVERFLOW;
-#endif
-
-	if (divider & 0x80000000)
-	{
-		if (remainder >= divider)
-		{
-			quotient |= _bit;
-			remainder -= divider;
-		}
-		divider >>= 1;
-		_bit >>= 1;
-	}
-
-	while (_bit && remainder)
-	{
-		if (remainder >= divider)
-		{
-			quotient |= _bit;
-			remainder -= divider;
-		}
-
-		remainder <<= 1;
-		_bit >>= 1;
-	}
-
-#ifndef FIXMATH_NO_ROUNDING
-	if (remainder >= divider)
-	{
-		quotient++;
-	}
-#endif
-
-	fix16_t result = quotient;
-
-	if ((a ^ b) & 0x80000000)
-	{
-#ifndef FIXMATH_NO_OVERFLOW
-		if (result == FIX16_MINIMUM)
-			return FIX16_OVERFLOW;
-#endif
-
-		result = -result;
-	}
-
-	return result;
-}
-
-static fix16_t dev_fix16_sqrt(fix16_t x)
-{
-	uint32_t num    = x;
-	uint32_t result = 0;
-	uint32_t _bit;
-	uint8_t  n;
-
-	_bit = (uint32_t)1 << 30;
-	while (_bit > num) _bit >>= 2;
-
-	for (n = 0; n < 2; n++)
-	{
-		while (_bit)
-		{
-			if (num >= result + _bit)
-			{
-				num -= result + _bit;
-				result = (result >> 1) + _bit;
-			}
-			else
-			{
-				result = (result >> 1);
-			}
-			_bit >>= 2;
-		}
-
-		if (n == 0)
-		{
-			if (num > 65535)
-			{
-				num -= result;
-				num    = (num << 16) - 0x8000;
-				result = (result << 16) + 0x8000;
-			}
-			else
-			{
-				num <<= 16;
-				result <<= 16;
-			}
-
-			_bit = 1 << 14;
-		}
-	}
-
-#ifndef FIXMATH_NO_ROUNDING
-	if (num > result)
-	{
-		result++;
-	}
-#endif
-
-	return (fix16_t)result;
-}
-
-static fix16_t dev_fix16_exp(fix16_t x)
-{
-#define NUM_EXP_VALUES 4
-	static const fix16_t exp_pos_values[NUM_EXP_VALUES] = {
-	    F16(2.7182818), F16(1.1331485), F16(1.0157477), F16(1.0019550)};
-	static const fix16_t exp_neg_values[NUM_EXP_VALUES] = {
-	    F16(0.3678794), F16(0.8824969), F16(0.9844964), F16(0.9980488)};
-	const fix16_t *exp_values;
-	fix16_t        res, arg;
-	uint16_t       i;
-
-	if (x >= F16(10.3972))
-		return FIX16_MAXIMUM;
-	if (x <= F16(-11.7835))
-		return 0;
-
-	if (x < 0)
-	{
-		x          = -x;
-		exp_values = exp_neg_values;
-	}
-	else
-	{
-		exp_values = exp_pos_values;
-	}
-
-	res = FIX16_ONE;
-	arg = FIX16_ONE;
-	for (i = 0; i < NUM_EXP_VALUES; i++)
-	{
-		while (x >= arg)
-		{
-			res = dev_fix16_mul(res, exp_values[i]);
-			x -= arg;
-		}
-		arg >>= 3;
-	}
-	return res;
-}
-
-/* Wait for 30ms */
-static void dev_measurement_duration_raw_delay(void)
-{
-	BSP_WaitTicks(30);
-}
-
-/* Wait for 250ms */
-static void dev_measurement_duration_test_delay(void)
-{
-	BSP_WaitTicks(250);
-}
-
-/* Wait for 10ms */
-static void dev_measurement_duration_temp_hum_delay(void)
-{
-	BSP_WaitTicks(10);
-}
-
-static uint8_t dev_calc_crc(uint8_t data_0, uint8_t data_1)
-{
-	uint8_t i_cnt;
-	uint8_t j_cnt;
-	uint8_t crc_data[2];
-	uint8_t crc = 0xFF;
-
-	crc_data[0] = data_0;
-	crc_data[1] = data_1;
-
-	for (i_cnt = 0; i_cnt < 2; i_cnt++)
-	{
-		crc ^= crc_data[i_cnt];
-
-		for (j_cnt = 8; j_cnt > 0; --j_cnt)
-		{
-			if (crc & 0x80)
-			{
-				crc = (crc << 1) ^ 0x31u;
-			}
-			else
-			{
-				crc = (crc << 1);
-			}
-		}
-	}
-
-	return crc;
-}
-
-static err_t dev_set_device_slave_address(environment2_t *ctx, uint8_t select_device)
-{
-	err_t status;
-
-	status = ENVIRONMENT2_ERROR;
-
-	if (select_device == ENVIRONMENT2_SEL_SGP40)
-	{
-		ctx->slave_address = ENVIRONMENT2_SGP40_SET_DEV_ADDR;
-		i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-		status = ENVIRONMENT2_OK;
-	}
-	else if (select_device == ENVIRONMENT2_SEL_SHT40)
-	{
-		ctx->slave_address = ENVIRONMENT2_SHT40_SET_DEV_ADDR;
-		i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-		status = ENVIRONMENT2_OK;
-	}
-	if (status == ENVIRONMENT2_ERROR)
-	{
-		printf("Error in dev_set_device_slave_address!\n");
-	}
-
-	return status;
-}
-
-void write_data(i2c_master_t *i2c, uint8_t *tx_buf, size_t len)
-{
-	uint8_t data_buf[256];
+	uint8_t data_buf[SGP40_ADDLEN + SGP40_MAXDLEN];
 	uint8_t cnt;
-	err_t   hal_status = HAL_I2C_MASTER_SUCCESS;
 
 	data_buf[0] = environment2.slave_address;
 
@@ -1244,7 +126,339 @@ void write_data(i2c_master_t *i2c, uint8_t *tx_buf, size_t len)
 		data_buf[cnt] = tx_buf[cnt - 1];
 	}
 
-	i2c_master_write(i2c, data_buf, ++len);
+	if (i2c_master_write(&environment2.i2c, data_buf, ++len))
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (ENVIRONMENT2_ST_OK);
 }
 
-// ------------------------------------------------------------------------- END
+/* measure sht40 values for temperature and humidity */
+/* returns sht40 3-byte values (with crc) so they can be used directly for sgp40 calibration */
+static uint8_t MIKROSDK_ENVIRONMENT2_measure_temp_hum(uint8_t *hum, uint8_t *tmp)
+{
+	uint8_t tx_buf[1];
+	uint8_t rx_buf[6];
+
+	tx_buf[0] = ENVIRONMENT2_SHT40_CMD_MEASURE_T_RH_HIGH_PRECISION;
+
+	MIKROSDK_ENVIRONMENT2_set_device_slave_address(ENVIRONMENT2_SEL_SHT40);
+
+	if (MIKROSDK_ENVIRONMENT2_write(tx_buf, 1))
+		return ENVIRONMENT2_ST_FAIL;
+
+	WAIT_ms(SHT40_T_MEAS);
+	if (i2c_master_read(&environment2.i2c, rx_buf, 6))
+		return ENVIRONMENT2_ST_FAIL;
+
+	tmp[0] = rx_buf[0]; /* msb */
+	tmp[1] = rx_buf[1]; /* lsb */
+	tmp[2] = rx_buf[2]; /* crc */
+
+	hum[0] = rx_buf[3]; /* msb */
+	hum[1] = rx_buf[4]; /* lsb */
+	hum[2] = rx_buf[5]; /* crc */
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* measure sgp40 air quality (raw value) */
+static uint8_t MIKROSDK_ENVIRONMENT2_measure_air_quality(uint16_t *air_quality, uint8_t *hum, uint8_t *tmp)
+{
+	uint8_t tx_buf[8];
+	uint8_t rx_buf[3];
+
+	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_RAW >> 8);
+	tx_buf[1] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_RAW);
+
+	tx_buf[2] = hum[0];
+	tx_buf[3] = hum[1];
+	tx_buf[4] = hum[2];
+
+	tx_buf[5] = tmp[0];
+	tx_buf[6] = tmp[1];
+	tx_buf[7] = tmp[2];
+
+	MIKROSDK_ENVIRONMENT2_set_device_slave_address(ENVIRONMENT2_SEL_SGP40);
+
+	if (MIKROSDK_ENVIRONMENT2_write(tx_buf, 8))
+		return ENVIRONMENT2_ST_FAIL;
+
+	WAIT_ms(SGP40_T_MEAS_RAW);
+
+	if (i2c_master_read(&environment2.i2c, rx_buf, 3))
+		return ENVIRONMENT2_ST_FAIL;
+
+	if (sgp40_t_init == SGP40_T_SLEEP)
+		sgp40_t_init = TIME_ReadAbsoluteTime();
+
+	*air_quality = (rx_buf[0] << 8) + rx_buf[1];
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* convert sht40 3-byte values (with crc) to int16 temperature and humidity */
+/* values are returned in ['C * 100] and [%RH * 100] (resolution = 0.01) */
+/* Note: T('C)  = i16_t / 100 */
+/* Note: H(%RH) = i16_t / 100 */
+static void MIKROSDK_ENVIRONMENT2_convert_temp_hum(uint8_t *hum, uint8_t *tmp, int16_t *humidity, int16_t *temperature)
+{
+	uint16_t st;
+	uint16_t srh;
+
+	st  = (tmp[0] << 8) + tmp[1];
+	srh = (hum[0] << 8) + hum[1];
+
+	*temperature = (int16_t)(((st * 17500) / 65535) - 4500);
+	*humidity    = (int16_t)(((srh * 12500) / 65535) - 600);
+}
+
+/* read temperature and humidity */
+/* values are returned in ['C * 100] and [%RH * 100] (resolution = 0.01) */
+/* Note: T('C)  = i16_t / 100 */
+/* Note: H(%RH) = i16_t / 100 */
+uint8_t MIKROSDK_ENVIRONMENT2_get_temp_hum(int16_t *humidity, int16_t *temperature)
+{
+	uint8_t  tmp[3];
+	uint8_t  hum[3];
+	uint16_t st;
+	uint16_t srh;
+
+	if (MIKROSDK_ENVIRONMENT2_measure_temp_hum(hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	MIKROSDK_ENVIRONMENT2_convert_temp_hum(hum, tmp, humidity, temperature);
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* read air quality (raw value) */
+uint8_t MIKROSDK_ENVIRONMENT2_get_air_quality(uint16_t *air_quality_raw)
+{
+	uint8_t  tx_buf[8];
+	uint8_t  rx_buf[3];
+	uint8_t  tmp[3];
+	uint8_t  hum[3];
+	uint16_t result;
+
+	if (MIKROSDK_ENVIRONMENT2_measure_temp_hum(hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	if (MIKROSDK_ENVIRONMENT2_measure_air_quality(air_quality_raw, hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (MIKROSDK_ENVIRONMENT2_status());
+}
+
+/* read voc index algorithm output */
+uint8_t MIKROSDK_ENVIRONMENT2_get_voc_index(int32_t *voc_index)
+{
+	uint16_t air_quality;
+	uint8_t  tmp[3];
+	uint8_t  hum[3];
+
+	if (MIKROSDK_ENVIRONMENT2_measure_temp_hum(hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	if (MIKROSDK_ENVIRONMENT2_measure_air_quality(&air_quality, hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	environment2_voc_algorithm(air_quality, voc_index);
+
+	return (MIKROSDK_ENVIRONMENT2_status());
+}
+
+/* read all measured values */
+/* voc index algorithm output [0-500] */
+/* air quality raw value [0-65535] */
+/* relative_humidity [% RH / 100] */
+/* temperature ['C / 100] */
+uint8_t MIKROSDK_ENVIRONMENT2_get_voc_index_with_rh_t(int32_t  *voc_index,
+                                                      uint16_t *air_quality_raw,
+                                                      int16_t  *relative_humidity,
+                                                      int16_t  *temperature)
+{
+	uint16_t air_quality;
+	uint8_t  tmp[3];
+	uint8_t  hum[3];
+
+	if (MIKROSDK_ENVIRONMENT2_measure_temp_hum(hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	if (MIKROSDK_ENVIRONMENT2_measure_air_quality(&air_quality, hum, tmp))
+		return ENVIRONMENT2_ST_FAIL;
+
+	environment2_voc_algorithm(air_quality, voc_index);
+
+	MIKROSDK_ENVIRONMENT2_convert_temp_hum(hum, tmp, relative_humidity, temperature);
+	*air_quality_raw = air_quality;
+
+	return (MIKROSDK_ENVIRONMENT2_status());
+}
+
+/* measure test (self-test) command */
+uint8_t MIKROSDK_ENVIRONMENT2_sgp40_measure_test(void)
+{
+	uint8_t  tx_buf[2];
+	uint8_t  rx_buf[3];
+	uint16_t result;
+
+	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_TEST >> 8);
+	tx_buf[1] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_MEASURE_TEST);
+
+	MIKROSDK_ENVIRONMENT2_set_device_slave_address(ENVIRONMENT2_SEL_SGP40);
+
+	if (MIKROSDK_ENVIRONMENT2_write(tx_buf, 2))
+		return ENVIRONMENT2_ST_FAIL;
+
+	WAIT_ms(SGP40_T_TEST);
+
+	if (i2c_master_read(&environment2.i2c, rx_buf, 3))
+		return ENVIRONMENT2_ST_FAIL;
+
+	result = (rx_buf[0] >> 8) + rx_buf[1];
+
+	if (result != ENVIRONMENT2_SGP40_TEST_PASSED)
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* turn sgp40 heater off command */
+uint8_t MIKROSDK_ENVIRONMENT2_sgp40_heater_off(void)
+{
+	uint8_t tx_buf[2];
+
+	tx_buf[0] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_HEATER_OFF >> 8);
+	tx_buf[1] = (uint8_t)(ENVIRONMENT2_SGP40_CMD_HEATER_OFF);
+
+	MIKROSDK_ENVIRONMENT2_set_device_slave_address(ENVIRONMENT2_SEL_SGP40);
+
+	sgp40_t_init = SGP40_T_SLEEP;
+
+	if (MIKROSDK_ENVIRONMENT2_write(tx_buf, 2))
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* soft reset command (sleep mode) */
+/* soft reset command (i2c general call) applies to both devices */
+uint8_t MIKROSDK_ENVIRONMENT2_soft_reset(void)
+{
+	uint8_t tx_buf[2];
+
+	/* uses i2c general call address (0x00), so i2c_master_write used directly */
+	tx_buf[0] = 0x00;
+	tx_buf[1] = 0x06;
+
+	sgp40_t_init = SGP40_T_SLEEP;
+
+	if (i2c_master_write(&environment2.i2c, tx_buf, 2))
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* device initialisation */
+uint8_t MIKROSDK_ENVIRONMENT2_Initialise(void)
+{
+	/* don't call environment2_cfg_setup() as this de-initialises pin mapping */
+	//environment2_cfg_setup(&cfg);
+	cfg.i2c_speed   = I2C_MASTER_SPEED_STANDARD;
+	cfg.i2c_address = ENVIRONMENT2_SGP40_SET_DEV_ADDR;
+
+	if (MIKROSDK_ENVIRONMENT2_init())
+		return ENVIRONMENT2_ST_FAIL;
+
+	environment2_voc_config();
+
+	if (MIKROSDK_ENVIRONMENT2_sgp40_heater_off())
+		return ENVIRONMENT2_ST_FAIL;
+
+	SENSORIF_I2C_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return ENVIRONMENT2_ST_OK;
+}
+
+/* device hardware reinitialisation for quick power-up */
+uint8_t MIKROSDK_ENVIRONMENT2_Reinitialise(void)
+{
+	uint16_t airq;
+	uint8_t  status;
+
+	WAIT_ms(SGP40_T_POWERUP);
+
+	SENSORIF_I2C_Init();
+
+	/* dummy read */
+	if ((status = MIKROSDK_ENVIRONMENT2_get_air_quality(&airq)) == ENVIRONMENT2_ST_FAIL)
+		return ENVIRONMENT2_ST_FAIL;
+
+	SENSORIF_I2C_Deinit();
+
+	/* wait time after sleep as specified in: */
+	/* https://github.com/Sensirion/arduino-gas-index-algorithm/blob/master/examples/exampleLowPowerUsage/exampleLowPowerUsage.ino */
+	WAIT_ms(SGP40_T_POWERUP - SGP40_T_MEAS_RAW);
+
+	return ENVIRONMENT2_ST_OK;
+}
+
+/* data acquisition */
+/* Note: voc_index: [0-500] */
+/* Note: air_quality: [0-65535] (raw value) */
+/* Note: humidity: [% RH / 100] */
+/* Note: temperature: ['C / 100] */
+uint8_t MIKROSDK_ENVIRONMENT2_Acquire(int32_t  *voc_index,
+                                      uint16_t *air_quality,
+                                      int16_t  *humidity,
+                                      int16_t  *temperature)
+{
+	uint8_t status = ENVIRONMENT2_ST_OK;
+
+	/* data acquisition */
+
+	SENSORIF_I2C_Init();
+
+#if (ENVIRONMENT2_USE_POWERDOWN)
+	if (MIKROSDK_ENVIRONMENT2_Powerup())
+		return ENVIRONMENT2_ST_FAIL;
+#endif
+
+	status = MIKROSDK_ENVIRONMENT2_get_voc_index_with_rh_t(voc_index, air_quality, humidity, temperature);
+
+#if (ENVIRONMENT2_USE_POWERDOWN)
+	if (MIKROSDK_ENVIRONMENT2_Powerdown())
+		return ENVIRONMENT2_ST_FAIL;
+#endif
+
+	SENSORIF_I2C_Deinit();
+
+	return status;
+}
+
+/* macro function for power-down */
+uint8_t MIKROSDK_ENVIRONMENT2_Powerdown(void)
+{
+	/* soft reset to power down both devices */
+	if (MIKROSDK_ENVIRONMENT2_soft_reset())
+		return ENVIRONMENT2_ST_FAIL;
+
+	return (ENVIRONMENT2_ST_OK);
+}
+
+/* macro function for power-up */
+uint8_t MIKROSDK_ENVIRONMENT2_Powerup(void)
+{
+	uint16_t airq;
+	uint8_t  status;
+
+	/* dummy read */
+	if ((status = MIKROSDK_ENVIRONMENT2_get_air_quality(&airq)) == ENVIRONMENT2_ST_FAIL)
+		return ENVIRONMENT2_ST_FAIL;
+
+	/* wait time after sleep as specified in: */
+	/* https://github.com/Sensirion/arduino-gas-index-algorithm/blob/master/examples/exampleLowPowerUsage/exampleLowPowerUsage.ino */
+	WAIT_ms(SGP40_T_POWERUP - SGP40_T_MEAS_RAW);
+
+	return (ENVIRONMENT2_ST_OK);
+}

@@ -47,7 +47,7 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 static void msdu_secspec_test(void **state)
 {
 	struct MCPS_DATA_indication_pset dataInd     = {0};
-	struct SecSpec *                 trueSecSpec = NULL;
+	struct SecSpec                  *trueSecSpec = NULL;
 	(void)state;
 
 	dataInd.MsduLength = 1;

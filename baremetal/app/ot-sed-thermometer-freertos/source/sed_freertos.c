@@ -40,14 +40,14 @@
 		}                         \
 	} while (0)
 
-const char *       uriCascodaDiscover            = "ca/di";
+const char        *uriCascodaDiscover            = "ca/di";
 static const char *uriCascodaSensorDiscoverQuery = "t=sen";
-const char *       uriCascodaSensor              = "ca/se";
+const char        *uriCascodaSensor              = "ca/se";
 
 /******************************************************************************/
 /****** Single instance                                                  ******/
 /******************************************************************************/
-otInstance *      OT_INSTANCE;
+otInstance       *OT_INSTANCE;
 struct ca821x_dev sDeviceRef;
 
 static bool         isConnected  = false;
@@ -59,6 +59,14 @@ static otIp6Address serverIp;
 /******************************************************************************/
 TaskHandle_t      CommsTaskHandle;
 SemaphoreHandle_t CommsMutexHandle;
+
+/**
+ * Radio reinitialisation after sleep
+ **/
+int ot_reinitialise(struct ca821x_dev *pDeviceRef)
+{
+	otLinkSyncExternalMac(OT_INSTANCE);
+}
 
 /**
  * Initialise app-specific systems
@@ -93,7 +101,6 @@ static void App_Initialise(ca_error status)
 		PlatformSleep(30000);
 	} while (1);
 
-	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
 	otThreadSetEnabled(OT_INSTANCE, true);
 
@@ -107,7 +114,7 @@ static void System_Init()
 {
 	u8_t StartupStatus;
 	ca821x_api_init(&sDeviceRef);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
+	cascoda_reinitialise    = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
@@ -131,8 +138,8 @@ void otTaskletsSignalPending(otInstance *aInstance)
  * \brief Handle the response to the server discover, and register the server
  * locally.
  */
-static void handleServerDiscoverResponse(void *               aContext,
-                                         otMessage *          aMessage,
+static void handleServerDiscoverResponse(void                *aContext,
+                                         otMessage           *aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
@@ -159,7 +166,7 @@ static void handleServerDiscoverResponse(void *               aContext,
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 
@@ -216,7 +223,7 @@ static void handleSensorConfirm(void *aContext, otMessage *aMessage, const otMes
 static otError sendSensorData(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature = BSP_GetTemperature();
 	uint8_t       buffer[32];

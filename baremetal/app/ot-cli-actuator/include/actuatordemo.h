@@ -9,7 +9,7 @@
  * Should be linked to the openthread CLI using otCliSetUserCommands.
  *******************************************************************************
  ******************************************************************************/
-void handle_cli_actuatordemo(int argc, char *argv[]);
+void handle_cli_actuatordemo(void *aContext, uint8_t aArgsLength, char *aArgs[]);
 
 /******************************************************************************/
 /***************************************************************************/ /**

@@ -46,7 +46,7 @@ enum
 typedef struct connection_t
 {
 	otUdpSocket      socket;     //!< Openthread socket structure, used for UDP communications
-	otInstance *     otInstance; //!< Pointer to openthread instance
+	otInstance      *otInstance; //!< Pointer to openthread instance
 	lwm2m_context_t *lwm2mH;     //!< Pointer to instance of lwm2m
 	bool             inUse;      //!< Used internally to determine whether this connection structure is in use
 } connection_t;
@@ -64,9 +64,9 @@ typedef struct connection_t
  * @param secObjInstID Security object instance ID
  * @return A pointer to the new connection, or NULL if error
  */
-connection_t *connection_create(otInstance *     aInstance,
+connection_t *connection_create(otInstance      *aInstance,
                                 lwm2m_context_t *lwm2mH,
-                                lwm2m_object_t * secObjectP,
+                                lwm2m_object_t  *secObjectP,
                                 uint16_t         secObjInstID);
 
 /**

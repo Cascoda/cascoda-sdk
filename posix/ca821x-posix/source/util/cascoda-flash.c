@@ -95,7 +95,7 @@ enum
 char *posixGetDataDir(uint32_t aNodeId)
 {
 	const char *ddp         = NULL;
-	char *      dataPath    = NULL;
+	char       *dataPath    = NULL;
 	size_t      dataPathLen = 0;
 	struct stat st;
 
@@ -145,7 +145,7 @@ char *posixGetDataDir(uint32_t aNodeId)
 char *posixGetDataDir(uint32_t aNodeId)
 {
 	const char *ddp         = NULL;
-	char *      dataPath    = NULL;
+	char       *dataPath    = NULL;
 	size_t      dataPathLen = 0;
 	struct stat st;
 
@@ -211,7 +211,7 @@ ca_error utilsFlashInit(struct ca821x_dev *aInstance, const char *aApplicationNa
 {
 	ca_error error       = CA_ERROR_SUCCESS;
 	bool     create      = false;
-	char *   dataDir     = posixGetDataDir(aNodeId);
+	char    *dataDir     = posixGetDataDir(aNodeId);
 	size_t   fileNameLen = strlen(aApplicationName) + strlen(dataDir) + 2; //"datadir/filename"
 	char     fileName[fileNameLen];
 

@@ -99,8 +99,8 @@ static void cli_print_address(const otIp6Address *aAddress)
  * \brief Handle the response to the server discover, and register the server
  * locally.
  */
-static void handleServerDiscoverResponse(void *               aContext,
-                                         otMessage *          aMessage,
+static void handleServerDiscoverResponse(void                *aContext,
+                                         otMessage           *aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
@@ -129,7 +129,7 @@ static void handleServerDiscoverResponse(void *               aContext,
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 
@@ -198,7 +198,7 @@ static void handleSensorConfirm(void *aContext, otMessage *aMessage, const otMes
 static otError sendSensorData(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature = BSP_GetTemperature();
 	uint8_t       buffer[32];
@@ -273,7 +273,7 @@ static ca_error sensordemo_handler(void *aContext)
 static void handleSensorData(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	otError     error           = OT_ERROR_NONE;
-	otMessage * responseMessage = NULL;
+	otMessage  *responseMessage = NULL;
 	otInstance *OT_INSTANCE     = aContext;
 	uint16_t    length          = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
 	uint16_t    offset          = otMessageGetOffset(aMessage);
@@ -385,22 +385,27 @@ exit:
 /** Server: Handle a discover message by printing it and sending response */
 static void handleDiscover(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-	otError             error           = OT_ERROR_NONE;
-	otMessage *         responseMessage = NULL;
-	otInstance *        OT_INSTANCE     = aContext;
-	const otCoapOption *option;
-	char                uri_query[6];
-	bool                valid_query = false;
+	otError               error           = OT_ERROR_NONE;
+	otMessage            *responseMessage = NULL;
+	otInstance           *OT_INSTANCE     = aContext;
+	otCoapOptionIterator *iterator;
+	const otCoapOption   *option;
+	char                  uri_query[6];
+	bool                  valid_query = false;
 
 	if (otCoapMessageGetCode(aMessage) != OT_COAP_CODE_GET)
 		return;
 
+	if (otCoapOptionIteratorInit(iterator, aMessage) != OT_ERROR_NONE)
+		return;
+
 	// Find the URI Query
-	for (option = otCoapMessageGetFirstOption(aMessage); option != NULL; option = otCoapMessageGetNextOption(aMessage))
+	for (option = otCoapOptionIteratorGetFirstOption(iterator); option != NULL;
+	     option = otCoapOptionIteratorGetNextOption(iterator))
 	{
 		if (option->mNumber == OT_COAP_OPTION_URI_QUERY && option->mLength <= 6)
 		{
-			SuccessOrExit(otCoapMessageGetOptionValue(aMessage, uri_query));
+			SuccessOrExit(otCoapOptionIteratorGetOptionValue(iterator, uri_query));
 
 			if (strncmp(uri_query, uriCascodaSensorDiscoverQuery, 5) == 0)
 			{
@@ -473,11 +478,13 @@ static void sensordemo_error(void)
 	otCliOutputFormat("Parse error, usage: sensordemo [sensor|server|stop]\n");
 }
 
-static void handle_cli_sensordemo(int argc, char *argv[])
+static void handle_cli_sensordemo(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
+	(void)aContext;
+
 	enum sensordemo_state prevState = sensordemo_state;
 
-	if (argc == 0)
+	if (aArgsLength == 0)
 	{
 		switch (sensordemo_state)
 		{
@@ -494,26 +501,26 @@ static void handle_cli_sensordemo(int argc, char *argv[])
 		}
 		return;
 	}
-	if (argc != 1)
+	if (aArgsLength != 1)
 	{
 		sensordemo_error();
 		return;
 	}
 
-	if (strcmp(argv[0], "sensor") == 0)
+	if (strcmp(aArgs[0], "sensor") == 0)
 	{
 		sensordemo_state = SENSORDEMO_SENSOR;
 		otLinkSetPollPeriod(OT_INSTANCE, 2500);
 		unbind_server_resources();
 		bind_sensor_resources();
 	}
-	else if (strcmp(argv[0], "server") == 0)
+	else if (strcmp(aArgs[0], "server") == 0)
 	{
 		sensordemo_state = SENSORDEMO_SERVER;
 		bind_server_resources();
 		unbind_sensor_resources();
 	}
-	else if (strcmp(argv[0], "stop") == 0)
+	else if (strcmp(aArgs[0], "stop") == 0)
 	{
 		sensordemo_state = SENSORDEMO_STOPPED;
 		unbind_server_resources();
@@ -532,11 +539,12 @@ static void autostart_error(void)
 	otCliOutputFormat("Parse error, usage: autostart [enable|disable]\n");
 }
 
-static void handle_cli_autostart(int argc, char *argv[])
+static void handle_cli_autostart(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
+	(void)aContext;
 	uint8_t prevState = autostartEnabled;
 
-	if (argc == 0)
+	if (aArgsLength == 0)
 	{
 		if (autostartEnabled)
 			otCliOutputFormat("enabled\n");
@@ -545,17 +553,17 @@ static void handle_cli_autostart(int argc, char *argv[])
 
 		return;
 	}
-	if (argc != 1)
+	if (aArgsLength != 1)
 	{
 		autostart_error();
 		return;
 	}
 
-	if (strcmp(argv[0], "enable") == 0)
+	if (strcmp(aArgs[0], "enable") == 0)
 	{
 		autostartEnabled = 1;
 	}
-	else if (strcmp(argv[0], "disable") == 0)
+	else if (strcmp(aArgs[0], "disable") == 0)
 	{
 		autostartEnabled = 0;
 	}
@@ -584,14 +592,14 @@ static ca_error handle_join(void *aContext)
 	return CA_ERROR_SUCCESS;
 }
 
-static void handle_cli_join(int argc, char *argv[])
+static void handle_cli_join(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc == 0)
+	if (aArgsLength == 0)
 	{
 		//Schedule the join to happen now
 		TASKLET_ScheduleDelta(&join_tasklet, 0, NULL);
 	}
-	else if (argc == 1 && (strcmp(argv[0], "info") == 0))
+	else if (aArgsLength == 1 && (strcmp(aArgs[0], "info") == 0))
 	{
 		otExtAddress extAddress;
 		otLinkGetFactoryAssignedIeeeEui64(OT_INSTANCE, &extAddress);
@@ -620,11 +628,11 @@ static void handle_dns_callback(ca_error aError, const otIp6Address *aAddress, d
 	otCliOutputFormat("\r\n");
 }
 
-static void handle_cli_dnsutil(int argc, char *argv[])
+static void handle_cli_dnsutil(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc == 1)
+	if (aArgsLength == 1)
 	{
-		ca_error error = DNS_HostToIpv6(OT_INSTANCE, argv[0], &handle_dns_callback, NULL);
+		ca_error error = DNS_HostToIpv6(OT_INSTANCE, aArgs[0], &handle_dns_callback, NULL);
 		if (error)
 			otCliOutputFormat("Resolution error %s\n", ca_error_str(error));
 	}
@@ -649,7 +657,7 @@ ca_error init_sensordemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef)
 	sCliCommands[2].mName    = "join";
 	sCliCommands[3].mCommand = &handle_cli_dnsutil;
 	sCliCommands[3].mName    = "dnsutil";
-	otCliSetUserCommands(sCliCommands, 4);
+	otCliSetUserCommands(sCliCommands, 4, OT_INSTANCE);
 
 	TASKLET_Init(&join_tasklet, handle_join);
 	TASKLET_Init(&sensorTasklet, sensordemo_handler);

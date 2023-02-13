@@ -57,13 +57,16 @@ private:
 	ArgOpt           mBatchArg;
 	ArgOpt           mAppFileArg;
 	ArgOpt           mOtaBootFileArg;
+	ArgOpt           mManuDataFileArg;
 	ArgOpt           mDfuUpdateArg;
 	ArgOpt           mExtFlashUpdateArg;
+	ArgOpt           mClearAPROM;
 	ArgOpt           mIgnoreVersionArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	std::string      mAppFilePath;
 	std::string      mOtaBootFilePath;
+	std::string      mManuDataFilePath;
 
 	ca_error flash_process(const DeviceInfo &aDeviceInfo, Flasher::FlashType flashType);
 	ca_error external_flash_process(const DeviceInfo &aDeviceInfo);
@@ -71,6 +74,7 @@ private:
 	ca_error print_help_string(const char *aArg);
 	ca_error set_serialno_filter(const char *aArg);
 	ca_error set_application_file(const char *aArg);
+	ca_error set_manufacturer_data_file(const char *aArg);
 	ca_error set_ota_bootloader_file(const char *aArg);
 };
 

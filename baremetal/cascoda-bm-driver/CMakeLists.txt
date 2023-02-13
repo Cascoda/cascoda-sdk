@@ -12,7 +12,7 @@ set( CASCODA_BM_USB_HID_BCDUSBVER 0x10,0x01 CACHE STRING "bcd USB version in for
 set( CASCODA_BM_USB_HID_BCDDEVVER 0x00,0x00 CACHE STRING "bcd device version in form 0x12,0x34")
 set( CASCODA_BM_USB_HID_IDVENDOR 0x16,0x04 CACHE STRING "USB Vendor ID in form 0x12,0x34")
 set( CASCODA_BM_USB_HID_IDPRODUCT 0x20,0x50 CACHE STRING "USB Product ID in form 0x12,0x34")
-set( CASCODA_EINK_DISPLAY_PRESENT,  OFF CACHE BOOL "Enable half-duplex TX only mode if EINK display is presence")
+set( CASCODA_EINK_DISPLAY_PRESENT  OFF CACHE BOOL "Enable half-duplex TX only mode if EINK display is presence")
 
 
 if(CASCODA_BM_INTERFACE STREQUAL "USB")
@@ -54,7 +54,7 @@ add_library(cascoda-bm
 	${EXT_FLASH_SOURCE}
 	)
 
-if (CASCODA_BUILD_OCF)
+if (CASCODA_BUILD_OCF OR UNIX OR MINGW)
 	target_sources(cascoda-bm PRIVATE
 		${PROJECT_SOURCE_DIR}/source/test15_4_evbme_dummy.c
 	)
@@ -73,6 +73,13 @@ target_link_libraries(cascoda-bm
 	PRIVATE
 		mbedcrypto
 	)
+
+if((CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD") OR (CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD_BATT"))
+target_link_libraries(cascoda-bm
+	PUBLIC
+		cascoda-bm-devboard
+	)
+endif()
 
 target_include_directories(cascoda-bm
 	PUBLIC

@@ -14,7 +14,7 @@ target_include_directories(ot-barebone-mtd
 	PRIVATE ${PROJECT_SOURCE_DIR}/include
 	)
 target_link_libraries(ot-barebone-mtd ca821x-openthread-bm-mtd)
-cascoda_make_binary(ot-barebone-mtd)
+cascoda_make_binary(ot-barebone-mtd CASCODA_BUILD_BINARIES)
 
 if(CASCODA_OPENTHREAD_FTD)
 	add_executable(ot-barebone-ftd
@@ -25,5 +25,5 @@ if(CASCODA_OPENTHREAD_FTD)
 		PRIVATE ${PROJECT_SOURCE_DIR}/include
 		)
 	target_link_libraries(ot-barebone-ftd ca821x-openthread-bm-ftd)
-	cascoda_make_binary(ot-barebone-ftd)
+	cascoda_make_binary(ot-barebone-ftd CASCODA_BUILD_BINARIES)
 endif()

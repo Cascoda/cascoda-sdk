@@ -217,11 +217,6 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 				linkMode.mRxOnWhenIdle = (TAM.Set->AttributeValue[0] ? 1 : 0);
 				error                  = otThreadSetLinkMode(OT_INSTANCE, linkMode);
 				break;
-			case OT_ATTR_MODE_SECURE:
-				linkMode                     = otThreadGetLinkMode(OT_INSTANCE);
-				linkMode.mSecureDataRequests = (TAM.Set->AttributeValue[0] ? 1 : 0);
-				error                        = otThreadSetLinkMode(OT_INSTANCE, linkMode);
-				break;
 			case OT_ATTR_MODE_FFD:
 				linkMode             = otThreadGetLinkMode(OT_INSTANCE);
 				linkMode.mDeviceType = (TAM.Set->AttributeValue[0] ? 1 : 0);
@@ -237,10 +232,10 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 				break;
 			case OT_ATTR_MASTER_KEY:
 			{
-				otMasterKey key;
+				otNetworkKey key;
 
 				memcpy(key.m8, TAM.Set->AttributeValue, 16);
-				error = otThreadSetMasterKey(OT_INSTANCE, &key);
+				error = otThreadSetNetworkKey(OT_INSTANCE, &key);
 			}
 			break;
 			case OT_ATTR_NETWORK_NAME:
@@ -307,11 +302,6 @@ int otApi_Dispatch(struct SerialBuffer *SerialRxBuffer)
 			case OT_ATTR_MODE_RX_ON_WHEN_IDLE:
 				linkMode                   = otThreadGetLinkMode(OT_INSTANCE);
 				response.AttributeValue[0] = linkMode.mRxOnWhenIdle;
-				Length++;
-				break;
-			case OT_ATTR_MODE_SECURE:
-				linkMode                   = otThreadGetLinkMode(OT_INSTANCE);
-				response.AttributeValue[0] = linkMode.mSecureDataRequests;
 				Length++;
 				break;
 			case OT_ATTR_MODE_FFD:

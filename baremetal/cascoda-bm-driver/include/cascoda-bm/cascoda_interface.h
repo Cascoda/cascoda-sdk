@@ -267,18 +267,24 @@ void BSP_SerialWriteAll(u8_t *pBuffer, u32_t BufferSize);
  *
  */
 u32_t BSP_SerialRead(u8_t *pBuffer, u32_t BufferSize);
+
+/**
+ * \brief Wait until Serial has completed curent Write/Read Operation
+ *
+ */
+void BSP_SerialWaitWhileBusy(void);
+
 #endif // USE_UART
 
 /**
  * \brief Set up wake on timer/IRQ, Power down MCU and return on wakeup
  *
  * \param sleeptime_ms - sleep time [milliseconds]
- * \param use_timer0 - flag if to use timer0 (1) or not (0), 0 to wake on IRQ
+ * \param use_timer0 - if set to 1, system wake-up by mcu (timer0 or gpio); if set to 0, system wake-up by radio sleep timer.
  * \param dpd - flag if to enter deep-power-down without data retention
- * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *
  */
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd, struct ca821x_dev *pDeviceRef);
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
 
 /**
  * \brief Initialise the system for a given ca821x_dev
@@ -343,7 +349,7 @@ u8_t BSP_ModuleIsGPIOPinRegistered(u8_t mpin);
 
 /**
  * \brief Sets Module Pin GPIO Output Value
- * 
+ *
  * Output pins must be registered before they can be used. See BSP_ModuleRegisterGPIOOutput().
  *
  * \param mpin  - module pin
@@ -364,6 +370,17 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val);
  *
  */
 ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val);
+
+/**
+ * \brief Sets Module Pin GPIO Output as permanently driven (don't tristate in Power-Down)
+ *
+ * Input pins must be registered before they can be used. See BSP_ModuleRegisterGPIOOutput().
+ *
+ * \param mpin  - module pin
+ * \return status
+ *
+ */
+ca_error BSP_ModuleSetGPIOOutputPermanent(u8_t mpin);
 
 /**
  * \brief Reads ADC Conversion Value on Module Pin
@@ -485,6 +502,13 @@ void BSP_DisableUSB(void);
  *
  */
 u8_t BSP_IsUSBPresent(void);
+
+/**
+ * \brief Returns the system frequency
+ * \retval system frequency [MHz], enum type fsys_mhz
+ *
+ */
+fsys_mhz BSP_GetSystemFrequency(void);
 
 /**
  * \brief re-configures system clock frequency and comms interface

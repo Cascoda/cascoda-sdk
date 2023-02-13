@@ -64,6 +64,6 @@ ca_error UnlockCommsThread(void);
  * @param pDeviceRef Cascoda initialised device struct
  * @return CA_ERROR_SUCCESS upon success
  */
-ca_error init_lwipdemo(otInstance *aInstance, struct ca821x_dev *pDeviceRef);
+ca_error init_lwipdemo_freertos(otInstance *aInstance, struct ca821x_dev *pDeviceRef);
 
 #endif /* BAREMETAL_APP_OT_LWIP_FREERTOS_DEMO_SOURCE_LWIP_FREERTOS_DEMO_H_ */

@@ -39,8 +39,8 @@
  */
 lwm2m_object_t *get_security_object(int         serverId,
                                     const char *serverUri,
-                                    char *      bsPskId,
-                                    char *      psk,
+                                    char       *bsPskId,
+                                    char       *psk,
                                     uint16_t    pskLen,
                                     bool        isBootstrap);
 

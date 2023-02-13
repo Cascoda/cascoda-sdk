@@ -1,318 +1,338 @@
+/**
+ * @file
+ * @brief mikrosdk interface
+ */
 /*
- * MikroSDK - MikroE Software Development Kit
- * Copyright© 2020 MikroElektronika d.o.o.
- * 
- * Permission is hereby granted, free of charge, to any person 
- * obtaining a copy of this software and associated documentation 
- * files (the "Software"), to deal in the Software without restriction, 
- * including without limitation the rights to use, copy, modify, merge, 
- * publish, distribute, sublicense, and/or sell copies of the Software, 
- * and to permit persons to whom the Software is furnished to do so, 
- * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be 
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
- * OR OTHER DEALINGS IN THE SOFTWARE. 
- */
-
-/*!
- * \file
+ *  Copyright (c) 2022, Cascoda Ltd.
+ *  All rights reserved.
  *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of the copyright holder nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
-#include "airquality4.h"
-#include <stdio.h>
-#include "cascoda-bm/cascoda_interface_core.h"
+/*
+ * Example click interface driver
+*/
+
+/* include <device>_drv.h and <device>_click.h */
+#include "airquality4_click.h"
+#include "airquality4_drv.h"
+
+/* include cascoda-bm code if required */
+#include "cascoda-bm/cascoda_sensorif.h"
+#include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
 
-// ------------------------------------------------ PRIVATE VARIABLES
-static airquality4_t airquality4;
-// ------------------------------------------------ PRIVATE FUNCTION DEFINITIONS
+/* declare <device>_t <device> and <device>_cfg_t cfg structures for click objects */
+static airquality4_t     airquality4;
+static airquality4_cfg_t cfg;
 
-static void transfer_delay(void);
-static void long_transfer_delay(void);
+/* calibration baseline storage (with crc) */
+static uint8_t sgp30_baseline[6];
 
-/**
- * @brief Write data to slave
- * @details This function append the slave address to the first byte of data buffer.
- * @param[in] ctx : Click context object.
- * @param[in] slave_addr : Slave address.
- * @param[in] tx_buf : data buffer .
- * @param[in] len : data buffer length.
- *
- *
- */
+/* timing values */
+static uint32_t sgp30_t_init = 0; /* initialisation time */
 
-static void write_data(airquality4_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len);
-
-// ------------------------------------------------ PUBLIC FUNCTION DEFINITIONS
-
-void airquality4_cfg_setup(airquality4_cfg_t *cfg)
-{
-	// Communication gpio pins
-
-	cfg->scl = HAL_PIN_NC;
-	cfg->sda = HAL_PIN_NC;
-
-	cfg->i2c_speed   = I2C_MASTER_SPEED_STANDARD;
-	cfg->i2c_address = AIRQUALITY4_SLAVE_ADDR;
-}
-
-AIRQUALITY4_RETVAL airquality4_init(airquality4_t *ctx, airquality4_cfg_t *cfg)
+/* driver initialisation */
+static uint8_t MIKROSDK_AIRQUALITY4_init(void)
 {
 	i2c_master_config_t i2c_cfg;
 
 	i2c_master_configure_default(&i2c_cfg);
-	i2c_cfg.speed = cfg->i2c_speed;
-	i2c_cfg.scl   = cfg->scl;
-	i2c_cfg.sda   = cfg->sda;
+	i2c_cfg.speed = cfg.i2c_speed;
+	i2c_cfg.scl   = cfg.scl;
+	i2c_cfg.sda   = cfg.sda;
 
-	ctx->slave_address = cfg->i2c_address;
+	airquality4.slave_address = cfg.i2c_address;
 
-	if (i2c_master_open(&ctx->i2c, &i2c_cfg) == I2C_MASTER_ERROR)
-	{
-		return AIRQUALITY4_INIT_ERROR;
-	}
+	if (i2c_master_open(&airquality4.i2c, &i2c_cfg) == I2C_MASTER_ERROR)
+		return AIRQUALITY4_ST_FAIL;
 
-	i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-	i2c_master_set_speed(&ctx->i2c, cfg->i2c_speed);
+	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
+	i2c_master_set_speed(&airquality4.i2c, cfg.i2c_speed);
 
-	return AIRQUALITY4_OK;
+	return AIRQUALITY4_ST_OK;
 }
 
-void air_quality4_get_id(airquality4_t *ctx, uint8_t *data_buf)
+/* modified i2c write addding i2c slave address to data and data structure specific to sgp30 */
+static uint8_t MIKROSDK_AIRQUALITY4_write(uint16_t cmd, uint8_t *tx_buf, size_t len)
 {
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
+	uint8_t data_buf[SGP30_ADDLEN + SGP30_MAXDLEN];
+	uint8_t cnt;
+	size_t  length = len + 1;
 
-	tx_buf[0] = 0x36;
-	tx_buf[1] = 0x82;
+	data_buf[0] = airquality4.slave_address;
+	data_buf[1] = (cmd >> 8) & 0xFF;
+	data_buf[2] = (cmd >> 0) & 0xFF;
+	for (cnt = 0; cnt < len; ++cnt) data_buf[3 + cnt] = tx_buf[cnt];
 
-	write_data(ctx, ctx->slave_address, tx_buf, &num_w);
+	if (i2c_master_write(&airquality4.i2c, data_buf, SGP30_ADDLEN + len))
+		return (AIRQUALITY4_ST_FAIL);
 
-	transfer_delay();
-
-	i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-
-	i2c_master_read(&ctx->i2c, data_buf, 6);
+	return (AIRQUALITY4_ST_OK);
 }
 
-void airquality4_default_cfg(airquality4_t *ctx)
+/* sensor initialisation command */
+uint8_t MIKROSDK_AIRQUALITY4_dev_init(void)
 {
-	air_quality4_dev_init(ctx);
+	if (MIKROSDK_AIRQUALITY4_write(SGP30_CMD_INIT_AIR_QUALITY, NULL, 0))
+		return (AIRQUALITY4_ST_FAIL);
+
+	WAIT_ms(SGP30_T_MEAS_QUAL);
+	sgp30_t_init = TIME_ReadAbsoluteTime();
+
+	return (AIRQUALITY4_ST_OK);
 }
 
-void air_quality4_dev_init(airquality4_t *ctx)
+/* get calibration baseline values command */
+uint8_t MIKROSDK_AIRQUALITY4_get_baseline(void)
 {
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
+	if (MIKROSDK_AIRQUALITY4_write(SGP30_CMD_GET_BASELINE, NULL, 0))
+		return (AIRQUALITY4_ST_FAIL);
 
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x03;
+	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
+	if (i2c_master_read(&airquality4.i2c, sgp30_baseline, 6))
+		return (AIRQUALITY4_ST_FAIL);
 
-	write_data(ctx, ctx->slave_address, tx_buf, &num_w);
-
-	long_transfer_delay();
+	return (AIRQUALITY4_ST_OK);
 }
 
-void air_quality4_measure_quality(airquality4_t *ctx, uint8_t *read_air)
+/* set calibration baseline values command */
+uint8_t MIKROSDK_AIRQUALITY4_set_baseline(void)
 {
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
+	if (MIKROSDK_AIRQUALITY4_write(SGP30_CMD_SET_BASELINE, sgp30_baseline, 6))
+		return (AIRQUALITY4_ST_FAIL);
 
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x08;
-
-	write_data(ctx, ctx->slave_address, tx_buf, &num_w);
-
-	transfer_delay();
-
-	i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-
-	i2c_master_read(&ctx->i2c, read_air, 6);
+	return (AIRQUALITY4_ST_OK);
 }
 
-void air_quality4_get_co2_and_tvoc(uint16_t *value)
+/* soft reset command (sleep mode) */
+uint8_t MIKROSDK_AIRQUALITY4_soft_reset(void)
 {
-	uint8_t read_air[6] = {0};
+	uint8_t tx_buf[2];
 
-	air_quality4_measure_quality(&airquality4, read_air);
-
-	value[0] = read_air[0];
-	value[0] <<= 8;
-	value[0] |= read_air[1];
-
-	value[1] = read_air[3];
-	value[1] <<= 8;
-	value[1] |= read_air[4];
-}
-
-void air_quality4_measure_signal(airquality4_t *ctx, uint8_t *read_air)
-{
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
-
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x50;
-
-	write_data(ctx, ctx->slave_address, tx_buf, &num_w);
-
-	long_transfer_delay();
-	transfer_delay();
-
-	i2c_master_set_slave_address(&ctx->i2c, ctx->slave_address);
-	i2c_master_read(&ctx->i2c, read_air, 6);
-	transfer_delay();
-}
-
-void air_quality4_get_h2_and_ethon(uint16_t *value)
-{
-	uint8_t read_air[6] = {0};
-
-	air_quality4_measure_signal(&airquality4, read_air);
-
-	value[0] = read_air[0];
-	value[0] <<= 8;
-	value[0] |= read_air[1];
-
-	value[1] = read_air[3];
-	value[1] <<= 8;
-	value[1] |= read_air[4];
-
-	printf("\n H2: ");
-	for (int i = 0; i < 6; i++)
-	{
-		printf("%02X", read_air[i]);
-		if (i == 2)
-		{
-			printf("\n Ethanol: ");
-		}
-	}
-	printf("\n");
-}
-
-void air_quality4_get_baseline(airquality4_t *ctx, uint8_t *read_air)
-{
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
-
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x15;
-
-	write_data(ctx, ctx->slave_address, tx_buf, &num_w);
-
-	transfer_delay();
-
-	i2c_master_set_slave_address(&ctx->i2c, airquality4.slave_address);
-	i2c_master_read(&ctx->i2c, read_air, 6);
-	transfer_delay();
-}
-
-void air_quality4_set_baseline()
-{
-	size_t  num_w = 8;
-	uint8_t tx_buf[num_w];
-
-	air_quality4_get_baseline(&airquality4, tx_buf + 2);
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x1E;
-
-	write_data(&airquality4, airquality4.slave_address, tx_buf, &num_w);
-
-	transfer_delay();
-}
-
-void air_quality4_soft_reset()
-{
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
-
+	/* uses i2c general call address (0x00), so i2c_master_write used directly */
 	tx_buf[0] = 0x00;
 	tx_buf[1] = 0x06;
 
-	i2c_master_write(&airquality4.i2c, tx_buf, num_w);
+	if (i2c_master_write(&airquality4.i2c, tx_buf, 2))
+		return (AIRQUALITY4_ST_FAIL);
 
-	transfer_delay();
+	sgp30_t_init = SGP30_T_SLEEP;
 
-	air_quality4_dev_init(&airquality4);
+	return (AIRQUALITY4_ST_OK);
 }
 
-void air_quality4_get_version(uint8_t *version)
+/* get feature set version command */
+uint8_t MIKROSDK_AIRQUALITY4_get_version(uint16_t *version)
 {
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
+	uint8_t rx_buf[3];
 
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x2F;
-
-	write_data(&airquality4, airquality4.slave_address, tx_buf, &num_w);
-
-	transfer_delay();
+	MIKROSDK_AIRQUALITY4_write(SGP30_CMD_GET_FEATURE_SET_VERSION, NULL, 0);
 
 	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
-	i2c_master_read(&airquality4.i2c, version, 3);
+	if (i2c_master_read(&airquality4.i2c, rx_buf, 3))
+		return (AIRQUALITY4_ST_FAIL);
 
-	transfer_delay();
+	*version = (rx_buf[0] << 8) + rx_buf[1];
+
+	return (AIRQUALITY4_ST_OK);
 }
 
-void air_quality4_measure_test(uint8_t *value)
+/* measure test (self-test) command */
+uint8_t MIKROSDK_AIRQUALITY4_measure_test(void)
 {
-	size_t  num_w = 2;
-	uint8_t tx_buf[num_w];
+	uint8_t  rx_buf[3];
+	uint16_t value;
 
-	tx_buf[0] = 0x20;
-	tx_buf[1] = 0x32;
+	if (MIKROSDK_AIRQUALITY4_write(SGP30_CMD_MEASURE_TEST, NULL, 0))
+		return (AIRQUALITY4_ST_FAIL);
 
-	write_data(&airquality4, airquality4.slave_address, tx_buf, &num_w);
-
-	transfer_delay();
+	WAIT_ms(SGP30_T_TEST);
 
 	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
-	i2c_master_read(&airquality4.i2c, value, 3);
+	if (i2c_master_read(&airquality4.i2c, rx_buf, 3))
+		return (AIRQUALITY4_ST_FAIL);
+
+	value = (rx_buf[0] << 8) + rx_buf[1];
+	if (value != 0xD400)
+		return (AIRQUALITY4_ST_FAIL);
+
+	return (AIRQUALITY4_ST_OK);
 }
 
+/* measure raw signals command */
+uint8_t MIKROSDK_AIRQUALITY4_measure_raw_signals(uint16_t *value)
+{
+	uint8_t rx_buf[6] = {0};
+
+	if (MIKROSDK_AIRQUALITY4_write(SGP30_CMD_MEASURE_RAW_SIGNALS, NULL, 0))
+		return (AIRQUALITY4_ST_FAIL);
+
+	WAIT_ms(SGP30_T_MEAS_RAW);
+
+	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
+	if (i2c_master_read(&airquality4.i2c, rx_buf, 6))
+		return (AIRQUALITY4_ST_FAIL);
+
+	value[0] = (rx_buf[0] << 8) + rx_buf[1];
+	value[1] = (rx_buf[3] << 8) + rx_buf[4];
+
+	return (AIRQUALITY4_ST_OK);
+}
+
+/* measure air quality values command */
+uint8_t MIKROSDK_AIRQUALITY4_measure_air_quality(uint16_t *value)
+{
+	uint8_t  rx_buf[6] = {0};
+	uint8_t  status;
+	uint32_t tmeas;
+
+	tmeas = TIME_ReadAbsoluteTime();
+
+	MIKROSDK_AIRQUALITY4_write(SGP30_CMD_MEASURE_AIR_QUALITY, NULL, 0);
+
+	WAIT_ms(SGP30_T_MEAS_QUAL);
+
+	i2c_master_set_slave_address(&airquality4.i2c, airquality4.slave_address);
+	if (i2c_master_read(&airquality4.i2c, rx_buf, 6))
+		return (AIRQUALITY4_ST_FAIL);
+
+	value[0] = (rx_buf[0] << 8) + rx_buf[1];
+	value[1] = (rx_buf[3] << 8) + rx_buf[4];
+
+	if (sgp30_t_init == SGP30_T_SLEEP)
+		status = AIRQUALITY4_ST_SLEEP;
+	else if ((tmeas - sgp30_t_init) < SGP30_T_INIT)
+		status = AIRQUALITY4_ST_INIT;
+	else if (tmeas < SGP30_T_CAL)
+		status = AIRQUALITY4_ST_NCAL;
+	else
+		status = AIRQUALITY4_ST_OK;
+
+	return (status);
+}
+
+/* device initialisation */
 uint8_t MIKROSDK_AIRQUALITY4_Initialise(void)
 {
-	airquality4_cfg_t cfg;
-	airquality4_cfg_setup(&cfg);
-	AIRQUALITY4_MAP_MIKROBUS(cfg);
-	airquality4_init(&airquality4, &cfg);
-	airquality4_default_cfg(&airquality4);
+	/* don't call airquality4_cfg_setup() as this de-initialises pin mapping */
+	//airquality4_cfg_setup(&cfg);
+	cfg.i2c_speed   = I2C_MASTER_SPEED_STANDARD;
+	cfg.i2c_address = SGP30_I2C_ADDR;
 
-	i2c_master_close(&airquality4.i2c);
+	if (MIKROSDK_AIRQUALITY4_init())
+		return (AIRQUALITY4_ST_FAIL);
+
+	if (MIKROSDK_AIRQUALITY4_dev_init())
+		return (AIRQUALITY4_ST_FAIL);
+
+	/* Note: baseline should only be stored after 12 hours of continuous operation */
+	/*       and should not be restored with set_baseline before that */
+	if (MIKROSDK_AIRQUALITY4_get_baseline())
+		return (AIRQUALITY4_ST_FAIL);
+
+	SENSORIF_I2C_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return (AIRQUALITY4_ST_OK);
 }
 
-// ------------------------------------------------------------------------- PRIVATE FUNCTIONS
-static void transfer_delay(void)
+/* device hardware reinitialisation for quick power-up */
+uint8_t MIKROSDK_AIRQUALITY4_Reinitialise(void)
 {
-	BSP_WaitTicks(10);
+	WAIT_ms(SGP30_T_MEAS_POWERUP);
+
+	SENSORIF_I2C_Init();
+
+	if (MIKROSDK_AIRQUALITY4_dev_init())
+		return (AIRQUALITY4_ST_FAIL);
+
+	/* Note: baseline should only be stored after 12 hours of continuous operation */
+	/*       and should not be restored with set_baseline before that */
+	if (MIKROSDK_AIRQUALITY4_get_baseline())
+		return (AIRQUALITY4_ST_FAIL);
+
+	SENSORIF_I2C_Deinit(); /* only deinit, was initialised with i2c_master_open */
+
+	return (AIRQUALITY4_ST_OK);
 }
 
-static void long_transfer_delay(void)
+/* data acquisition */
+/* AIRQUALITY4_MEASURE_RAW_SIGNALS = 0: */
+/* co2_h2   = CO2  [ppm] */
+/* tvoc_eth = TVOC [ppb] */
+/* AIRQUALITY4_MEASURE_RAW_SIGNALS = 1: */
+/* co2_h2   = H2  (raw value) */
+/* tvoc_eth = ETH (raw value) */
+uint8_t MIKROSDK_AIRQUALITY4_Acquire(uint16_t *co2_h2, uint16_t *tvoc_eth)
 {
-	BSP_WaitTicks(100);
+	uint8_t  status = AIRQUALITY4_ST_OK;
+	uint16_t data_buffer[2];
+
+	/* data acquisition */
+	SENSORIF_I2C_Init();
+#if (AIRQUALITY4_MEASURE_RAW_SIGNALS)
+	if (MIKROSDK_AIRQUALITY4_measure_raw_signals(data_buffer))
+		return (AIRQUALITY4_ST_FAIL);
+#else
+	status = MIKROSDK_AIRQUALITY4_measure_air_quality(data_buffer);
+#endif
+	SENSORIF_I2C_Deinit();
+
+	*co2_h2   = data_buffer[0];
+	*tvoc_eth = data_buffer[1];
+
+	return status;
 }
 
-void write_data(airquality4_t *ctx, uint8_t slave_addr, uint8_t *tx_buf, size_t *len)
+/* macro function for power-down */
+uint8_t MIKROSDK_AIRQUALITY4_Powerdown(void)
 {
-	uint8_t data_buf[256];
-	uint8_t cnt;
-	size_t  length     = ++*len;
-	err_t   hal_status = HAL_I2C_MASTER_SUCCESS;
-
-	data_buf[0] = slave_addr;
-
-	for (cnt = 1; cnt <= *len; cnt++)
+	/* save baseline if device has been calibrated */
+	if (TIME_ReadAbsoluteTime() > SGP30_T_CAL)
 	{
-		data_buf[cnt] = tx_buf[cnt - 1];
+		if (MIKROSDK_AIRQUALITY4_get_baseline())
+			return (AIRQUALITY4_ST_FAIL);
+	}
+	/* soft reset to power down */
+	if (MIKROSDK_AIRQUALITY4_soft_reset())
+		return (AIRQUALITY4_ST_FAIL);
+
+	return (AIRQUALITY4_ST_OK);
+}
+
+/* macro function for power-up */
+uint8_t MIKROSDK_AIRQUALITY4_Powerup(void)
+{
+	/* device initialisation to wake up */
+	if (MIKROSDK_AIRQUALITY4_dev_init())
+		return (AIRQUALITY4_ST_FAIL);
+
+	/* restore baseline if device has been calibrated */
+	if (TIME_ReadAbsoluteTime() > SGP30_T_CAL)
+	{
+		if (MIKROSDK_AIRQUALITY4_set_baseline())
+			return (AIRQUALITY4_ST_FAIL);
 	}
 
-	i2c_master_write(&ctx->i2c, data_buf, length);
+	return (AIRQUALITY4_ST_OK);
 }
-// ------------------------------------------------------------------------- END

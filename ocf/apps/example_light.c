@@ -104,7 +104,7 @@ static struct timespec ts;
 /* windows specific code */
 #include <windows.h>
 STATIC CONDITION_VARIABLE cv; /**< event loop variable */
-STATIC CRITICAL_SECTION cs;   /**< event loop variable */
+STATIC CRITICAL_SECTION   cs; /**< event loop variable */
 #endif
 
 #define btoa(x) ((x) ? "true" : "false")
@@ -141,12 +141,12 @@ int          g_dimming_dimmingSetting                        = 30;
 /**< registration data variables for the resources */
 
 /**< global resource variables for path: /binaryswitch */
-STATIC char *      g_binaryswitch_RESOURCE_ENDPOINT = "/binaryswitch";         /**< used path for this resource */
+STATIC char       *g_binaryswitch_RESOURCE_ENDPOINT = "/binaryswitch";         /**< used path for this resource */
 STATIC const char *g_binaryswitch_RESOURCE_TYPE[]   = {"oic.r.switch.binary"}; /**< rt value (as an array) */
 int                g_binaryswitch_nr_resource_types = 1;                       /**< amount of resource type entries */
 
 /* global resource variables for path: /dimming */
-STATIC char *      g_dimming_RESOURCE_ENDPOINT = "/dimming";              /**< used path for this resource */
+STATIC char       *g_dimming_RESOURCE_ENDPOINT = "/dimming";              /**< used path for this resource */
 STATIC const char *g_dimming_RESOURCE_TYPE[]   = {"oic.r.light.dimming"}; /**< rt value (as an array) */
 int                g_dimming_nr_resource_types = 1;                       /**< amount of resource type entries */
 
@@ -176,12 +176,12 @@ int app_init(void)
 	                     NULL);
 
 #if defined(OC_IDD_API)
-	FILE *     fp;
-	uint8_t *  buffer;
+	FILE      *fp;
+	uint8_t   *buffer;
 	size_t     buffer_size;
 	const char introspection_error[] = "\tERROR Could not read 'server_introspection.cbor'\n"
 	                                   "\tIntrospection data not set.\n";
-	fp = fopen("./server_introspection.cbor", "rb");
+	fp                               = fopen("./server_introspection.cbor", "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);

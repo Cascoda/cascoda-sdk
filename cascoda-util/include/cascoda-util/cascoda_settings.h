@@ -128,8 +128,8 @@ void caUtilSettingsDeinit(struct ca821x_dev *aInstance);
 ca_error caUtilSettingsGet(struct ca821x_dev *aInstance,
                            uint16_t           aKey,
                            int                aIndex,
-                           uint8_t *          aValue,
-                           uint16_t *         aValueLength);
+                           uint8_t           *aValue,
+                           uint16_t          *aValueLength);
 
 /** 
  *  @brief Sets or replaces the value of a setting
@@ -230,8 +230,8 @@ void caUtilSettingsWipe(struct ca821x_dev *aInstance, const char *aApplicationNa
 ca_error caUtilSettingsGetAddress(struct ca821x_dev *aInstance,
                                   uint16_t           aKey,
                                   int                aIndex,
-                                  void **            aValue,
-                                  uint16_t *         aValueLength);
+                                  void             **aValue,
+                                  uint16_t          *aValueLength);
 
 /**
  * @brief Add a vector of buffers to the storage. Stored in continuous flash within the setting
@@ -245,7 +245,7 @@ ca_error caUtilSettingsGetAddress(struct ca821x_dev *aInstance,
  * @retval CA_ERROR_NOT_IMPLEMENTED  This function is not implemented on this platform.
  * @retval CA_ERROR_NO_BUFFER        No space remaining to store the given setting.
  */
-ca_error caUtilSettingsAddVector(struct ca821x_dev *   aInstance,
+ca_error caUtilSettingsAddVector(struct ca821x_dev    *aInstance,
                                  uint16_t              aKey,
                                  struct settingBuffer *aVector,
                                  size_t                aCount);

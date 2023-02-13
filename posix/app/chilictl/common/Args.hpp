@@ -31,6 +31,7 @@
 
 #include <functional>
 #include <limits>
+#include <stdio.h>
 #include <vector>
 
 #include "ca821x_error.h"
@@ -52,9 +53,9 @@ public:
 	 */
 	enum ArgPerm
 	{
-		NONE = 0,  //!< No argument allowed to option
-		OPTIONAL,  //!< Option has optional argument
-		MANDATORY, //!< Option requires an argument to be provided
+		NO_ARG = 0,    //!< No argument allowed to option
+		OPTIONAL_ARG,  //!< Option has optional argument
+		MANDATORY_ARG, //!< Option requires an argument to be provided
 	};
 
 	/**
@@ -63,7 +64,7 @@ public:
 	 * @param aLongArg Long form option (or NULL if none)
 	 * @param aArgPerm @see ArgPerm
 	 */
-	ArgOpt(char aShortArg, const char *aLongArg, ArgPerm aArgPerm = ArgPerm::NONE);
+	ArgOpt(char aShortArg, const char *aLongArg, ArgPerm aArgPerm = ArgPerm::NO_ARG);
 
 	/**
 	 * Set the help string of the option

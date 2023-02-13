@@ -52,6 +52,7 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 
 void otPlatAlarmMilliStop(otInstance *aInstance)
 {
+	(void)aInstance;
 	TASKLET_Cancel(&otTasklet);
 }
 

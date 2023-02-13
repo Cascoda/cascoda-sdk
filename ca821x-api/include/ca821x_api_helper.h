@@ -71,7 +71,7 @@ struct SecSpec *MCPS_DATA_indication_get_secspec(const struct MCPS_DATA_indicati
  * \return Pointer to the start of the ShortAddr list (even if length=0)
  *
  */
-struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                        aLength,
+struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t                                         *aLength,
                                                                const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**
@@ -86,7 +86,7 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
  * \return Pointer to the start of the ExtAddr list (even if length=0)
  *
  */
-struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                        aLength,
+struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t                                         *aLength,
                                                            const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**
@@ -101,7 +101,7 @@ struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *            
  * \return Pointer to the start of the SDU (even if length=0)
  *
  */
-uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *                                        aLength,
+uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t                                         *aLength,
                                                const struct MLME_BEACON_NOTIFY_indication_pset *aPset);
 
 /**

@@ -67,7 +67,7 @@ ca_error ota_upgrade_init();
  */
 ca_error ota_handle_write(uint32_t            aStartAddr,
                           uint32_t            aWriteLen,
-                          uint8_t *           aData,
+                          uint8_t            *aData,
                           ExternalFlashInfo   aExternalFlashInfo,
                           ExtFlashAPICallback aUpstreamCallback);
 

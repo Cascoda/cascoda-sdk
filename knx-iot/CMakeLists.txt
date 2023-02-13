@@ -8,6 +8,8 @@ endif()
 add_compile_definitions(OC_DYNAMIC_ALLOCATION)
 set(KNX_BUILTIN_MBEDTLS OFF CACHE BOOL "" FORCE)
 set(KNX_BUILTIN_TINYCBOR OFF CACHE BOOL "" FORCE)
+set(OT_SRP_CLIENT ON CACHE BOOL "" FORCE)
+set(OC_ECDSA ON CACHE BOOL "" FORCE)
 
 # Since we do not have hardware acceleration of SHA256, we reduce the number of iterations to enable proof-of-concept
 # testing of Spake2+. This makes the handshake significantly less secure - the ideal solution for production is to

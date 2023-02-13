@@ -47,6 +47,7 @@
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
 #include "sif_il3820.h"
+#include "sif_il3820_image.h"
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -59,8 +60,8 @@ int main(void)
 {
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
+	SENSORIF_SPI_Config(1);
 	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */

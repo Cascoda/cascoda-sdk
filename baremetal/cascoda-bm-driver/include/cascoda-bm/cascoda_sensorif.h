@@ -57,7 +57,7 @@ extern "C" {
 #define UART_SENSORIF_BAUDRATE 115200
 
 #if defined(CASCODA_CHILI2_REV)
-u8_t SENSORIF_SPI_Chip_Select();
+u8_t SENSORIF_SPI_Chip_Select(void);
 void SENSORIF_SECURE_I2C_Config(u32_t portnum);
 void SENSORIF_SECURE_SPI_Config(u32_t portnum);
 void SENSORIF_SECURE_UART_Config(u32_t portnum);
@@ -92,6 +92,14 @@ enum sensorif_i2c_status
 	SENSORIF_I2C_ST_TIMEOUT         = 0xFF, /**< bus access time-out */
 	SENSORIF_I2C_ST_BUS_ERROR       = 0xF1, /**< bus error re-mapped from 0x00 for status return*/
 };
+
+/* PWM type to indicate whether Basic PWM or Extended PWM is used */
+typedef enum
+{
+	NOT_INITIALISED = 0,
+	USING_BPWM      = 1,
+	USING_EPWM      = 2,
+} PWM_type_t;
 
 /* functions for platform implementation */
 
@@ -244,6 +252,40 @@ void SENSORIF_SPI_Config(u32_t portnum);
  *************************************************************************************************************
  ************************************************************************************************************/
 void SENSORIF_UART_Config(u32_t portnum);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Initialises and enables PWM for the specified frequency and duty cycle.
+ * Note: After initialisation, change the duty cycle by calling SENSORIF_PWM_SetDutyCycle().
+ * To change the frequency, deinitialise the PWM with SENSORIF_PWM_Deinit(), then
+ * call this function again with the required frequency.
+ * 
+ * \param pin - Number of the pin (e.g. 31) which the PWM will drive
+ * \param u32Frequency - Frequency of the PWM output waveform
+ * \param u32DutyCycle - Duty cycle as a percentage (number between 0 and 100)
+ *******************************************************************************
+ * \return Error status, indicating whether the initialisation succeeded or failed.
+ * \retval CA_ERROR_SUCCESS - Initialisation succeeded
+ * \retval CA_ERROR_INVALID_ARGS - Pin doesn't support PWM
+ * \retval CA_ERROR_ALREADY - PWM already initialised. Call Deinit() first 
+ *                            before reinitialising.
+******************************************************************************/
+ca_error SENSORIF_PWM_Init(u8_t pin, u32_t u32Frequency, u32_t u32DutyCycle);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Deinitialises and disables PWM.
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_PWM_Deinit(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Changes the duty cycle of the PWM.
+ * \param u32DutyCycle - PWM Duty Cycle as a percentage (number between 0 and 100)
+ *******************************************************************************
+ ******************************************************************************/
+void SENSORIF_PWM_SetDutyCycle(u32_t u32DutyCycle);
 
 #ifdef __cplusplus
 }

@@ -36,7 +36,7 @@
 
 void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 {
-	char *          lev_str;
+	char           *lev_str;
 	struct timespec ts;
 	char            timeString[40];
 	time_t          secs;

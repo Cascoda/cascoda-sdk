@@ -167,14 +167,14 @@ typedef struct OT_STATE_CNF
 
 typedef union OTApiMsg
 {
-	OT_IF_CONFIG_t *      IfConfig;
-	OT_THREAD_t *         Thread;
-	OT_SET_t *            Set;
-	OT_GET_t *            Get;
-	OT_STATE_t *          State;
-	OT_FACTORY_RESET_t *  FactoryReset;
+	OT_IF_CONFIG_t       *IfConfig;
+	OT_THREAD_t          *Thread;
+	OT_SET_t	         *Set;
+	OT_GET_t	         *Get;
+	OT_STATE_t           *State;
+	OT_FACTORY_RESET_t   *FactoryReset;
 	OT_APPLICATION_CMD_t *ApplicationCmd;
-	u8_t *                Ptr;
+	u8_t                 *Ptr;
 } OTApiMsg_t;
 
 /* Attribute ids */

@@ -30,7 +30,7 @@ if(${CASCODA_BUILD_OCF_PKI})
 endif()
 
 # Only the Chili 2 has enough memory and flash to run Iotivity
-if(NOT TARGET cascoda-chili2)
+if(NOT TARGET chili2)
 	message(FATAL_ERROR "OCF is currently only supported for the Chili2 target")
 endif()
 

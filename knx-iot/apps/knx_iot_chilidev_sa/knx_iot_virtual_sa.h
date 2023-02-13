@@ -23,7 +23,7 @@
  * e.g. if the c code is compiled without main then 
  * these functions can be used to call all generated code
  *
- * 2022-06-20 15:47:10.281943
+ * 2023-01-25 15:47:00.135618
  */
 
 #include "port/oc_clock.h"
@@ -35,216 +35,217 @@ extern "C" {
 #endif
 
 /**
- * @brief Callback invoked by the stack when a successfull post is done
+ * Callback invoked by the stack when a successfull put is done
  *
- * @param[in] url the url of the post
+ * @param[in] url the url of the put
+ *
  */
-typedef void (*oc_post_cb_t)(char *url);
+typedef void (*oc_put_cb_t)(char* url);
 
 /**
- * @brief The post callback
+ * @brief The put callback
  *
  */
-typedef struct oc_post_struct_t
+typedef struct oc_put_struct_t
 {
-	oc_post_cb_t cb; /**< the post callback, e.g. when something has changed */
-} oc_post_struct_t;
-
-// BOOLEAN code
+	oc_put_cb_t cb; /**< the put callback, e.g. when something has changed */
+} oc_put_struct_t;
 
 /**
- * @brief check if the url represents a boolean
- * 
- * @param url the url of the resource/data point
- * @return true = url value is a boolean
- * @return false = url value is not a boolean
- */
-bool app_is_bool_url(char *url);
-
-/**
- * @brief set the boolean variable at the url 
- * the caller needs to know if the resource/data point represents a boolean
- * 
- * @param url the url of the resource/data point
- * @param value the boolean value to be set
- */
-void app_set_bool_variable(char *url, bool value);
-
-/**
- * @brief retrieve the boolean variable at the url
- * the caller needs to know if the resource/data point represents a boolean
- * 
- * @param url the url of the resource/data point
- * @return the boolean value of the variable
- */
-bool app_retrieve_bool_variable(char *url);
-
-// INTEGER code
-
-/**
- * @brief check if the url represents an integer
- * 
- * @param url the url of the resource/data point
- * @return true = url value is an int
- * @return false = url value is not an int
- */
-bool app_is_int_url(char *url);
-
-/**
- * @brief set the integer variable at to the url 
- * the caller needs to know if the resource/data point represents an integer
- * 
- * @param url the url of the resource/data point
- * @param value the integer value to be set
- */
-void app_set_integer_variable(char *url, int value);
-
-/**
- * @brief retreive the integer variable at the url 
- * the caller needs to know if the resource/data point represents an integer
- * 
- * @param url the url of the resource/data point
- * @return the integer value of the variable
- */
-int app_retrieve_int_variable(char *url);
-
-// DOUBLE code
-
-/**
- * @brief check if the url represents a double
- * 
- * @param url the url of the resource/data point
- * @return true = url value is a double
- * @return false = url value is not a double
- */
-bool app_is_double_url(char *url);
-
-/**
- * @brief set the double variable at the url 
- * the caller needs to know if the resource/data point represents a double
- * 
- * @param url the url of the resource/data point
- * @param value the double value to be set
- */
-void app_set_double_variable(char *url, double value);
-
-/**
- * @brief retrieve the double variable at the url 
- * the caller needs to know if the resource/data point represents a double
- * 
- * @param url the url of the resource/data point
- * @return the double value of the variable
- */
-double app_retrieve_double_variable(char *url);
-
-// STRING code
-
-/**
- * @brief check if the url represents a string
- * 
- * @param url the url of the resource/data point
- * @return true = url value is a string
- * @return false = url value is not a string
- */
-bool app_is_string_url(char *url);
-
-/**
- * @brief sets the string variable at the url
- * the caller needs to know if the resource/data point represents a string
- * 
- * @param url the url of the resource/data point
- * @param value the string value to be set
- */
-void app_set_string_variable(char *url, char *value);
-
-/**
- * @brief retrieve the string variable at the url
- * the caller needs to know if the resource/data point represents a string
- * 
- * @param url the url of the resource/data point
- * @return the string value of the variable
- */
-char *app_retrieve_string_variable(char *url);
-
-// FAULT code
-
-/**
- * @brief sets the fault variable at the url
- * the caller needs to know if the resource/data point implements a fault situation
- * 
- * @param url the url of the resource/data point
- * @param value the fault value to be set
- */
-void app_set_fault_variable(char *url, bool value);
-
-/**
- * @brief retrieve the fault variable at the url
- * the caller needs to know if the resource/data point implements a fault situation
- * 
- * @param url the url of the resource/data point
- * @return the fault value of the variable
- */
-bool app_retrieve_fault_variable(char *url);
-
-// PARAMETER code
-
-/**
- * @brief check if the url represents a parameter
- *
- * @param url the url of the resource/data point
- * @return true = url value is a parameter
- * @return false = url value is not a parameter
- */
-bool app_is_url_parameter(char *url);
-
-/**
- * @brief retrieves the url of a parameter
- * index starts at 1
- * 
- * @param index the index to retrieve the url from
- * @return the url or NULL
- */
-char *app_get_parameter_url(int index);
-
-/**
- * @brief retrieves the name of a parameter
- * index starts at 1
- * 
- * @param index the index to retrieve the parameter name from
- * @return the name or NULL
- */
-char *app_get_parameter_name(int index);
-
-/**
- * @brief function to report if the (oscore) security is turn on for this instance
- * 
- * @return true = is secure
- * @return false = is not secure
- */
-bool app_is_secure();
-
-/**
- * @brief set the post callback (on application level)
+ * @brief set the put callback (on application level)
  * 
  * @param cb the callback
  */
-void app_set_post_cb(oc_post_cb_t cb);
+void app_set_put_cb(oc_put_cb_t cb);
+
+/**
+ * @brief initialize the stack
+ * 
+ * @return int 0 == success
+ */
+int app_initialize_stack();
 
 /**
  * @brief sets the serial number
  * should be called before app_initialize_stack()
  * 
  * @param serial_number the serial number as string
- * @return 0 = success
+ * @return int 0 == success
  */
-int app_set_serial_number(char *serial_number);
+int app_set_serial_number(char* serial_number);
 
 /**
- * @brief initialize the stack
+ * @brief checks if the url depicts an boolean
  * 
- * @return 0 = success
+ * @param url the url to check
+ * @return true: url conveys a boolean
  */
-int app_initialize_stack();
+bool app_is_bool_url(char* url);
+
+/**
+ * @brief retrieve the boolean variable of the url/data point
+ * the caller needs to know if the resource/data point is conveying a boolean
+ * "/p/o_1_1" of OnOff_1 
+ * "/p/o_2_2" of InfoOnOff_1 
+ * "/p/o_3_3" of OnOff_2 
+ * "/p/o_4_4" of InfoOnOff_2 
+ * "/p/o_5_5" of OnOff_3 
+ * "/p/o_6_6" of InfoOnOff_3 
+ * "/p/o_7_7" of OnOff_4 
+ * "/p/o_8_8" of InfoOnOff_4 
+ * 
+ * @param url the url of the resource/data point
+ * @return true value is true
+ * @return false value is false or error.
+ */
+bool app_retrieve_bool_variable(char* url);
+
+/**
+ * @brief set the boolean variable that belongs to the url 
+ * The caller needs to know if the resource/data point is conveying a boolean
+ * "/p/o_1_1" of OnOff_1
+ * "/p/o_3_3" of OnOff_2
+ * "/p/o_5_5" of OnOff_3
+ * "/p/o_7_7" of OnOff_4
+ * 
+ * @param url the url of the resource/data point
+ * @param value the boolean value to be set
+ */
+void app_set_bool_variable(char* url, bool value);
+
+/**
+ * @brief checks if the url depicts an int
+ * 
+ * @param url the url to check
+ * @return true: url conveys a int
+ */
+bool app_is_int_url(char* url);
+
+/**
+ * @brief retrieve the int variable of the url/data point
+ * the caller needs to know if the resource/data point is conveying a integer
+ * 
+ * @param url the url of the resource/data point
+ * @return the integer value of the global variable
+ */
+int app_retrieve_int_variable(char* url);
+
+/**
+ * @brief set the integer variable that belongs to the url 
+ * The caller needs to know if the resource/data point is conveying a integer
+ * 
+ * @param url the url of the resource/data point
+ * @param value the integer value to be set
+ */
+void app_set_integer_variable(char* url, int value);
+
+/**
+ * @brief checks if the url depicts an double
+ * 
+ * @param url the url to check
+ * @return true: url conveys a double
+ */
+bool app_is_double_url(char* url);
+
+/**
+ * @brief retrieve the double variable of the url/data point
+ * the caller needs to know if the resource/data point is conveying a integer
+ * 
+ * @param url the url of the resource/data point
+ * @return the double value of the global variable
+ */
+double app_retrieve_double_variable(char* url);
+
+/**
+ * @brief set the double variable that belongs to the url 
+ * The caller needs to know if the resource/data point is conveying a double
+ * 
+ * @param url the url of the resource/data point
+ * @param value the double value to be set
+ */
+void app_set_double_variable(char* url, double value);
+
+/**
+ * @brief function to check if the url is represented by a string
+ *
+ * @param url the url value is a string
+ * @return true = url returns a string, false = url is not a string
+ */
+bool app_is_string_url(char* url);
+
+/**
+ * @brief sets the global string variable at the url
+ *
+ * @param url the url indicating the global variable
+ * @param value the string value to be set
+ */
+void app_set_string_variable(char* url, char* value);
+
+/**
+ * @brief retrieve the global string variable at the url
+ *
+ * @param url the url indicating the global variable
+ * @return the value of the variable
+ */
+char* app_retrieve_string_variable(char* url);
+
+/**
+ * @brief checks if the url represents a parameter
+ *
+ * @param url the url
+ * @return true the url represents a parameter
+ */
+bool app_is_url_parameter(char* url);
+
+/**
+ * @brief retrieves the url of a parameter
+ * index starts at 1
+ * @param index the index to retrieve the url from
+ * @return the url or NULL
+ */
+char* app_get_parameter_url(int index);
+
+/**
+ * @brief retrieves the name of a parameter
+ * index starts at 1
+ * @param index the index to retrieve the parameter name from
+ * @return the name or NULL
+ */
+char* app_get_parameter_name(int index);
+
+/**
+ * @brief retrieve the fault state of the url/data point
+ * the caller needs to know if the resource/data point implements a fault situation
+ * 
+ * @param url the url of the resource/data point
+ * @return true value is true
+ * @return false value is false or error.
+ */
+bool app_retrieve_fault_variable(char* url);
+
+/**
+ * @brief sets the fault state of the url/data point 
+ * the caller needs to know if the resource/data point implements a fault situation
+ * 
+ * @param url the url of the resource/data point
+ * @param value the boolean fault value to be set
+ */
+void app_set_fault_variable(char* url, bool value);
+
+/**
+ * @brief function to report if the (oscore) security is turn on for this instance
+ * 
+ * @return true is secure
+ * @return false is not secure
+ */
+bool app_is_secure();
+
+/**
+ * @brief retrieves the password for showing on screen
+ * 
+ * @return password (as string)
+ */
+char* app_get_password();
 
 #ifdef __cplusplus
 }

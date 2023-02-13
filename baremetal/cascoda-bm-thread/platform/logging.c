@@ -51,7 +51,7 @@ OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const 
 	(void)aLogLevel;
 	(void)aLogRegion;
 
-	printf("%04dms: ", TIME_ReadAbsoluteTime());
+	printf("%04ldms: ", TIME_ReadAbsoluteTime());
 
 	va_start(ap, aFormat);
 	vprintf(aFormat, ap);

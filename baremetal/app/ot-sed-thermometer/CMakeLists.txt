@@ -19,4 +19,4 @@ target_link_libraries(ot-sed-thermometer
 	tinycbor-master
 )
 
-cascoda_make_binary(ot-sed-thermometer)
+cascoda_make_binary(ot-sed-thermometer CASCODA_BUILD_BINARIES)

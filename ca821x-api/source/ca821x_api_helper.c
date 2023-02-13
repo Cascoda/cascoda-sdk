@@ -49,7 +49,7 @@ static uint8_t *MLME_BEACON_NOTIFY_get_pendaddrspec(const struct MLME_BEACON_NOT
 	}
 }
 
-struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *                                        aLength,
+struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t                                         *aLength,
                                                                const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	uint8_t *wrkPtr = MLME_BEACON_NOTIFY_get_pendaddrspec(aPset);
@@ -62,7 +62,7 @@ struct ShortAddr *MLME_BEACON_NOTIFY_indication_get_shortaddrs(uint8_t *        
 	return (struct ShortAddr *)wrkPtr;
 }
 
-struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t *                                        aLength,
+struct ExtAddr *MLME_BEACON_NOTIFY_indication_get_extaddrs(uint8_t                                         *aLength,
                                                            const struct MLME_BEACON_NOTIFY_indication_pset *aPset)
 {
 	uint8_t           pas    = *MLME_BEACON_NOTIFY_get_pendaddrspec(aPset);
@@ -82,7 +82,7 @@ uint8_t *MLME_BEACON_NOTIFY_indication_get_sdu(uint8_t *aLength, const struct ML
 {
 	uint8_t         exLen  = 0;
 	struct ExtAddr *exList = NULL;
-	uint8_t *       rval   = NULL;
+	uint8_t        *rval   = NULL;
 
 	exList = MLME_BEACON_NOTIFY_indication_get_extaddrs(&exLen, aPset);
 	exList = exList + exLen;

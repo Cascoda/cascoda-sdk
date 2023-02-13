@@ -64,7 +64,7 @@ enum printmethod
  * @retval CA_ERROR_FAIL Test failed
  */
 static ca_error test_evbme_param_fn(enum evbme_attribute attr,
-                                    const char *         attr_name,
+                                    const char          *attr_name,
                                     enum printmethod     pm,
                                     bool                 is_optional)
 {

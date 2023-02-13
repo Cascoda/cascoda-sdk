@@ -124,6 +124,7 @@ static ca_error handle_write(size_t length, const uint8_t *buf)
 static ca_error handle_evbme_message(struct EVBME_Message *params, struct ca821x_dev *pDeviceRef)
 {
 	fprintf(stderr, "Rx: %.*s\r\n", params->mLen, params->EVBME.MESSAGE_indication.mMessage);
+	fflush(stderr);
 	return CA_ERROR_SUCCESS;
 }
 

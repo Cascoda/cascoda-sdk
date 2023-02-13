@@ -32,9 +32,9 @@
 
 #include "cbor.h"
 
-static const char *  uriCascodaDiscover            = "ca/di";
-static const char *  uriCascodaSensorDiscoverQuery = "t=sen";
-static const char *  uriCascodaSensor              = "ca/se";
+static const char   *uriCascodaDiscover            = "ca/di";
+static const char   *uriCascodaSensorDiscoverQuery = "t=sen";
+static const char   *uriCascodaSensor              = "ca/se";
 static const uint8_t ledPin                        = 34;
 static const uint8_t voltagePin                    = 35;
 
@@ -83,6 +83,16 @@ static void set_up_GPIO_input(u8_t mpin)
 {
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    mpin, MODULE_PIN_PULLUP_OFF, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_RISE, &counter_ISR});
+}
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Radio reinitialisation after sleep
+ *******************************************************************************
+ ******************************************************************************/
+int ot_reinitialise(struct ca821x_dev *pDeviceRef)
+{
+	otLinkSyncExternalMac(OT_INSTANCE);
 }
 
 /******************************************************************************/
@@ -153,8 +163,8 @@ void otTaskletsSignalPending(otInstance *aInstance)
  * locally.
  *******************************************************************************
  ******************************************************************************/
-static void handleServerDiscoverResponse(void *               aContext,
-                                         otMessage *          aMessage,
+static void handleServerDiscoverResponse(void                *aContext,
+                                         otMessage           *aMessage,
                                          const otMessageInfo *aMessageInfo,
                                          otError              aError)
 {
@@ -183,7 +193,7 @@ static void handleServerDiscoverResponse(void *               aContext,
 static otError sendServerDiscover(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	otIp6Address  coapDestinationIp;
 
@@ -244,7 +254,7 @@ static void handleSensorConfirm(void *aContext, otMessage *aMessage, const otMes
 static otError sendSensorData(void)
 {
 	otError       error   = OT_ERROR_NONE;
-	otMessage *   message = NULL;
+	otMessage    *message = NULL;
 	otMessageInfo messageInfo;
 	int32_t       temperature;
 	uint32_t      humidity;
@@ -365,7 +375,7 @@ int main(void)
 	struct ca821x_dev dev;
 
 	ca821x_api_init(&dev);
-	cascoda_serial_dispatch = TEST15_4_SerialDispatch;
+	cascoda_reinitialise    = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);
@@ -380,7 +390,6 @@ int main(void)
 	/* Setup Thread stack to be SED with given poll period */
 	otLinkModeConfig linkMode = {0};
 	otLinkSetPollPeriod(OT_INSTANCE, 20000);
-	linkMode.mSecureDataRequests = true;
 	otThreadSetLinkMode(OT_INSTANCE, linkMode);
 
 	// Print the joiner credentials, delaying for up to 5 seconds

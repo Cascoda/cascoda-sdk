@@ -64,3 +64,14 @@ void otPlatWakeHost(void)
 {
 	//This is the host - not applicable to posix & hardmac systems
 }
+
+uint32_t otPlatRadioGetSupportedChannelMask(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	return 0xffff << 11;
+}
+
+uint32_t otPlatRadioGetPreferredChannelMask(otInstance *aInstance)
+{
+	return otPlatRadioGetSupportedChannelMask(aInstance);
+}

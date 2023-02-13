@@ -97,13 +97,13 @@ typedef struct
 {
 	lwm2m_object_t *securityObjP;
 	lwm2m_object_t *serverObject;
-	connection_t *  connList[CONPOOL_SIZE];
+	connection_t   *connList[CONPOOL_SIZE];
 } client_data_t;
 
-otInstance *            OT_INSTANCE;
+otInstance             *OT_INSTANCE;
 static lwm2m_context_t *s_lwm2mH;
 static client_data_t    s_client_data;
-static char *           pskBuffer = NULL;
+static char            *pskBuffer = NULL;
 
 static ca_tasklet battery_level_tasklet;
 static ca_tasklet lwm2m_tasklet;
@@ -198,12 +198,12 @@ void handle_value_changed(lwm2m_context_t *lwm2mH, lwm2m_uri_t *uri, const char 
 void *lwm2m_connect_server(uint16_t secObjInstID, void *userData)
 {
 	client_data_t *dataP;
-	const char *   const_uri;
-	char *         uri;
-	char *         host;
-	char *         port;
+	const char    *const_uri;
+	char          *uri;
+	char          *host;
+	char          *port;
 	int            porti    = 0;
-	connection_t * newConnP = NULL;
+	connection_t  *newConnP = NULL;
 
 	dataP = (client_data_t *)userData;
 
@@ -230,7 +230,7 @@ exit:
 void lwm2m_close_connection(void *sessionH, void *userData)
 {
 	client_data_t *app_data;
-	connection_t * targetP;
+	connection_t  *targetP;
 
 	app_data = (client_data_t *)userData;
 	targetP  = (connection_t *)sessionH;
@@ -244,7 +244,7 @@ void lwm2m_close_connection(void *sessionH, void *userData)
 	}
 }
 
-static void prv_output_servers(int argc, char *argv[])
+static void prv_output_servers(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	lwm2m_server_t *targetP;
 
@@ -335,12 +335,12 @@ static void prv_output_servers(int argc, char *argv[])
 	}
 }
 
-static void prv_change(int argc, char *argv[])
+static void prv_change(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	lwm2m_uri_t uri;
 	int         result;
 
-	if (argc < 1)
+	if (aArgsLength < 1)
 		goto syntax_error;
 
 	if (!s_lwm2mH)
@@ -349,13 +349,13 @@ static void prv_change(int argc, char *argv[])
 		return;
 	}
 
-	result = lwm2m_stringToUri(argv[0], strlen(argv[0]), &uri);
+	result = lwm2m_stringToUri(aArgs[0], strlen(aArgs[0]), &uri);
 	if (result == 0)
 		goto syntax_error;
 
-	if (argc >= 2)
+	if (aArgsLength >= 2)
 	{
-		handle_value_changed(s_lwm2mH, &uri, argv[1], strlen(argv[1]));
+		handle_value_changed(s_lwm2mH, &uri, aArgs[1], strlen(aArgs[1]));
 	}
 	else
 	{
@@ -370,7 +370,7 @@ syntax_error:
 	otCliOutputFormat("Syntax error! lwchange <URI> [VALUE]\n");
 }
 
-static void prv_object_list(int argc, char *argv[])
+static void prv_object_list(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	lwm2m_object_t *objectP;
 
@@ -399,9 +399,9 @@ static void prv_object_list(int argc, char *argv[])
 	}
 }
 
-static void prv_update(int argc, char *argv[])
+static void prv_update(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
-	if (argc == 0)
+	if (aArgsLength == 0)
 		goto syntax_error;
 
 	if (!s_lwm2mH)
@@ -410,7 +410,7 @@ static void prv_update(int argc, char *argv[])
 		return;
 	}
 
-	uint16_t serverId = (uint16_t)atoi(argv[0]);
+	uint16_t serverId = (uint16_t)atoi(aArgs[0]);
 	int      res      = lwm2m_update_registration(s_lwm2mH, serverId, false);
 	lwm2m_step_now();
 	if (res != 0)
@@ -444,7 +444,7 @@ static ca_error update_battery_level(void *context)
 	return CA_ERROR_SUCCESS;
 }
 
-static void prv_add(int argc, char *argv[])
+static void prv_add(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	lwm2m_object_t *objectP;
 	int             res;
@@ -474,7 +474,7 @@ static void prv_add(int argc, char *argv[])
 	return;
 }
 
-static void prv_remove(int argc, char *argv[])
+static void prv_remove(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	int res;
 
@@ -499,7 +499,7 @@ static void prv_remove(int argc, char *argv[])
 
 #ifdef LWM2M_BOOTSTRAP
 
-static void prv_display_objects(int argc, char *argv[])
+static void prv_display_objects(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	lwm2m_object_t *object;
 
@@ -544,7 +544,7 @@ static void prv_display_objects(int argc, char *argv[])
 	}
 }
 
-static void prv_display_backup(int argc, char *argv[])
+static void prv_display_backup(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	int i;
 	for (i = 0; i < BACKUP_OBJECT_COUNT; i++)
@@ -702,7 +702,7 @@ void print_usage(void)
 	otCliOutputFormat("\r\n");
 }
 
-static void prv_lwm2m_start(int argc, char *argv[])
+static void prv_lwm2m_start(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	int         result;
 	int         opt;
@@ -712,7 +712,7 @@ static void prv_lwm2m_start(int argc, char *argv[])
 	const char *localPort          = "0";
 	const char *server             = NULL;
 	const char *serverPort         = LWM2M_STANDARD_PORT_STR;
-	char *      name               = "testlwm2mclient";
+	char       *name               = "testlwm2mclient";
 
 	char *pskId = NULL;
 #ifdef WITH_MBEDTLS
@@ -732,14 +732,14 @@ static void prv_lwm2m_start(int argc, char *argv[])
 	memset(&s_client_data, 0, sizeof(client_data_t));
 
 	opt = 0;
-	while (opt < argc)
+	while (opt < aArgsLength)
 	{
-		if (argv[opt] == NULL || argv[opt][0] != '-' || argv[opt][2] != 0)
+		if (aArgs[opt] == NULL || aArgs[opt][0] != '-' || aArgs[opt][2] != 0)
 		{
 			print_usage();
 			return;
 		}
-		switch (argv[opt][1])
+		switch (aArgs[opt][1])
 		{
 		case 'b':
 			bootstrapRequested = true;
@@ -751,12 +751,12 @@ static void prv_lwm2m_start(int argc, char *argv[])
 			break;
 		case 't':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			if (!(lifetime = atoi(argv[opt])))
+			if (!(lifetime = atoi(aArgs[opt])))
 			{
 				print_usage();
 				return;
@@ -765,58 +765,58 @@ static void prv_lwm2m_start(int argc, char *argv[])
 #ifdef WITH_MBEDTLS
 		case 'i':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			pskId = argv[opt];
+			pskId = aArgs[opt];
 			break;
 		case 's':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			psk = argv[opt];
+			psk = aArgs[opt];
 			break;
 #endif
 		case 'n':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			name = argv[opt];
+			name = aArgs[opt];
 			break;
 		case 'l':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			localPort = argv[opt];
+			localPort = aArgs[opt];
 			break;
 		case 'h':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			server = argv[opt];
+			server = aArgs[opt];
 			break;
 		case 'p':
 			opt++;
-			if (opt >= argc)
+			if (opt >= aArgsLength)
 			{
 				print_usage();
 				return;
 			}
-			serverPort        = argv[opt];
+			serverPort        = aArgs[opt];
 			serverPortChanged = true;
 			break;
 		default:
@@ -986,7 +986,7 @@ static void prv_lwm2m_start(int argc, char *argv[])
 	TASKLET_ScheduleDelta(&lwm2m_tasklet, 100, NULL);
 }
 
-static void prv_lwm2m_stop(int argc, char *argv[])
+static void prv_lwm2m_stop(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
 	if (!s_lwm2mH)
 	{
@@ -1096,8 +1096,6 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 		ret = 1;
 	}
 
-	TEST15_4_SerialDispatch(buf, len, pDeviceRef);
-
 	return ret;
 }
 
@@ -1113,7 +1111,7 @@ int main(int argc, char *argv[])
 	PlatformRadioInitWithDev(&dev);
 	OT_INSTANCE = otInstanceInitSingle();
 
-	otCliUartInit(OT_INSTANCE);
+	otAppCliInit(OT_INSTANCE);
 
 	TASKLET_Init(&lwm2m_tasklet, &lwm2m_tasklet_fn);
 	TASKLET_Init(&battery_level_tasklet, &update_battery_level);
@@ -1137,7 +1135,7 @@ int main(int argc, char *argv[])
 	                           {"lwadd", prv_add},              //Add the test object (added by default)
 	                           {"lwrm", prv_remove}};           //Remove the test object
 
-	otCliSetUserCommands(commands, ARRAY_LENGTH(commands));
+	otCliSetUserCommands(commands, ARRAY_LENGTH(commands), OT_INSTANCE);
 
 	// Endless Polling Loop
 	while (1)

@@ -22,4 +22,4 @@ target_link_libraries(ot-cli-lwip-freertos
 )
 
 cascoda_configure_memory(ot-cli-lwip-freertos 0x800 0x7000)
-cascoda_make_binary(ot-cli-lwip-freertos)
+cascoda_make_binary(ot-cli-lwip-freertos CASCODA_BUILD_BINARIES)

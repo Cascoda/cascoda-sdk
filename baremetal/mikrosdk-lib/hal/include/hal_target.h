@@ -36,7 +36,7 @@
 ** OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **
 ****************************************************************************/
-/*!
+/**
  * @file  hal_target.h
  * @brief HAL target macros and typedefs.
  */
@@ -53,6 +53,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hal_delay.h"
 
 typedef uintptr_t handle_t;
 typedef uint32_t  hal_ll_gpio_mask_t;
@@ -62,10 +63,10 @@ typedef uint32_t  hal_ll_port_size_t;
 typedef uint32_t  hal_ll_base_addr_t;
 typedef uint8_t   hal_ll_channel_t;
 
-#define HAL_MODULE_ERROR (hal_base_addr_t)(0xFFFFFFFF) /*!< @def General module error. */
-#define HAL_CHANNEL_ERROR (hal_channel_t)(0xFFFFFFFF)  /*!< @def Channel error. ( Timer, ADC... ) */
-#define HAL_PIN_NC (hal_pin_name_t)(0xFFFFFFFF)        /*!< @def Pin error. ( Wrong pin selected ) */
-#define HAL_PORT_NC (hal_port_name_t)(0xFFFFFFFF)      /*!< @def Port error. ( Wrong port selected ) */
+#define HAL_MODULE_ERROR (hal_base_addr_t)(0xFFFFFFFF)
+#define HAL_CHANNEL_ERROR (hal_channel_t)(0xFFFFFFFF)
+#define HAL_PIN_NC (hal_pin_name_t)(0xFFFFFFFF)
+#define HAL_PORT_NC (hal_port_name_t)(0xFFFFFFFF)
 
 typedef hal_ll_base_addr_t hal_base_addr_t; /*!< Base address, which is size dependant on the architecture. */
 typedef hal_ll_channel_t   hal_channel_t;   /*!< Channel type, which is size dependant on the architecture. */

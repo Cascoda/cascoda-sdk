@@ -6,11 +6,18 @@ This directory contains the Baremetal-specific code, including drivers, platform
 
 ### app
 
-Example applications. This folder includes examples for using the OpenThread CLI (`ot-cli-*`), using Thread Sleepy End Devices (`ot-sed-*`), interfacing with I2C or SPI sensors (`ot-sed-sensorif`), interfacing with actuators over UART (`ot-cli-actuator`), interfacing with a host application over USB or UART (see `CASCODA_BM_INTERFACE` CMake configuration variable), interfacing with I2C or SPI sensors (`sensorif-bm`), and interfacing with MikroEletronika sensors (`mikrosdk-bm`).
+This folder contains example applications for:
+- Using the OpenThread CLI (`ot-cli-*`)
+- Using Thread Sleepy End Devices (`ot-sed-*`)
+- Interfacing with I2C or SPI sensors (`ot-sed-sensorif`)
+- Interfacing with actuators over UART (`ot-cli-actuator`) 
+- Interfacing with a host application over USB or UART (see `CASCODA_BM_INTERFACE` CMake configuration variable)
+- Interfacing with I2C or SPI sensors (`sensorif-bm`)
+- Interfacing with MikroEletronika devices (`mikrosdk-bm`).
 
 ### cascoda-bm-driver
 
-General baremetal drivers and API. This includes the EVBME (Evaluation Board Management Entity), which enables any host platform connected by USB/UART to control the device using EVBME commands.
+General baremetal drivers and API. This includes the [EVBME (Evaluation Board Management Entity)](../docs/reference/evbme.md), which enables any host platform connected by USB/UART to control the device using EVBME commands.
 
 ### cascoda-bm-core
 
@@ -22,19 +29,19 @@ Port layer for the OpenThread stack. This enables using OpenThread on baremetal 
 
 ### mikrosdk-click
 
-Set of example drivers for extracting data from connected sensors and controlling actuators. It abstracts away the base I2C/SPI bus protocols to C functions. The drivers in this folder are manufactured by MikroElektronika which provides libraries for their sensors.
+Set of example drivers for extracting data from connected sensors and controlling actuators. It abstracts away the details of the underlying I2C/SPI communications. The drivers in this folder are written by MikroElektronika, which provide libraries for their sensors.
 
 ### mikrosdk-lib
 
-A mid-level layer between user interface and hardware. It integrates MikroElektronika library with Cascoda libary in HAL layer allowing communication between MikroElektronika devices and Chili2 via I2C/SPI and GPIO.
+A mid-level adaptation layer between the driver API and hardware. It integrates the MikroElektronika library with the Cascoda libraries in the HAL (Hardware Abstraction Layer), allowing communication between MikroElektronika devices and Chili2 via I2C/SPI and GPIO.
 
 ### platform
 
-Platform abstraction layers for different microcontrollers. These are split into seperate directories containing both vendor code from the MCU vendor and port code written by Cascoda.
+Platform abstraction layers for different microcontrollers. These are split into seperate directories containing both vendor code from the MCU (Microcontroller Unit) vendor and port code written by Cascoda.
 
 ### sensorif
 
-Set of example drivers for extracting data from connected sensors and controlling actuators. This abstracts away from the base I2C/SPI bus protocols to C functions that simply return values.
+Set of specific (non-MikroElektronika) drivers for extracting data from connected sensors and controlling actuators. This abstracts away the details of the underlying I2C/SPI communications.
 
 ### test
 

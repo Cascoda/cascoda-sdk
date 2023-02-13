@@ -103,10 +103,10 @@ ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler err
  * @retval CA_ERROR_NOT_FOUND  Device could not be initialised
  * @retval CA_ERROR_INVALID_ARGS  Exchange type not recognised
  */
-ca_error ca821x_util_init_path(struct ca821x_dev *       pDeviceRef,
+ca_error ca821x_util_init_path(struct ca821x_dev        *pDeviceRef,
                                ca821x_errorhandler       errorHandler,
                                enum ca821x_exchange_type exchangeType,
-                               const char *              path);
+                               const char               *path);
 
 /**
  * Generic function to deinitialise an initialised ca821x device. This will

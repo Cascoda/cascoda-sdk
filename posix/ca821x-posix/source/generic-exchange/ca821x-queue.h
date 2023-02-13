@@ -66,9 +66,9 @@ void flush_queue(struct buffer_queue *buffer_queue);
  * @return The length of the popped buffer
  */
 size_t pop_from_queue(struct buffer_queue *buffer_queue,
-                      uint8_t *            destBuf,
+                      uint8_t             *destBuf,
                       size_t               maxlen,
-                      struct ca821x_dev ** pDeviceRef_out);
+                      struct ca821x_dev  **pDeviceRef_out);
 
 /**
  * Non-blocking function returning the length of the next buffer on the queue (or 0 if nothing)
