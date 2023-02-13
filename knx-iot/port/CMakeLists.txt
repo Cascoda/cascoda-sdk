@@ -38,6 +38,7 @@ target_include_directories(kis-port INTERFACE
 )
 
 target_include_directories(mbedcrypto BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/port/knx-mbedtls-config)
+
 target_include_directories(kisClientServer BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/port/knx-mbedtls-config)
 
 target_link_libraries(kis-port INTERFACE
