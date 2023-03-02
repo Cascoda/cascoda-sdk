@@ -158,7 +158,7 @@ void SENSORIF_SPI_Config(u32_t portnum)
 		SENSORIF_SPIIF  = SPI1;
 		SPI_CHIP_SELECT = 34;
 	}
-#if (CASCODA_CHILI2_REV != 1)
+#if ((CASCODA_CHILI2_CONFIG != 2) && (CASCODA_CHILI2_CONFIG != 3)) /* not Chili2 devboard */
 	else if (SENSORIF_SPINUM == 2)
 	{
 		SENSORIF_SPIIF  = SPI2;

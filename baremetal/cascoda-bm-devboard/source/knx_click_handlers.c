@@ -200,12 +200,12 @@ static F16_t convert_uint16_2cpl_to_F16(uint16_t din, uint8_t scale)
 	if (din & 0x8000) /* 2s complement for temperature */
 	{
 		negative = true;
-		mant = 0xFFFF0000 | (int32_t)din; /* sign extension */
+		mant     = 0xFFFF0000 | (int32_t)din; /* sign extension */
 	}
 	else
 	{
 		negative = false;
-		mant = (int32_t)din;
+		mant     = (int32_t)din;
 	}
 
 	if (scale != 100)
@@ -230,12 +230,12 @@ static F16_t convert_int16_to_F16(int16_t din, uint8_t scale)
 	if (din & 0x8000) /* 2s complement for temperature */
 	{
 		negative = true;
-		mant = 0xFFFF0000 | (int32_t)din; /* sign extension */
+		mant     = 0xFFFF0000 | (int32_t)din; /* sign extension */
 	}
 	else
 	{
 		negative = false;
-		mant = (int32_t)din;
+		mant     = (int32_t)din;
 	}
 
 	if (scale != 100)
@@ -279,7 +279,7 @@ void convert_THERMO_to_knx(data_thermo data, knx_data_thermo *knx_data)
 void convert_THERMO3_to_knx(data_thermo3 data, knx_data_thermo3 *knx_data)
 {
 	/* input format T['C] * 16 in 2s complement */
-	knx_data->temperature = convert_uint16_2cpl_to_F16(data.temperature, 16);
+	knx_data->temperature = ((float)((int16_t)data.temperature)) / 16.0;
 }
 
 /* convert AIRQUALITY4 data to knx */
@@ -320,11 +320,11 @@ void convert_SHT_to_knx(data_sht data, knx_data_sht *knx_data)
 void convert_HVAC_to_knx(data_hvac data, knx_data_hvac *knx_data)
 {
 	/* input format CO2 [ppm] */
-	knx_data->co2content = convert_uint16_to_F16(data.co2content, 1);
+	knx_data->co2content = (float)data.co2content;
 	/* input format RH[%] * 100 */
-	knx_data->humidity = convert_int16_to_F16(data.humidity, 100);
+	knx_data->humidity = ((float)data.humidity) / 100.0;
 	/* input format T['C] * 100 */
-	knx_data->temperature = convert_int16_to_F16(data.temperature, 100);
+	knx_data->temperature = ((float)data.temperature) / 100.0;
 }
 
 /* convert MOTION data to knx */

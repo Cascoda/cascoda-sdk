@@ -58,14 +58,9 @@
 /* change if using handlers other trhan default */
 #include "devboard_click_handlers_default.h"
 
-/* mikrobus click interface 1 configuration */
+/* mikrobus click interface 1 and 2 configuration */
 #define CLICK1_TYPE STYPE_THERMO3
-#define CLICK1_HANDLER CLICK_Handler_Default_THERMO3
-/* mikrobus click interface 2 configuration */
-//#define CLICK2_TYPE     STYPE_THERMO
-//#define CLICK2_HANDLER  MIKROSDK_Handler_THERMO
 #define CLICK2_TYPE STYPE_NONE
-#define CLICK2_HANDLER NULL
 
 /* sleep (1) or stay awake (0) */
 #define USE_SLEEP_MODE 0
@@ -86,6 +81,41 @@
 #define MEASUREMENT_PERIOD 5000
 #endif
 
+/* initialisation functions for all clicks - have to be in correct order */
+static ca_error (*click_init_function[])(void) = {NULL,
+                                                  CLICK_THERMO3_initialise,
+                                                  CLICK_THERMO_initialise,
+                                                  CLICK_AIRQUALITY4_initialise,
+                                                  CLICK_ENVIRONMENT2_initialise,
+                                                  CLICK_SHT_initialise,
+                                                  CLICK_HVAC_initialise,
+                                                  CLICK_MOTION_initialise,
+                                                  CLICK_RELAY_initialise};
+
+/* handler functions for all clicks (including acquisition) - have to be in correct order */
+static ca_error (*click_handler_function[])(void) = {NULL,
+                                                     CLICK_Handler_Default_THERMO,
+                                                     CLICK_Handler_Default_THERMO3,
+                                                     CLICK_Handler_Default_AIRQUALITY4,
+                                                     CLICK_Handler_Default_ENVIRONMENT2,
+                                                     CLICK_Handler_Default_SHT,
+                                                     CLICK_Handler_Default_HVAC,
+                                                     CLICK_Handler_Default_MOTION,
+                                                     CLICK_Handler_Default_RELAY};
+
+/* alarm functions for all clicks - have to be in correct order */
+static ca_error (*click_alarm_function[])(void) = {NULL,
+                                                   NULL,
+                                                   MIKROSDK_THERMO3_alarm_triggered,
+                                                   NULL,
+                                                   NULL,
+                                                   MIKROSDK_SHT_alarm_triggered,
+                                                   NULL,
+                                                   MIKROSDK_MOTION_alarm_triggered,
+                                                   NULL,
+                                                   NULL};
+
+/* for reporting */
 extern const char *click_name_default[];
 
 /* sensors have been handled after wakeup */
@@ -94,9 +124,6 @@ static bool g_sensors_handled = true;
 static bool g_hw_error = false;
 /* scheduling tasklet for wakeup */
 static ca_tasklet g_sensor_wakeup_tasklet;
-
-/* structure for click sensor callbacks */
-static mikrosdk_callbacks click_callbacks[DVBD_NUM_MIKROBUS];
 
 /* This has to be declared if sgp40 voc index algorithm is used (ENVIRONMENT2 click) */
 u32_t sgp40_sampling_interval = MEASUREMENT_PERIOD;
@@ -136,14 +163,22 @@ static void set_hw_error(void)
 static void check_alarms(void)
 {
 	/* check alarm status for specific click boards */
-	for (int i = 0; i < DVBD_NUM_MIKROBUS; ++i)
+
+	/* CLICK 1 alarm check */
+	if (click_alarm_function[CLICK1_TYPE])
 	{
-		if (click_callbacks[i].click_alarm)
+		if (click_alarm_function[CLICK1_TYPE]())
 		{
-			if (click_callbacks[i].click_alarm())
-			{
-				g_sensors_handled = false;
-			}
+			g_sensors_handled = false;
+		}
+	}
+
+	/* CLICK 2 alarm check */
+	if (click_alarm_function[CLICK2_TYPE])
+	{
+		if (click_alarm_function[CLICK2_TYPE]())
+		{
+			g_sensors_handled = false;
 		}
 	}
 }
@@ -170,16 +205,11 @@ static ca_error sensor_wakeup(void *aContext)
 // application initialisation
 void hardware_init(void)
 {
-	/* click types */
-	dvbd_click_type dev_types[DVBD_NUM_MIKROBUS] = {CLICK1_TYPE, CLICK2_TYPE};
-	/* click handler functions */
-	ca_error (*handlers[DVBD_NUM_MIKROBUS])(void) = {CLICK1_HANDLER, CLICK2_HANDLER};
-
 	/* Application-Specific Button/LED Initialisation Routines */
 	/* SW4 BTN/LED is LED output; static for power-on */
 	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_1);
 	DVBD_SetLED(LED_BTN_3, LED_ON);
-	if ((dev_types[0] == STYPE_RELAY) || (dev_types[1] == STYPE_RELAY))
+	if ((CLICK1_TYPE == STYPE_RELAY) || (CLICK2_TYPE == STYPE_RELAY))
 	{
 		/* register buttons for RELAY */
 		/* SW1 BTN/LED is button for toggling relay_1 */
@@ -206,24 +236,26 @@ void hardware_init(void)
 #endif
 
 	printf("Initialising devices:\n");
-	for (int i = 0; i < DVBD_NUM_MIKROBUS; ++i) printf("Interface %d: %s\n", i, click_name_default[dev_types[i]]);
-	printf("\n");
+	printf("Interface 1: %s\n", click_name_default[CLICK1_TYPE]);
+	printf("Interface 2: %s\n", click_name_default[CLICK2_TYPE]);
 
-	/* Application-Specific Click Device Initialisation */
-	for (int i = 0; i < DVBD_NUM_MIKROBUS; ++i)
+	/* CLICK 1 initialisation */
+	if (click_init_function[CLICK1_TYPE])
 	{
-		if (DVBD_select_click(&click_callbacks[i], dev_types[i], handlers[i]))
-			printf("Invalid Device Type: %d\n", dev_types[i]);
-		else
+		if (click_init_function[CLICK1_TYPE]())
 		{
-			if (click_callbacks[i].click_initialise)
-			{
-				if (click_callbacks[i].click_initialise())
-				{
-					printf("Click Sensor Number %d (%s): Initialisation failed\n", i, click_name_default[dev_types[i]]);
-					set_hw_error();
-				}
-			}
+			printf("Click Sensor Number 1 (%s): Initialisation failed\n", click_name_default[CLICK1_TYPE]);
+			set_hw_error();
+		}
+	}
+
+	/* CLICK 2 initialisation */
+	if (click_init_function[CLICK2_TYPE])
+	{
+		if (click_init_function[CLICK2_TYPE]())
+		{
+			printf("Click Sensor Number 2 (%s): Initialisation failed\n", click_name_default[CLICK2_TYPE]);
+			set_hw_error();
 		}
 	}
 
@@ -243,17 +275,26 @@ void hardware_poll(void)
 
 	if (!g_sensors_handled)
 	{
-		for (int i = 0; i < DVBD_NUM_MIKROBUS; ++i)
+		/* CLICK 1 handler */
+		if (click_handler_function[CLICK1_TYPE])
 		{
-			if (click_callbacks[i].click_handler)
+			if (click_handler_function[CLICK1_TYPE]())
 			{
-				if (click_callbacks[i].click_handler())
-				{
-					printf("Error in Handler %d (%s)\n", i, click_name_default[click_callbacks[i].dev_type]);
-					set_hw_error();
-				}
+				printf("Error in Handler 1 (%s)\n", click_name_default[CLICK1_TYPE]);
+				set_hw_error();
 			}
 		}
+
+		/* CLICK 2 handler */
+		if (click_handler_function[CLICK2_TYPE])
+		{
+			if (click_handler_function[CLICK2_TYPE]())
+			{
+				printf("Error in Handler 2 (%s)\n", click_name_default[CLICK2_TYPE]);
+				set_hw_error();
+			}
+		}
+
 		g_sensors_handled = true;
 	}
 }
@@ -325,7 +366,7 @@ int main(void)
 	struct ca821x_dev dev;
 
 	ca821x_api_init(&dev);
-	cascoda_reinitialise    = reinitialise_after_wakeup;
+	cascoda_reinitialise = reinitialise_after_wakeup;
 
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 

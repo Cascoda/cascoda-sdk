@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019, Cascoda Ltd.
+ *  Copyright (c) 2023, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -27,14 +27,14 @@
  */
 /**
  * @ingroup bm-sensorif
- * @defgroup bm-sensorif-il3820 IL3820 E-Paper Display sensorif driver
- * @brief Library for communicating with the IL3820 E-Paper display driver.
+ * @defgroup bm-sensorif-ssd1681 SSD1681 E-Paper Display sensorif driver
+ * @brief Library for communicating with the SSD1681 E-Paper display driver.
  *
  * @{
 */
 
-#ifndef SIF_SIF_IL3820_H
-#define SIF_SIF_IL3820_H
+#ifndef SIF_SIF_SSD1681_H
+#define SIF_SIF_SSD1681_H
 
 #include <stdint.h>
 #include "ca821x_error.h"
@@ -60,83 +60,98 @@ extern "C" {
 */
 
 /* Pin configuration */
-#define SIF_IL3820_BUSY_PIN 31
+#define SIF_SSD1681_BUSY_PIN 31
 
 #if ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3))
-#define SIF_IL3820_RST_PIN 5
+#define SIF_SSD1681_RST_PIN 5
 #else
-#define SIF_IL3820_RST_PIN 15
+#define SIF_SSD1681_RST_PIN 15
 #endif
 
-#define SIF_IL3820_DC_PIN 34
-//#define SIF_IL3820_CS_PIN 34
+#define SIF_SSD1681_DC_PIN 34
+//#define SIF_SSD1681_CS_PIN 34
 
-/* Display resolution */
-#define SIF_IL3820_WIDTH 128
-#define SIF_IL3820_HEIGHT 296
+/* Actual physical display resolution (in pixels) */
+#define SIF_SSD1681_WIDTH_PHYSICAL 200
+#define SIF_SSD1681_HEIGHT_PHYSICAL 200
+
+#ifdef EPAPER_FULL_RESOLUTION
+#define SIF_SSD1681_WIDTH_WINDOW SIF_SSD1681_WIDTH_PHYSICAL
+#define SIF_SSD1681_HEIGHT_WINDOW SIF_SSD1681_HEIGHT_PHYSICAL
+
+#define SIF_SSD1681_WIDTH SIF_SSD1681_WIDTH_PHYSICAL
+#define SIF_SSD1681_HEIGHT SIF_SSD1681_HEIGHT_PHYSICAL
+#else
+// Display resolution that the window will be set to upon initialization
+// Note: 192 was chosen because it is the closest number to 200, that is a
+// multiple of 8 after having been divided by 2. (The problem with 200 is that
+// 200/2 is 100, which is not divisible by 8).
+#define SIF_SSD1681_WIDTH_WINDOW 192
+#define SIF_SSD1681_HEIGHT_WINDOW 200
+
+// Display resolution that the image buffer will be set to. This
+// is the actual display resolution that ends up being used.
+// This is done to save memory (200x200 resolution requires an image buffer
+// of 5000 bytes, whereas 96*100 only requires 1200).
+#define SIF_SSD1681_WIDTH (SIF_SSD1681_WIDTH_WINDOW / 2)
+#define SIF_SSD1681_HEIGHT (SIF_SSD1681_WIDTH_WINDOW / 2)
+#endif // EPAPER_FULL_RESOLUTION
 
 /* QR code image array size */
-#define ARRAY_SIZE (SIF_IL3820_HEIGHT * SIF_IL3820_WIDTH / 8)
+#define ARRAY_SIZE (SIF_SSD1681_HEIGHT * SIF_SSD1681_WIDTH / 8)
 
 /* Display update mode */
 typedef enum
 {
 	FULL_UPDATE = 0,
 	PARTIAL_UPDATE,
-} SIF_IL3820_Update_Mode;
-
-/* Clear or no clear */
-typedef enum
-{
-	WITH_CLEAR = 0,
-	WITHOUT_CLEAR
-} SIF_IL3820_Clear_Mode;
+} SIF_SSD1681_Update_Mode;
 
 /* functions */
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief EINK Initialisation
- * \param mode - Whether to initialise for FULL_UPDATE or PARTIAL_UPDATE
+ * \brief Function which reports the sleep status of the eink display.
+ *******************************************************************************
+ * \return true if the eink is in deep sleep mode, false otherwise.
  *******************************************************************************
  ******************************************************************************/
-ca_error SIF_IL3820_Initialise(SIF_IL3820_Update_Mode mode);
+bool SIF_SSD1681_IsAsleep(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief EINK Initialisation
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1681_Initialise(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief EINK De-Initialisation
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_Deinitialise(void);
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Displays an image
- * \param image - Image to display
- *******************************************************************************
- ******************************************************************************/
-void SIF_IL3820_Display(const uint8_t *image);
+void SIF_SSD1681_Deinitialise(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Clears the display
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_ClearDisplay(void);
+void SIF_SSD1681_ClearDisplay(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Clears the display many times to make sure there is no ghost image
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_StrongClearDisplay(void);
+void SIF_SSD1681_StrongClearDisplay(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Enter deep sleep mode. Device draws around 2uA in this mode.
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_DeepSleep(void);
+void SIF_SSD1681_DeepSleep(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -150,18 +165,56 @@ void SIF_IL3820_DeepSleep(void);
  * \param y     - The y-coordinate of the top-left corner of the QR symbol.
  *******************************************************************************
  ******************************************************************************/
-ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y);
+ca_error SIF_SSD1681_overlay_qr_code(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y);
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Follows Routines for clearing, waiting and displaying the image.
+ * \brief Copies the image into the eink display's RAM, for full update.
  *******************************************************************************
- * \param image - The image to be overlaid on the eink screen.
- * \param mode - Whether or not the display will be cleared before the image 
- * is displayed
+ * \param image - The image that is copied into the RAM.
+ * \param full_resolution - Whether the image provided should be displayed
+ * in full resolution or half resolution. This is is ignored when 
+ * EPAPER_FULL_RESOLUTION is defined, and therefore only applies to binaries
+ * built with half resolution in mind. This allows the option to display an
+ * image (typically stored in flash) using full resolution, as an exception.
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_DisplayImage(uint8_t *image, SIF_IL3820_Clear_Mode mode);
+void SIF_SSD1681_SetFrameMemory(const uint8_t *image, bool full_resolution);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Copies the image into the eink display's RAM, for partial update.
+ *******************************************************************************
+ * \param image - The image that is copied into the RAM.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1681_SetFrameMemoryPartial(const uint8_t *image);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Causes the eink to display what is currently in its RAM, using the
+ * full update process.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1681_DisplayFrame(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Causes the eink to display what is currently in its RAM, using the
+ * partial update process.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1681_DisplayPartFrame(void);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Causes the eink to display a white image, to be used as a "base"
+ * image for subsequent partial updates.
+ * NOTE: It is necessary to call this function for the first ever partial update,
+ * or for the first partial update after waking up from deep sleep.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1681_DisplayPartBaseImageWhite(void);
 
 #ifdef __cplusplus
 }
@@ -172,4 +225,4 @@ void SIF_IL3820_DisplayImage(uint8_t *image, SIF_IL3820_Clear_Mode mode);
  */
 
 #endif
-// SIF_SIF_IL3820_H
+// SIF_SIF_SSD1681_H

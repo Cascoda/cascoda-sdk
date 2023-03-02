@@ -159,11 +159,52 @@ uint16_t display_getHeight();
 */
 void display_clear(void);
 
-/**
-    \brief      render display
-    renders the created frame buffer to the eink display
+/* GENERAL NOTES ON USAGE, and differences between using the 2.9inch vs 1.54inch functions:
+- It is simple to do any kind of displaying with the 2.9inch eink display. Simply call the
+`display_render()` function, with the arguments of your choice. E.g.
+  . To display the frame buffer using full update, with a clear happening before displaying, 
+  call `display_render(FULL_UPDATE, WITH_CLEAR)`.
+  . For partial update, without clear, call `display_render(PARTIAL_UPDATE, WITHOUT_CLEAR)`.
+  That is all that is required.
+- However, if using the 1.54inch display: 
+  . To do a full update (always preceded with a clear), simply call the function `display_render_full()`.
+  . To do a partial update, call the function `display_render_partial()`, with `true` or `false` as the argument depending
+    on whether you want the eink display to be put in Deep Sleep mode after the update is done.
 */
-void display_render(void);
+#ifdef EPAPER_2_9_INCH
+
+/**
+    \brief Displays the frame buffer onto the eink display, in 4 possible different ways,
+    as expressed by the combination of the two parameters.
+    \param updt_mode FULL_UPDATE or PARTIAL_UPDATE. This determines whether the frame
+    buffer will be displayed via the full update (slow) or the partial update (fast)
+    sequence.
+    \param clr_mode WITH_CLEAR or WITHOUT_CLEAR. This determines whether the screen
+    will be cleared before the frame buffer is displayed.
+*/
+void display_render(SIF_IL3820_Update_Mode updt_mode, SIF_IL3820_Clear_Mode clr_mode);
+
+#elif defined EPAPER_1_54_INCH
+
+/**
+    \brief Displays the frame buffer onto the eink display using full update (slow)
+*/
+void display_render_full(void);
+
+/**
+    \brief Displays the frame buffer onto the eink display using partial update (fast). 
+    \param sleep_when_done If true, will set the eink display into Deep Sleep
+    mode after the partial update is done.
+*/
+void display_render_partial(bool sleep_when_done);
+
+/**
+    \brief Displays the image provided, using full update (slow).
+    \param image The image to be displayed.
+*/
+void display_fixed_image(const uint8_t *image);
+
+#endif
 
 // not documented
 //void display_setTextWrap(bool w);

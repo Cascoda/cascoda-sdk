@@ -12,21 +12,18 @@ if(TARGET cascoda-bm-plat)
 endif()
 
 # Set configuration variables -------------------------------------------------
-cascoda_dropdown(CASCODA_CHILI2_REV
-	"The revision of the Chili 2 hardware being used (use 0 for Chili 2D/2S, use 1 for Chili devboard and use -1 or -2 for NuMaker devboard)"
-	0 1 -1 -2
-	)
-
-# Single or double sided config
+# hardware platform configuration
 cascoda_dropdown(CASCODA_CHILI2_CONFIG_STRING
 	"The hardware configuration of the Chili 2"
-	TWO_SIDED ONE_SIDED DEV_BOARD DEV_BOARD_BATT
+	ONE_SIDED TWO_SIDED DEV_BOARD DEV_BOARD_BATT NUMAKER_SPI1_CTR NUMAKER_SPI0_NU6
 	)
 cascoda_map(${CASCODA_CHILI2_CONFIG_STRING} CASCODA_CHILI2_CONFIG
-	DEV_BOARD_BATT -2
-	DEV_BOARD -1
 	ONE_SIDED 0
 	TWO_SIDED 1
+	DEV_BOARD 2
+	DEV_BOARD_BATT 3
+	NUMAKER_SPI1_CTR 4
+	NUMAKER_SPI0_NU6 5
 	)
 cascoda_mark_important("CASCODA_CHILI2_CONFIG_STRING")
 

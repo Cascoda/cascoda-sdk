@@ -295,6 +295,11 @@ u8_t BSP_GetChargeStat(void)
 	return 0;
 }
 
+u8_t BSP_GetVBUSConnected(void)
+{
+	return (1);
+}
+
 i32_t BSP_GetTemperature(void)
 {
 	return 200;

@@ -1,7 +1,5 @@
-/**
- * @file
- *//*
- *  Copyright (c) 2019, Cascoda Ltd.
+/*
+ *  Copyright (c) 2022, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -27,55 +25,36 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * Application for E-ink display of images.
-*/
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
-#include "cascoda-bm/cascoda_sensorif.h"
-#include "cascoda-bm/cascoda_serial.h"
-#include "cascoda-bm/cascoda_spi.h"
-#include "cascoda-bm/cascoda_types.h"
-#include "cascoda-bm/cascoda_wait.h"
+#include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-util/cascoda_time.h"
-#include "ca821x_api.h"
+#include "devboard_btn.h"
 
-/* Insert Application-Specific Includes here */
-#include "cascoda-bm/test15_4_evbme.h"
-#include "sif_il3820.h"
-#include "sif_il3820_image.h"
-
-/******************************************************************************/
-/***************************************************************************/ /**
- * \brief Main Program Endless Loop
- *******************************************************************************
- * \return Does not return
- *******************************************************************************
- ******************************************************************************/
-int main(void)
+// get the battery voltage
+// Vbatt[V] = uint16_t / 100
+uint16_t DVBD_BattGetVoltage(void)
 {
-	struct ca821x_dev dev;
-	ca821x_api_init(&dev);
-	SENSORIF_SPI_Config(1);
-	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
+	uint32_t adcval;
+	uint16_t vbatt;
 
-	/* Initialisation of Chip and EVBME */
-	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
-	/* in case there is no UpStream Communications Channel available */
-	EVBMEInitialise(CA_TARGET_NAME, &dev);
+	/* scale * 100 (10 mV resolution) */
+	adcval = BSP_ADCGetVolts() * 100;
+	/* input voltage (volts) divided on board by 330/550, so vbatt = 5.5/3.3 * volts */
+	/* vbatt = adcval / 4096 * 5.5 = adcval / 745 */
+	vbatt = (uint16_t)(adcval / 745);
 
-	/* Application-Specific Initialisation Routines */
-	SIF_IL3820_Initialise(&lut_full_update);
-	SIF_IL3820_ClearAndDisplayImage(cascoda_img_2in9);
+	return (vbatt);
+}
 
-	/* Endless Polling Loop */
-	while (1)
-	{
-		cascoda_io_handler(&dev);
+// get the battery charging status
+uint8_t DVBD_BattGetChargingStatus(void)
+{
+	return (BSP_GetChargeStat());
+}
 
-	} /* while(1) */
+// check if +5V (Vbus or external) is connected
+uint8_t DVBD_BattGetVbusConnected(void)
+{
+	return (BSP_GetVBUSConnected());
 }

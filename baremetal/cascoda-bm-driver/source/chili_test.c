@@ -42,7 +42,7 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili_config.h"
-#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
 #include "devboard_btn.h"
 #endif
 
@@ -75,7 +75,7 @@ static ca_error CHILI_TEST_MLME_COMM_STATUS_indication(struct MLME_COMM_STATUS_i
 static void     CHILI_TEST_RegisterCallbacks(struct ca821x_dev *pDeviceRef);
 static void     CHILI_TEST_LEDComplete(uint8_t status);
 
-#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
 static void CHILI_TEST_LEDInit(void);
 static void CHILI_TEST_LEDResult(uint8_t status);
 #endif
@@ -160,7 +160,7 @@ static void CHILI_TEST_TestInit(struct ca821x_dev *pDeviceRef)
 	CHILI_TEST_RESULT = 0xFF;
 	/* dynamically register callbacks */
 	CHILI_TEST_RegisterCallbacks(pDeviceRef);
-#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
 	if (CHILI_TEST_MODE != CHILI_TEST_REF)
 		CHILI_TEST_LEDInit();
 #endif
@@ -604,7 +604,7 @@ static void CHILI_TEST_LEDComplete(uint8_t status)
 	/* this is hanging up intentionally - nothing to do after test */
 	while (1)
 	{
-#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
 		CHILI_TEST_LEDResult(status);
 #else
 		(void)status;
@@ -615,7 +615,7 @@ static void CHILI_TEST_LEDComplete(uint8_t status)
 }
 
 // Cascoda Devboard specific
-#if (CASCODA_CHILI2_CONFIG == -1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
 static void CHILI_TEST_LEDInit(void)
 {
 	/* All LEDs on */

@@ -67,13 +67,16 @@
 /***************************************************************************/
 /* Look Up Table values copied from the example code provided by WaveShare */
 /***************************************************************************/
-const struct SIF_IL3820_lut lut_full_update = {{0x02, 0x02, 0x01, 0x11, 0x12, 0x12, 0x22, 0x22, 0x66, 0x69,
-                                                0x69, 0x59, 0x58, 0x99, 0x99, 0x88, 0x00, 0x00, 0x00, 0x00,
-                                                0xF8, 0xB4, 0x13, 0x51, 0x35, 0x51, 0x51, 0x19, 0x01, 0x00}};
 
-const struct SIF_IL3820_lut lut_partial_update = {{0x10, 0x18, 0x18, 0x08, 0x18, 0x18, 0x08, 0x00, 0x00, 0x00,
-                                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                   0x13, 0x14, 0x44, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+//waveform full refresh
+static const uint8_t SIF_IL3820_lut_full_update[30] = {0x02, 0x02, 0x01, 0x11, 0x12, 0x12, 0x22, 0x22, 0x66, 0x69,
+                                                       0x69, 0x59, 0x58, 0x99, 0x99, 0x88, 0x00, 0x00, 0x00, 0x00,
+                                                       0xF8, 0xB4, 0x13, 0x51, 0x35, 0x51, 0x51, 0x19, 0x01, 0x00};
+
+// waveform partial refresh (fast)
+static const uint8_t SIF_IL3820_lut_partial_update[30] = {0x10, 0x18, 0x18, 0x08, 0x18, 0x18, 0x08, 0x00, 0x00, 0x00,
+                                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                          0x13, 0x14, 0x44, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -81,7 +84,7 @@ const struct SIF_IL3820_lut lut_partial_update = {{0x10, 0x18, 0x18, 0x08, 0x18,
  * \param command_byte - The command byte to send
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_SendCommand(uint8_t command_byte)
+static void SIF_IL3820_SendCommand(uint8_t command_byte)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 0);
@@ -97,7 +100,7 @@ void SIF_IL3820_SendCommand(uint8_t command_byte)
  * \param data_byte - The data byte to send
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_SendData(uint8_t data_byte)
+static void SIF_IL3820_SendData(uint8_t data_byte)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 1);
@@ -116,7 +119,7 @@ void SIF_IL3820_SendData(uint8_t data_byte)
  * \param Yend   - End position of the window address in the Y direction.
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Yend)
+static void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Yend)
 {
 	SIF_IL3820_SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
 	SIF_IL3820_SendData((Xstart >> 3) & 0xFF);
@@ -136,7 +139,7 @@ void SIF_IL3820_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t Yend)
  * \param Ystart - Initial settings for the RAM Y address in the address counter.
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_SetCursor(u16_t Xstart, u16_t Ystart)
+static void SIF_IL3820_SetCursor(u16_t Xstart, u16_t Ystart)
 {
 	SIF_IL3820_SendCommand(SET_RAM_X_ADDRESS_COUNTER);
 	SIF_IL3820_SendData((Xstart >> 3) & 0xFF);
@@ -167,7 +170,7 @@ static void SIF_IL3820_WaitUntilIdle(void)
  * \brief Turns on the display
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_TurnOnDisplay(void)
+static void SIF_IL3820_TurnOnDisplay(void)
 {
 	SIF_IL3820_SendCommand(DISPLAY_UPDATE_CONTROL_2);
 	SIF_IL3820_SendData(0xC4);
@@ -182,7 +185,7 @@ void SIF_IL3820_TurnOnDisplay(void)
  * \brief Resets Eink Panel
  *******************************************************************************
  ******************************************************************************/
-void SIF_IL3820_Reset(void)
+static void SIF_IL3820_Reset(void)
 {
 	BSP_ModuleSetGPIOPin(SIF_IL3820_RST_PIN, 1);
 	WAIT_ms(2);
@@ -221,40 +224,54 @@ static void SIF_IL3820_embed_qr(const uint8_t *qrcode, uint8_t *image, uint8_t s
 	}
 }
 
-ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut)
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief This function sets the Lookup table (LUT) register in the display
+ *******************************************************************************
+ * \param mode - Determines whether the lookup table for FULL_UPDATE or
+ * PARTIAL_UPDATE is used.
+ *******************************************************************************
+ ******************************************************************************/
+static ca_error SIF_IL3820_SetLut(SIF_IL3820_Update_Mode mode)
 {
-	//BSP_ModuleSetGPIOPin(SIF_IL3820_CS_PIN, 1);
+	ca_error err = CA_ERROR_SUCCESS;
 
-	/*****************************************/
-	/*** Configure GPIO input and outputs  ***/
-	/*****************************************/
-	/* De-register all non-SPI pins first in case they are used */
-	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_RST_PIN);
-	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_DC_PIN);
-	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_BUSY_PIN);
-	/* BUSY - Pin 31 */
-	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
-	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
-	/* RST - Pin 15 */
-	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_RST_PIN, MODULE_PIN_TYPE_GENERIC);
-	/* D/C - Pin 34 */
-	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_DC_PIN, MODULE_PIN_TYPE_GENERIC);
+	SIF_IL3820_SendCommand(WRITE_LUT_REGISTER);
+	if (mode == FULL_UPDATE)
+	{
+		for (u8_t i = 0; i < sizeof(SIF_IL3820_lut_full_update); ++i)
+		{
+			SIF_IL3820_SendData(SIF_IL3820_lut_full_update[i]);
+		}
+	}
+	else if (mode == PARTIAL_UPDATE)
+	{
+		for (u8_t i = 0; i < sizeof(SIF_IL3820_lut_partial_update); ++i)
+		{
+			SIF_IL3820_SendData(SIF_IL3820_lut_partial_update[i]);
+		}
+	}
+	else
+	{
+		err = CA_ERROR_INVALID_ARGS;
+		ca_log_debg("Error, invalid display update mode");
+	}
 
-	/*****************************************/
-	/*** Initialise the SPI communication  ***/
-	/*****************************************/
-	SENSORIF_SPI_Init();
+	SIF_IL3820_WaitUntilIdle();
 
-	/*****************************************/
-	/*** Set GPIO pins high                ***/
-	/*****************************************/
-	/* RST - Pin 15 - High */
-	BSP_ModuleSetGPIOPin(SIF_IL3820_RST_PIN, 1);
-	/* D/C - Pin 5 - High */
-	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 1);
-	/* CS - Pin 34 - High */
-	//BSP_ModuleSetGPIOPin(SIF_IL3820_CS_PIN, 1);
+	return err;
+}
 
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Wakes up the device from deep sleep and configures the eink display
+ *******************************************************************************
+ * \param mode - Determines how the configuration will be done, based on
+ * whether FULL_UPDATE or PARTIAL_UPDATE is used.
+ *******************************************************************************
+ ******************************************************************************/
+static ca_error SIF_IL3820_WakeUpAndSetConfig(SIF_IL3820_Update_Mode mode)
+{
 	/*****************************************/
 	/*** Panel Reset                       ***/
 	/*****************************************/
@@ -288,15 +305,42 @@ ca_error SIF_IL3820_Initialise(const struct SIF_IL3820_lut *lut)
 	SIF_IL3820_SendData(0x03);
 
 	//Set the LUT register
-	SIF_IL3820_SendCommand(WRITE_LUT_REGISTER);
-	for (u8_t i = 0; i < sizeof(*lut); ++i)
-	{
-		SIF_IL3820_SendData(lut->lut_array[i]);
-	}
+	return SIF_IL3820_SetLut(mode);
+}
 
+ca_error SIF_IL3820_Initialise(SIF_IL3820_Update_Mode mode)
+{
+	/*****************************************/
+	/*** Configure GPIO input and outputs  ***/
+	/*****************************************/
+	/* De-register all non-SPI pins first in case they are used */
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_RST_PIN);
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_DC_PIN);
+	BSP_ModuleDeregisterGPIOPin(SIF_IL3820_BUSY_PIN);
+	/* BUSY - Pin 31 */
+	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
+	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
+	/* RST - Pin 15 */
+	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_RST_PIN, MODULE_PIN_TYPE_GENERIC);
+	/* D/C - Pin 34 */
+	BSP_ModuleRegisterGPIOOutput(SIF_IL3820_DC_PIN, MODULE_PIN_TYPE_GENERIC);
+
+	/*****************************************/
+	/*** Initialise the SPI communication  ***/
+	/*****************************************/
+	SENSORIF_SPI_Init();
+
+	/*****************************************/
+	/*** Set GPIO pins high                ***/
+	/*****************************************/
+	/* RST - Pin 15 - High */
+	BSP_ModuleSetGPIOPin(SIF_IL3820_RST_PIN, 1);
+	/* D/C - Pin 5 - High */
+	BSP_ModuleSetGPIOPin(SIF_IL3820_DC_PIN, 1);
+	/* CS - Pin 34 - High */
 	//BSP_ModuleSetGPIOPin(SIF_IL3820_CS_PIN, 1);
 
-	return CA_ERROR_SUCCESS;
+	return SIF_IL3820_WakeUpAndSetConfig(mode);
 }
 
 void SIF_IL3820_Deinitialise(void)
@@ -369,11 +413,8 @@ void SIF_IL3820_ClearDisplay(void)
 void SIF_IL3820_StrongClearDisplay(void)
 {
 	SIF_IL3820_ClearDisplay();
-	WAIT_ms(500);
 	SIF_IL3820_ClearDisplay();
-	WAIT_ms(500);
 	SIF_IL3820_ClearDisplay();
-	WAIT_ms(500);
 }
 
 void SIF_IL3820_DeepSleep(void)
@@ -384,12 +425,7 @@ void SIF_IL3820_DeepSleep(void)
 	//BSP_ModuleSetGPIOPin(SIF_IL3820_CS_PIN, 1);
 }
 
-ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t x, uint8_t y)
-{
-	return SIF_IL3820_overlay_qr_code_scale(text, image, 1, x, y);
-}
-
-ca_error SIF_IL3820_overlay_qr_code_scale(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y)
+ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t scale, uint8_t x, uint8_t y)
 {
 	enum qrcodegen_Ecc errCorLvl = qrcodegen_Ecc_LOW; // Error correction level
 
@@ -406,12 +442,11 @@ ca_error SIF_IL3820_overlay_qr_code_scale(const char *text, uint8_t *image, uint
 	return CA_ERROR_FAIL;
 }
 
-void SIF_IL3820_ClearAndDisplayImage(uint8_t *image)
+void SIF_IL3820_DisplayImage(uint8_t *image, SIF_IL3820_Clear_Mode mode)
 {
-	SIF_IL3820_ClearDisplay();
-	WAIT_ms(500);
+	if (mode == WITH_CLEAR)
+		SIF_IL3820_ClearDisplay();
+
 	SIF_IL3820_Display(image);
-	WAIT_ms(1000);
-	WAIT_ms(1000);
 	SIF_IL3820_DeepSleep();
 }

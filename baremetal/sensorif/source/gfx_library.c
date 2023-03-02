@@ -114,9 +114,13 @@ void    fillRect(uint16_t x0, uint16_t y0, uint16_t x1, int16_t y1, uint16_t col
 	}
 #endif
 
-// 2.9 inch display.
-uint16_t display_width  = SIF_IL3820_WIDTH;
-uint16_t display_height = SIF_IL3820_HEIGHT;
+#ifdef EPAPER_2_9_INCH
+uint16_t      display_width  = SIF_IL3820_WIDTH;
+uint16_t      display_height = SIF_IL3820_HEIGHT;
+#elif defined EPAPER_1_54_INCH
+uint16_t display_width  = SIF_SSD1681_WIDTH;
+uint16_t display_height = SIF_SSD1681_HEIGHT;
+#endif
 
 // generic draw pixel
 // only touches the frame buffer
@@ -131,14 +135,56 @@ void display_clear(void)
 	gfx_drv_clearDisplay();
 }
 
-// renders the framebuffer to the eink display
-void display_render(void)
+#ifdef EPAPER_2_9_INCH
+
+void display_render(SIF_IL3820_Update_Mode updt_mode, SIF_IL3820_Clear_Mode clr_mode)
 {
-	SIF_IL3820_ClearAndDisplayImage(get_framebuffer());
+	SIF_IL3820_Initialise(updt_mode);
+	SIF_IL3820_DisplayImage(get_framebuffer(), clr_mode);
+	SIF_IL3820_Deinitialise();
 }
 
-// generic functions below.
+#elif defined EPAPER_1_54_INCH
 
+void display_render_full(void)
+{
+	SIF_SSD1681_Initialise();
+	SIF_SSD1681_SetFrameMemory(get_framebuffer(), false);
+	SIF_SSD1681_DisplayFrame();
+	SIF_SSD1681_DeepSleep();
+	SIF_SSD1681_Deinitialise();
+}
+
+void display_render_partial(bool sleep_when_done)
+{
+	if (SIF_SSD1681_IsAsleep())
+	{
+		SIF_SSD1681_Initialise();
+		SIF_SSD1681_DisplayPartBaseImageWhite();
+	}
+
+	SIF_SSD1681_SetFrameMemoryPartial(get_framebuffer());
+	SIF_SSD1681_DisplayPartFrame();
+
+	if (sleep_when_done)
+	{
+		SIF_SSD1681_DeepSleep();
+		SIF_SSD1681_Deinitialise();
+	}
+}
+
+void display_fixed_image(const uint8_t *image)
+{
+	SIF_SSD1681_Initialise();
+	SIF_SSD1681_SetFrameMemory(image, true);
+	SIF_SSD1681_DisplayFrame();
+	SIF_SSD1681_DeepSleep();
+	SIF_SSD1681_Deinitialise();
+}
+
+#endif
+
+// generic functions below.
 void display_setRotation(uint16_t rotation)
 {
 	rotation = rotation;
@@ -764,7 +810,7 @@ void display_putc(uint8_t c)
 	if (textbgcolor != textcolor)
 	{ // If opaque, draw vertical line for last column
 		if (textsize == 1)
-			display_drawVLine(cursor_x + 5, cursor_y, 8, textbgcolor);
+			display_drawVLine(cursor_x + 5, cursor_y, 7, textbgcolor);
 		else
 			display_fillRect(cursor_x + 5 * textsize, cursor_y, textsize, 8 * textsize, textbgcolor);
 	}

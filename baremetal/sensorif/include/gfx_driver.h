@@ -10,13 +10,20 @@ Copyright 2023 Cascoda LTD.
 extern "C" {
 #endif
 
+#ifdef EPAPER_2_9_INCH
 #include "sif_il3820.h"
-
-#define BLACK 0
-#define WHITE 1
 
 #define LCDWIDTH SIF_IL3820_WIDTH
 #define LCDHEIGHT SIF_IL3820_HEIGHT
+#elif defined EPAPER_1_54_INCH
+#include "sif_ssd1681.h"
+
+#define LCDWIDTH SIF_SSD1681_WIDTH
+#define LCDHEIGHT SIF_SSD1681_HEIGHT
+#endif
+
+#define BLACK 0
+#define WHITE 1
 
 // retrieve the frame buffer
 uint8_t* get_framebuffer(void);

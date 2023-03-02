@@ -148,7 +148,7 @@ void RTC_IRQHandler(void)
 		/* Clear RTC alarm interrupt flag */
 		RTC_CLEAR_ALARM_INT_FLAG(RTC);
 
-		CHILI_SetWakeup(1);
+		CHILI_SetWakeup(WUP_TIMER);
 
 		/* rtc can act as watchdog during powerdown */
 		if (CHILI_GetAsleep())
@@ -171,7 +171,7 @@ void TMR0_IRQHandler(void)
 	if (!CHILI_GetAsleep())
 		CHILI_1msTick(); /* timer0 for system ticks */
 	else
-		CHILI_SetWakeup(1);
+		CHILI_SetWakeup(WUP_TIMER);
 }
 
 /******************************************************************************/

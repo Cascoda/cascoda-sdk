@@ -260,7 +260,7 @@ int main(void)
 	struct ca821x_dev dev;
 
 	ca821x_api_init(&dev);
-	cascoda_reinitialise    = reinitialise_after_wakeup;
+	cascoda_reinitialise = reinitialise_after_wakeup;
 
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 

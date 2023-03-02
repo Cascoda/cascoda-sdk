@@ -311,7 +311,7 @@ i32_t BSP_GetTemperature(void)
 	return tempval;
 }
 
-#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 3)
 u8_t BSP_GetChargeStat(void)
 {
 	u8_t charging;
@@ -334,7 +334,26 @@ u8_t BSP_GetChargeStat(void)
 }
 #endif
 
-#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 3)
+u8_t BSP_GetVBUSConnected(void)
+{
+	u8_t connected;
+
+	if (VBUS_CONNECTED_PVAL == 1)
+		connected = 1;
+	else
+		connected = 0;
+
+	return (connected);
+}
+#else
+u8_t BSP_GetVBUSConnected(void)
+{
+	return (1);
+}
+#endif
+
+#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 3)
 u32_t BSP_ADCGetVolts(void)
 {
 	u32_t voltsval;

@@ -78,14 +78,6 @@ typedef enum dvbd_click_type
 	STYPE_RELAY        = 8,
 } dvbd_click_type;
 
-typedef struct
-{
-	dvbd_click_type dev_type;
-	ca_error (*click_handler)();
-	uint8_t (*click_initialise)();
-	uint8_t (*click_alarm)();
-} mikrosdk_callbacks;
-
 /* structures for click sensor data */
 
 /* data structure for THERMO */
@@ -158,7 +150,6 @@ typedef struct
 extern uint8_t g_relay_1_state, g_relay_2_state; /* states for controlling RELAY */
 
 /* general functions */
-ca_error DVBD_select_click(mikrosdk_callbacks *callback, dvbd_click_type dev_type, ca_error (*handler)());
 ca_error DVBD_click_power_init(void);
 ca_error DVBD_click_power_set(uint8_t onoff);
 
@@ -171,5 +162,15 @@ ca_error CLICK_SHT_acquisition(data_sht *data);
 ca_error CLICK_HVAC_acquisition(data_hvac *data);
 ca_error CLICK_MOTION_acquisition(data_motion *data);
 ca_error CLICK_RELAY_acquisition(data_relay *data);
+
+/* separate initialisation functions */
+ca_error CLICK_THERMO3_initialise(void);
+ca_error CLICK_THERMO_initialise(void);
+ca_error CLICK_AIRQUALITY4_initialise(void);
+ca_error CLICK_ENVIRONMENT2_initialise(void);
+ca_error CLICK_SHT_initialise(void);
+ca_error CLICK_HVAC_initialise(void);
+ca_error CLICK_MOTION_initialise(void);
+ca_error CLICK_RELAY_initialise(void);
 
 #endif // DEVBOARD_CLICK_H

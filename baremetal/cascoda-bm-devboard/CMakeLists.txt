@@ -3,6 +3,7 @@ project (cascoda-bm-devboard)
 
 add_library(cascoda-bm-devboard
     ${PROJECT_SOURCE_DIR}/source/devboard_btn.c
+    ${PROJECT_SOURCE_DIR}/source/devboard_batt.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click_handlers_default.c
     ${PROJECT_SOURCE_DIR}/source/knx_click_handlers.c
@@ -45,14 +46,30 @@ add_executable(devboard-eink
     ${PROJECT_SOURCE_DIR}/examples/devboard_app_eink.c
 )
 
-target_link_libraries(devboard-eink cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-image)
+target_link_libraries(devboard-eink cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-driver-2-9 eink-image-2-9)
 
 cascoda_make_binary(devboard-eink CASCODA_BUILD_BINARIES)
 cascoda_put_subdir(devboard devboard-eink)
 
-add_executable(devboard-gfx
-    ${PROJECT_SOURCE_DIR}/examples/devboard_app_gfx.c
+add_executable(devboard-batt
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_batt.c
 )
-target_link_libraries(devboard-gfx cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-image)
-cascoda_make_binary(devboard-gfx CASCODA_BUILD_BINARIES)
-cascoda_put_subdir(devboard devboard-gfx)
+
+target_link_libraries(devboard-batt cascoda-bm cascoda-bm-devboard)
+cascoda_make_binary(devboard-batt CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-batt)
+
+add_executable(devboard-gfx-2-9
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_gfx_2_9.c
+)
+
+target_link_libraries(devboard-gfx-2-9 cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-driver-2-9)
+cascoda_make_binary(devboard-gfx-2-9 CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-gfx-2-9)
+
+add_executable(devboard-gfx-1-54
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_gfx_1_54.c
+)
+target_link_libraries(devboard-gfx-1-54 cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-driver-1-54-half-res) 
+cascoda_make_binary(devboard-gfx-1-54 CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-gfx-1-54)

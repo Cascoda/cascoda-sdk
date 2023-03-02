@@ -49,9 +49,11 @@
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
 #include "devboard_btn.h"
-#include "sif_il3820.h"
+#include "sif_ssd1681.h"
+#include "sif_ssd1681_knx_iot_image.h"
 
-#include "gfx_driver.h"  // include  controller driver source code
+#include "gfx_driver.h" // include  controller driver source code
+
 #include "gfx_library.h" // include graphics library header
 
 #define SPI_NUM 1                    // SPI interface used for display
@@ -69,8 +71,6 @@ static void load_screen(u8_t nr)
 	int  display_height = display_getHeight();
 	char screen_str[20];
 
-	// always initalize the eink display
-	SIF_IL3820_Initialise(&lut_full_update);
 	// clear the frame buffer
 	display_clear();
 	// set the text color
@@ -79,15 +79,20 @@ static void load_screen(u8_t nr)
 	printf("Loading screen %u ..\n", (nr + 1));
 	if (nr == 0)
 	{
+		display_fixed_image(knx_iot_logo);
+		return;
+	}
+	if (nr == 1)
+	{
 		display_drawRect(0, 0, display_width - 1, display_width - 1, BLACK);
 		char qr[] = "KNX:S:00FA10010400;P:ABY8B77J50YXMUDW3DG4";
-		SIF_IL3820_overlay_qr_code_scale(qr, get_framebuffer(), 4, 2, 2);
+		SIF_SSD1681_overlay_qr_code(qr, get_framebuffer(), 2, 2, 2);
 		//display_setRotation(1);
-		display_setCursor(1, 130);
+		display_setCursor(1, 65);
 		display_setTextColor(BLACK, WHITE);
 		display_puts(qr);
 	}
-	if (nr > 0)
+	if (nr > 1)
 	{
 		sprintf((char *)&screen_str, "%d", nr);
 		// generic stuff
@@ -95,48 +100,48 @@ static void load_screen(u8_t nr)
 		display_drawLine(0, 12, display_width, 12, BLACK);
 		display_setCursor(3, 2);
 		display_puts("BN1");
-		display_setCursor(33, 2);
+		display_setCursor(23, 2);
 		display_puts("BN2");
-		display_setCursor(63, 2);
+		display_setCursor(43, 2);
 		display_puts("BN3");
-		display_setCursor(100, 2);
+		display_setCursor(70, 2);
 		snprintf(screen_str, 19, "%d/%d", nr + 1, NUM_SCREENS);
 		display_puts(screen_str);
 	}
-	if (nr == 1)
+	if (nr == 2)
 	{
 		display_setCursor(3, 15);
-		display_puts("BN1 - next screen");
+		display_puts("BN1- next");
 		display_setCursor(3, 27);
-		display_puts("BN2 - something");
+		display_puts("BN2- option 1");
 		display_setCursor(3, 39);
-		display_puts("BN3 - something else");
+		display_puts("BN3- option 2");
 	}
-	if (nr == 2)
+	if (nr == 3)
 	{
 		display_drawCircle(30, 30, 10, BLACK);
 		display_fillCircle(70, 70, 20, BLACK);
 	}
-	if (nr == 3)
+	if (nr == 4)
 	{
 		display_setCursor(3, 15);
 		display_puts("Temperature");
 		display_setCursor(3, 30);
-		display_setTextSize(4);
+		display_setTextSize(2);
 		float temperature = 20.7;
 		// snprintf does not work on embedded systems
 		display_double(screen_str, 99, temperature, 1);
 		display_puts(screen_str);
 		display_setTextSize(1);
-		display_setCursor(3, 75);
+		display_setCursor(3, 55);
 		display_puts("Humidity");
-		display_setCursor(3, 90);
-		display_setTextSize(4);
+		display_setCursor(3, 70);
+		display_setTextSize(2);
 		float humidity = -5.3;
 		display_double(screen_str, 99, humidity, 1);
 		display_puts(screen_str);
 	}
-	if (nr == 4)
+	if (nr == 5)
 	{
 		display_setCursor(3, 15);
 		display_puts("percentage ");
@@ -146,20 +151,24 @@ static void load_screen(u8_t nr)
 		snprintf(screen_str, 19, "%d", percentage);
 		display_puts(screen_str);
 	}
-	if (nr == 5)
+	if (nr == 6)
 	{
 		display_setCursor(3, 15);
-		display_puts("BN1 - next screen");
+		display_puts("BN1- next");
 		display_setCursor(3, 27);
-		display_puts("BN2 - reset");
+		display_puts("BN2- reset");
 		display_setCursor(3, 39);
-		display_puts("BN3 - reboot");
+		display_puts("BN3- reboot");
 	}
 	// reset all the rendering constructs
 	display_setCursor(0, 0);
 	display_setTextSize(1);
-	display_render();
-	SIF_IL3820_Deinitialise();
+
+	if (nr == 1)
+		display_render_full();
+	else
+		display_render_partial(false);
+
 	printf("Loading complete.\n");
 }
 
@@ -167,6 +176,7 @@ static void load_screen(u8_t nr)
 static void button_pressed(void *context)
 {
 	(void)context;
+
 	if (g_screen_nr < (NUM_SCREENS - 1))
 		++g_screen_nr;
 	else
@@ -178,6 +188,7 @@ static void button_pressed(void *context)
 static void long_button_pressed(void *context)
 {
 	(void)context;
+
 	g_screen_nr = 1;
 	TASKLET_ScheduleDelta(&screen_Tasklet, 300, NULL);
 }
@@ -187,7 +198,7 @@ static void sleep_if_possible(struct ca821x_dev *pDeviceRef)
 {
 	if (DVBD_CanSleep())
 	{
-		/* check that it's worth going to sleep */
+		/* and sleep */
 		DVBD_DevboardSleep(SLEEP_LONG_TIME, pDeviceRef);
 	}
 }
@@ -195,6 +206,10 @@ static void sleep_if_possible(struct ca821x_dev *pDeviceRef)
 // application initialisation
 static void app_initialise(void)
 {
+	/* Eink Initialisation */
+	SENSORIF_SPI_Config(SPI_NUM);
+	SIF_SSD1681_Initialise();
+
 	/* 3rd BTN/LED (2) is LED output; static for power-on */
 	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);
 	DVBD_SetLED(LED_BTN_2, LED_ON);
@@ -220,11 +235,8 @@ int main(void)
 	/* Application-Specific Initialisation Routines */
 	app_initialise();
 
-	/* Eink Initialisation */
-	SENSORIF_SPI_Config(SPI_NUM);
-
 	TASKLET_Init(&screen_Tasklet, &initial_screen);
-	TASKLET_ScheduleDelta(&screen_Tasklet, 0, NULL);
+	TASKLET_ScheduleDelta(&screen_Tasklet, 5000, NULL);
 
 	/* Endless Polling Loop */
 	while (1)

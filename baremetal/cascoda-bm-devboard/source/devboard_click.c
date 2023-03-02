@@ -60,84 +60,6 @@ uint8_t g_relay_2_state = 0;
 /* use power control (crowbar) for mikrobus vdd33 */
 static bool g_use_power_control = false;
 
-/* select click sensor */
-ca_error DVBD_select_click(mikrosdk_callbacks *callback, dvbd_click_type dev_type, ca_error (*handler)())
-{
-	switch (dev_type)
-	{
-	case STYPE_NONE:
-		callback->dev_type         = STYPE_NONE;
-		callback->click_initialise = NULL;
-		callback->click_handler    = NULL;
-		callback->click_alarm      = NULL;
-		return CA_ERROR_SUCCESS;
-	case STYPE_THERMO:
-		SENSORIF_SPI_Config(SPI_PORTNUM);
-		callback->click_initialise = MIKROSDK_THERMO_Initialise;
-		callback->click_alarm      = NULL;
-		break;
-	case STYPE_THERMO3:
-		MIKROSDK_THERMO3_pin_mapping(CLICK_INT_PIN);
-		SENSORIF_I2C_Config(I2C_PORTNUM);
-#if (THERMO3_USE_INTERRUPT)
-		DVBD_SetGPIOWakeup();
-#endif
-		callback->click_initialise = MIKROSDK_THERMO3_Initialise;
-		callback->click_alarm      = MIKROSDK_THERMO3_alarm_triggered;
-		break;
-	case STYPE_AIRQUALITY4:
-		SENSORIF_I2C_Config(I2C_PORTNUM);
-		callback->click_initialise = MIKROSDK_AIRQUALITY4_Initialise;
-		callback->click_alarm      = NULL;
-		break;
-	case STYPE_ENVIRONMENT2:
-		SENSORIF_I2C_Config(I2C_PORTNUM);
-		callback->click_initialise = MIKROSDK_ENVIRONMENT2_Initialise;
-		callback->click_alarm      = NULL;
-		break;
-	case STYPE_SHT:
-		// NReset, Alert
-		MIKROSDK_SHT_pin_mapping(CLICK_RST_PIN, CLICK_INT_PIN);
-		SENSORIF_I2C_Config(I2C_PORTNUM);
-#if (SHT_USE_INTERRUPT)
-		DVBD_SetGPIOWakeup();
-#endif
-		callback->click_initialise = MIKROSDK_SHT_Initialise;
-		callback->click_alarm      = MIKROSDK_SHT_alarm_triggered;
-		break;
-	case STYPE_HVAC:
-		SENSORIF_I2C_Config(I2C_PORTNUM);
-		callback->click_initialise = MIKROSDK_HVAC_Initialise;
-		callback->click_alarm      = NULL;
-		break;
-	case STYPE_MOTION:
-		// Enable, Output
-		MIKROSDK_MOTION_pin_mapping(CLICK_RST_PIN, CLICK_INT_PIN);
-		callback->click_initialise = MIKROSDK_MOTION_Initialise;
-		callback->click_alarm      = MIKROSDK_MOTION_alarm_triggered;
-#if (MOTION_USE_INTERRUPT)
-		DVBD_SetGPIOWakeup();
-#endif
-		break;
-	case STYPE_RELAY:
-		// Relay1, Relay2
-		MIKROSDK_RELAY_pin_mapping(CLICK_PWM_PIN, CLICK_CS_PIN);
-		callback->click_initialise = MIKROSDK_RELAY_Initialise;
-		callback->click_alarm      = NULL;
-		break;
-	default:
-		callback->dev_type         = STYPE_NONE;
-		callback->click_handler    = NULL;
-		callback->click_initialise = NULL;
-		callback->click_alarm      = NULL;
-		return CA_ERROR_FAIL;
-	}
-	callback->dev_type      = dev_type;
-	callback->click_handler = handler;
-
-	return CA_ERROR_SUCCESS;
-}
-
 /* initialise the click power control signal */
 ca_error DVBD_click_power_init(void)
 {
@@ -305,7 +227,6 @@ ca_error CLICK_MOTION_acquisition(data_motion *data)
 	return CA_ERROR_SUCCESS;
 }
 
-/* Handler Example for RELAY Click */
 /* RELAY click data acquisition */
 ca_error CLICK_RELAY_acquisition(data_relay *data)
 {
@@ -314,6 +235,93 @@ ca_error CLICK_RELAY_acquisition(data_relay *data)
 	data->status        = MIKROSDK_RELAY_Driver(data->relay_1_state, data->relay_2_state);
 
 	if (data->status == RELAY_ST_FAIL)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* THERMO3 click initialisation */
+ca_error CLICK_THERMO3_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	// Alarm
+	MIKROSDK_THERMO3_pin_mapping(CLICK_INT_PIN);
+#if (THERMO3_USE_INTERRUPT)
+	DVBD_SetGPIOWakeup();
+#endif
+	if (MIKROSDK_THERMO3_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* THERMO click initialisation */
+ca_error CLICK_THERMO_initialise(void)
+{
+	SENSORIF_SPI_Config(SPI_PORTNUM);
+	if (MIKROSDK_THERMO_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* AIRQUALITY4 click initialisation */
+ca_error CLICK_AIRQUALITY4_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	if (MIKROSDK_AIRQUALITY4_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* ENVIRONMENT2 click initialisation */
+ca_error CLICK_ENVIRONMENT2_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	if (MIKROSDK_ENVIRONMENT2_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* SHT click initialisation */
+ca_error CLICK_SHT_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	// NReset, Alert
+	MIKROSDK_SHT_pin_mapping(CLICK_RST_PIN, CLICK_INT_PIN);
+#if (SHT_USE_INTERRUPT)
+	DVBD_SetGPIOWakeup();
+#endif
+	if (MIKROSDK_SHT_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* HVAC click initialisation */
+ca_error CLICK_HVAC_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	if (MIKROSDK_HVAC_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* MOTION click initialisation */
+ca_error CLICK_MOTION_initialise(void)
+{
+	// Enable, Output
+	MIKROSDK_MOTION_pin_mapping(CLICK_RST_PIN, CLICK_INT_PIN);
+#if (MOTION_USE_INTERRUPT)
+	DVBD_SetGPIOWakeup();
+#endif
+	if (MIKROSDK_MOTION_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* RELAY click initialisation */
+ca_error CLICK_RELAY_initialise(void)
+{
+	// Relay1, Relay2
+	MIKROSDK_RELAY_pin_mapping(CLICK_PWM_PIN, CLICK_CS_PIN);
+	if (MIKROSDK_RELAY_Initialise())
 		return CA_ERROR_FAIL;
 	return CA_ERROR_SUCCESS;
 }

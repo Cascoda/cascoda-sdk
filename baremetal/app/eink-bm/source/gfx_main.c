@@ -104,7 +104,7 @@ void testdrawbitmap(const uint8_t* bitmap, uint8_t w, uint8_t h)
 			y_pos = icons[f][YPOS];
 			display_drawBitmapV2(x_pos, y_pos, bitmap, w, h, BLACK);
 		}
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 
 		// then erase it + move it
 		for (f = 0; f < NUMFLAKES; f++)
@@ -138,7 +138,7 @@ void testdrawchar(void)
 			continue;
 		display_putc(i);
 	}
-	display_render();
+	display_render(FULL_UPDATE, WITH_CLEAR);
 }
 
 void testdrawcircle(void)
@@ -149,7 +149,7 @@ void testdrawcircle(void)
 	for (i = 0; i < display_height; i += 2)
 	{
 		display_drawCircle(display_width / 2, display_height / 2, i, BLACK);
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 }
 
@@ -163,7 +163,7 @@ void testfillrect(void)
 	{
 		// alternate colors
 		display_fillRect(i, i, display_width - (i * 2), display_height - (i * 2), color % 2);
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 		color++;
 	}
 }
@@ -183,7 +183,7 @@ void testdrawtriangle(void)
 		                     (display_width / 2) + i,
 		                     (display_height / 2) + i,
 		                     BLACK);
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 }
 
@@ -207,7 +207,7 @@ void testfilltriangle(void)
 			color = BLACK;
 		else
 			color = WHITE;
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 }
 
@@ -220,7 +220,7 @@ void testdrawroundrect(void)
 	{
 		display_clear();
 		display_drawRoundRect(i, i, display_width - (2 * i), display_height - (2 * i), display_height / 4, BLACK);
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 }
 
@@ -238,7 +238,7 @@ void testfillroundrect(void)
 			color = BLACK;
 		else
 			color = WHITE;
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 }
 
@@ -255,7 +255,7 @@ void testdrawrect(void)
 		display_drawRect(i, i, display_width - (2 * i), display_height - (2 * i), BLACK);
 
 		ca_log_note("testdrawrect - %d", i);
-		display_render();
+		display_render(FULL_UPDATE, WITH_CLEAR);
 	}
 	ca_log_note("testdrawrect - done");
 }
@@ -279,7 +279,7 @@ void testdrawline(void)
 	}
 
 	ca_log_note("testdrawline: 1");
-	display_render();
+	display_render(FULL_UPDATE, WITH_CLEAR);
 
 	display_clear();
 	for (i = 0; i < display_width; i += 4)
@@ -292,7 +292,7 @@ void testdrawline(void)
 	}
 
 	ca_log_note("testdrawline: 2");
-	display_render();
+	display_render(FULL_UPDATE, WITH_CLEAR);
 
 	display_clear();
 	for (i = display_width - 1; i >= 0; i -= 4)
@@ -304,7 +304,7 @@ void testdrawline(void)
 		display_drawLine(display_width - 1, display_height - 1, 0, i, BLACK);
 	}
 	ca_log_note("testdrawline: 3");
-	display_render();
+	display_render(FULL_UPDATE, WITH_CLEAR);
 
 	display_clear();
 	for (i = 0; i < display_height; i += 4)
@@ -317,7 +317,7 @@ void testdrawline(void)
 	}
 
 	ca_log_note("testdrawline: 2");
-	display_render();
+	display_render(FULL_UPDATE, WITH_CLEAR);
 	ca_log_note("testdrawline: done");
 }
 
@@ -335,11 +335,6 @@ ca_error handle_tests(void* args)
 	display_drawRect(10, 10, display_width - 20, display_height - 20, BLACK);
 	display_drawCircle(20, 20, 20, BLACK);
 	display_fillCircle(40, 40, 20, BLACK);
-
-	ca_log_note("draw qr codes");
-	SIF_IL3820_overlay_qr_code_scale("https://www.cascoda.com", get_framebuffer(), 2, 65, 30);
-
-	SIF_IL3820_overlay_qr_code_scale("https://www.cascoda.com", get_framebuffer(), 1, 65, 150);
 
 	display_setTextColor(BLACK, WHITE);
 	ca_log_note("draw text");
@@ -365,9 +360,18 @@ ca_error handle_tests(void* args)
 	display_double(text, 99, f_x, 1);
 	display_puts(text);
 
-	display_render();
+	// Full update
+	display_render(FULL_UPDATE, WITH_CLEAR);
+
+	// Add QR codes and do partial update
+	ca_log_note("draw qr codes");
+	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", get_framebuffer(), 2, 65, 30);
+
+	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", get_framebuffer(), 1, 65, 150);
+	display_render(PARTIAL_UPDATE, WITHOUT_CLEAR);
 
 	ca_log_note("done>===================================================");
+
 	return CA_ERROR_SUCCESS;
 }
 
@@ -377,20 +381,16 @@ void main(void)
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
 	SENSORIF_SPI_Config(1);
-	//SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 90, 20);
+	//SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 1, 90, 20);
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */
 	/* in case there is no UpStream Communications Channel available */
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
-	ca_log_note("=====initalize==================");
-	SIF_IL3820_Initialise(&lut_full_update);
-	ca_log_note("=====Deinitalize==================");
-	SIF_IL3820_Deinitialise();
 	/* Application-Specific Initialisation Routines */
+	SIF_IL3820_Initialise(FULL_UPDATE);
 
-	SIF_IL3820_Initialise(&lut_full_update);
 	ca_log_note("=====INIT done==================");
 	ca_log_note("schedule task (5 sec)");
 	/* Insert Application-Specific Initialisation Routines here */

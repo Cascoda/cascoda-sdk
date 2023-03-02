@@ -375,7 +375,7 @@ int main(void)
 	struct ca821x_dev dev;
 
 	ca821x_api_init(&dev);
-	cascoda_reinitialise    = ot_reinitialise;
+	cascoda_reinitialise = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &dev);

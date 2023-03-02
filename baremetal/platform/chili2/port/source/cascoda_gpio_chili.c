@@ -93,7 +93,7 @@ static const struct pinlist ModulePinList[] = {
 /* module pin */
 /* port PX.Y */
 /* adc channel */
-#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
     {5, PN_B, 12, 12},    /* PB.12 */
     {6, PN_B, 13, 13},    /* PB.13 */
     {11, PN_A, 13, P_NA}, /* PA.13 */
@@ -104,7 +104,7 @@ static const struct pinlist ModulePinList[] = {
 #if (CASCODA_EXTERNAL_FLASHCHIP_PRESENT == 0)
     {15, PN_A, 15, P_NA}, /* PA.15 */
 #endif
-#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
     {17, PN_A, 12, P_NA}, /* PA.12 */
 #endif                    /* CASCODA_CHILI2_CONFIG */
 #if (!CASCODA_CHILI_DISABLE_CA821x)
@@ -113,7 +113,7 @@ static const struct pinlist ModulePinList[] = {
     {32, PN_B, 4, 4}, /* PB.4 */
     {33, PN_B, 3, 3}, /* PB.3 */
     {34, PN_B, 2, 2}, /* PB.2 */
-#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == -1)
+#if (CASCODA_CHILI2_CONFIG == 0 || CASCODA_CHILI2_CONFIG == 2 || CASCODA_CHILI2_CONFIG == 3)
     {35, PN_B, 1, 1}, /* PB.1 */
     {36, PN_B, 0, 0}, /* PB.0 */
 #endif                /* CASCODA_CHILI2_CONFIG */
@@ -132,7 +132,7 @@ struct ModuleSpecialPins BSP_GetModuleSpecialPins(void)
 {
 	struct ModuleSpecialPins rval;
 	memset(&rval, P_NA, sizeof(rval));
-#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == -2)
+#if (CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 3)
 	rval.USB_PRESENT = PIN_USB_PRESENT;
 #endif
 	return rval;
@@ -268,7 +268,7 @@ void CHILI_ModulePinIRQHandler(enPortnum portnum)
 				if (ModulePinCallbacks[i])
 				{
 					ModulePinCallbacks[i]();
-					CHILI_SetWakeup(1);
+					CHILI_SetWakeup(WUP_GPIO);
 				}
 			}
 		}

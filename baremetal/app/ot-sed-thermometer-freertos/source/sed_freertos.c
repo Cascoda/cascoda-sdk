@@ -114,7 +114,7 @@ static void System_Init()
 {
 	u8_t StartupStatus;
 	ca821x_api_init(&sDeviceRef);
-	cascoda_reinitialise    = ot_reinitialise;
+	cascoda_reinitialise = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);

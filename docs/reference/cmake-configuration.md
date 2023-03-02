@@ -68,6 +68,7 @@ Set the target configuration for the firmware.
 
 | Value | Meaning |
 | ----- | ------- |
-| TWO_SIDED | Configured for the Chili2D
 | ONE_SIDED | Configured for the Chili2S
+| TWO_SIDED | Configured for the Chili2D
 | DEV_BOARD | Configured for the [Development Board](../how-to/howto-devboard.md)
+| DEV_BOARD_BATT | Configured for the [Development Board](../how-to/howto-devboard.md) with Battery monitoring Functions

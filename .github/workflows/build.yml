@@ -84,7 +84,7 @@ jobs:
         arm-none-eabi-gcc --version
         New-Item -Type dir ${{ github.workspace }}\build-knx-chili2-win\lib
         Copy-Item -Path ${{ github.workspace }}\build-ocf-chili2-win\lib\libkis-port.a -Destination ${{ github.workspace }}\build-knx-chili2-win\lib
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_REV=1 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
       continue-on-error: true
 
     - name: build KNX chili binaries on windows
@@ -217,7 +217,7 @@ jobs:
 
     - name: build Chili2D-USB-KNX
       run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_CHILI2_REV=1 -DCASCODA_BUILD_KNX=ON
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON
         make -C ${{ github.workspace }}/build-chili2 -j4 $KNX_TARGETS
         cp ${{ github.workspace }}/build-chili2/bin/knx-*.bin ${{ github.workspace }}/upload-usb
         
@@ -229,7 +229,7 @@ jobs:
 
     # - name: build Chili2D-USB-OCF
     #   run: |
-    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_KNX=OFF -DCASCODA_CHILI2_CONFIG_STRING=TWO_SIDED -DCASCODA_CHILI2_REV=0 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16 
+    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_KNX=OFF -DCASCODA_CHILI2_CONFIG_STRING=TWO_SIDED -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16 
     #     make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
     #     cp ${{ github.workspace }}/build-chili2/bin/ocf-*.bin ${{ github.workspace }}/upload-usb
 

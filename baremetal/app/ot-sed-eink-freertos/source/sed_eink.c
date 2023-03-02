@@ -354,10 +354,8 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 	// Decompress the data and put it in the image buffer
 	decompress_data();
 
-	// Write the received data to the display
-	SIF_IL3820_Initialise(&lut_full_update);
-	SIF_IL3820_Display(image_buffer);
-	SIF_IL3820_DeepSleep();
+	SIF_IL3820_Initialise(FULL_UPDATE);
+	SIF_IL3820_DisplayImage(image_buffer, WITH_CLEAR);
 
 	// Get a random number, to randomise the sleep time
 	uint16_t random;
@@ -476,7 +474,7 @@ void initialise_communications()
 	char             tcQR[TCQR_BUFFER_SIZE] = {};
 
 	ca821x_api_init(&sDeviceRef);
-	cascoda_reinitialise    = ot_reinitialise;
+	cascoda_reinitialise = ot_reinitialise;
 
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
@@ -491,10 +489,10 @@ void initialise_communications()
 	if (!otDatasetIsCommissioned(OT_INSTANCE))
 	{
 		// If not commissioned, print the commissioning QR code to the display
-		SIF_IL3820_Initialise(&lut_full_update);
+		SIF_IL3820_Initialise(FULL_UPDATE);
 		PlatformGetQRString(tcQR, TCQR_BUFFER_SIZE, OT_INSTANCE);
-		SIF_IL3820_overlay_qr_code(tcQR, cascoda_img_2in9, 90, 20);
-		SIF_IL3820_ClearAndDisplayImage(cascoda_img_2in9);
+		SIF_IL3820_overlay_qr_code(tcQR, cascoda_img_2in9, 1, 90, 20);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITH_CLEAR);
 	}
 
 	// Print the joiner credentials, delaying for up to 5 seconds

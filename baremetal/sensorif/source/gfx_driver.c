@@ -9,7 +9,12 @@ Copyright 2023 Cascoda LTD.
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "gfx_driver.h"
+
+#ifdef EPAPER_2_9_INCH
 #include "sif_il3820.h"
+#elif defined EPAPER_1_54_INCH
+#include "sif_ssd1681.h"
+#endif
 
 //#define WRITE_RAM 0x24
 

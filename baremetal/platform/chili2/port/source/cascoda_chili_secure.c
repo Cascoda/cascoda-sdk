@@ -924,7 +924,7 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 		CLK->PWRCTL &= ~(CLK_PWRCTL_HIRCEN_Msk);
 		CLK->PWRCTL &= ~(CLK_PWRCTL_HIRC48EN_Msk);
 		CLK_ENABLE_RTCWK();
-		if ((CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == -2) && (VBUS_CONNECTED_PVAL == 1))
+		if ((CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 3) && (VBUS_CONNECTED_PVAL == 1))
 		{
 			/* Enable SPD wakeup from pin */
 			CLK_EnableSPDWKPin(2, 0, CLK_SPDWKPIN_FALLING, CLK_SPDWKPIN_DEBOUNCEDIS);
@@ -945,7 +945,7 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 		CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_ULLPD); /* ULLPD */
 	}
 
-	CHILI_SetWakeup(0);
+	CHILI_SetWakeup(WUP_CLEAR);
 
 	do
 	{
@@ -969,7 +969,8 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 	if (use_timer0)
 	{
 		wakeuptime = TIMER_GetCounter(TIMER0);
-		if (wakeuptime == 0)
+		/* add sleep_time if timer timeout but avoid situation where fast gpio interrupt has been triggered */
+		if ((wakeuptime == 0) && (CHILI_GetWakeup() != WUP_GPIO))
 		{
 			wakeuptime = sleeptime_ms;
 		}

@@ -10,19 +10,21 @@ This module contains two example applications to demonstrate the use of the APIs
 | --- | --- | --- |
 | evboard-btn | `examples/devboard_app_btn.c` | Example app demonstrating intrinsic devboard features: LEDs and buttons. |
 | devboard-click | `examples/devboard_app_click.c` | Example app demonstrating how the devboard can communicate with externally connected peripherals. |
-| devboard-eink | `examples/devboard_app_eink.c` | Example app demonstrating how the devboard can show images on an eink display. |
-| devboard-gfx | `examples/devboard_app_gfx.c` | Example app demonstrating how the devboard can show graphics (menu) on an eink display. |
+| devboard-eink | `examples/devboard_app_eink.c` | Example app demonstrating how the devboard can show images on an eink display. Note: this only supports the 2.9 inch display. |
+| devboard-gfx-x-x | `examples/devboard_app_gfx_x_x.c` | Example app demonstrating how the devboard can show graphics (menu) on an eink display (where x-x is replaced by the size, e.g. 2-9 meaning 2.9 inches). |
 | devboard-sleep | `examples/devboard_app_sleep.c`  | Example app demonstrating the sleep modes. |
-
+| devboard-batt | `examples/devboard_app_batt.c`  | Example app demonstrating the battery monitoring functions. |
 ## Building instructions
 
 Assuming that you have already [set up your build directories](../../README.md#building), in order to get the devboard example binaries to build, you need to change the CMake configuration as follows: 
 
 ```CMake
 CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD
-CASCODA_CHILI2_REV:STRING=1
 ```
-
+When using the Battry monitoring functions on the Development Board, the following configuration should be used:
+```CMake
+CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD_BATT
+```
 The recommended method of doing this is [using the tools that come with CMake](https://cmake.org/runningcmake/). However, if you know what you are doing, then you can alternatively edit the `CMakeCache.txt` file yourself to make those changes.
 
 After building, the example binaries will be found in `bin/devboard/` in your build directory. 

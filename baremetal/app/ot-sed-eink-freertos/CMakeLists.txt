@@ -19,7 +19,8 @@ target_link_libraries(ot-sed-eink-freertos
 	freertos
 	uzlib
 	sensorif
-	eink-image
+	eink-driver-2-9
+	eink-image-2-9
 	tinycbor-master
 )
 

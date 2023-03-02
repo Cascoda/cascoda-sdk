@@ -56,7 +56,7 @@ extern "C" {
 #define SENSORIF_SPI_DATA_WIDTH 8
 #define UART_SENSORIF_BAUDRATE 115200
 
-#if defined(CASCODA_CHILI2_REV)
+#if defined(CASCODA_CHILI2_CONFIG)
 u8_t SENSORIF_SPI_Chip_Select(void);
 void SENSORIF_SECURE_I2C_Config(u32_t portnum);
 void SENSORIF_SECURE_SPI_Config(u32_t portnum);
@@ -185,8 +185,8 @@ void SENSORIF_SPI_FULL_DUPLEX_RXONLY(u8_t *RxBuf, u8_t RxLen);
  * \param TxBuf - write data buffer
  * \param RxLen - read data length
  * \param TxLen - write data length
- *  This function exchange data between SPI slave and master. It is able to 
- *  transmit data and receive data. 
+ *  This function exchange data between SPI slave and master. It is able to
+ *  transmit data and receive data.
  *************************************************************************************************************
  * \return Return CA_ERROR_SUCCESS = 0x00 if successful and CA_ERROR_FAIL = 0x01 if transmit FIFO is full
  *************************************************************************************************************
@@ -259,7 +259,7 @@ void SENSORIF_UART_Config(u32_t portnum);
  * Note: After initialisation, change the duty cycle by calling SENSORIF_PWM_SetDutyCycle().
  * To change the frequency, deinitialise the PWM with SENSORIF_PWM_Deinit(), then
  * call this function again with the required frequency.
- * 
+ *
  * \param pin - Number of the pin (e.g. 31) which the PWM will drive
  * \param u32Frequency - Frequency of the PWM output waveform
  * \param u32DutyCycle - Duty cycle as a percentage (number between 0 and 100)
@@ -267,7 +267,7 @@ void SENSORIF_UART_Config(u32_t portnum);
  * \return Error status, indicating whether the initialisation succeeded or failed.
  * \retval CA_ERROR_SUCCESS - Initialisation succeeded
  * \retval CA_ERROR_INVALID_ARGS - Pin doesn't support PWM
- * \retval CA_ERROR_ALREADY - PWM already initialised. Call Deinit() first 
+ * \retval CA_ERROR_ALREADY - PWM already initialised. Call Deinit() first
  *                            before reinitialising.
 ******************************************************************************/
 ca_error SENSORIF_PWM_Init(u8_t pin, u32_t u32Frequency, u32_t u32DutyCycle);

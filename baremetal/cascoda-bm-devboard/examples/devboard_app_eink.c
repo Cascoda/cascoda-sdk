@@ -39,11 +39,14 @@ static void load_image(u8_t nr)
 {
 	uint8_t *image_pointer = image_pointers[nr];
 	printf("Loading image %u ..\n", (nr + 1));
+
 	if (nr == 0)
-		SIF_IL3820_overlay_qr_code("https://www.cascoda.com", image_pointer, 90, 20);
-	SIF_IL3820_Initialise(&lut_full_update);
-	SIF_IL3820_ClearAndDisplayImage(image_pointer);
+		SIF_IL3820_overlay_qr_code("https://www.cascoda.com", image_pointer, 1, 90, 20);
+
+	SIF_IL3820_Initialise(FULL_UPDATE);
+	SIF_IL3820_DisplayImage(image_pointer, WITH_CLEAR);
 	SIF_IL3820_Deinitialise();
+
 	printf("Loading complete.\n");
 }
 
@@ -51,6 +54,7 @@ static void load_image(u8_t nr)
 static void button_pressed(void *context)
 {
 	(void)context;
+
 	if (image_nr < (NUM_IMAGES - 1))
 		++image_nr;
 	else
@@ -70,6 +74,8 @@ void hardware_init(void)
 
 	/* Eink Initialisation */
 	SENSORIF_SPI_Config(SPI_NUM);
+	SIF_IL3820_Initialise(FULL_UPDATE);
+
 	load_image(image_nr);
 }
 
@@ -93,8 +99,7 @@ bool hardware_can_sleep(void)
 void hardware_sleep(struct ca821x_dev *pDeviceRef)
 {
 	/* no scheduled tasks */
-
-	/* and sleep */
+	/* sleep */
 	DVBD_DevboardSleep(SLEEP_LONG_TIME, pDeviceRef);
 }
 

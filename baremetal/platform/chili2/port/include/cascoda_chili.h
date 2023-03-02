@@ -63,6 +63,14 @@ extern volatile u8_t USBPresent; /* 0: USB not active, 1: USB is active */
 /* Use LXT instead of LIRC32 for RTC (more accurate, but higher power consumption) */
 #define USE_RTC_LXT 0
 
+/* definitions for CHILI_SetWakeup/CHILI_GetWakeup */
+typedef enum wakeup_stat
+{
+	WUP_CLEAR = 0,
+	WUP_TIMER = 1,
+	WUP_GPIO  = 2
+} wakeup_stat;
+
 struct device_link
 {
 	uint32_t volatile *chip_select_gpio;
@@ -326,25 +334,26 @@ void cascoda_isr_secure_init(void);
 /** function to kick the linker into including strong ISR overrides */
 void cascoda_isr_chili_init(void);
 
-#if (CASCODA_CHILI2_REV == 0) /* Chili 2.0 */
+#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1)) /* Chili2 */
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
-#elif (CASCODA_CHILI2_REV == 1) /* Chili devboard */
+#elif ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3)) /* Chili2 devboard */
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
-#elif (CASCODA_CHILI2_REV == -1) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+#elif (CASCODA_CHILI2_CONFIG == \
+       4) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
 #define SPI SPI1
 #define SPI_MODULE SPI1_MODULE
 #define SPI_NUM 1
-#elif (CASCODA_CHILI2_REV == -2) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#elif (CASCODA_CHILI2_CONFIG == 5) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
 #else
 #error "Unsupported Chili 2 Revision"
-#endif /* CASCODA_CHILI2_REV */
+#endif /* CASCODA_CHILI2_CONFIG */
 
 #if defined(USE_UART)
 #define UART_FIFOSIZE 16

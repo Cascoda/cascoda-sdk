@@ -432,6 +432,14 @@ const char *BSP_GetPlatString(void);
 u8_t BSP_GetChargeStat(void);
 
 /**
+ * \brief Get USB VBUS status (connected/not connected)
+ *
+ * \return Connection Status
+ *
+ */
+u8_t BSP_GetVBUSConnected(void);
+
+/**
  * \brief Measure and Read Temperature Value
  *
  * \return Temperature in tenths of a degree (celsius)
