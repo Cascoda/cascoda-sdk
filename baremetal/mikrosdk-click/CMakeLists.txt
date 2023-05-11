@@ -12,6 +12,8 @@ add_library(mikrosdk-click
 	${PROJECT_SOURCE_DIR}/source/hvac.c
 	${PROJECT_SOURCE_DIR}/source/motion.c
 	${PROJECT_SOURCE_DIR}/source/relay.c
+	${PROJECT_SOURCE_DIR}/source/ambient8.c
+	${PROJECT_SOURCE_DIR}/source/fan.c
 	)
 
 target_include_directories(mikrosdk-click

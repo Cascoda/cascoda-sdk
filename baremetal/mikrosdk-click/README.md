@@ -1,177 +1,77 @@
 # mikrosdk-click
 
-Example of MikroElectronika Click interfaces for adding external sensors or actuator support to applications. These modules abstract away the underlying I2C/SPI bus and present easy-to-use functions in C.
+MikroE Click board<sup>TM</sup> driver interfaces for adding external sensors or actuator support to applications. These modules abstract away the underlying I2C/SPI bus and present easy-to-use functions in C. The drivers in this folder are adapted from the [MikroE GitHub repository](https://github.com/MikroElektronika/mikrosdk_click_v2), with functions such as alarm support and low power operation added.
+The drivers in mikrosdk-click interface directly with the mikrosdk-lib driver layer (drv) and the hardware abstraction layer (hal). When implementing additional devices the code in mikrosdk-lib should not be modified.
 
-## List of supported Mikroelectronikca devices:
+## List of supported Click Boards:
 
-Device               | Interface | Type | On-chip Sensors | Declarations for Interface Functions |
-:--------------------| :-------- | :--- |:-------------|:-------------|
-[Air Quality 4 Click](https://www.mikroe.com/air-quality-4-click)  | I2C | Air Quality (Gas) sensor |SGP30| airquality4.h  |
-[Environment2 Click](https://www.mikroe.com/environment-2-click)   | I2C | Air Quality, Temperature, and Humidity sensor | SHT40, SGP40 | environment2.h |
-[HVAC Click Bundle](https://www.mikroe.com/hvac-click-bundle)    | I2C | Particulate Matter, Air Quality sensor |SCD41, SPS30|  hvac.h |
-[SHT Click](https://www.mikroe.com/sht-click)    | I2C | Temperature and Humidity |SHT3x|  sht.h |
-[Motion Click](https://www.mikroe.com/motion-click)         | GPIO | Motion sensor |  PIR500B | motion.h |
-[Relay Click](https://www.mikroe.com/relay-click)    | GPIO | Relay |  G6D-1A-ASI DC5 | relay.h |
-[Thermo Click](https://www.mikroe.com/thermo-click)         | SPI | Thermocouple Temperature sensor | MAX31855K|  thermo.h |
-[Thermo 3 Click](https://www.mikroe.com/thermo-3-click)        | I2C | Digital Temperature sensor | TMP102| thermo3.h |
+Click Board          | Interface | Supply | Type | Declarations for Interface Functions |
+:--------------------| :-------- | :----- | :--- |:-------------|
+[Thermo Click](https://www.mikroe.com/thermo-click)         | SPI | 3.3V | Thermocouple Temperature Sensor |  thermo_click.h |
+[Thermo 3 Click](https://www.mikroe.com/thermo-3-click)        | I2C | 3.3V/5V | Digital Temperature Sensor | thermo3_click.h |
+[Air Quality 4 Click](https://www.mikroe.com/air-quality-4-click)  | I2C | 3.3V/5V | Air Quality (Gas) Sensor | airquality4_click.h  |
+[Environment2 Click](https://www.mikroe.com/environment-2-click)   | I2C | 3.3V/5V | Air Quality, Temperature, and Humidity Sensor | environment2_click.h |
+[SHT Click](https://www.mikroe.com/sht-click)    | I2C | 3.3V/5V | Temperature and Humidity Sensor | sht_click.h |
+[HVAC Click](https://www.mikroe.com/hvac-click)    | I2C | 3.3V/5V<sup>1)</sup> | Particulate Matter, Air Quality Sensor | hvac_click.h |
+[Motion Click](https://www.mikroe.com/motion-click)         | GPIO | 3.3V<sup>2)</sup> | Motion Sensor | motion_click.h |
+[Relay Click](https://www.mikroe.com/relay-click)    | GPIO | 5V | Relay Actuator | relay_click.h |
+[Ambient 8 Click](https://www.mikroe.com/ambient-8-click)    | I2C | 3.3V | Illuminance Sensor | ambient8_click.h |
+[Fan Click](https://www.mikroe.com/fan-click)    | I2C | 3.3V+5V | Fan Control Actuator | fan_click.h |
 
-## List of devices:
+For boards marked as 3.3V/5V the supply voltage can be selected by a solder jumper on the Click Board.<br>
+<sup>1)</sup>: It is recommended to supply the Click Board with 5V due to sensitivity to supply noise at 3.3V.<br>
+<sup>2)</sup>: A clean 3.3V supply is recommended for the Click Board due to sensitivity to supply noise.<br>
+If any supply noise issues persist, it is recommended to add additional decoupling capacitance on the 3.3V supply close to the Click Board.<br>
 
-Manufacturer | Device  | Click board | Usage | Tested |
-:--------------------|:--------------------|:--------------------| :-------- | :-------------|
-Sensirion | SGP30 | Air Quality 4 Click| TVOC, CO2 | Yes |
-Sensirion | SHT40 | Environment2 Click | Humidity, Temperature | Yes |
-Sensirion | SGP40 | Environment2 Click | VOC | Yes |
-Sensirion | SCD41 | HVAC Click Bundle | CO2 | Yes |
-Sensirion | SPS30 | HVAC Click Bundle | PM | No |
-Sensirion | SHT3x | SHT Click  | Humidity, Temperature | Yes |
-| - | PIR500B | Motion Click | Motion | Yes
-OMRON G6D | G6D-1A-ASI DC5 | Relay Click | Relay | Yes
-Maxim Integrated | MAX31855 | Thermo Click | Temperature | Yes |
-Texas Instruments | TMP102 | Thermo 3 Click | Temperature | Yes |
+## Sensor / Actuator Devices supported:
 
- > The ``MAP_MIKROBUS`` function in all sensor header files gives the user a clear sense of the pin configuration of the current system. 
-
- For simple devices that are restricted to the use of GPIO configuration, the set up for pins can be modified directly in the top layer sensor file by changing values in ``MAP_MIKROBUS``. 
-
-  > The available pins for Chili2 are described in ``cascoda_chili_gpio.h`` in baremetal/platform/chili2/port/source. 
-
- However, for sensors which communicate via I2C or SPI, the pin configuration can not simply be changed in the top layer. The underlying structure of I2C and SPI interface can be found in ``baremetal/mikrosdk-lib`` and ``baremetal/cascoda-bm-driver/cascoda_sensorif.h`` in baremetal/cascoda-bm-driver. The pins that are used in I2C and SPI communications between the sensor and Chili2 are internally configured in ``cascoda_sensorif_m2351.c`` and ``cascoda_sensorif_secure``. Hence, to modify the interface number, change the pin configuration in both files. 
-
-These interfaces are used in ``baremetal/app/mikrosdk-bm/`` and can easily be used in other applications.
-
-``mikrosdk-click`` is intended to be used as a driver library and additional sensors produced by MikroElektronika can be added as new files. 
+Click Board          | Sensor Manufacturer | Sensor Device | Variables measured / Actuator Type | Alarm Function |
+:--------------------| :-------- |:-------------|:-------------|:---|
+Thermo Click         | Maxim Integrated | MAX31855 | Thermocouple Temperature, Junction Temperature | No |
+Thermo 3 Click       | Texas Instruments | TMP102 | Temperature | Yes |
+Air Quality 4 Click  | Sensirion | SGP30 | CO2, TVOC | No |
+Environment2 Click   | Sensirion | SHT40, SGP40 | Humidity, Temperature, VOC Index | No |
+SHT Click            | Sensirion | SHT3x | Humidity, Temperature | Yes |
+HVAC Click           | Sensirion | SCD41 | CO2, Humidity, Temperature | No |
+Motion Click         | Silvan Chip Electronics | BISS0001 | Motion | Yes | 
+Relay Click          | Omron | G6D | Dual Relay Actuator | No |
+Ambient 8 Click      | Liteon | LTR-329ALS | Illuminance (Visible, IR, Ambient) | No |
+Fan Click            | Microchip | EMC2301 | 5V 4-Wire Fan Control Actuator (Open Loop, Closed Loop) | Yes |
 
 
-## A summary of the important files/folders that are related to the sensor drivers:
+## Functions required for Interfacing with an Application:
 
-| Vendor |Types      | Location of the files | Description|
-| :------| :---------------- | :--------------------| :-------- | 
-| MikroElektronika | Drv layer | mikrosdk-lib/drv | This layer is the interface between hardware abstraction layer and the user interface layer.|
-| MikroElektronika & Cascoda | Hal layer | mikrosdk-lib/hal | This layer maps functions in MikroElektronika library to Cascoda library.
-| Cascoda | GPIO | cascoda-bm-driver/cascoda_interface.h </br> platform/chili2/port/source/cascoda_gpio_chili.c | Implementation of GPIO-related instructions to hardware and accessibility of pins on Chili2.|
-| Cascoda | I2C&SPI | cascoda-bm-driver/cascoda_sensorif.h </br> platform/chili2/port/source/cascoda_sensorif_secure.c | Initiliase the communication interface between Chili2 and external sensors/actuators.|
-| Cascoda | I2C&SPI | cascoda-bm-driver/cascoda_sensorif.h </br> platform/chili2/port/source/cascoda_sensorif_m2351.c | Transmit to and receive data from external sensors/actuators.
----
-
-
-## How to add support for a new MikroElectronika device
-
-1. Create a ``<device>.h`` file in ``mikrosdk-click/include`` and a ``<device>.c`` file in ``mikrosdk-click/source`` for the new device you want to add.
-
-2. Go to the [MikroElektronika mikrosdk click repository](https://github.com/MikroElektronika/mikrosdk_click_v2), navigate to the folder ``clicks/<device>``. Copy the contents of the file ``lib/include/<device>.h`` into the ``<device>.h`` file that you created in the previous step. Copy the contents of the file ``lib/src/<device>.c`` into the ``<device>.c`` file that you created in the previous step.
-
-
-3. In the ``<device>.h`` created in step 1, add a declaration for an initialisation function adhering to the following naming scheme:
+All driver implementations contain the following functions required to interface with an application:
 ```c
 uint8_t MIKROSDK_<DEVICE>_Initialise(void);
 ```
-
-4. In the ``<device>.c`` created in step 1, add a function definition with an empty body for the initialisation function declared in step 3, as such:
+Initialisation function which should be called at startup. Initialises the Click board and returns status.
 ```c
-uint8_t MIKROSDK_<DEVICE>_Initialise(void)
-{
-    // Empty for now
-}
+uint8_t MIKROSDK_<DEVICE>_Acquire(params); (Sensors)
+uint8_t MIKROSDK_<DEVICE>_Driver(params); (Actuators)
 ```
-
-5. In the [MikroElektronika mikrosdk click repository](https://github.com/MikroElektronika/mikrosdk_click_v2), navigate to the folder ``clicks/<device>/example``. Open the file ``main.c``, there you will find a function called ``application_init()``. Copy the contents of that function, and paste them into the empty body of the initialisation function definition which was added in step 4.
-
-6. Delete all the code in that function which has anything to do with logging, because we are not using the logger.
-
-7. In that initialisation function, you will also find a function-like macro called ``<DEVICE>_MAP_MIKROBUS()``, which has 2 arguments, one of them being the argument ``cfg``. Delete the argument that is not ``cfg``.
-
-8. Go to the definition of the function-like macro which was mentioned in step 7. The definition will be in the file ``<device>.h``. Remove the parameter which is not ``cfg``, and modify the definition of the macro so that the members of ``cfg`` are hardcoded to the module pin numbers that you want, rather than using the values that were previously being passed via the other parameter of that macro. Here is an example of the transformation:
+Sensor data acqusition function / Actuator Driver function which reads the sensor values or controls the actuator. Returns status.
 ```c
-// Before
-#define <DEVICE>_MAP_MIKROBUS( cfg, mikrobus ) \
-  cfg.scl  = MIKROBUS( mikrobus, MIKROBUS_SCL ); \
-  cfg.sda  = MIKROBUS( mikrobus, MIKROBUS_SDA )
-
-// After
-#define <DEVICE>_MAP_MIKROBUS(cfg) \
-	cfg.scl = 31;                     \
-	cfg.sda = 32
+uint8_t MIKROSDK_<DEVICE>_alarm_triggered(void);
 ```
-
-9. In the [MikroElektronika mikrosdk click repository](https://github.com/MikroElektronika/mikrosdk_click_v2), navigate to the folder ``clicks/<device>/example``. Open the file ``main.c``. You will find there some global variables which are being used in the ``application_init()`` function. Copy those global variables into the ``<device>.c`` file.
-
-10. In ``baremetal/app/mikrosdk-bm/include/mikrosdk_app.h``, add a flag to the list of pre-existing flags (in the form of an object-like preprocessor macro). This will look like this:
+This function is implemented for sensors supporting alarms and can by polled or used in interrupts to determine if an alarm has been raised.
 ```c
-/* flag which sensors to include in test */
-#define MIKROSDK_TEST_<DEVICE> 0
-#define MIKROSDK_TEST_AIRQUALITY4 0
-#define MIKROSDK_TEST_ENVIRONMENT2 0
-...
+void MIKROSDK_<DEVICE>_pin_mapping(params);
 ```
- 
-11. In ``baremetal/app/mikrosdk-bm/include/mikrosdk_app.h``, add a declaration for a handler function for the new device to the list of pre-existing handler declarations. This will look like this:
-```c
-/* Function handlers */
-void MIKROSDK_Handler_<DEVICE>(void);
-void MIKROSDK_Handler_AIRQUALITY4(void);
-void MIKROSDK_Handler_ENVIRONMENT2(void);
-...
-```
+For CLICK boards using GPIO pins, this function maps the GPIO pins to the specific mikroBUS<sup>TM</sup> signals and should be called before the initialisation function described above. For Chili2D/Chili2S devices the module pin numbers can be taken from the corresponding datasheet.
 
-12. In ``baremetal/app/mikrosdk-bm/source/mikrosdk_app.c``, add a function definition with an empty body for the handler function declared in step 11, and wrap it within guards that check the flag that was defined in step 10. This will look like this:
-```c
-#if (MIKROSDK_TEST_<DEVICE>)
-void MIKROSDK_Handler_<DEVICE>(void)
-{
-    // Empty for now
-}
-#endif
-```
+For sensors which communicate via I2C or SPI, the functions SENSORIF_I2C_Config(u32_t portnum) or SENSORIF_SPI_Config(u32_t portnum) have to be called before initialisation to configure the I2C or SPI port number. 
 
-13. In the [MikroElektronika mikrosdk click repository](https://github.com/MikroElektronika/mikrosdk_click_v2), navigate to the folder ``clicks/<device>/example``. Open the file ``main.c``, there you will find a function called ``application_task()``. Copy the contents of that function, and paste them into the empty body of the handler function definition which was added in step 12.
+Other functions implemented in the drivers are device specific. All declarations can be found in ```<DEVICE>_click.h```
 
-15. In that function, make the following modifications:
-    - Replace function calls to ``log_printf()`` with function calls to ``printf()`` instead, because we are not using the logger.
-    - Remove the call to the delay function ``Delay_ms()``.
-    - At the top of the body of the function, declare any variables which are passed as arguments in any of the function calls, and which haven't been declared anywhere.
+For examples of how to use the drivers in an application please refer to the Click example (devboard_app_click.c) for the Cascoda development board in [baremetal/cascoda-bm-devboard/examples](../cascoda-bm-devboard/examples)
 
-16. In the body of the function, notice that some of the function calls will take in as arguments one or more variables which you have added global declarations of in ``<device>.c``. Remove those arguments from the function calls, because those functions are defined in ``<device>.c`` and thus have access to the global variables defined in that file.
+## How to add Support for a new Click Board:
 
-17. Following from step 16, in the concerned functions, remove the parameter(s) corresponding to the arguments that you removed from the function calls in the body of the handler. Do that for both the function declarations in ``<device>.h`` and definitions in ``<device>.c``. In the function definitions of those functions whose parameter(s) you have removed, use the global variable directly wherever those parameters were used before you removed them. See the example below:
-```c
-// Original function definition before modification
-void <device>_set_baseline(<device_t> *ctx)
-{
-    ...
-    i2c_master_write(&ctx->i2c, ...);
-    ...
-}
+It is strongly recommended to get familiar with an existing implementation (i.e. the Thermo3 click). The code from the [MikroE GitHub repository](https://github.com/MikroElektronika/mikrosdk_click_v2) can be used as starting point.
 
-// New function definition, using global variable instead
-static <device_t> <device>;
-void <device>_set_baseline()
-{
-    ...
-    i2c_master_write(&<device>->i2c, ...);
-    ...
-}
-```
+The new driver should contain two separate include files:
 
-18. You are now done writing and modifying the ``<device>.h`` and ``<device>.c`` files. Add the ``<device>.c`` file as an argument to the ``add_library()`` CMake function in ``mikrosdk-click/CMakeLists.txt``.
+```<DEVICE>_drv.h``` for interfacing with the lower layers (mikrosdk-lib/drv, mikrosdk-lib/hal)
 
-19. Finally, there remain two more modification to make to the definition of the handler function. 
-    - Surround all the code in the handler (except for the variable declarations) with the following if statement:
-    ```c
-    if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
-    {
-        // Handler code (minus function declarations) here...
-    }
-    ```
-    - Add the following at the end of the handler:
-    ```c
-    if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
-            (MIKROSDK_MEASUREMENT_PERIOD - MIKROSDK_MEASUREMENT_DELTA))
-    {
-        handled = 0;
-    }
-    ```
----
-
- **NOTE** : 
-- Some I2C devices will require that a "write" or a "set slave address" be performed before an I2C "read".
+```<DEVICE>_click.h``` for interfacing with the application.

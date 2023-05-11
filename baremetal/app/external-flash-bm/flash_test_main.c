@@ -1261,7 +1261,6 @@ ca_error handle_tests()
 int main(void)
 {
 	ca821x_api_init(&dev);
-	cascoda_serial_dispatch = test15_4_serial_dispatch;
 
 	/* Initialisation of Chip and EVBME */
 	/* Returns a Status of CA_ERROR_SUCCESS/CA_ERROR_FAIL for further Action */

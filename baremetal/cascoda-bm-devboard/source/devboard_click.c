@@ -41,10 +41,13 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 
-#include "airquality4_click.h"
 #include "devboard_btn.h"
 #include "devboard_click.h"
+
+#include "airquality4_click.h"
+#include "ambient8_click.h"
 #include "environment2_click.h"
+#include "fan_click.h"
 #include "hvac_click.h"
 #include "motion_click.h"
 #include "relay_click.h"
@@ -56,6 +59,9 @@
 /* states for controlling RELAY */
 uint8_t g_relay_1_state = 0;
 uint8_t g_relay_2_state = 0;
+/* states for controlling FAN */
+uint8_t  g_fan_speed_pwm_percent = 0;
+uint16_t g_fan_speed_tach_rpm    = 0;
 
 /* use power control (crowbar) for mikrobus vdd33 */
 static bool g_use_power_control = false;
@@ -239,6 +245,39 @@ ca_error CLICK_RELAY_acquisition(data_relay *data)
 	return CA_ERROR_SUCCESS;
 }
 
+/* AMBIENT8 click data acquisition */
+ca_error CLICK_AMBIENT8_acquisition(data_ambient8 *data)
+{
+	if (g_use_power_control)
+	{
+		DVBD_click_power_set(DVBD_CLICK_POWER_ON);
+		if (MIKROSDK_AMBIENT8_Reinitialise())
+			return CA_ERROR_FAIL;
+	}
+	data->status =
+	    MIKROSDK_AMBIENT8_Acquire(&data->illuminance_ch0, &data->illuminance_ch1, &data->illuminance_ambient);
+	if (g_use_power_control)
+		DVBD_click_power_set(DVBD_CLICK_POWER_OFF);
+
+	if ((data->status == AMBIENT8_ST_FAIL) || (data->status == AMBIENT8_ST_INVALID))
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* FAN click data acquisition */
+ca_error CLICK_FAN_acquisition(data_fan *data)
+{
+#if (FAN_MODE == FAN_MODE_CLOSED_LOOP)
+	data->speed_tach_rpm = g_fan_speed_tach_rpm;
+#else
+	data->speed_pwm_percent = g_fan_speed_pwm_percent;
+#endif
+	data->status = MIKROSDK_FAN_Driver(&data->speed_pwm_percent, &data->speed_tach_rpm);
+	if (data->status == FAN_ST_FAIL)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
 /* THERMO3 click initialisation */
 ca_error CLICK_THERMO3_initialise(void)
 {
@@ -322,6 +361,29 @@ ca_error CLICK_RELAY_initialise(void)
 	// Relay1, Relay2
 	MIKROSDK_RELAY_pin_mapping(CLICK_PWM_PIN, CLICK_CS_PIN);
 	if (MIKROSDK_RELAY_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* AMBIENT8 click initialisation */
+ca_error CLICK_AMBIENT8_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	if (MIKROSDK_AMBIENT8_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
+/* FAN click initialisation */
+ca_error CLICK_FAN_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	// Alarm
+	MIKROSDK_FAN_pin_mapping(CLICK_INT_PIN);
+#if (FAN_USE_INTERRUPT)
+	DVBD_SetGPIOWakeup();
+#endif
+	if (MIKROSDK_FAN_Initialise())
 		return CA_ERROR_FAIL;
 	return CA_ERROR_SUCCESS;
 }

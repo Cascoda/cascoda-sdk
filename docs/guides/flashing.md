@@ -2,7 +2,7 @@
 
 For flashing binaries built for embedded targets, or downloaded from the [GitHub releases page](https://github.com/Cascoda/cascoda-sdk/releases) there are multiple approaches.
 
-1. Using the [chilictl](../../posix/app/chilictl) command line application to flash over USB
+1. Using the [chilictl](../../posix/app/chilictl) command line application to flash over USB or UART
 2. Using a [SEGGER J-Link](https://www.segger.com/products/debug-probes/j-link/)
 3. Using a [Nu-Link Pro](https://direct.nuvoton.com/en/nu-link-pro)
 
@@ -10,12 +10,12 @@ For flashing the Chili 2D with TrustZone (CSME) binaries, please refer to the [T
 
 ** Warning: If a device has previously been flashed with a TrustZone binary, it must be fully erased using the Nu-Link Pro and the ICP tool. **
 
-## USB Flashing with chilictl
+## USB and UART Flashing with chilictl
 
-For simple evaluation and reflashing of Chili devices over USB, the [chilictl](../../posix/app/chilictl) application can be used.
+For simple evaluation and reflashing of Chili devices over USB or UART, the [chilictl](../../posix/app/chilictl) application can be used.
 This is a command line application, that allows high level control of connected Chili devices, including listing, inspecting, flashing and issuing them commands. More detailed information is available [here.](../../posix/app/chilictl)
 
-In order to flash a connected USB Chili, it must have a version of the Cascoda SDK firmware on it of v0.14 or later, with USB enabled. The new firmware has the same requirement, which is met by every example application that isn't sleepy.
+In order to flash a connected Chili, it must have a version of the Cascoda SDK firmware on it of v0.14 or later, with either USB or UART enabled. The new firmware has the same requirement, which is met by every example application that isn't sleepy.
 
 Chilictl is failsafe, so if anything goes wrong during flashing, simply power cycle the device, and it will reboot into DFU mode where it can be reflashed.
 
@@ -23,11 +23,12 @@ Software requirements:
 
 - A version of chilictl for your platform. For windows, it is in the ``Windows-SDK.zip`` folder on the [releases page](https://github.com/Cascoda/cascoda-sdk/releases).
   - For other platforms, the Cascoda SDK can be built natively from source, as [detailed in the build guide.](../../README.md#building)
-- The chilictl DFU firmware 'ldrom_hid.bin' and a USB enabled binary to flash, available in the ``Chili2D-USB.zip`` folder on the [releases page](https://github.com/Cascoda/cascoda-sdk/releases).
+- For USB flashing, the chilictl DFU firmware 'ldrom_hid.bin' and a USB enabled binary to flash, available in the ``Chili2D-USB.zip`` folder on the [releases page](https://github.com/Cascoda/cascoda-sdk/releases).
+- For UART flashing, the chilictl DFU firmware 'ldrom_uart.bin' and a UART enabled binary to flash. These can be built from source.
 
 Hardware requirements:
 
-- A USB Chili2, and a cable to connect it to a PC
+- A USB/UART Chili2 or a devboard, and a cable to connect it to a PC
 
 ### Procedure
 
@@ -38,7 +39,7 @@ The first time that chilictl is used with a device, it must be updated with the 
 ```
 # The -s argument is optional, and specifies the specific chili to flash (by serial number)
 # Replace the ldrom_hid.bin path with the your own path to the binary
-$ ./chilictl.exe flash -s FBC647CDB300A0DA -df "../Chili2D-USB/ldrom-hid.bin"
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -df "../Chili2D-USB/ldrom_hid.bin"
 2020-12-16 12:56:46.510 NOTE:  Cascoda SDK v0.14 Dec 16 2020
 Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
 Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE
@@ -53,7 +54,7 @@ Following this, the chilictl program can be used to replace the application firm
 ```
 # The -s argument is optional, and specifies the specific chili to flash (by serial number)
 # Replace the path with the your own path to the desired binary
-$ ./chilictl.exe flash -s FBC647CDB300A0DA -f "../Chili2D-USB/ldrom-hid.bin"
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -f "../Chili2D-USB/ldrom_hid.bin"
 2020-12-16 12:59:12.130 NOTE:  Cascoda SDK v0.14 Dec 16 2020
 Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
 Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE

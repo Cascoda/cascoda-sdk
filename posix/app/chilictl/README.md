@@ -5,15 +5,15 @@ A Chili control application for listing, flashing, and erasing connected Chili d
 It can run on Windows or Posix and can be used for:
 - Listing all connected chilis
 - Filtering listed chilis by certain parameters (currently only serialno and availability)
-- Flashing new applications to connected chili devices over USB, with and without support for OTA Upgrade
-- Flashing new DFU (Device Firmware Update) firmware to connected chili devices over USB
+- Flashing new applications to connected chili devices over USB or UART, with and without support for OTA Upgrade
+- Flashing new DFU (Device Firmware Update) firmware to connected chili devices over USB or UART
 - Flashing new applications using the external flash by simulating the OTA Upgrade procedure (mostly just a test tool)
 - Doing a full erase of connected chilis.
 - Rebooting connected chilis.
 
 Prebuilt Windows binaries of chilictl can be found in the [Windows release of the Cascoda SDK.](https://github.com/Cascoda/cascoda-sdk/releases/)
 
-Please make sure that you have set up the USB exchange [as detailed in the development setup guide.](../../../docs/guides/development-setup.md)
+Please make sure that you have set up the USB or UART exchange [as detailed in the development setup guide.](../../../docs/guides/development-setup.md)
 
 Run ./chilictl with the ``--help`` argument to print the help page. This option is also available on the sub-commands.
 
@@ -94,7 +94,7 @@ Device Found:
 
 ## Flashing
 
-Note that currently the flashing functionality is only available over USB, and requires firmware v0.14 or newer.
+The flashing functionality is available over USB and UART, and requires firmware v0.14 or newer.
 A DFU firmware is required to be flashed before the application can be reflashed. See the '-d' flag.
 The flashing process is designed to be failsafe. If the application is incorrectly flashed or not working, the device
 should fail into a stable state where it can be power cycled and reflashed. However, as a general precaution, the process
@@ -108,7 +108,7 @@ To get the serial number for the 's' argument, the chilictl ``list`` sub command
 --- Chili Control: Flashing Sub-Application ---
 
 EXAMPLE 1 - DFU region update (this only has to be done once before being able to flash applications)
-        $ ./chilictl flash -s FBC647CDB300A0DA -df "~/sdk-chili2/bin/ldrom-hid.bin"
+        $ ./chilictl flash -s FBC647CDB300A0DA -df "~/sdk-chili2/bin/ldrom_hid.bin"
 
 EXAMPLE 2 - Application flashing
         $ ./chilictl flash -s FBC647CDB300A0DA -f "~/sdk-chili2/bin/mac-dongle.bin"
@@ -150,7 +150,7 @@ COMMAND OPTIONS
 To use the reflashing functionality, a DFU firmware must be flashed alongside the application. This only has to be done once, or to update it. The ``--dfu-update`` or ``-d`` argument is used for this.
 
 ```
-$ ./chilictl flash -s FBC647CDB300A0DA -df "~/sdk-chili2/bin/ldrom-hid.bin"
+$ ./chilictl flash -s FBC647CDB300A0DA -df "~/sdk-chili2/bin/ldrom_hid.bin"
 2020-12-16 12:56:46.510 NOTE:  Cascoda SDK v0.14 Dec 16 2020
 Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
 Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE

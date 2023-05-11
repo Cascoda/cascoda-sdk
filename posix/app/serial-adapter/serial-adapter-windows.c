@@ -184,14 +184,13 @@ static void process_input(struct ca821x_dev *pDeviceRef)
 
 int main(int argc, char *argv[])
 {
-	char *serial_num = NULL;
+	union ca821x_util_init_extra_arg serial_adapter_arg = {.generic = NULL};
+
 	if (argc > 1)
-	{
-		serial_num = argv[1];
-	}
+		serial_adapter_arg.generic = argv[1];
 
 	struct ca821x_dev *pDeviceRef = &sDeviceRef;
-	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_adapter_arg))
 	{
 		return -1;
 		sleep(1);
@@ -201,8 +200,8 @@ int main(int argc, char *argv[])
 	if (EVBME_CheckVersion(NULL, pDeviceRef) != CA_ERROR_SUCCESS)
 		exit(1);
 
-	exchange_register_user_callback(handle_user_command, pDeviceRef);
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
+	exchange_register_user_callback(handle_user_command, pDeviceRef);
 	ca821x_util_start_upstream_dispatch_worker();
 
 	process_input(pDeviceRef);

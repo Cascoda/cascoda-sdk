@@ -4,7 +4,7 @@ The cascoda-bm-devboard module contains the functionality for using the [Cascoda
 
 ## Examples
 
-This module contains two example applications to demonstrate the use of the APIs for interacting with the intrinsic devboard features (LEDs and buttons) and for interacting with external peripherals:
+This module contains example applications to demonstrate the use of the APIs for interacting with the intrinsic devboard features (LEDs and buttons) and for interacting with add-on peripherals:
 
 | Binary name | Application source code |  Description|
 | --- | --- | --- |
@@ -27,4 +27,4 @@ CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD_BATT
 ```
 The recommended method of doing this is [using the tools that come with CMake](https://cmake.org/runningcmake/). However, if you know what you are doing, then you can alternatively edit the `CMakeCache.txt` file yourself to make those changes.
 
-After building, the example binaries will be found in `bin/devboard/` in your build directory. 
+After building, the example binaries will be found in `bin/devboard/` in your build directory.

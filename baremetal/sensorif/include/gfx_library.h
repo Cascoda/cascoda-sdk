@@ -237,6 +237,8 @@ void display_customChar(const uint8_t *c);
 void display_drawChar(uint16_t x, uint16_t y, uint8_t c, uint16_t color, uint16_t bg, uint8_t size);
 
 void display_setContrast(uint32_t contrast);
+void display_slider(int x, int y, int lenght, int value);
+void display_progressbar(int x, int y, int lenght, int value);
 
 #ifdef __cplusplus
 }

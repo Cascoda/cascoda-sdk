@@ -120,9 +120,9 @@ ca_error ExternalFlasher::init()
 		set_state(FAIL);
 		goto exit;
 	}
-	if (mDeviceInfo.GetExchangeType() != ca821x_exchange_usb)
+	if (mDeviceInfo.GetExchangeType() == ca821x_exchange_kernel)
 	{
-		fprintf(stderr, "Error: Only USB currently supported for chilictl external flashing\n");
+		fprintf(stderr, "Error: Only USB and UART are currently supported for chilictl external flashing\n");
 		status = CA_ERROR_INVALID_ARGS;
 		set_state(FAIL);
 		goto exit;

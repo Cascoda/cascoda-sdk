@@ -26,6 +26,9 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DEVBOARD_BTN_H
+#define DEVBOARD_BTN_H
+
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "ca821x_error.h"
@@ -128,6 +131,15 @@ ca_error DVBD_RegisterButtonInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_posit
 ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
+ * \brief De-Register an LED or Button Pin
+ * \param ledBtn - reference to LED/Button
+ * \param jumperPos - position of the jumper
+ * \return status
+ *
+ */
+ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
+
+/**
  * \brief Get the state of the LED/Button
  * \param ledBtn - reference to LED/Button
  * \param val - the state of the LED/Button
@@ -212,3 +224,5 @@ bool DVBD_CanSleep(void);
  *
  */
 ca_error DVBD_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev* pDeviceRef);
+
+#endif // DEVBOARD_BTN_H

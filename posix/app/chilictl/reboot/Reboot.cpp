@@ -31,7 +31,14 @@
 #include "ca821x-posix/ca821x-posix.h"
 
 #include <cstdio>
+#include <cstring>
 #include <iostream>
+
+#if defined(_WIN32)
+#include <synchapi.h> // for Windows Sleep() function
+#else
+#include <unistd.h> // for posix usleep() function
+#endif
 
 namespace ca {
 
@@ -124,6 +131,14 @@ ca_error Reboot::reboot_process()
 	// Reboot device into APROM
 	EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &mDeviceRef);
 
+// Give a chance for the device to wake-up post reboot, before proceeding
+// NOTE: This was observed to be necessary for UART, but isn't needed for USB.
+#if defined(_WIN32)
+	Sleep(1); //ms
+#else
+	usleep(1000); //us
+#endif
+
 	if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
 	{
 		ca821x_util_deinit(&mDeviceRef);
@@ -147,9 +162,9 @@ ca_error Reboot::init()
 {
 	ca_error status = CA_ERROR_SUCCESS;
 
-	if (mDeviceInfo.GetExchangeType() != ca821x_exchange_usb)
+	if (mDeviceInfo.GetExchangeType() == ca821x_exchange_kernel)
 	{
-		fprintf(stderr, "Error: Only USB currently supported for chilictl\n");
+		fprintf(stderr, "Error: Only USB and UART are currently supported for chilictl\n");
 		status = CA_ERROR_INVALID_ARGS;
 		goto exit;
 	}

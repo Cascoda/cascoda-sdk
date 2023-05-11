@@ -251,12 +251,21 @@ endif()
 
 if(CASCODA_BM_INTERFACE STREQUAL "USB")
 	add_executable(ldrom_hid
-		${PROJECT_SOURCE_DIR}/LDROM/ldrom_hid.c
-		${PROJECT_SOURCE_DIR}/LDROM/hid_transfer.c
+		${PROJECT_SOURCE_DIR}/LDROM_HID/ldrom_hid.c
+		${PROJECT_SOURCE_DIR}/LDROM_HID/hid_transfer.c
 	)
 	target_include_directories(ldrom_hid PRIVATE $<TARGET_PROPERTY:ca821x-api,INTERFACE_INCLUDE_DIRECTORIES>)
 	target_link_libraries(ldrom_hid m2351 chili2-ldfile-ldrom)
 	# Always create ldrom_hid executable, because it is needed for Chilictl flashing
 	cascoda_make_binary(ldrom_hid TRUE)
+elseif(CASCODA_BM_INTERFACE STREQUAL "UART")
+	add_executable(ldrom_uart
+		${PROJECT_SOURCE_DIR}/LDROM_UART/ldrom_uart.c
+		${PROJECT_SOURCE_DIR}/LDROM_UART/uart_transfer.c
+	)
+	target_include_directories(ldrom_uart PRIVATE $<TARGET_PROPERTY:ca821x-api,INTERFACE_INCLUDE_DIRECTORIES>)
+	target_link_libraries(ldrom_uart m2351 chili2-ldfile-ldrom)
+	# Always create ldrom_uart executable, because it is needed for Chilictl flashing
+	cascoda_make_binary(ldrom_uart TRUE)
 endif()
 

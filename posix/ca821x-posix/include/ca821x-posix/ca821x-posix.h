@@ -69,14 +69,18 @@ extern "C" {
  *                           This callback will be triggered in the event of an
  *                           unrecoverable error.
  * 
- * @param[in]   serial_num   Serial number of the target device (can be NULL).
+ * @param[in]   arg          Additional information, such as a serial number, com port
+ *                           or additional flag. See ca821x_util_init_extra_arg union for 
+ *                           more info.
  *
  * @retval CA_ERROR_SUCCESS Device was initialised successfully
  * @retval CA_ERROR_ALREADY Device was already initialised
  * @retval CA_ERROR_NOT_FOUND Device could not be initialised
  *
  */
-ca_error ca821x_util_init(struct ca821x_dev *pDeviceRef, ca821x_errorhandler errorHandler, char *serial_num);
+ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
+                          ca821x_errorhandler              errorHandler,
+                          union ca821x_util_init_extra_arg arg);
 
 /**
  * Generic function to initialise a specific device as found via ca821x_util_enumerate

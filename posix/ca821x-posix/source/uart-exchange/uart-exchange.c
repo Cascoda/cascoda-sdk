@@ -60,7 +60,7 @@ struct uart_exchange_priv
 	size_t          offset;                 //!< Current offset for reading into buf
 	struct timespec prev_send;              //!< Time that previous message was sent (for timing out ack)
 	struct timespec rx_start;               //!< Time that current message receive started (for timing out receive)
-	int             dummyPipe[2];           //!< Dummy pipe to release from select() call when write is due
+	int             dummy_pipe_fd[2];       //!< Dummy pipe fds to release from select() call when write is due
 };
 
 /** struct for representing the contents of CASCODA_UART environment variable */
@@ -87,7 +87,6 @@ static const struct timespec rx_timeout = {0, 200000000ULL};
 static const struct timespec select_timeout = {0, 500000000ULL};
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 
 static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 {
@@ -195,7 +194,7 @@ static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_
 			error = CA_ERROR_FAIL;
 			break;
 		}
-		len -= len;
+		len -= rval;
 		buffer += rval;
 	}
 
@@ -203,10 +202,9 @@ static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_
 	if (buffer != priv->tx_buf)
 		memcpy(priv->tx_buf, buffer, len);
 
-	if (error < 0)
+	if (error == CA_ERROR_FAIL)
 	{
 		ca_log_crit("UART Send error!");
-		error = CA_ERROR_FAIL;
 	}
 	else
 	{
@@ -235,8 +233,8 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	//Initialise fd set for blocking select()
 	FD_ZERO(&rx_block_fd_set);
 	FD_SET(priv->fd, &rx_block_fd_set);
-	FD_SET(priv->dummyPipe[0], &rx_block_fd_set);
-	nfds = priv->fd > priv->dummyPipe[0] ? priv->fd : priv->dummyPipe[0];
+	FD_SET(priv->dummy_pipe_fd[0], &rx_block_fd_set);
+	nfds = priv->fd > priv->dummy_pipe_fd[0] ? priv->fd : priv->dummy_pipe_fd[0];
 	nfds = nfds + 1;
 
 	//Set up timeout, taking ack timeout into account. Max block time = select_timeout
@@ -257,7 +255,7 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		uint8_t dummybyte = 0;
 		//Block until activity required, then read potential dummy byte
 		pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
-		read(priv->dummyPipe[0], &dummybyte, 1);
+		read(priv->dummy_pipe_fd[0], &dummybyte, 1);
 	}
 
 	//Read from the device if possible
@@ -378,7 +376,7 @@ static void unblock_read(struct ca821x_dev *pDeviceRef)
 	assert_uart_exchange(pDeviceRef);
 
 	const uint8_t dummybyte = 0;
-	write(priv->dummyPipe[1], &dummybyte, 1);
+	write(priv->dummy_pipe_fd[1], &dummybyte, 1);
 }
 
 static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
@@ -472,7 +470,7 @@ static void free_uartdev_ll(struct uart_device *uartdev)
 	}
 }
 
-static ca_error init_statics()
+static ca_error init_statics(void)
 {
 	ca_error    error              = CA_ERROR_SUCCESS;
 	const char *CONST_CASCODA_UART = getenv("CASCODA_UART");
@@ -575,9 +573,7 @@ static ca_error setup_port(int fd, int baudrate)
 	speed_t        baudcode = get_baud_code(baudrate);
 
 	if (tcgetattr(fd, &port) < 0)
-	{
 		return CA_ERROR_INVALID;
-	}
 
 	if (cfsetospeed(&port, baudcode) || cfsetispeed(&port, baudcode))
 	{
@@ -602,9 +598,7 @@ static ca_error setup_port(int fd, int baudrate)
 	port.c_cc[VTIME] = 0;
 
 	if (tcsetattr(fd, TCSANOW, &port) != 0)
-	{
 		return CA_ERROR_INVALID;
-	}
 
 	return CA_ERROR_SUCCESS;
 }
@@ -665,27 +659,20 @@ ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, stru
 	{
 		uartdev = s_uart_device_head;
 	}
+
 	//Open and set up file descriptor if available
 	while (uartdev)
 	{
 		priv->fd = open(uartdev->device, O_RDWR | O_NOCTTY | O_SYNC);
 
 		if (priv->fd < 0)
-		{
 			ca_log_debg("Failed to open device %s", uartdev->device);
-		}
 		else if (ioctl(priv->fd, TIOCEXCL))
-		{
 			ca_log_warn("Failed to lock device %s", uartdev->device);
-		}
 		else if (setup_port(priv->fd, uartdev->baud) != CA_ERROR_SUCCESS)
-		{
 			ca_log_crit("Failed setup for device %s", uartdev->device);
-		}
 		else
-		{
 			break;
-		}
 
 		close(priv->fd);
 		priv->fd = -1;
@@ -700,8 +687,8 @@ ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, stru
 	}
 
 	//Initialise the dummy pipe for releasing from select()
-	pipe(priv->dummyPipe);
-	fcntl(priv->dummyPipe[0], F_SETFL, O_NONBLOCK);
+	pipe(priv->dummy_pipe_fd);
+	fcntl(priv->dummy_pipe_fd[0], F_SETFL, O_NONBLOCK);
 
 	error = init_generic(pDeviceRef);
 
@@ -713,7 +700,6 @@ ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, stru
 
 	//Add the new device to the device list for io
 	s_devcount++;
-	pthread_cond_signal(&devs_cond);
 
 exit:
 	if (error && pDeviceRef->exchange_context)
@@ -742,7 +728,6 @@ void uart_exchange_deinit(struct ca821x_dev *pDeviceRef)
 	s_devcount--;
 	if (s_devcount == 0)
 		deinit_statics();
-	pthread_cond_signal(&devs_cond);
 	pthread_mutex_unlock(&devs_mutex);
 
 	free(priv);

@@ -25,7 +25,7 @@ mount -t debugfs none /sys/kernel/debug
 Warning: The kernel exchange only works when the ca821x driver is installed on a compatible Linux platform.
 
 ### UART Exchange
-UART can be used for any posix serial ports. In order to use UART, the environment variable ``CASCODA_UART`` must be configured with a list of available UART ports that are connected to a supported Cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
+UART can be used for any posix and Windows serial ports. There is no special configuration required in order to use UART on Windows. However, on posix, the environment variable ``CASCODA_UART`` must be configured with a list of available UART ports that are connected to a supported Cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
 eg: ``CASCODA_UART=/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,4000000``
 
 For example, on the Raspberry Pi 3 running Raspberry Pi OS, you can set up the UART as follows (this overrides the UART terminal):
@@ -40,8 +40,6 @@ sudo reboot
 # (warning, will not persist reboots unless you add to a startup script)
 export CASCODA_UART=/dev/serial0,1000000
 ```
-
-Warning: UART has not currently been implemented for windows.
 
 ### USB Exchange
 In order to be able to connect to a dongle, hid-api must be installed. On debian/ubuntu, it can be installed using ```sudo apt install libhidapi-dev```. Also, in order to not require sudo, the permissions for cascoda devices should be loosened. This can be done by running the commands:

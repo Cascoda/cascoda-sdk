@@ -1183,4 +1183,20 @@ void display_double(char *text, int text_size, double v, int decimalDigits)
 	}
 }
 
+void display_slider(int x, int y, int lenght, int value)
+{
+	int radius = 4;
+	display_drawLine(x, y, x + lenght, y, BLACK);
+	display_drawLine(x, y + 1, x + lenght, y + 1, BLACK);
+	int center = ((lenght - (radius / 2)) * value) / 100;
+	display_fillCircle(x + center + (radius / 2), y, radius, BLACK);
+}
+
+void display_progressbar(int x, int y, int lenght, int value)
+{
+	// absolute values
+	int center = (lenght * value) / 100;
+	display_drawRect(x, y, lenght - x, 6, BLACK);
+	display_fillRect(x, y, center, 5, BLACK);
+}
 // end of library code.

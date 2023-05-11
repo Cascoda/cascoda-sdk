@@ -47,7 +47,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
 ### UART Exchange
-UART can be used for any posix serial ports. In order to use UART, the environment variable ``CASCODA_UART`` must be configured with a list of available UART ports that are connected to a supported Cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
+UART can be used for any posix or Windows serial ports. There are no special requirements for using UART on Windows. However, on posix, in order to use UART, the environment variable ``CASCODA_UART`` must be configured with a list of available UART ports that are connected to a supported Cascoda module. The environment variable should consist of a list of colon separated values, each containing a path to the UART device file and the baud rate to be used.
 eg: ``CASCODA_UART=/dev/ttyS0,115200:/dev/ttyS1,9600:/dev/ttyS2,4000000``
 
 For example, on the Raspberry Pi 3 running Raspberry Pi OS, you can set up the UART as follows (this overrides the UART terminal):
@@ -62,8 +62,6 @@ sudo reboot
 # (warning, will not persist reboots unless you add to a startup script)
 export CASCODA_UART=/dev/serial0,1000000
 ```
-
-Warning: UART has not currently been implemented for windows.
 
 ## macOS
 

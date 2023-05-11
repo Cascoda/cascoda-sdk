@@ -696,7 +696,8 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 
 int PlatformRadioInit(void)
 {
-	if (ca821x_util_init(&s_pDeviceRef, driverErrorCallback, NULL) == CA_ERROR_NOT_FOUND)
+	if (ca821x_util_init(&s_pDeviceRef, driverErrorCallback, (union ca821x_util_init_extra_arg){NULL}) ==
+	    CA_ERROR_NOT_FOUND)
 	{
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "No ca821x device found");
 		return -1;

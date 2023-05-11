@@ -70,8 +70,8 @@ typedef struct
 /* knx data structure for SHT */
 typedef struct
 {
-	F16_t humidity;    // DPT_Value_Humidity, 9.007, dpa.337.51
-	F16_t temperature; // DPT_Value_Temp, 9.001, dpa.320.51
+	float humidity;    // DPT_Value_Humidity, 9.007, dpa.337.51
+	float temperature; // DPT_Value_Temp, 9.001, dpa.320.51
 } knx_data_sht;
 
 /* knx data structure for HVAC */

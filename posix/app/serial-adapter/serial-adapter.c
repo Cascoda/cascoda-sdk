@@ -293,14 +293,14 @@ void process_io(void)
 
 int main(int argc, char *argv[])
 {
-	char *serial_num = NULL;
+	union ca821x_util_init_extra_arg arg = {.generic = NULL};
 	if (argc > 1)
 	{
-		serial_num = argv[1];
+		arg.serial_num = argv[1];
 	}
 
 	pDeviceRef = &sDeviceRef;
-	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
+	while (ca821x_util_init(pDeviceRef, NULL, arg))
 	{
 		return -1;
 	}

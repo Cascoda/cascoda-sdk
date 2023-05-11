@@ -47,6 +47,30 @@ enum uart_exchange_errors
 	uart_exchange_err_generic
 };
 
+#ifdef _WIN32
+/**
+ * Initialise the uart exchange, using the supplied errorhandling callback to
+ * report any errors back to the application, which can react as required
+ * (i.e. crash gracefully or attempt to reset the ca821x)
+ * 
+ * This Windows version of the function differs from the non-Windows version, in that instead
+ * of taking a path as an argument, it takes a more flexible argument of type 
+ * "union ca821x_util_init_extra_arg". This argument can be used to specify a serial number,
+ * a com port number, or simply the --force flag (or it can be set to NULL).
+ *
+ * @param[in]  callback   Function pointer to an error-handling callback (can be NULL)
+ * @param[in]  pDeviceRef   Pointer to initialised ca821x_device_ref struct
+ * @param[in]  arg Flexible argument
+ *
+ * @retval CA_ERROR_SUCCESS for success
+ * @retval CA_ERROR_NOT_FOUND for error
+ * @retval CA_ERROR_ALREADY if the device was already initialised
+ *
+ */
+ca_error uart_exchange_init(ca821x_errorhandler              callback,
+                            struct ca821x_dev               *pDeviceRef,
+                            union ca821x_util_init_extra_arg arg);
+#else
 /**
  * Initialise the uart exchange, using the supplied errorhandling callback to
  * report any errors back to the application, which can react as required
@@ -69,6 +93,7 @@ enum uart_exchange_errors
  *
  */
 ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, struct ca821x_dev *pDeviceRef);
+#endif
 
 /**
  * Deinitialise the uart exchange, so that it can be reinitialised by another

@@ -8,7 +8,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: cascoda-sdk
@@ -22,7 +22,7 @@ jobs:
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
         mkdir ${{ github.workspace }}\release
         cd ${{ github.workspace }}\build-win\bin
-        Copy-Item -Path ocfctl.exe,chilictl.exe,sniffer.exe,serial-adapter.exe,test\serial-test.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
+        Copy-Item -Path ocfctl.exe,chilictl.exe,knx-gen-data.exe,sniffer.exe,serial-adapter.exe,test\serial-test.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
         Copy-Item -Path ${{ github.workspace }}\cascoda-sdk\LICENSE -Destination ${{ github.workspace }}\release
         $readme = "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications"
         $readme | Out-File ${{ github.workspace }}\release\readme.txt
@@ -32,11 +32,20 @@ jobs:
         cmake.exe "${{ github.workspace }}\build-win" -D CASCODA_CA_VER=8212
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
 
+    - name: create installer for windows executables
+      run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
+
     - name: Upload windows-sdk
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Windows-SDK
         path: ${{ github.workspace }}\release
+
+    - name: Upload installer
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: CascodaWindowsTools
+        path: ${{ github.workspace }}\cascoda-sdk\etc\CascodaWinTools.exe
 
     - name: cache arm compiler
       id: cache-compiler
@@ -91,6 +100,38 @@ jobs:
       run: |
         mingw32-make.exe -C ${{ github.workspace }}\build-knx-chili2-win -j4
 
+  # Build artifacts for posix 
+  posix:
+    # NOTE: Not building with ubuntu-latest on purpose, because that results
+    # in binaries that can only be run on linux machines with newest version,
+    # that have glibc 2.34.
+    # Using ubuntu-20.04 drops that requirement to glibc 2.31.
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        path: cascoda-sdk
+
+    - name: configure posix sdk
+      run: |
+        cmake -S "${{ github.workspace }}/cascoda-sdk" -B "${{ github.workspace }}/build-posix" -D CMAKE_SH=CMAKE_SH-NOTFOUND
+
+    - name: build posix-sdk
+      run: |
+        make -C ${{ github.workspace }}/build-posix -j4
+        mkdir ${{ github.workspace }}/release
+        cd ${{ github.workspace }}/build-posix/bin
+        cp ocfctl chilictl sniffer serial-adapter test/serial-test evbme-get ${{ github.workspace }}/release
+        cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/release
+        echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/release/readme.txt
+
+    - name: Upload posix-sdk
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Posix-SDK
+        path: ${{ github.workspace }}/release
 
   # Build artifacts for macos - for build testing only, no artifacts
   macos:
@@ -99,7 +140,7 @@ jobs:
     if: false
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: cascoda-sdk
@@ -120,7 +161,7 @@ jobs:
       KNX_TARGETS: 'knx-iot-chilidev-pb knx-iot-chilidev-sa knx-iot-chilidev-therm'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: cascoda-sdk
@@ -257,15 +298,14 @@ jobs:
         name: Chili2-Lib
         path: ${{ github.workspace }}/upload-lib
 
-  # If we're on master, make a release
   makerelease:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    needs: [windows, chili2]
+    needs: [windows, posix, chili2]
 
     # Checkout the code, and fetch all tags (for version)
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: cascoda-sdk
@@ -278,15 +318,15 @@ jobs:
       id: releaseinfo
       run: |
         cd cascoda-sdk
-        echo ::set-output name=version::$(git describe --dirty --always --long | sed -E 's/-g[0-9a-f]+//g')
-        echo ::set-output name=title::$(git show -s --format=%B | head -n1)
+        echo "version=$(git describe --dirty --always --long | sed -E 's/-g[0-9a-f]+//g')" >> $GITHUB_OUTPUT
+        echo "title=$(git show -s --format=%B | head -n1)" >> $GITHUB_OUTPUT
 
         msg=$(git show -s --format=%B)
         #escape special chars
         msg="${msg//'%'/'%25'}"
         msg="${msg//$'\n'/'%0A'}"
         msg="${msg//$'\r'/'%0D'}"
-        echo ::set-output name=msg::$msg
+        echo "msg=$msg" >> $GITHUB_OUTPUT
 
     # Create a release to publish to
     - name: Create Release
@@ -302,13 +342,19 @@ jobs:
     # Download all of the previously uploaded artifacts
     - uses: actions/download-artifact@v1
       with:
+        name: CascodaWindowsTools
+    - uses: actions/download-artifact@v1
+      with:
+        name: Windows-SDK
+    - uses: actions/download-artifact@v1
+      with:
         name: Chili2D-USB
     - uses: actions/download-artifact@v1
       with:
         name: Chili2S-UART0-1Mbaud
     - uses: actions/download-artifact@v1
       with:
-        name: Windows-SDK
+        name: Posix-SDK
 
     - uses: dawidd6/action-download-artifact@v2.24.0
       with:
@@ -322,12 +368,34 @@ jobs:
     # Zip them back up
     - name: Zip the release assets
       run: |
+        zip -r CascodaWindowsTools.zip CascodaWindowsTools
+        zip -r Windows-SDK.zip Windows-SDK
         zip -r Chili2D-USB.zip Chili2D-USB
         zip -r Chili2S-UART0-1Mbaud.zip Chili2S-UART0-1Mbaud
-        zip -r Windows-SDK.zip Windows-SDK
+        zip -r Posix-SDK.zip Posix-SDK	
         zip Chili2-Lib.zip Chili2-Lib/*
 
     # Release the artifacts to the just created release
+    - name: Release Installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./CascodaWindowsTools.zip
+        asset_name: CascodaWindowsTools.zip
+        asset_content_type: application/zip
+
+    - name: Release Windows
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./Windows-SDK.zip
+        asset_name: Windows-SDK.zip
+        asset_content_type: application/zip
+        
     - name: Release Chili USB
       uses: actions/upload-release-asset@v1
       env:
@@ -337,6 +405,7 @@ jobs:
         asset_path: ./Chili2D-USB.zip
         asset_name: Chili2D-USB.zip
         asset_content_type: application/zip
+
     - name: Release Chili Libraries
       uses: actions/upload-release-asset@v1
       env:
@@ -346,6 +415,7 @@ jobs:
         asset_path: ./Chili2-Lib.zip
         asset_name: Chili2-Lib.zip
         asset_content_type: application/zip
+
     - name: Release Chili UART
       uses: actions/upload-release-asset@v1
       env:
@@ -355,12 +425,13 @@ jobs:
         asset_path: ./Chili2S-UART0-1Mbaud.zip
         asset_name: Chili2S-UART0-1Mbaud.zip
         asset_content_type: application/zip
-    - name: Release Windows
+
+    - name: Release Posix
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
-        asset_path: ./Windows-SDK.zip
-        asset_name: Windows-SDK.zip
+        asset_path: ./Posix-SDK.zip
+        asset_name: Posix-SDK.zip
         asset_content_type: application/zip

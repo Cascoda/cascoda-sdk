@@ -279,7 +279,7 @@ void convert_THERMO_to_knx(data_thermo data, knx_data_thermo *knx_data)
 void convert_THERMO3_to_knx(data_thermo3 data, knx_data_thermo3 *knx_data)
 {
 	/* input format T['C] * 16 in 2s complement */
-	knx_data->temperature = ((float)((int16_t)data.temperature)) / 16.0;
+	knx_data->temperature = ((float)(data.temperature)) / 16.0;
 }
 
 /* convert AIRQUALITY4 data to knx */
@@ -311,9 +311,9 @@ void convert_ENVIRONMENT2_to_knx(data_environment2 data, knx_data_environment2 *
 void convert_SHT_to_knx(data_sht data, knx_data_sht *knx_data)
 {
 	/* input format RH[%] * 100 */
-	knx_data->humidity = convert_int16_to_F16(data.humidity, 100);
+	knx_data->humidity = ((float)(data.humidity)) / 100.0;
 	/* input format T['C] * 100 */
-	knx_data->temperature = convert_int16_to_F16(data.temperature, 100);
+	knx_data->temperature = ((float)(data.temperature)) / 100.0;
 }
 
 /* convert HVAC data to knx */
@@ -534,7 +534,7 @@ static void report_THERMO3(knx_data_thermo3 data)
 {
 	printClickType(STYPE_THERMO3);
 	printf("T: ");
-	printfloat(convert_F16_to_float(data.temperature));
+	printfloat(data.temperature);
 	printf("\n");
 }
 
@@ -577,9 +577,9 @@ static void report_SHT(knx_data_sht data)
 {
 	printClickType(STYPE_SHT);
 	printf("T: ");
-	printfloat(convert_F16_to_float(data.temperature));
+	printfloat(data.temperature);
 	printf("; RH: ");
-	printfloat(convert_F16_to_float(data.humidity));
+	printfloat(data.humidity);
 	printf("\n");
 }
 

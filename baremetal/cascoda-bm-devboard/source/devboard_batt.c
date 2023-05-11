@@ -42,7 +42,9 @@ uint16_t DVBD_BattGetVoltage(void)
 	adcval = BSP_ADCGetVolts() * 100;
 	/* input voltage (volts) divided on board by 330/550, so vbatt = 5.5/3.3 * volts */
 	/* vbatt = adcval / 4096 * 5.5 = adcval / 745 */
-	vbatt = (uint16_t)(adcval / 745);
+	/* Note: reading is off by factor 1.085 measured over several boards (settling/rin/tolerance?) */
+	/* => 745 -> 690 */
+	vbatt = (uint16_t)(adcval / 690);
 
 	return (vbatt);
 }

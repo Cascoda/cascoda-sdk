@@ -56,7 +56,7 @@ if(WIN32)
 		${PROJECT_SOURCE_DIR}/source/generic-exchange/ca821x-queue.c
 		# For the moment, Windows supports only the USB exchange
 		# ${PROJECT_SOURCE_DIR}/source/kernel-exchange/kernel-exchange.c
-		# ${PROJECT_SOURCE_DIR}/source/uart-exchange/uart-exchange.c
+		${PROJECT_SOURCE_DIR}/source/uart-exchange/uart-exchange-windows.c
 		${PROJECT_SOURCE_DIR}/source/usb-exchange/usb-exchange.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-evbme.c
 		${PROJECT_SOURCE_DIR}/source/util/ca821x-posix-log.c

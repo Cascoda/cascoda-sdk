@@ -726,7 +726,7 @@ int main(int argc, char *argv[])
 		rc = pthread_cond_init(&(cur->confirm_cond), NULL);
 		assert(rc == 0);
 
-		while (ca821x_util_init(pDeviceRef, &driverErrorCallback, NULL))
+		while (ca821x_util_init(pDeviceRef, &driverErrorCallback, (union ca821x_util_init_extra_arg){NULL}))
 		{
 			sleep(1); //Wait while there isn't a device available to connect
 		}

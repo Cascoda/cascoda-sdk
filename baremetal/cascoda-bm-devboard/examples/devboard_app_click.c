@@ -44,10 +44,14 @@
 
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
-#include "airquality4_click.h"
+
 #include "devboard_btn.h"
 #include "devboard_click.h"
+
+#include "airquality4_click.h"
+#include "ambient8_click.h"
 #include "environment2_click.h"
+#include "fan_click.h"
 #include "hvac_click.h"
 #include "motion_click.h"
 #include "relay_click.h"
@@ -75,7 +79,8 @@
 /* measurement period in [ms] */
 #if ((((CLICK1_TYPE == STYPE_THERMO3) || (CLICK2_TYPE == STYPE_THERMO3)) && (THERMO3_USE_INTERRUPT)) || \
      (((CLICK1_TYPE == STYPE_SHT) || (CLICK2_TYPE == STYPE_SHT)) && (SHT_USE_INTERRUPT)) ||             \
-     (((CLICK1_TYPE == STYPE_MOTION) || (CLICK2_TYPE == STYPE_MOTION)) && (MOTION_USE_INTERRUPT)))
+     (((CLICK1_TYPE == STYPE_MOTION) || (CLICK2_TYPE == STYPE_MOTION)) && (MOTION_USE_INTERRUPT)) ||    \
+     (((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN)) && (FAN_USE_INTERRUPT)))
 #define MEASUREMENT_PERIOD DVBD_MAX_SLEEP_TIME
 #else
 #define MEASUREMENT_PERIOD 5000
@@ -83,14 +88,16 @@
 
 /* initialisation functions for all clicks - have to be in correct order */
 static ca_error (*click_init_function[])(void) = {NULL,
-                                                  CLICK_THERMO3_initialise,
                                                   CLICK_THERMO_initialise,
+                                                  CLICK_THERMO3_initialise,
                                                   CLICK_AIRQUALITY4_initialise,
                                                   CLICK_ENVIRONMENT2_initialise,
                                                   CLICK_SHT_initialise,
                                                   CLICK_HVAC_initialise,
                                                   CLICK_MOTION_initialise,
-                                                  CLICK_RELAY_initialise};
+                                                  CLICK_RELAY_initialise,
+                                                  CLICK_AMBIENT8_initialise,
+                                                  CLICK_FAN_initialise};
 
 /* handler functions for all clicks (including acquisition) - have to be in correct order */
 static ca_error (*click_handler_function[])(void) = {NULL,
@@ -101,7 +108,9 @@ static ca_error (*click_handler_function[])(void) = {NULL,
                                                      CLICK_Handler_Default_SHT,
                                                      CLICK_Handler_Default_HVAC,
                                                      CLICK_Handler_Default_MOTION,
-                                                     CLICK_Handler_Default_RELAY};
+                                                     CLICK_Handler_Default_RELAY,
+                                                     CLICK_Handler_Default_AMBIENT8,
+                                                     CLICK_Handler_Default_FAN};
 
 /* alarm functions for all clicks - have to be in correct order */
 static ca_error (*click_alarm_function[])(void) = {NULL,
@@ -113,8 +122,8 @@ static ca_error (*click_alarm_function[])(void) = {NULL,
                                                    NULL,
                                                    MIKROSDK_MOTION_alarm_triggered,
                                                    NULL,
-                                                   NULL};
-
+                                                   NULL,
+                                                   MIKROSDK_FAN_alarm_triggered};
 /* for reporting */
 extern const char *click_name_default[];
 
@@ -128,7 +137,7 @@ static ca_tasklet g_sensor_wakeup_tasklet;
 /* This has to be declared if sgp40 voc index algorithm is used (ENVIRONMENT2 click) */
 u32_t sgp40_sampling_interval = MEASUREMENT_PERIOD;
 
-/* isr for relay 1 (button 0) */
+/* isr for relay 1 (button SW1) */
 static void relay1_isr(void *context)
 {
 	(void)context;
@@ -137,7 +146,7 @@ static void relay1_isr(void *context)
 	g_sensors_handled = false;
 }
 
-/* isr for relay 2 (button 1) */
+/* isr for relay 2 (button SW2) */
 static void relay2_isr(void *context)
 {
 	(void)context;
@@ -146,7 +155,54 @@ static void relay2_isr(void *context)
 	g_sensors_handled = false;
 }
 
-/* isr for additional wakeup (button 2) */
+/* isr 1 for fan (button SW3) */
+static void fan1_isr(void *context)
+{
+	(void)context;
+#if (FAN_MODE == FAN_MODE_CLOSED_LOOP)
+	/* increase speed 0 rpm to max. rpm */
+	if (g_fan_speed_tach_rpm < (FAN_MAX_SPEED + 1000)) /* +1000 to check drive fail alert */
+		g_fan_speed_tach_rpm += 1000;
+	else
+		g_fan_speed_tach_rpm = 0;
+#else
+	/* increase speed 0% to 100% */
+	if (g_fan_speed_pwm_percent < 100)
+		g_fan_speed_pwm_percent += 10;
+	else
+		g_fan_speed_pwm_percent = 0;
+#endif
+	g_sensors_handled = false;
+}
+
+/* isr 1 for fan (button SW3) long press */
+static void fan1_isr_long(void *context)
+{
+	(void)context;
+#if (FAN_MODE == FAN_MODE_CLOSED_LOOP)
+	/* on-off */
+	if (g_fan_speed_tach_rpm == FAN_MAX_SPEED)
+		g_fan_speed_tach_rpm = 0;
+	else
+		g_fan_speed_tach_rpm = FAN_MAX_SPEED;
+#else
+	/* on-off */
+	if (g_fan_speed_pwm_percent == 100)
+		g_fan_speed_pwm_percent = 0;
+	else
+		g_fan_speed_pwm_percent = 100;
+#endif
+	g_sensors_handled = false;
+}
+
+/* isr 2 for fan (button SW2) */
+static void fan2_isr(void *context)
+{
+	(void)context;
+	g_sensors_handled = false;
+}
+
+/* isr for additional wakeup (button SW3) */
 static void wakeup_isr(void *context)
 {
 	(void)context;
@@ -218,6 +274,17 @@ void hardware_init(void)
 		DVBD_RegisterButtonIRQInput(LED_BTN_1, JUMPER_POS_1);
 		DVBD_SetButtonShortPressCallback(LED_BTN_0, &relay1_isr, NULL, BTN_SHORTPRESS_PRESSED);
 		DVBD_SetButtonShortPressCallback(LED_BTN_1, &relay2_isr, NULL, BTN_SHORTPRESS_PRESSED);
+	}
+	else if ((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN))
+	{
+		/* register buttons for FAN */
+		/* SW3 BTN/LED for increasing speed */
+		DVBD_RegisterButtonIRQInput(LED_BTN_2, JUMPER_POS_1);
+		DVBD_SetButtonShortPressCallback(LED_BTN_2, &fan1_isr, NULL, BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonLongPressCallback(LED_BTN_2, &fan1_isr_long, NULL, 1000);
+		/* SW3 BTN/LED for additional wake-up interrupt */
+		DVBD_RegisterButtonIRQInput(LED_BTN_1, JUMPER_POS_1);
+		DVBD_SetButtonShortPressCallback(LED_BTN_1, &fan2_isr, NULL, BTN_SHORTPRESS_PRESSED);
 	}
 	else
 	{

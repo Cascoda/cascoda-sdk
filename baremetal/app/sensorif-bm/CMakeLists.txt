@@ -22,4 +22,4 @@ target_link_libraries(sensorif-test
 
 # convert to bin file format
 cascoda_make_binary(sensorif-test CASCODA_BUILD_BINARIES)
-cascoda_put_subdir(test sensorif-test)
+#cascoda_put_subdir(test sensorif-test)

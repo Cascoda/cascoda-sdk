@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
 	char              *pipeName      = NULL;
 	char              *wiresharkPath = NULL;
 
-	char *serial_num = NULL;
+	union ca821x_util_init_extra_arg sniffer_arg = {.generic = NULL};
 
 	configure_io();
 	snprintf(default_pipe, sizeof(default_pipe), DEFAULT_PIPE "%x", getpid());
@@ -739,7 +739,7 @@ int main(int argc, char *argv[])
 		}
 		else if (strcmp(argv[i], "-s") == 0)
 		{
-			serial_num = argv[++i];
+			sniffer_arg.generic = argv[++i];
 		}
 		else
 		{
@@ -778,7 +778,7 @@ int main(int argc, char *argv[])
 	}
 
 	fprintf(stderr, "Initialising ca821x_api.\n");
-	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
+	while (ca821x_util_init(pDeviceRef, NULL, sniffer_arg))
 	{
 		sleep(1); //Wait while there isn't a device available to connect
 		fprintf(stderr, ".");

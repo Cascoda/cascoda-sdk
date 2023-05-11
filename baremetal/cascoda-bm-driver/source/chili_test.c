@@ -527,7 +527,12 @@ static ca_error CHILI_TEST_REF_MCPS_DATA_indication(struct MCPS_DATA_indication_
 static ca_error CHILI_TEST_DUT_MCPS_DATA_indication(struct MCPS_DATA_indication_pset *params,
                                                     struct ca821x_dev                *pDeviceRef)
 {
+	/* turn receiver off */
+	u8_t rxidle = 0;
+	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxidle, pDeviceRef);
+
 	CHILI_TEST_DUT_ProcessDataInd(params, pDeviceRef);
+
 	return CA_ERROR_SUCCESS;
 } // End of CHILI_TEST_DUT_MCPS_DATA_indication()
 
@@ -619,6 +624,10 @@ static void CHILI_TEST_LEDComplete(uint8_t status)
 static void CHILI_TEST_LEDInit(void)
 {
 	/* All LEDs on */
+	DVBD_DeRegister(LED_BTN_0, JUMPER_POS_1);
+	DVBD_DeRegister(LED_BTN_1, JUMPER_POS_1);
+	DVBD_DeRegister(LED_BTN_2, JUMPER_POS_1);
+	DVBD_DeRegister(LED_BTN_3, JUMPER_POS_1);
 	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_1);
 	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_1);
 	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);

@@ -70,7 +70,7 @@ int app_init(void);
  * @brief  Example of wakeful main
  *
  * @{
- * 
+ *
  * ## Application Main
  * This file contains the functionality and main function of the OCF application.
  * main is using the bare metal module to run on the chili.
@@ -87,6 +87,7 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 
 	if (buf[0] == KNX_COMMAND)
 	{
+		ret = 1;
 		switch (buf[2])
 		{
 		case KNX_COMMAND_STORAGE_RESET:
@@ -103,11 +104,6 @@ static int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDevi
 		}
 	}
 
-	// switch clock otherwise chip is locking up as it loses external clock
-	if (((buf[0] == EVBME_SET_REQUEST) && (buf[2] == EVBME_RESETRF)) || (buf[0] == EVBME_HOST_CONNECTED))
-	{
-		EVBME_SwitchClock(pDeviceRef, 0);
-	}
 	return ret;
 }
 

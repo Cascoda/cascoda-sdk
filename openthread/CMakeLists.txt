@@ -32,8 +32,8 @@ if(CASCODA_OPENTHREAD_DEV)
 	set(OT_TAG thread-testcase-6.1.1-sed)
 #	set(OT_TAG ext-mac-dev)
 else()
-	set(OT_TAG tini-joining-fix)
-	#set(OT_TAG tini-assert-fix)
+	set(OT_TAG main)
+	#set(OT_TAG main)
 	# This is the old OpenThread commit, from before Elie's OpenThread update.
 	# It has not been tested with the changes to the Thread platform, and it is
 	# therefore deprecated.

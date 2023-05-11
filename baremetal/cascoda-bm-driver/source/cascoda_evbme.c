@@ -615,6 +615,13 @@ static ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef)
 {
 	ca_error status   = CA_ERROR_SUCCESS;
 	ca_error cbStatus = CA_ERROR_FAIL;
+	u8_t     CLKExternal_saved;
+
+	// save external clock status
+	CLKExternal_saved = CLKExternal;
+
+	// switch off external clock
+	EVBME_SwitchClock(pDeviceRef, 0);
 
 	if (ms > 1) // reset RF
 		BSP_ResetRF(ms);
@@ -632,6 +639,10 @@ static ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef)
 		ca_log_crit("CA-821X connection timed out waiting for wakeup indication, check hardware");
 		goto exit;
 	}
+
+	// restore external clock status
+	if (status == CA_ERROR_SUCCESS)
+		EVBME_SwitchClock(pDeviceRef, CLKExternal_saved);
 
 exit:
 	return status;
@@ -739,7 +750,7 @@ static ca_error EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms
 			return CA_ERROR_SUCCESS;
 	}
 
-	printf("CA-821X No PowerDown\n");
+	ca_log_crit("CA-821X No PowerDown");
 	return CA_ERROR_FAIL;
 } // End of EVBME_CAX_PowerDown()
 

@@ -77,16 +77,14 @@ static void handle_user_commands()
 
 int main(int argc, char *argv[])
 {
-	char *serial_num = NULL;
+	union ca821x_util_init_extra_arg ocfctl_arg = {.generic = NULL};
 	if (argc > 1)
-	{
-		serial_num = argv[1];
-	}
+		ocfctl_arg.generic = argv[1];
 
 	// Connect to the Chili
 	pDeviceRef = &sDeviceRef;
 
-	while (ca821x_util_init(pDeviceRef, NULL, serial_num))
+	while (ca821x_util_init(pDeviceRef, NULL, ocfctl_arg))
 	{
 		return -1;
 	}

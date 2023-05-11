@@ -76,6 +76,8 @@ typedef enum dvbd_click_type
 	STYPE_HVAC         = 6,
 	STYPE_MOTION       = 7,
 	STYPE_RELAY        = 8,
+	STYPE_AMBIENT8     = 9,
+	STYPE_FAN          = 10,
 } dvbd_click_type;
 
 /* structures for click sensor data */
@@ -132,6 +134,7 @@ typedef struct
 	int16_t  temperature; // T['C] = int16_t / 100
 } data_hvac;
 
+/* data structure for MOTION */
 typedef struct
 {
 	uint8_t  status;          // motion_status
@@ -139,6 +142,7 @@ typedef struct
 	uint32_t detection_time;  // Motion Detected Time [ms] (only used if MOTION_USE_INTERRUPT=1, otherwise 0)
 } data_motion;
 
+/* data structure for RELAY */
 typedef struct
 {
 	uint8_t status;        // relay_status
@@ -146,8 +150,27 @@ typedef struct
 	uint8_t relay_2_state; // relay_state for relay 2 (RELAY_OFF / RELAY_ON)
 } data_relay;
 
+/* data structure for AMBIENT8 */
+typedef struct
+{
+	uint8_t  status;              // ambient8_status
+	uint32_t illuminance_ch0;     // Ev[lux] = uint32_t / 100, channel 0 (VIS+IR), max sensitivity @ 470 nm
+	uint32_t illuminance_ch1;     // Ev[lux] = uint32_t / 100, channel 1 (IR), max sensitivity @ 770 nm
+	uint32_t illuminance_ambient; // Ev[lux] = uint32_t / 100, ambient level, calculated
+} data_ambient8;
+
+/* data structure for FAN */
+typedef struct
+{
+	uint8_t  status;            // ambient8_status
+	uint8_t  speed_pwm_percent; // speed, 0-100% (pwm equivalent)
+	uint16_t speed_tach_rpm;    // speed, rpm (tachometer)
+} data_fan;
+
 /* globals */
-extern uint8_t g_relay_1_state, g_relay_2_state; /* states for controlling RELAY */
+extern uint8_t  g_relay_1_state, g_relay_2_state; /* states for controlling RELAY */
+extern uint8_t  g_fan_speed_pwm_percent;          /* fan speed pwm percent */
+extern uint16_t g_fan_speed_tach_rpm;             /* fan speed rpm tachometer */
 
 /* general functions */
 ca_error DVBD_click_power_init(void);
@@ -162,6 +185,8 @@ ca_error CLICK_SHT_acquisition(data_sht *data);
 ca_error CLICK_HVAC_acquisition(data_hvac *data);
 ca_error CLICK_MOTION_acquisition(data_motion *data);
 ca_error CLICK_RELAY_acquisition(data_relay *data);
+ca_error CLICK_AMBIENT8_acquisition(data_ambient8 *data);
+ca_error CLICK_FAN_acquisition(data_fan *data);
 
 /* separate initialisation functions */
 ca_error CLICK_THERMO3_initialise(void);
@@ -172,5 +197,7 @@ ca_error CLICK_SHT_initialise(void);
 ca_error CLICK_HVAC_initialise(void);
 ca_error CLICK_MOTION_initialise(void);
 ca_error CLICK_RELAY_initialise(void);
+ca_error CLICK_AMBIENT8_initialise(void);
+ca_error CLICK_FAN_initialise(void);
 
 #endif // DEVBOARD_CLICK_H

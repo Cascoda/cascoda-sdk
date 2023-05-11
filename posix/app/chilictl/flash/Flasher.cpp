@@ -31,6 +31,12 @@
 #include <iostream>
 #include <limits>
 
+#if defined(_WIN32)
+#include <synchapi.h> // for Windows Sleep() function
+#else
+#include <unistd.h> // for posix usleep() function
+#endif
+
 #include "ca821x-posix/ca821x-posix.h"
 #include "cascoda-util/cascoda_hash.h"
 
@@ -158,9 +164,9 @@ ca_error Flasher::init()
 {
 	ca_error status = CA_ERROR_SUCCESS;
 
-	if (mDeviceInfo.GetExchangeType() != ca821x_exchange_usb)
+	if (mDeviceInfo.GetExchangeType() == ca821x_exchange_kernel)
 	{
-		fprintf(stderr, "Error: Only USB currently supported for chilictl reflash\n");
+		fprintf(stderr, "Error: Only USB and UART are currently supported for chilictl reflash\n");
 		status = CA_ERROR_INVALID_ARGS;
 		set_state(FAIL);
 		goto exit;
@@ -352,6 +358,7 @@ ca_error Flasher::validate()
 	DeviceList       dl{};
 	size_t           numresults = 0;
 	ca_error         status     = CA_ERROR_SUCCESS;
+	static int       retries    = 0;
 
 	if (mCounter)
 		return CA_ERROR_SUCCESS;
@@ -367,7 +374,7 @@ ca_error Flasher::validate()
 
 	if (numresults == 0)
 	{
-		if (mCounter >= kMaxRebootDiscoverAttempts)
+		if (retries++ >= kMaxRebootDiscoverAttempts)
 		{
 			set_state(FAIL);
 			fprintf(
@@ -421,6 +428,14 @@ ca_error Flasher::validate()
 	{
 		//Found DFU appname, so we just reboot back into application
 		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &mDeviceRef);
+
+// Give a chance for the device to wake-up post reboot, before proceeding
+// NOTE: This was observed to be necessary for UART, but isn't needed for USB.
+#if defined(_WIN32)
+		Sleep(1); //ms
+#else
+		usleep(1000);     //us
+#endif
 
 		if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
 		{
@@ -620,6 +635,14 @@ ca_error Flasher::verify_done(ca_error status)
 			else //DFU
 				EVBME_DFU_REBOOT_request(evbme_dfu_rebootmode::EVBME_DFU_REBOOT_DFU, &mDeviceRef);
 
+// Give a chance for the device to wake-up post reboot, before proceeding
+// NOTE: This was observed to be necessary for UART, but isn't needed for USB.
+#if defined(_WIN32)
+			Sleep(1); //ms
+#else
+			usleep(1000); //us
+#endif
+
 			if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
 			{
 				ca821x_util_deinit(&mDeviceRef);
@@ -725,6 +748,14 @@ ca_error Flasher::send_reboot_request()
 		//Reboot device into APROM
 		EVBME_DFU_REBOOT_request(EVBME_DFU_REBOOT_APROM, &mDeviceRef);
 	}
+
+// Give a chance for the device to wake-up post reboot, before proceeding
+// NOTE: This was observed to be necessary for UART, but isn't needed for USB.
+#if defined(_WIN32)
+	Sleep(1); //ms
+#else
+	usleep(1000);         //us
+#endif
 
 	if (exchange_wait_send_complete(kMsgSendTimeout, &mDeviceRef) == CA_ERROR_SUCCESS)
 	{

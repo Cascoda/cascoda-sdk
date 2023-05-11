@@ -146,6 +146,21 @@ typedef void (*exchange_signal_read)(struct ca821x_dev *pDeviceRef);
  */
 typedef void (*exchange_flush_unread)(struct ca821x_dev *pDeviceRef);
 
+/**
+ *  \brief Extra argument to the function ca821x_util_init().
+ * 
+ * Allows the generalisation of what is being passed as the argument, whether
+ * it be a serial number, COM port, --force option.
+ * 
+ */
+union ca821x_util_init_extra_arg
+{
+	char *generic;      //!< Generic
+	char *serial_num;   //!< Serial number
+	char *com_port_num; //!< COM port
+	char *force;        //!< --force option
+};
+
 /** Enumeration for identifying the underlying exchange interface type */
 enum ca821x_exchange_type
 {

@@ -40,7 +40,9 @@
 #include "devboard_click.h"
 
 #include "airquality4_click.h"
+#include "ambient8_click.h"
 #include "environment2_click.h"
+#include "fan_click.h"
 #include "hvac_click.h"
 #include "motion_click.h"
 #include "relay_click.h"
@@ -58,6 +60,8 @@ const char *click_name_default[] = {
     "HVAC",
     "MOTION",
     "RELAY",
+    "AMBIENT8",
+    "FAN",
 };
 
 /* reporting functions used here */
@@ -69,6 +73,8 @@ static void report_SHT(data_sht data);
 static void report_HVAC(data_hvac data);
 static void report_MOTION(data_motion data);
 static void report_RELAY(data_relay data);
+static void report_AMBIENT8(data_ambient8 data);
+static void report_FAN(data_fan data);
 
 /* Handler for THERMO Click */
 ca_error CLICK_Handler_Default_THERMO(void)
@@ -186,6 +192,36 @@ ca_error CLICK_Handler_Default_RELAY(void)
 
 	/* data processing */
 	report_RELAY(data);
+
+	return CA_ERROR_SUCCESS;
+}
+
+/* Handler Example for AMBIENT8 Click */
+ca_error CLICK_Handler_Default_AMBIENT8(void)
+{
+	data_ambient8 data;
+
+	/* data acquisition */
+	if (CLICK_AMBIENT8_acquisition(&data))
+		return CA_ERROR_FAIL;
+
+	/* data processing */
+	report_AMBIENT8(data);
+
+	return CA_ERROR_SUCCESS;
+}
+
+/* Handler Example for FAN Click */
+ca_error CLICK_Handler_Default_FAN(void)
+{
+	data_fan data;
+
+	/* data acquisition */
+	if (CLICK_FAN_acquisition(&data))
+		return CA_ERROR_FAIL;
+
+	/* data processing */
+	report_FAN(data);
 
 	return CA_ERROR_SUCCESS;
 }
@@ -430,6 +466,52 @@ static void report_RELAY(data_relay data)
 		printf(" Relay 1 is %s; Relay 2 is %s",
 		       (data.relay_1_state == RELAY_ON ? " ON" : "OFF"),
 		       (data.relay_2_state == RELAY_ON ? " ON" : "OFF"));
+	}
+	printf("\n");
+}
+
+/* Reporting for AMBIENT8 Click */
+static void report_AMBIENT8(data_ambient8 data)
+{
+	printClickType(STYPE_AMBIENT8);
+
+	if (data.status == AMBIENT8_ST_FAIL)
+	{
+		printf("Data Acquisition Fail");
+	}
+	else
+	{
+		printf("CH0 (VIS+IR): %5u.%02u lux", (data.illuminance_ch0 / 100), (data.illuminance_ch0 % 100));
+		printf("; CH1 (IR): %5u.%02u lux", (data.illuminance_ch1 / 100), (data.illuminance_ch1 % 100));
+		printf("; Ambient: %5u.%02u lux", (data.illuminance_ambient / 100), (data.illuminance_ambient % 100));
+	}
+	printf("\n");
+}
+
+/* Reporting for FAN Click */
+static void report_FAN(data_fan data)
+{
+	printClickType(STYPE_FAN);
+
+	if (data.status == FAN_ST_FAIL)
+	{
+		printf("Data Acquisition Fail");
+	}
+	else
+	{
+#if (FAN_MODE == FAN_MODE_CLOSED_LOOP)
+		printf("RPM set to %5u rpm", g_fan_speed_tach_rpm);
+#else
+		printf("PWM set to %3u%c", g_fan_speed_pwm_percent, '%');
+#endif
+		printf("; Speed Reading: %3u%c", data.speed_pwm_percent, '%');
+		printf("; Tachometer Reading: %5u rpm", data.speed_tach_rpm);
+		if (data.status == FAN_ST_ALARM_FNSTL)
+			printf("; Alarm: Driver stalled.");
+		else if (data.status == FAN_ST_ALARM_FNSPIN)
+			printf("; Alarm: Spin Up failed.");
+		else if (data.status == FAN_ST_ALARM_DVFAIL)
+			printf("; Alarm: Driver failed.");
 	}
 	printf("\n");
 }

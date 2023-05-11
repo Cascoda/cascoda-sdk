@@ -6,7 +6,7 @@ This information is only required for informational/analysis purposes, or if wri
 
 ## Implementations
 
-The Cascoda SDK contains two implementations of this interface, one for baremetal platforms, and one for posix systems. For the Cascoda implementations of this interface, see ``posix/ca821x-posix/source/uart-exchange`` and ``baremetal/cascoda-bm-driver/source/cascoda_serial_uart.c``.
+The Cascoda SDK contains three implementations of this interface, one for baremetal platforms, one for posix systems, and one for Windows. For the Cascoda implementations of this interface, see ``posix/ca821x-posix/source/uart-exchange.c`` (posix), ``posix/ca821x-posix/source/uart-exchange-windows.c`` (Windows) and ``baremetal/cascoda-bm-driver/source/cascoda_serial_uart.c`` (baremetal).
 
 ## UART Characteristics
 
@@ -24,7 +24,7 @@ The Default parameters for the UART using the Chili 2 are:
 
 The message structure sent over the UART interface is the [Cascoda message format](cascoda-tlv-message.md), with the addition of a single Start-Of-Message (SOM) octet. The value of the SOM octet is ``0xDE``, and it is prepended to the message. The SOM byte is used primarily as a means of error detection - if it is not the first byte of a message that is received, then the system is in an uncertain state and needs to be recovered.
 
-Immediately following the SOM octet is the Cascoda TLV message, which includes the length information.
+Immediately following the SOM octet is the Cascoda TLV (Type Length Value) message, which includes the length information.
 
 <table>
 <tr>

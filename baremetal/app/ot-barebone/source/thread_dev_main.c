@@ -42,12 +42,6 @@ int ot_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 	int ret;
 	ret = otApi_Dispatch((struct SerialBuffer *)(buf));
 
-	// switch clock otherwise chip is locking up as it loses external clock
-	if (((buf[0] == EVBME_SET_REQUEST) && (buf[2] == EVBME_RESETRF)) || (buf[0] == EVBME_HOST_CONNECTED))
-	{
-		EVBME_SwitchClock(pDeviceRef, 0);
-	}
-
 	return ret;
 }
 

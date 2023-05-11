@@ -56,7 +56,7 @@ static int generic_initialised = 0;
 /** Mutex for protecting static flags */
 static pthread_mutex_t s_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/** Queue of buffers to be processed by downstream dispatch */
+/** Queue of buffers to be processed by upstream dispatch */
 static struct buffer_queue upstream_dispatch_queue = {NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
 
 /** Thread for running the downstream dispatch functions on the dd queue */
@@ -349,7 +349,7 @@ static inline ca_error ca821x_try_read(struct ca821x_dev *pDeviceRef)
 		}
 		else
 		{
-			//Add to queue for dispatching downstream
+			//Add to queue for dispatching upstream
 			add_to_queue(&upstream_dispatch_queue, buffer, len, pDeviceRef);
 		}
 		return CA_ERROR_SUCCESS;

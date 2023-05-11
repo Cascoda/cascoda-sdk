@@ -41,5 +41,7 @@ ca_error CLICK_Handler_Default_SHT(void);
 ca_error CLICK_Handler_Default_HVAC(void);
 ca_error CLICK_Handler_Default_MOTION(void);
 ca_error CLICK_Handler_Default_RELAY(void);
+ca_error CLICK_Handler_Default_AMBIENT8(void);
+ca_error CLICK_Handler_Default_FAN(void);
 
 #endif // DEVBOARD_CLICK_HANDLERS_DEFAULT_H

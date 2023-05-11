@@ -330,7 +330,7 @@ ca_error Flash::print_help_string(const char *aArg)
 	fprintf(
 	    stdout,
 	    "\nEXAMPLE 1 - DFU region update (this only has to be done once before being able to flash applications)\n");
-	fprintf(stdout, "\t$ ./chilictl flash -s FBC647CDB300A0DA -df \"~/sdk-chili2/bin/ldrom-hid.bin\"\n");
+	fprintf(stdout, "\t$ ./chilictl flash -s FBC647CDB300A0DA -df \"~/sdk-chili2/bin/ldrom_hid.bin\"\n");
 
 	fprintf(stdout, "\nEXAMPLE 2 - Application flashing\n");
 	fprintf(stdout, "\t$ ./chilictl flash -s FBC647CDB300A0DA -f \"~/sdk-chili2/bin/mac-dongle.bin\"\n");

@@ -44,7 +44,7 @@ struct ca821x_dev sDeviceRef;
 static void initialise_ca821x(struct ca821x_dev *pDeviceRef)
 {
 	printf("Initialising.");
-	while (ca821x_util_init(pDeviceRef, NULL, NULL))
+	while (ca821x_util_init(pDeviceRef, NULL, (union ca821x_util_init_extra_arg){NULL}))
 	{
 		sleep(1); //Wait while there isn't a device available to connect
 		printf(".");

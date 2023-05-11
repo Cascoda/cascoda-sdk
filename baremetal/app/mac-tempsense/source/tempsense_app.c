@@ -135,14 +135,7 @@ void TEMPSENSE_APP_Initialise(struct ca821x_dev *pDeviceRef)
 
 int TEMPSENSE_APP_UpStreamDispatch(struct SerialBuffer *SerialRxBuffer, struct ca821x_dev *pDeviceRef)
 {
-	/* switch clock otherwise chip is locking up as it loses external clock */
-	if (((SerialRxBuffer->CmdId == EVBME_SET_REQUEST) && (SerialRxBuffer->Data[0] == EVBME_RESETRF)) ||
-	    (SerialRxBuffer->CmdId == EVBME_HOST_CONNECTED))
-	{
-		printf("Clock has been switched due to device reset\n");
-		EVBME_SwitchClock(pDeviceRef, 0);
-	}
-	else if (SerialRxBuffer->CmdId == EVBME_TSENSE_SETMODE)
+	if (SerialRxBuffer->CmdId == EVBME_TSENSE_SETMODE)
 	{
 		TEMPSENSE_APP_SwitchMode(SerialRxBuffer->Data[0]);
 		return 1;

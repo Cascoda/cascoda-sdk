@@ -27,9 +27,13 @@ Minimal baremetal driver. This contains the minimal functionality required to co
 
 Port layer for the OpenThread stack. This enables using OpenThread on baremetal platforms with a CA-821x radio. The [OpenThread API](https://openthread.io/reference) itself should be used for controlling the OpenThread stack.
 
+### cascoda-bm-devboard
+
+Functions and examples specifically targeted for the [Cascoda Development Board](../docs/how-to/howto-devboard.md).
+
 ### mikrosdk-click
 
-Set of example drivers for extracting data from connected sensors and controlling actuators. It abstracts away the details of the underlying I2C/SPI communications. The drivers in this folder are written by MikroElektronika, which provide libraries for their sensors.
+Set of MikroE CLICK board<sup>TM</sup> drivers for extracting data from sensors and controlling actuators.
 
 ### mikrosdk-lib
 
@@ -41,7 +45,7 @@ Platform abstraction layers for different microcontrollers. These are split into
 
 ### sensorif
 
-Set of specific (non-MikroElektronika) drivers for extracting data from connected sensors and controlling actuators. This abstracts away the details of the underlying I2C/SPI communications.
+Set of specific (non-MikroE) drivers for extracting data from sensors and controlling actuators. This abstracts away the details of the underlying I2C/SPI communications.
 
 ### test
 

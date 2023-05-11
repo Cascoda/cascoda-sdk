@@ -126,6 +126,15 @@ ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_po
 	return BSP_ModuleRegisterGPIOInput(&args);
 }
 
+ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos)
+{
+	// Remap the pin
+	mapLEDBtnToPin(ledBtn, jumperPos);
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+
+	return BSP_ModuleDeregisterGPIOPin(registeredPinMappings[ledBtn]);
+}
+
 // Get the state of the LED/button
 ca_error DVBD_Sense(dvbd_led_btn ledBtn, u8_t *val)
 {

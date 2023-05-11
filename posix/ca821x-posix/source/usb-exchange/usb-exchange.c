@@ -103,7 +103,6 @@ static int (*dhid_exit)(void);
 static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef);
 
 static pthread_mutex_t devs_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  devs_cond  = PTHREAD_COND_INITIALIZER;
 
 /**
  * Assert that the device is a usb device, and crash if not.
@@ -486,7 +485,6 @@ static void add_sdev(struct ca821x_dev *pDeviceRef)
 	size_t              mem_increase;
 
 	s_devcount++;
-	pthread_cond_signal(&devs_cond);
 	for (int i = 0; i < s_maxdevcount; i++)
 	{
 		if (s_devs[i] == NULL)
@@ -514,7 +512,6 @@ static void rm_sdev(struct ca821x_dev *pDeviceRef)
 {
 	// devs_mutex should be locked when calling this function
 	s_devcount--;
-	pthread_cond_signal(&devs_cond);
 	for (int i = 0; i < s_maxdevcount; i++)
 	{
 		if (s_devs[i] == pDeviceRef)
@@ -702,7 +699,7 @@ ca_error usb_exchange_init(ca821x_errorhandler callback,
 		if (serial_num != NULL)
 		{
 			char hidSerialNum[16];
-			sprintf(hidSerialNum, "%ws", hid_cur->serial_number);
+			sprintf(hidSerialNum, "%S", hid_cur->serial_number);
 			ca_log_debg("Looking for serial number %s, current device is %s", serial_num, hidSerialNum);
 			if (strcmp(serial_num, hidSerialNum) != 0)
 			{
