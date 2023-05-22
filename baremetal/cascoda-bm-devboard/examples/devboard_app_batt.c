@@ -20,6 +20,10 @@
 #include "devboard_batt.h"
 #include "devboard_btn.h"
 
+#define GET_CHARGE_STAT 1
+#define GET_VOLTS 1
+#define GET_USB_PRESENT 1
+
 /* reporting period in [ms] */
 #define REPORT_TIME 5000
 
@@ -42,22 +46,42 @@ static ca_error ReportBattStatus(void *aContext)
 	u8_t  charging      = 0;
 	u8_t  vbusconnected = 0;
 
-	charging      = DVBD_BattGetChargingStatus();
-	vbatt         = DVBD_BattGetVoltage();
-	vbusconnected = DVBD_BattGetVbusConnected();
+	if (GET_CHARGE_STAT)
+		charging = DVBD_BattGetChargeStat();
+	if (GET_VOLTS)
+		vbatt = DVBD_BattGetVolts();
+	if (GET_USB_PRESENT)
+		vbusconnected = DVBD_BattGetUSBPresent();
 
 	printf("%4us BattStatus: ", (TIME_ReadAbsoluteTime() / 1000));
-	printf("Vbatt: %2d.%02u V;", (vbatt / 100), abs(vbatt % 100));
-	printf(" %s;", ((charging == CHARGING) ? "charging" : "not charging"));
-	printf(" %s;", ((vbusconnected == CONNECTED) ? "+5V connected" : "+5V not connected"));
+	if (GET_VOLTS)
+		printf("Vbatt: %2d.%02u V;", (vbatt / 100), abs(vbatt % 100));
+	if (GET_CHARGE_STAT)
+		printf(" %s;", ((charging == CHARGING) ? "charging" : "not charging"));
+	if (GET_USB_PRESENT)
+		printf(" %s;", ((vbusconnected == CONNECTED) ? "+5V connected" : "+5V not connected"));
 	printf("\n");
 
 	TASKLET_ScheduleDelta(&g_report_batt_tasklet, REPORT_TIME, NULL);
 
 	if (vbusconnected)
+		DVBD_SetLED(LED_BTN_1, LED_ON);
+	else
+		DVBD_SetLED(LED_BTN_1, LED_OFF);
+
+	if (charging)
+		DVBD_SetLED(LED_BTN_2, LED_ON);
+	else
+		DVBD_SetLED(LED_BTN_2, LED_OFF);
+
+#if defined(USE_USB)
+	if (vbusconnected)
 		g_go_sleep = 0;
 	else
 		g_go_sleep = 1;
+#else
+	g_go_sleep = 1;
+#endif // USE_USB
 
 	return CA_ERROR_SUCCESS;
 }
@@ -76,9 +100,28 @@ static void hardware_init(void)
 		printf("Failed to register SW4\n");
 
 	DVBD_SetLED(LED_BTN_0, LED_ON);
-	DVBD_SetLED(LED_BTN_1, LED_ON);
-	DVBD_SetLED(LED_BTN_2, LED_ON);
-	DVBD_SetLED(LED_BTN_3, LED_ON);
+	DVBD_SetLED(LED_BTN_1, LED_OFF);
+	DVBD_SetLED(LED_BTN_2, LED_OFF);
+	DVBD_SetLED(LED_BTN_3, LED_OFF);
+
+	if (GET_CHARGE_STAT)
+	{
+		/* initialise CHARGE_STAT */
+		if (DVBD_BattInitChargeStat())
+			printf("Failed to initialise CHARGE_STAT\n");
+	}
+	if (GET_VOLTS)
+	{
+		/* initialise VOLTS and VOLTS_TEST */
+		if (DVBD_BattInitVolts())
+			printf("Failed to initialise VOLTS/VOLTS_TEST\n");
+	}
+	if (GET_USB_PRESENT)
+	{
+		/* initialise USB_PRESENT */
+		if (DVBD_BattInitUSBPresent())
+			printf("Failed to initialise USB_PRESENT\n");
+	}
 
 	TASKLET_Init(&g_report_batt_tasklet, &ReportBattStatus);
 	TASKLET_ScheduleDelta(&g_report_batt_tasklet, REPORT_TIME, NULL);

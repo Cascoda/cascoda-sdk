@@ -334,20 +334,23 @@ void cascoda_isr_secure_init(void);
 /** function to kick the linker into including strong ISR overrides */
 void cascoda_isr_chili_init(void);
 
-#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1)) /* Chili2 */
+/* Chili2 */
+#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1))
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
-#elif ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3)) /* Chili2 devboard */
+/* Chili2 devboard */
+#elif (CASCODA_CHILI2_CONFIG == 2)
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0
-#elif (CASCODA_CHILI2_CONFIG == \
-       4) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+#elif (CASCODA_CHILI2_CONFIG == 3)
 #define SPI SPI1
 #define SPI_MODULE SPI1_MODULE
 #define SPI_NUM 1
-#elif (CASCODA_CHILI2_CONFIG == 5) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#elif (CASCODA_CHILI2_CONFIG == 4)
 #define SPI SPI0
 #define SPI_MODULE SPI0_MODULE
 #define SPI_NUM 0

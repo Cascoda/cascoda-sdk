@@ -72,14 +72,17 @@ typedef enum enPortnum
 /* MFP definitions (need to be checked when changing pins or package!) */
 #define PMFP_GPIO 0
 #define PMFP_ADC 1
-#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1)) /* Chili2 */
+/* Chili2 */
+#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1))
 #define PMFP_SPI 4
-#elif ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3)) /* Chili2 devboard */
+/* Chili2 devboard */
+#elif (CASCODA_CHILI2_CONFIG == 2)
 #define PMFP_SPI 4
-#elif (CASCODA_CHILI2_CONFIG == \
-       4) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+#elif (CASCODA_CHILI2_CONFIG == 3)
 #define PMFP_SPI 6
-#elif (CASCODA_CHILI2_CONFIG == 5) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#elif (CASCODA_CHILI2_CONFIG == 4)
 #define PMFP_SPI 5
 #endif /* CASCODA_CHILI2_CONFIG */
 #if defined(USE_UART)
@@ -111,7 +114,8 @@ typedef enum enPortnum
  * PORTNAME_PVAL: 	port value for r/w, i.e. PA20
  */
 
-#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1)) /* Chili2 */
+/* Chili2 */
+#if ((CASCODA_CHILI2_CONFIG == 0) || (CASCODA_CHILI2_CONFIG == 1))
 #if (CASCODA_CHILI_DISABLE_CA821x == 0)
 /* ZIG_RESET: PC.1 */
 #define ZIG_RESET_PORT PC
@@ -156,7 +160,8 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_A
 #define SPI_CS_PIN 3
 #define SPI_CS_PVAL PA3
-#elif ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3)) /* Chili2 devboard */
+/* Chili2 devboard */
+#elif (CASCODA_CHILI2_CONFIG == 2)
 #if (CASCODA_CHILI_DISABLE_CA821x == 0)
 /* ZIG_RESET: PC.1 */
 #define ZIG_RESET_PORT PC
@@ -201,8 +206,8 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_A
 #define SPI_CS_PIN 3
 #define SPI_CS_PVAL PA3
-#elif (CASCODA_CHILI2_CONFIG == \
-       4) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - center SPI connection */
+#elif (CASCODA_CHILI2_CONFIG == 3)
 /* ZIG_RESET: PC.10 */
 #define ZIG_RESET_PORT PC
 #define ZIG_RESET_PNUM PN_C
@@ -234,7 +239,8 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_H
 #define SPI_CS_PIN 9
 #define SPI_CS_PVAL PH9
-#elif (CASCODA_CHILI2_CONFIG == 5) /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+/* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
+#elif (CASCODA_CHILI2_CONFIG == 4)
 /* ZIG_RESET: PC.10 */
 #define ZIG_RESET_PORT PC
 #define ZIG_RESET_PNUM PN_C

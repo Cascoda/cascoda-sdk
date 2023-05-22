@@ -74,7 +74,7 @@ target_link_libraries(cascoda-bm
 		mbedcrypto
 	)
 
-if((CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD") OR (CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD_BATT"))
+if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD")
 target_link_libraries(cascoda-bm
 	PUBLIC
 		cascoda-bm-devboard

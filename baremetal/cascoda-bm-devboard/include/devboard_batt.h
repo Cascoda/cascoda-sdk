@@ -46,25 +46,52 @@ enum dvbd_vbus_state
 	CONNECTED     = 1,
 };
 
+/* devboard pin assignments (chili2 pins) for battery functions */
+#define BATT_USB_PRESENT_PIN 5
+#define BATT_VOLTS_TEST_PIN 6
+#define BATT_VOLTS_PIN 35
+#define BATT_CHARGE_STAT_PIN 36
+
 /**
  * \brief read the battery voltage
  * \return vbatt * 100 (10mV resolution)
  *
  */
-uint16_t DVBD_BattGetVoltage(void);
+uint16_t DVBD_BattGetVolts(void);
 
 /**
  * \brief get the battery charging status
- * \return status
+ * \return NOT_CHARGING (0) or CHARGING (1)
  *
  */
-uint8_t DVBD_BattGetChargingStatus(void);
+uint8_t DVBD_BattGetChargeStat(void);
 
 /**
- * \brief check if +5V (USV Vbus or external) is connected
+ * \brief check if +5V (USB Vbus or external) is connected
+ * \return NOT_CONNECTED (0) or CONNECTED (1)
+ *
+ */
+uint8_t DVBD_BattGetUSBPresent(void);
+
+/**
+ * \brief initialise CHARGE_STAT
  * \return status
  *
  */
-uint8_t DVBD_BattGetVbusConnected(void);
+ca_error DVBD_BattInitChargeStat(void);
+
+/**
+ * \brief initialise VOLTS and VOLTS_TEST
+ * \return status
+ *
+ */
+ca_error DVBD_BattInitVolts(void);
+
+/**
+ * \brief initialise USB_PRESENT
+ * \return status
+ *
+ */
+ca_error DVBD_BattInitUSBPresent(void);
 
 #endif // DEVBOARD_BATT_H

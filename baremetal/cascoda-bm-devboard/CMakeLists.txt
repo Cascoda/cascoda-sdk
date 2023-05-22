@@ -73,3 +73,11 @@ add_executable(devboard-gfx-1-54
 target_link_libraries(devboard-gfx-1-54 cascoda-bm test15-4-api cascoda-bm-devboard mikrosdk-click sensorif eink-driver-1-54-half-res) 
 cascoda_make_binary(devboard-gfx-1-54 CASCODA_BUILD_BINARIES)
 cascoda_put_subdir(devboard devboard-gfx-1-54)
+
+add_executable(devboard-click-batt
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_click_batt.c
+)
+
+target_link_libraries(devboard-click-batt cascoda-bm cascoda-bm-devboard mikrosdk-click)
+cascoda_make_binary(devboard-click-batt CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-click-batt)

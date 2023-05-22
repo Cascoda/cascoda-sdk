@@ -62,7 +62,7 @@ extern "C" {
 /* Pin configuration */
 #define SIF_SSD1681_BUSY_PIN 31
 
-#if ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3))
+#if (CASCODA_CHILI2_CONFIG == 2)
 #define SIF_SSD1681_RST_PIN 5
 #else
 #define SIF_SSD1681_RST_PIN 15
@@ -173,7 +173,7 @@ ca_error SIF_SSD1681_overlay_qr_code(const char *text, uint8_t *image, uint8_t s
  *******************************************************************************
  * \param image - The image that is copied into the RAM.
  * \param full_resolution - Whether the image provided should be displayed
- * in full resolution or half resolution. This is is ignored when 
+ * in full resolution or half resolution. This is is ignored when
  * EPAPER_FULL_RESOLUTION is defined, and therefore only applies to binaries
  * built with half resolution in mind. This allows the option to display an
  * image (typically stored in flash) using full resolution, as an exception.

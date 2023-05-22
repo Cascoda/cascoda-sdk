@@ -1,10 +1,14 @@
 # Border Router Setup
 
-This guide will walk you through everything you need to know to start using your [Cascoda Border Router](https://www.cascoda.com/products/border-router/).
+This guide will walk you through everything you need to know to start using your [KNX IoT Hub](https://www.cascoda.com/products/knx-iot-hub/) as a Thread Border Router.
+
+<p align="center"><img src="img/border-router/border_router.jpg" width="60%" align="center"></p>
+
+Note: For the purposes of this guide, the KNX IoT Hub will only be used as a Thread Border Router. For that reason, it will simply be referred to as the "Border Router" from hereon.
 
 ## Required Hardware
 
-- Cascoda Border Router
+- Cascoda's KNX IoT Hub (Border Router)
 - 12V 1A Power Supply, with centre-positive barrel connector
 - Ethernet cable
 - A computer with an Ethernet socket

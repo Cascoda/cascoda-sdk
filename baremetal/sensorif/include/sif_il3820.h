@@ -62,7 +62,7 @@ extern "C" {
 /* Pin configuration */
 #define SIF_IL3820_BUSY_PIN 31
 
-#if ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3))
+#if (CASCODA_CHILI2_CONFIG == 2)
 #define SIF_IL3820_RST_PIN 5
 #else
 #define SIF_IL3820_RST_PIN 15
@@ -157,7 +157,7 @@ ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t sc
  * \brief Follows Routines for clearing, waiting and displaying the image.
  *******************************************************************************
  * \param image - The image to be overlaid on the eink screen.
- * \param mode - Whether or not the display will be cleared before the image 
+ * \param mode - Whether or not the display will be cleared before the image
  * is displayed
  *******************************************************************************
  ******************************************************************************/

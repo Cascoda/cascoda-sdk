@@ -31,9 +31,11 @@
 #include "cascoda-util/cascoda_time.h"
 #include "devboard_btn.h"
 
+#include "devboard_batt.h"
+
 // get the battery voltage
 // Vbatt[V] = uint16_t / 100
-uint16_t DVBD_BattGetVoltage(void)
+uint16_t DVBD_BattGetVolts(void)
 {
 	uint32_t adcval;
 	uint16_t vbatt;
@@ -50,13 +52,68 @@ uint16_t DVBD_BattGetVoltage(void)
 }
 
 // get the battery charging status
-uint8_t DVBD_BattGetChargingStatus(void)
+uint8_t DVBD_BattGetChargeStat(void)
 {
 	return (BSP_GetChargeStat());
 }
 
 // check if +5V (Vbus or external) is connected
-uint8_t DVBD_BattGetVbusConnected(void)
+uint8_t DVBD_BattGetUSBPresent(void)
 {
 	return (BSP_GetVBUSConnected());
+}
+
+// initialise CHARGE_STAT
+ca_error DVBD_BattInitChargeStat(void)
+{
+	struct gpio_input_args args;
+
+	/* input, pull-up, debounced */
+	args.mpin     = BATT_CHARGE_STAT_PIN;
+	args.pullup   = MODULE_PIN_PULLUP_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.irq      = MODULE_PIN_IRQ_OFF;
+
+	return BSP_ModuleRegisterGPIOInput(&args);
+}
+
+// initialise VOLTS (and VOLTS_TEST)
+ca_error DVBD_BattInitVolts(void)
+{
+	ca_error               status;
+	struct gpio_input_args args;
+
+	/* VOLTS_TEST */
+	/* output, no pull-up, permanent, set to 0 */
+	if ((status = BSP_ModuleRegisterGPIOOutput(BATT_VOLTS_TEST_PIN, MODULE_PIN_TYPE_GENERIC)))
+		return status;
+	BSP_ModuleSetGPIOPin(BATT_VOLTS_TEST_PIN, 0);
+	BSP_ModuleSetGPIOOutputPermanent(BATT_VOLTS_TEST_PIN);
+
+	/* VOLTS */
+	/* input, no pull-up */
+	/* ADC input (analog) is switched in dynamically */
+	args.mpin     = BATT_VOLTS_PIN;
+	args.pullup   = MODULE_PIN_PULLUP_OFF;
+	args.debounce = MODULE_PIN_DEBOUNCE_OFF;
+	args.irq      = MODULE_PIN_IRQ_OFF;
+	if ((status = BSP_ModuleRegisterGPIOInput(&args)))
+		return status;
+
+	return CA_ERROR_SUCCESS;
+}
+
+// initialise USB_PRESENT
+ca_error DVBD_BattInitUSBPresent(void)
+{
+	struct gpio_input_args args;
+
+	/* USB_PRESENT (VBUS_CONNECTED) */
+	/* input, no pull-up */
+	args.mpin     = BATT_USB_PRESENT_PIN;
+	args.pullup   = MODULE_PIN_PULLUP_OFF;
+	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.irq      = MODULE_PIN_IRQ_OFF;
+
+	return BSP_ModuleRegisterGPIOInput(&args);
 }

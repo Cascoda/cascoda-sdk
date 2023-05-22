@@ -14,16 +14,13 @@ This module contains example applications to demonstrate the use of the APIs for
 | devboard-gfx-x-x | `examples/devboard_app_gfx_x_x.c` | Example app demonstrating how the devboard can show graphics (menu) on an eink display (where x-x is replaced by the size, e.g. 2-9 meaning 2.9 inches). |
 | devboard-sleep | `examples/devboard_app_sleep.c`  | Example app demonstrating the sleep modes. |
 | devboard-batt | `examples/devboard_app_batt.c`  | Example app demonstrating the battery monitoring functions. |
+| devboard-click-batt | `examples/devboard_app_click_batt.c`  | Example app demonstrating combined use of peripherals and battery monitoring. |
 ## Building instructions
 
 Assuming that you have already [set up your build directories](../../README.md#building), in order to get the devboard example binaries to build, you need to change the CMake configuration as follows: 
 
 ```CMake
 CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD
-```
-When using the Battry monitoring functions on the Development Board, the following configuration should be used:
-```CMake
-CASCODA_CHILI2_CONFIG_STRING:STRING=DEV_BOARD_BATT
 ```
 The recommended method of doing this is [using the tools that come with CMake](https://cmake.org/runningcmake/). However, if you know what you are doing, then you can alternatively edit the `CMakeCache.txt` file yourself to make those changes.
 

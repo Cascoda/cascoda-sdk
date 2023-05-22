@@ -226,7 +226,7 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Init(void)
 
 	else if (SENSORIF_I2CNUM_S == 1)
 	{
-#if ((CASCODA_CHILI2_CONFIG == 2) || (CASCODA_CHILI2_CONFIG == 3)) /* Chili2 devboard */
+#if (CASCODA_CHILI2_CONFIG == 2) /* Chili2 devboard */
 		/* re-config PF.0 and PF.1 */
 		GPIO_ENABLE_DIGITAL_PATH(PF, BIT0);
 		GPIO_ENABLE_DIGITAL_PATH(PF, BIT1);
