@@ -43,6 +43,7 @@ List::List()
     , mExtFlashAvailableArg('\0', "ext-flash-available", ArgOpt::OPTIONAL_ARG)
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY_ARG)
     , mMinVersionArg('v', "min-version", ArgOpt::MANDATORY_ARG)
+    , mEnumerateUartDevicesArg('u', "enumerate-uart")
     , mDeviceList()
     , mDeviceListFilter()
     , mExitBeforeWork(false)
@@ -72,6 +73,9 @@ List::List()
 	    "Filter the list to only include devices with a version greater or equal to the provided version. eg: 0.18");
 	mMinVersionArg.SetCallback(&List::set_versionno_filter, *this);
 	mArgParser.AddOption((mMinVersionArg));
+
+	mEnumerateUartDevicesArg.SetHelpString("Will also enumerate devices connected to COM ports on your PC.");
+	mArgParser.AddOption(mEnumerateUartDevicesArg);
 }
 
 static const char *or_default(const char *val, const char *default_val)
@@ -101,7 +105,7 @@ ca_error List::Process(int argc, const char *argv[])
 	if (mExitBeforeWork)
 		return error;
 
-	mDeviceList.Refresh(mDeviceListFilter);
+	mDeviceList.Refresh(mDeviceListFilter, mEnumerateUartDevicesArg.GetCallCount());
 
 	for (const DeviceInfo &di : mDeviceList.Get())
 	{

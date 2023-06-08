@@ -63,6 +63,7 @@ Flasher::Flasher(const char       *aAppFilePath,
     , mState(INIT)
     , mFlashType(aFlashType)
     , mIgnoreVersion(false)
+    , mEnumerateUartDevices(false)
     , mOtaBootFilePresent(strcmp(aOtaBootFilePath, "") != 0)
 {
 	if ((mFlashType != APROM_CLEAR) && (mFlashType != MANUFACTURER))
@@ -263,7 +264,7 @@ ca_error Flasher::reboot()
 	if (mFlashType <= APROM_CLEAR_AND_PROGRAM)
 		dlf.SetAppName("DFU");
 
-	dl.Refresh(dlf);
+	dl.Refresh(dlf, mEnumerateUartDevices);
 
 	numresults = dl.Get().size();
 	mCounter++;
@@ -368,7 +369,7 @@ ca_error Flasher::validate()
 	if (mFlashType == DFU)
 		dlf.SetAppName("DFU");
 
-	dl.Refresh(dlf);
+	dl.Refresh(dlf, mEnumerateUartDevices);
 
 	numresults = dl.Get().size();
 

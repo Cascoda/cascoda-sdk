@@ -48,6 +48,7 @@ Pipe::Pipe()
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY_ARG)
     , mAnyArg('a', "any")
     , mResetArg('r', "reset")
+    , mEnumerateUartDevicesArg('u', "enumerate-uart")
 
 {
 	mHelpArg.SetHelpString("Print this message to stdout");
@@ -64,6 +65,9 @@ Pipe::Pipe()
 
 	mResetArg.SetHelpString("Reset the device with a software reset before piping.");
 	mArgParser.AddOption(mResetArg);
+
+	mEnumerateUartDevicesArg.SetHelpString("Will also enumerate devices connected to COM ports on your PC.");
+	mArgParser.AddOption(mEnumerateUartDevicesArg);
 }
 
 ca_error Pipe::Process(int argc, const char *argv[])
@@ -88,7 +92,7 @@ ca_error Pipe::Process(int argc, const char *argv[])
 		goto exit;
 
 	mDeviceListFilter.SetAvailable(true);
-	mDeviceList.Refresh(mDeviceListFilter);
+	mDeviceList.Refresh(mDeviceListFilter, mEnumerateUartDevicesArg.GetCallCount());
 
 	devcount = mDeviceList.Get().size();
 

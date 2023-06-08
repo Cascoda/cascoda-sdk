@@ -62,6 +62,7 @@ private:
 	ArgOpt           mExtFlashUpdateArg;
 	ArgOpt           mClearAPROM;
 	ArgOpt           mIgnoreVersionArg;
+	ArgOpt           mEnumerateUartDevicesArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	std::string      mAppFilePath;

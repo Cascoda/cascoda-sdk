@@ -48,6 +48,7 @@ Reboot::Reboot()
     , mHelpArg('h', "help")
     , mSerialArg('s', "serialno", ArgOpt::MANDATORY_ARG)
     , mBatchArg('b', "batch")
+    , mEnumerateUartDevicesArg('u', "enumerate-uart")
 {
 	mHelpArg.SetHelpString("Print this message to stdout.");
 	mHelpArg.SetCallback(&Reboot::print_help_string, *this);
@@ -60,6 +61,9 @@ Reboot::Reboot()
 
 	mBatchArg.SetHelpString("Reboot all connected devices.");
 	mArgParser.AddOption(mBatchArg);
+
+	mEnumerateUartDevicesArg.SetHelpString("Will also enumerate devices connected to COM ports on your PC.");
+	mArgParser.AddOption(mEnumerateUartDevicesArg);
 }
 
 Reboot::~Reboot()
@@ -89,7 +93,7 @@ ca_error Reboot::Process(int argc, const char *argv[])
 		goto exit;
 
 	mDeviceListFilter.SetAvailable(true);
-	mDeviceList.Refresh(mDeviceListFilter);
+	mDeviceList.Refresh(mDeviceListFilter, mEnumerateUartDevicesArg.GetCallCount());
 
 	devcount = mDeviceList.Get().size();
 

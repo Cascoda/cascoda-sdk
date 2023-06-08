@@ -67,6 +67,8 @@ COMMAND OPTIONS
                 Filter the list to only include the device with the given serial number.
         -v <version-no>, --min-version=<version-no>
                 Filter the list to only include devices with a version greater or equal to the provided version. eg: 0.18
+        -u, --enumerate-uart
+                Will also enumerate devices connected to COM ports on your PC.
 ```
 
 ### List output
@@ -143,6 +145,8 @@ COMMAND OPTIONS
                 Clear the entire application flash region.
         --ignore-version
                 Ignore the version check on the device to be flashed. Warning: Flashing will not work if device firmware is older than v0.14.
+        -u, --enumerate-uart
+                Will also enumerate devices connected to COM ports on your PC.
 ```
 
 ### DFU region update
@@ -298,6 +302,8 @@ COMMAND OPTIONS
                 Pipe the device with the given serial number.
         -a, --any
                 Pick any matching device, rather than throwing error if more than one match.
+        -u, --enumerate-uart
+                Will also enumerate devices connected to COM ports on your PC.
 ```
 
 ### Pipe example: MLME Get
@@ -337,6 +343,8 @@ COMMAND OPTIONS
                 Reboot the device with the given serial number.
         -b, --batch
                 Reboot all connected devices.
+        -u, --enumerate-uart
+                Will also enumerate devices connected to COM ports on your PC.
 ```
 
 ### Reboot example

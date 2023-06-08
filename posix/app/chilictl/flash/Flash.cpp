@@ -112,6 +112,7 @@ Flash::Flash()
     , mExtFlashUpdateArg('e', "external-flash-update")
     , mClearAPROM('c', "clear-aprom")
     , mIgnoreVersionArg('\0', "ignore-version")
+    , mEnumerateUartDevicesArg('u', "enumerate-uart")
 {
 	mHelpArg.SetHelpString("Print this message to stdout");
 	mHelpArg.SetCallback(&Flash::print_help_string, *this);
@@ -153,6 +154,9 @@ Flash::Flash()
 	mIgnoreVersionArg.SetHelpString(
 	    "Ignore the version check on the device to be flashed. Warning: Flashing will not work if device firmware is older than v0.14.");
 	mArgParser.AddOption(mIgnoreVersionArg);
+
+	mEnumerateUartDevicesArg.SetHelpString("Will also enumerate devices connected to COM ports on your PC.");
+	mArgParser.AddOption(mEnumerateUartDevicesArg);
 }
 
 ca_error Flash::Process(int argc, const char *argv[])
@@ -177,7 +181,8 @@ ca_error Flash::Process(int argc, const char *argv[])
 		goto exit;
 
 	mDeviceListFilter.SetAvailable(true);
-	mDeviceList.Refresh(mDeviceListFilter);
+
+	mDeviceList.Refresh(mDeviceListFilter, mEnumerateUartDevicesArg.GetCallCount());
 
 	devcount = mDeviceList.Get().size();
 
@@ -273,6 +278,9 @@ ca_error Flash::flash_process(const DeviceInfo &aDeviceInfo, Flasher::FlashType 
 
 	if (mIgnoreVersionArg.GetCallCount())
 		f.SetIgnoreVersion(true);
+
+	if (mEnumerateUartDevicesArg.GetCallCount())
+		f.SetEnumerateUartDevices(true);
 
 	do
 	{

@@ -54,6 +54,7 @@ private:
 	ArgOpt           mExtFlashAvailableArg;
 	ArgOpt           mSerialArg;
 	ArgOpt           mMinVersionArg;
+	ArgOpt           mEnumerateUartDevicesArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 

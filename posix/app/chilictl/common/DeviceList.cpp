@@ -68,13 +68,14 @@ bool DeviceListFilter::IsFilterPass(const DeviceInfo &aDeviceInfo) const
 	return true;
 }
 
-void DeviceList::Refresh(const DeviceListFilter &aFilter)
+void DeviceList::Refresh(const DeviceListFilter &aFilter, bool enumerate_uart)
 {
 	mDevices.clear();
 	ca821x_util_enumerate(
 	    [](ca_device_info *aDeviceInfo, void *aContext) {
 		    static_cast<DeviceList *>(aContext)->mDevices.emplace_back(aDeviceInfo);
 	    },
+	    enumerate_uart,
 	    this);
 	mDevices.erase(std::remove_if(mDevices.begin(),
 	                              mDevices.end(),

@@ -59,6 +59,7 @@ private:
 	ArgOpt           mHelpArg;
 	ArgOpt           mSerialArg;
 	ArgOpt           mBatchArg;
+	ArgOpt           mEnumerateUartDevicesArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	ca821x_dev       mDeviceRef;

@@ -136,6 +136,8 @@ public:
 	 */
 	void SetIgnoreVersion(bool aIgnoreVersion) { mIgnoreVersion = aIgnoreVersion; }
 
+	void SetEnumerateUartDevices(bool aEnumerateUartDevices) { mEnumerateUartDevices = aEnumerateUartDevices; }
+
 private:
 	enum
 	{
@@ -165,6 +167,7 @@ private:
 	State         mState;
 	FlashType     mFlashType;
 	bool          mIgnoreVersion;
+	bool          mEnumerateUartDevices;
 	bool          mOtaBootFilePresent;
 
 	void     set_state(State aNextState);

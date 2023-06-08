@@ -56,6 +56,7 @@ private:
 	ArgOpt           mSerialArg;
 	ArgOpt           mAnyArg;
 	ArgOpt           mResetArg;
+	ArgOpt           mEnumerateUartDevicesArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	std::mutex       mIoMutex;

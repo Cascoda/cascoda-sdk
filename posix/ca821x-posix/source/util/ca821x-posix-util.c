@@ -80,23 +80,22 @@ ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
 	if (error)
 		goto exit;
 #ifdef _WIN32
-	error = uart_exchange_init(errorHandler, pDeviceRef, arg);
-
+	error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
 	if (error)
 	{
-		error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
+		error = uart_exchange_init(errorHandler, pDeviceRef, arg);
 	}
 #else
 	error = kernel_exchange_init(errorHandler, pDeviceRef);
 
 	if (error)
 	{
-		error = uart_exchange_init(errorHandler, NULL, pDeviceRef);
+		error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
 	}
 
 	if (error)
 	{
-		error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
+		error = uart_exchange_init(errorHandler, NULL, pDeviceRef);
 	}
 #endif
 exit:
@@ -272,14 +271,15 @@ static void enumerate_callback(struct ca_device_info *aDeviceInfo, void *aContex
 	free(serBuf);
 }
 
-ca_error ca821x_util_enumerate(util_device_found aCallback, void *aContext)
+ca_error ca821x_util_enumerate(util_device_found aCallback, bool enumerate_uart, void *aContext)
 {
 	struct dev_info_context context = {aCallback, aContext, CA_ERROR_NOT_FOUND};
 #ifndef _WIN32
 	kernel_exchange_enumerate(&enumerate_callback, &context);
 #endif
-	uart_exchange_enumerate(&enumerate_callback, &context);
 	usb_exchange_enumerate(&enumerate_callback, &context);
+	if (enumerate_uart)
+		uart_exchange_enumerate(&enumerate_callback, &context);
 	return context.status;
 }
 

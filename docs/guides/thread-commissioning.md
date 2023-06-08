@@ -40,7 +40,7 @@ Select one commissioning method and one joining method:
       - This can be used when you are using an openthread CLI on a device that is already connected to the network (or has formed it).
     - [App Commissioning](#app-commissioning)
       - This can be used when you have a border router, and an android smartphone that you can connect to it over WiFi.
-    - [OT-BR Web GUI Commissioning](#ot-br-web-gui-commissioning)
+    - [OT-BR Web GUI Commissioning](#cascoda-border-router-web-gui-commissioning)
       - This can be used when you have a border router and can access its web interface using a web browser.
 - [Joining](#joining)
     - [CLI Joining](#cli-joining)
@@ -95,6 +95,8 @@ The Cascoda BR Commissioning process uses the Cascoda Border Router web portal t
 <p align="center"><img src="img/thread-comm/webgui-comm.png" width="80%" align="center"></p>
 
 - Device has been commissioned onto the network!
+
+- If the device does not join after two minutes, you may need to restart the Border Agent. Please navigate to `System -> Startup`, scroll down until you find `otbr-agent`, then press Restart on the `otbr-agent` row. Then, repeat the commissioning process.
 
 ### Joining
 

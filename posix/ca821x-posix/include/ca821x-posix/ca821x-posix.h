@@ -130,11 +130,12 @@ void ca821x_util_deinit(struct ca821x_dev *pDeviceRef);
  * callback has been called.
  *
  * @param aCallback The callback to call with each result
+ * @param enumerate_uart Whether or not this function should enumerate devices connected to COM ports.
  * @param aContext  The generic void pointer to provide to the callback when it is called
  * @retval CA_ERROR_SUCCESS   Enumeration successful
  * @retval CA_ERROR_NOT_FOUND No devices found
  */
-ca_error ca821x_util_enumerate(util_device_found aCallback, void *aContext);
+ca_error ca821x_util_enumerate(util_device_found aCallback, bool enumerate_uart, void *aContext);
 
 /**
  * Generic function to attempt a hard reset of the ca821x chip.

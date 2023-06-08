@@ -109,6 +109,7 @@ private:
 
 	bool mAvailableFilterEnabled;
 	bool mExtFlashAvailableFilterEnabled;
+	bool mEnumerateUartDevicesEnabled;
 
 	static const DeviceListFilter sEmpty;
 };
@@ -130,7 +131,7 @@ public:
 	/**
 	 * Refresh the internal list of devices. Must be called at least once.
 	 */
-	void Refresh(const DeviceListFilter &aFilter = DeviceListFilter::sEmpty);
+	void Refresh(const DeviceListFilter &aFilter = DeviceListFilter::sEmpty, bool enumerate_uart = false);
 
 	/**
 	 * Get the list of discovered devices as a vector.
