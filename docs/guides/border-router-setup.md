@@ -30,6 +30,8 @@ You may change the login password by navigating to `System - Administration` fro
 
 To access the Thread administration page, navigate to Network - Thread using the menu bar. Here you may [create a new network](thread-network-formation.md) or scan for existing networks, [join an existing network & commission other devices](thread-commissioning.md). After forming or joining a network, you may also view the currently connected Thread devices by pressing the `View` button next to the Thread network, and then navigating to the Topology Graph page.
 
+From the Thread administration page, you can also obtain the Thread Network Key for the network that you have created (sometimes also referred to as master key). To do this, click on the `Edit` button for that network; this will open a new page. Scroll to the very bottom of the page, and you will find the key in the input field that says `Network Key` (be careful not to accidentally edit it!).
+
 ### Generate the Pre-Shared Key (PSKc)
 
 If you would like to use external commissioners (e.g. a mobile Thread Commisioning App), you will need to generate a Pre-Shared Key for the Commissioner. This can be found `System - Custom Commands`. Press the "Run" button under the "Generate the PSKc" section without entering any arguments in order to see the syntax for using this command.

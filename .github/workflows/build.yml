@@ -22,7 +22,7 @@ jobs:
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
         mkdir ${{ github.workspace }}\release
         cd ${{ github.workspace }}\build-win\bin
-        Copy-Item -Path ocfctl.exe,chilictl.exe,knx-gen-data.exe,sniffer.exe,serial-adapter.exe,test\serial-test.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
+        Copy-Item -Path ocfctl.exe,chilictl.exe,knx-gen-data.exe,sniffer.exe,serial-adapter.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
         Copy-Item -Path ${{ github.workspace }}\cascoda-sdk\LICENSE -Destination ${{ github.workspace }}\release
         $readme = "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications"
         $readme | Out-File ${{ github.workspace }}\release\readme.txt
@@ -123,7 +123,7 @@ jobs:
         make -C ${{ github.workspace }}/build-posix -j4
         mkdir ${{ github.workspace }}/release
         cd ${{ github.workspace }}/build-posix/bin
-        cp ocfctl chilictl sniffer serial-adapter test/serial-test evbme-get ${{ github.workspace }}/release
+        cp ocfctl chilictl sniffer serial-adapter evbme-get ${{ github.workspace }}/release
         cp ${{ github.workspace }}/cascoda-sdk/LICENSE ${{ github.workspace }}/release
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/release/readme.txt
 
@@ -258,7 +258,7 @@ jobs:
 
     - name: build Chili2D-USB-KNX
       run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
         make -C ${{ github.workspace }}/build-chili2 -j4 $KNX_TARGETS
         cp ${{ github.workspace }}/build-chili2/bin/knx-*.bin ${{ github.workspace }}/upload-usb
         

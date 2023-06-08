@@ -383,7 +383,6 @@ Section "MainSection" SEC01
   File "..\..\release\ocfctl.exe"
   File "..\..\release\readme.txt"
   File "..\..\release\serial-adapter.exe"
-  File "..\..\release\serial-test.exe"
   File "..\..\release\sniffer.exe"
 SectionEnd
 
@@ -422,7 +421,6 @@ Section Uninstall
   Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\sniffer.exe"
-  Delete "$INSTDIR\serial-test.exe"
   Delete "$INSTDIR\serial-adapter.exe"
   Delete "$INSTDIR\readme.txt"
   Delete "$INSTDIR\ocfctl.exe"

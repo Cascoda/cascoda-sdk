@@ -17,21 +17,18 @@ The Cascoda Software Development Kit ...
 # Getting started
 
 We offer binaries that can be flashed directly onto our Chili2D USB module
-inside `Chili2D-USB.zip`. Windows executable files are found in
-`Windows-SDK.zip`. However, `Chili2S-UART0-1Mbaud.zip` is _for advanced users
+inside `Chili2D-USB.zip`. Cascoda's Windows Tools are provided via an installer ([click here to download](https://github.com/Cascoda/cascoda-sdk/releases/download/v0.23-6/CascodaWindowsTools.zip)). However, `Chili2S-UART0-1Mbaud.zip` is _for advanced users
 only_ as these binaries _cannot be used with our USB module_, only with Chili2S
 devices soldered onto a PCB.
 
-[**Click here to download pre-built
-binaries.**](https://github.com/Cascoda/cascoda-sdk/releases)
+[**Click here to for the latest release of all binaries and tools mentioned above.**](https://github.com/Cascoda/cascoda-sdk/releases)
 
 A reference of all documentation and guides is located [here](docs/reference/full-reference.md), but to get started, here is a list of things you might be looking to do...
 
-- [Learn how to build the Cascoda SDK](docs/reference/full-reference.md#building)
-- [Build an embedded KNX application over Thread](docs/how-to/howto-knxiot.md)
+- [Getting started with Cascoda's KNX IoT Dev Kit](docs/how-to/howto-knxiot-devkit.md)
 - [Build, configure and set up a Thread network](docs/how-to/howto-thread.md)
 - [Build embedded applications to communicate with various sensors and actuator](docs/how-to/howto-devboard.md)
-- [Build an embedded OCF application over Thread](docs/how-to/howto-ocf-thread.md)
+- [Learn how to build the Cascoda SDK](docs/reference/full-reference.md#building)
 
 If you're a developer or simply want to delve deeper into the Cascoda SDK, read on.
 
