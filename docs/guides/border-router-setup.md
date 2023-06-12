@@ -48,7 +48,9 @@ The `PASSPHRASE` argument is an alphanumeric password of your choice that will n
 
 ## Configure multicast addresses (important for KNX IoT)
 
-In order to route KNX-IoT S-Mode messages into and out of the Thread network, it is necessary to manually configure the multicast routes according to the needs of your installation.
+In order to route KNX-IoT S-Mode messages into and out of the Thread network, it is necessary to manually configure the multicast routes according to the needs of your installation. This can be done from the Web GUI, within `System -> Custom Commands`.
+
+![](./img/border-router/custom-commands.png)
 
 The `add-route` command is used for adding a new multicast route between the Thread and Ethernet & WiFi interfaces. The command takes two space-separated arguments. The first one is the IPv6 prefix to route, and the second one is the length of the prefix. For example, to add a route for `ff35:30:fd00:0:10::/80`, you must call `add-route` with arguments set to `ff35:30:fd00:0:10:: 80`. This will result in the following routes being added:
 ```
