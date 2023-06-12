@@ -102,7 +102,8 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 ## Step 3: Configuring using the Linker
 
 ### Discover your devices
-1. Launch the Linker.
+1. Launch the Linker. Check your hub firmware version by navigating to `Status -> Overview`. If your firmware version is `KNX-IoT-Hub-OpenWrt 1.5` or later, the Linker will be available at http://192.168.1.1:8081 . Otherwise, [download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
+    - Before flashing the image, ensure that the "Keep settings and retain the current configuration" checkbox is ticked. Otherwise, the hub will no longer have access to the Thread network created in Step 2. 
 2. Discover the devboards by clicking on `Discovery` from the menu bar, and selecting `Discover Devices (CoAP)` from the dropdown.
 3. After a few seconds, you will see two new devices get listed on the main window. One with a Serial Number 00fa10010710, and the other with Serial Number 00fa10010711. _DISAMBIGUATION: The term "Serial Number" as it appears in the Linker refers to the KNX Serial Number, which has nothing to do with the devboard serial number mentioned previously!_
 
