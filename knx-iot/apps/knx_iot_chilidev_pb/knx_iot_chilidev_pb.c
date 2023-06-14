@@ -33,13 +33,13 @@ void post_callback(char *url)
 {
 	bool my_bool = app_retrieve_bool_variable(url);
 	if (strcmp(url, "/p/o_2_2") == 0)
-		set_led(LED_BTN_0, my_bool);
+		set_led(DEV_SWITCH_1, my_bool);
 	if (strcmp(url, "/p/o_4_4") == 0)
-		set_led(LED_BTN_1, my_bool);
+		set_led(DEV_SWITCH_2, my_bool);
 	if (strcmp(url, "/p/o_6_6") == 0)
-		set_led(LED_BTN_2, my_bool);
+		set_led(DEV_SWITCH_3, my_bool);
 	if (strcmp(url, "/p/o_8_8") == 0)
-		set_led(LED_BTN_3, my_bool);
+		set_led(DEV_SWITCH_4, my_bool);
 }
 
 void generic_button_cb(char url[])
@@ -86,15 +86,15 @@ void button3_cb(void *context)
 void hardware_init()
 {
 	// Register all the board LEDs as an input
-	DVBD_RegisterButtonInput(LED_BTN_0, JUMPER_POS_2);
-	DVBD_RegisterButtonInput(LED_BTN_1, JUMPER_POS_2);
-	DVBD_RegisterButtonInput(LED_BTN_2, JUMPER_POS_2);
-	DVBD_RegisterButtonInput(LED_BTN_3, JUMPER_POS_2);
+	DVBD_RegisterButtonInput(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_RegisterButtonInput(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_RegisterButtonInput(DEV_SWITCH_3, JUMPER_POS_2);
+	DVBD_RegisterButtonInput(DEV_SWITCH_4, JUMPER_POS_2);
 
-	DVBD_SetButtonShortPressCallback(LED_BTN_0, &button0_cb, NULL, BTN_SHORTPRESS_PRESSED);
-	DVBD_SetButtonShortPressCallback(LED_BTN_1, &button1_cb, NULL, BTN_SHORTPRESS_PRESSED);
-	DVBD_SetButtonShortPressCallback(LED_BTN_2, &button2_cb, NULL, BTN_SHORTPRESS_PRESSED);
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button3_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_1, &button0_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &button1_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &button2_cb, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &button3_cb, NULL, BTN_SHORTPRESS_PRESSED);
 
 	// Setup callbacks for the info datapoints on pb
 	app_set_post_cb(post_callback);

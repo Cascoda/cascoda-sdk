@@ -66,11 +66,11 @@ static void button_pressed(void *context)
 void hardware_init(void)
 {
 	/* SW3 is LED output; static for power-on */
-	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);
-	DVBD_SetLED(LED_BTN_2, LED_ON);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_1);
+	DVBD_SetLED(DEV_SWITCH_3, LED_ON);
 	/* SW4 is IRQ button to test button interrupts */
-	DVBD_RegisterButtonIRQInput(LED_BTN_3, JUMPER_POS_1);
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button_pressed, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_4, JUMPER_POS_1);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &button_pressed, NULL, BTN_SHORTPRESS_PRESSED);
 
 	/* Eink Initialisation */
 	SENSORIF_SPI_Config(SPI_NUM);

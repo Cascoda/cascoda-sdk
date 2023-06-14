@@ -47,7 +47,7 @@ static u32_t led_on_time[NUM_LEDBTN] = {0, 0, 0, 0};
 static void short_press_cb(void *context)
 {
 	(void)context;
-	led_on_time[LED_BTN_0] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_1] = TIME_ReadAbsoluteTime();
 	printf("Button short pressed!\n");
 	holdcount = 0;
 }
@@ -56,7 +56,7 @@ static void short_press_cb(void *context)
 static void hold_cb(void *context)
 {
 	(void)context;
-	led_on_time[LED_BTN_1] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_2] = TIME_ReadAbsoluteTime();
 	++holdcount;
 	printf("Button held! (%ld)\n", holdcount);
 }
@@ -65,7 +65,7 @@ static void hold_cb(void *context)
 static void long_press_cb(void *context)
 {
 	(void)context;
-	led_on_time[LED_BTN_2] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_3] = TIME_ReadAbsoluteTime();
 	printf("Button long pressed!\n");
 	holdcount = 0;
 }
@@ -82,20 +82,20 @@ static void LEDBlinkHandler(void)
 	if (((curTime % LED_0_PERIOD) == LED_0_DELAY) && ((lastcurTime % LED_0_PERIOD) != LED_0_DELAY) &&
 	    (curTime >= LED_0_PERIOD))
 	{
-		DVBD_Sense(LED_BTN_0, &pinstate);
-		DVBD_SetLED(LED_BTN_0, !pinstate);
+		DVBD_Sense(DEV_SWITCH_1, &pinstate);
+		DVBD_SetLED(DEV_SWITCH_1, !pinstate);
 	}
 	if (((curTime % LED_1_PERIOD) == LED_1_DELAY) && ((lastcurTime % LED_1_PERIOD) != LED_1_DELAY) &&
 	    (curTime >= LED_1_PERIOD))
 	{
-		DVBD_Sense(LED_BTN_1, &pinstate);
-		DVBD_SetLED(LED_BTN_1, !pinstate);
+		DVBD_Sense(DEV_SWITCH_2, &pinstate);
+		DVBD_SetLED(DEV_SWITCH_2, !pinstate);
 	}
 	if (((curTime % LED_2_PERIOD) == LED_2_DELAY) && ((lastcurTime % LED_2_PERIOD) != LED_2_DELAY) &&
 	    (curTime >= LED_2_PERIOD))
 	{
-		DVBD_Sense(LED_BTN_2, &pinstate);
-		DVBD_SetLED(LED_BTN_2, !pinstate);
+		DVBD_Sense(DEV_SWITCH_3, &pinstate);
+		DVBD_SetLED(DEV_SWITCH_3, !pinstate);
 	}
 
 	lastcurTime = curTime;
@@ -134,9 +134,9 @@ static void LEDBtnHandler(void)
 // LEDs all on periodaically for wakeup
 static ca_error LEDsWakeUp(void *aContext)
 {
-	led_on_time[LED_BTN_0] = TIME_ReadAbsoluteTime();
-	led_on_time[LED_BTN_1] = TIME_ReadAbsoluteTime();
-	led_on_time[LED_BTN_2] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_1] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_2] = TIME_ReadAbsoluteTime();
+	led_on_time[DEV_SWITCH_3] = TIME_ReadAbsoluteTime();
 	TASKLET_ScheduleDelta(&LEDsWakeupTasklet, WAKEUP_TIME, NULL);
 	return CA_ERROR_SUCCESS;
 }
@@ -145,24 +145,24 @@ static ca_error LEDsWakeUp(void *aContext)
 static void hardware_init(void)
 {
 	/* Register the first 3 LEDS as output */
-	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_2);
 
 // Register the last button (3) as input
 #if USE_INTERRUPTS
-	DVBD_RegisterButtonIRQInput(LED_BTN_3, JUMPER_POS_2);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_4, JUMPER_POS_2);
 #else
-	DVBD_RegisterButtonInput(LED_BTN_3, JUMPER_POS_2);
+	DVBD_RegisterButtonInput(DEV_SWITCH_4, JUMPER_POS_2);
 #endif
 #if DEF_SHORT_CB
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &short_press_cb, NULL, BTN_SHORTPRESS_RELEASED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &short_press_cb, NULL, BTN_SHORTPRESS_RELEASED);
 #endif
 #if DEF_HOLD_CB
-	DVBD_SetButtonHoldCallback(LED_BTN_3, &hold_cb, NULL, BTN_HOLD_TIME_INTERVAL);
+	DVBD_SetButtonHoldCallback(DEV_SWITCH_4, &hold_cb, NULL, BTN_HOLD_TIME_INTERVAL);
 #endif
 #if DEF_LONG_CB
-	DVBD_SetButtonLongPressCallback(LED_BTN_3, &long_press_cb, NULL, BTN_LONG_TIME_THRESHOLD);
+	DVBD_SetButtonLongPressCallback(DEV_SWITCH_4, &long_press_cb, NULL, BTN_LONG_TIME_THRESHOLD);
 #endif
 
 	TASKLET_Init(&LEDsWakeupTasklet, &LEDsWakeUp);

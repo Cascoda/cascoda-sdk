@@ -38,7 +38,7 @@ static void button3_pressed(void *context)
 {
 	(void)context;
 	g_always_on = 1 - g_always_on;
-	DVBD_SetLED(LED_BTN_1, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_2, LED_OFF);
 }
 
 // button 2 routine
@@ -47,7 +47,7 @@ static void button3_pressed(void *context)
 static void button2_pressed(void *context)
 {
 	(void)context;
-	DVBD_SetLED(LED_BTN_1, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_2, LED_ON);
 }
 
 // power down function
@@ -82,17 +82,17 @@ static void check_always_on(void)
 void hardware_init(void)
 {
 	/* SW1 is LED output; static for power-on */
-	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_2);
-	DVBD_SetLED(LED_BTN_0, LED_ON);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_SetLED(DEV_SWITCH_1, LED_ON);
 	/* SW2 is LED output for button interrupt; cleared when going to sleep again */
-	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_2);
-	DVBD_SetLED(LED_BTN_1, LED_OFF);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_SetLED(DEV_SWITCH_2, LED_OFF);
 	/* W3 is IRQ button to test button interrupts */
-	DVBD_RegisterButtonIRQInput(LED_BTN_2, JUMPER_POS_2);
-	DVBD_SetButtonShortPressCallback(LED_BTN_2, &button2_pressed, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &button2_pressed, NULL, BTN_SHORTPRESS_PRESSED);
 	/* 4th BTN/LED (3) is polled button to switch between always on and sleep mode */
-	DVBD_RegisterButtonInput(LED_BTN_3, JUMPER_POS_2);
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button3_pressed, NULL, BTN_SHORTPRESS_PRESSED);
+	DVBD_RegisterButtonInput(DEV_SWITCH_4, JUMPER_POS_2);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &button3_pressed, NULL, BTN_SHORTPRESS_PRESSED);
 
 	TASKLET_Init(&pd_tasklet, &pd_sleep);
 }

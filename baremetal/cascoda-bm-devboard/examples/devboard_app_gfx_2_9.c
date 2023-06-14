@@ -202,12 +202,12 @@ static void app_initialise(void)
 	SIF_IL3820_Initialise(FULL_UPDATE);
 
 	/* 3rd BTN/LED (2) is LED output; static for power-on */
-	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);
-	DVBD_SetLED(LED_BTN_2, LED_ON);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_1);
+	DVBD_SetLED(DEV_SWITCH_3, LED_ON);
 	/* 4th BTN/LED (3) is IRQ button to test button interrupts */
-	DVBD_RegisterButtonIRQInput(LED_BTN_3, JUMPER_POS_1);
-	DVBD_SetButtonShortPressCallback(LED_BTN_3, &button_pressed, NULL, BTN_SHORTPRESS_RELEASED);
-	DVBD_SetButtonLongPressCallback(LED_BTN_3, &long_button_pressed, NULL, BTN_LONG_TIME_THRESHOLD);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_4, JUMPER_POS_1);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &button_pressed, NULL, BTN_SHORTPRESS_RELEASED);
+	DVBD_SetButtonLongPressCallback(DEV_SWITCH_4, &long_button_pressed, NULL, BTN_LONG_TIME_THRESHOLD);
 }
 
 ca_error initial_screen(void *args)

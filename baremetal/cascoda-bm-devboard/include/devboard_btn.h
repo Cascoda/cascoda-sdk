@@ -47,10 +47,10 @@ typedef enum dvbd_led_btn_jumper_position
 /** Number of the LED/Button */
 typedef enum dvbd_led_btn
 {
-	LED_BTN_0 = 0,
-	LED_BTN_1 = 1,
-	LED_BTN_2 = 2,
-	LED_BTN_3 = 3
+	DEV_SWITCH_1 = 0,
+	DEV_SWITCH_2 = 1,
+	DEV_SWITCH_3 = 2,
+	DEV_SWITCH_4 = 3
 } dvbd_led_btn;
 
 /* Execute short press callback when pressed or on release

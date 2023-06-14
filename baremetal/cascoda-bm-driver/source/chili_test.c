@@ -624,18 +624,18 @@ static void CHILI_TEST_LEDComplete(uint8_t status)
 static void CHILI_TEST_LEDInit(void)
 {
 	/* All LEDs on */
-	DVBD_DeRegister(LED_BTN_0, JUMPER_POS_1);
-	DVBD_DeRegister(LED_BTN_1, JUMPER_POS_1);
-	DVBD_DeRegister(LED_BTN_2, JUMPER_POS_1);
-	DVBD_DeRegister(LED_BTN_3, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_1);
-	DVBD_SetLED(LED_BTN_0, LED_ON);
-	DVBD_SetLED(LED_BTN_1, LED_ON);
-	DVBD_SetLED(LED_BTN_2, LED_ON);
-	DVBD_SetLED(LED_BTN_3, LED_ON);
+	DVBD_DeRegister(DEV_SWITCH_1, JUMPER_POS_1);
+	DVBD_DeRegister(DEV_SWITCH_2, JUMPER_POS_1);
+	DVBD_DeRegister(DEV_SWITCH_3, JUMPER_POS_1);
+	DVBD_DeRegister(DEV_SWITCH_4, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_1);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_1);
+	DVBD_SetLED(DEV_SWITCH_1, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_2, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_3, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
 }
 
 // devboard specific test result
@@ -650,12 +650,12 @@ static void CHILI_TEST_LEDResult(uint8_t status)
 	}
 	else
 	{
-		DVBD_Sense(LED_BTN_0, &ledstate);
+		DVBD_Sense(DEV_SWITCH_1, &ledstate);
 		ledstate = 1 - ledstate;
 	}
-	DVBD_SetLED(LED_BTN_0, ledstate);
-	DVBD_SetLED(LED_BTN_1, ledstate);
-	DVBD_SetLED(LED_BTN_2, ledstate);
-	DVBD_SetLED(LED_BTN_3, ledstate);
+	DVBD_SetLED(DEV_SWITCH_1, ledstate);
+	DVBD_SetLED(DEV_SWITCH_2, ledstate);
+	DVBD_SetLED(DEV_SWITCH_3, ledstate);
+	DVBD_SetLED(DEV_SWITCH_4, ledstate);
 }
 #endif

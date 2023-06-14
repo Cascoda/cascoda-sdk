@@ -34,22 +34,22 @@ void put_callback(char *url)
 {
 	bool my_bool = app_retrieve_bool_variable(url);
 	if (strcmp(url, "/p/o_1_1") == 0)
-		set_led(LED_BTN_0, my_bool);
+		set_led(DEV_SWITCH_1, my_bool);
 	if (strcmp(url, "/p/o_3_3") == 0)
-		set_led(LED_BTN_1, my_bool);
+		set_led(DEV_SWITCH_2, my_bool);
 	if (strcmp(url, "/p/o_5_5") == 0)
-		set_led(LED_BTN_2, my_bool);
+		set_led(DEV_SWITCH_3, my_bool);
 	if (strcmp(url, "/p/o_7_7") == 0)
-		set_led(LED_BTN_3, my_bool);
+		set_led(DEV_SWITCH_4, my_bool);
 }
 
 void hardware_init()
 {
 	// Register all the board LEDs as an output
-	DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
 
 	// Setup callbacks for the info datapoints on pb
 	app_set_put_cb(put_callback);

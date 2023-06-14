@@ -21,20 +21,23 @@ Please ensure you have the following hardware and software requirements before p
 
 ## Step 1: Set up
 1. Attach the antenna to the hub by screwing it in, then angle it upwards for maximum coverage.
-2. Connect the hub to your Windows PC via Ethernet (the cables goes into the PoE LAN1 port), then power it up using the power adapter.
+2. Connect the hub to your Windows PC via Ethernet (the cable goes into the PoE LAN1 port).
 
 <p align="center"><img src="imgs/knxhub.jpg" width="60%" align="center"></p>
 
-3. Connect the two devboards to your Windows PC via USB.
+3. Connect the hub to your internet router or switch via Ethernet, by connecting one end of the cable into the WAN/LAN2 port of the hub, and the other end of the cable into your internet router/switch.
+4. Now power up the hub using the power adapter.
+5. Connect the two devboards to your Windows PC via USB.
 ## Step 2: Create a Thread network
 
 ### Form a Thread network on the hub
 1. Access the hub's Web GUI hosted on http://openwrt.local. Note: It takes 1 minute for the hub to start up after powerup. So the Web GUI won't be accessible until then.
 2. If a login prompt comes up, just click OK, because the hub does not have a password by default.
-3. You will see a menu bar at the top, hover over `Network`, and click on `Thread`.
-4. Click on `Create`.
-5. Scroll down to the bottom and click on `Save & Apply`. (If you have some Thread knowledge, feel free to change any of the fields to your liking before saving.)
-6. Your Thread network should now be visible under `Network -> Thread`!
+3. Double check that you have internet access via the hub by opening up any web browser and searching something.
+4. Now back to the hub's web GUI, you will see a menu bar at the top, hover over `Network`, and click on `Thread`.
+5. Click on `Create`.
+6. Scroll down to the bottom and click on `Save & Apply`. (If you have some Thread knowledge, feel free to change any of the fields to your liking before saving.)
+7. Your Thread network should now be visible under `Network -> Thread`!
 
 ### Join the devboards to the Thread network
 NOTE: This part of the guide will make use of the Cascoda Windows Tools that you have installed as part of the software requirements. By default, these tools are added to your `PATH`, enabling their execution in a shell in any directory. However, if this did not occur, you will only be able to execute the tools from within the directory in which they are installed. The default installation directory is `C:\Program Files (x86)\Cascoda Windows Tools`.
@@ -98,6 +101,9 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 14. You may now terminate serial-adapter (this won't affect the devboard, it will only close the communication channel) by pressing Ctrl + C in PowerShell.
 15. Repeat the exact same thing from step 5, but this time providing the serial number of the other devboard, in this case 60F373F8446594E6.
 16. You should now have both devboards joined to the network formed by the hub.
+17. Finally, verify that the devices are truly on the network, by looking at the network topology in the hub: Navigate to `Network -> Thread`, click on `View`, then `Topology Graph`. You should see something that looks like this (NOTE: this will only work if you've successfully connected to the internet via the hub): 
+
+<p align="center"><img src="imgs/topology.PNG" width="80%" align="center"></p>
 
 ## Step 3: Configuring using the Linker
 

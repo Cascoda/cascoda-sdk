@@ -1,6 +1,6 @@
 # Getting Started with KNX IoT over Thread
 
-We offer a wide range of KNX IoT over Thread demo applications. You can find an exhaustive list of applications, along with instructions on how to build them [here](https://github.com/Cascoda/knx_iot_demos). Here are some of the applications available.
+We offer a wide range of KNX IoT over Thread demo applications. For an exhaustive list of applications, along with instructions on how to build them or where to access them, please contact support@cascoda.com. Here are some of the applications available.
 
 ## Applications
 

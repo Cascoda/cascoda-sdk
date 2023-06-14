@@ -287,8 +287,8 @@ static ca_error sensor_wakeup(void *aContext)
 	}
 	else
 	{
-		DVBD_Sense(LED_BTN_3, &pinstate);
-		DVBD_SetLED(LED_BTN_3, !pinstate);
+		DVBD_Sense(DEV_SWITCH_4, &pinstate);
+		DVBD_SetLED(DEV_SWITCH_4, !pinstate);
 		TASKLET_ScheduleDelta(&g_sensor_wakeup_tasklet, 400, NULL);
 	}
 	return CA_ERROR_SUCCESS;
@@ -299,11 +299,11 @@ void hardware_init(void)
 {
 	/* Application-Specific Button/LED Initialisation Routines */
 	/* SW4 BTN/LED is LED output; static for power-on */
-	DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
 	#if(NO_LED)
-	DVBD_SetLED(LED_BTN_3, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_4, LED_OFF);
 	#else
-	DVBD_SetLED(LED_BTN_3, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
 	#endif
 
 	if ((CLICK1_TYPE == STYPE_RELAY) || (CLICK2_TYPE == STYPE_RELAY))
@@ -311,29 +311,29 @@ void hardware_init(void)
 		/* register buttons for RELAY */
 		/* SW1 BTN/LED is button for toggling relay_1 */
 		/* SW2 BTN/LED is button for toggling relay_2 */
-		DVBD_RegisterButtonIRQInput(LED_BTN_0, JUMPER_POS_2);
-		DVBD_RegisterButtonIRQInput(LED_BTN_1, JUMPER_POS_2);
-		DVBD_SetButtonShortPressCallback(LED_BTN_0, &relay1_isr, NULL, BTN_SHORTPRESS_PRESSED);
-		DVBD_SetButtonShortPressCallback(LED_BTN_1, &relay2_isr, NULL, BTN_SHORTPRESS_PRESSED);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_1, JUMPER_POS_2);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_1, &relay1_isr, NULL, BTN_SHORTPRESS_PRESSED);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &relay2_isr, NULL, BTN_SHORTPRESS_PRESSED);
 	}
 	else if ((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN))
 	{
 		/* register buttons for FAN */
 		/* SW3 BTN/LED for increasing speed */
-		DVBD_RegisterButtonIRQInput(LED_BTN_2, JUMPER_POS_2);
-		DVBD_SetButtonShortPressCallback(LED_BTN_2, &fan1_isr, NULL, BTN_SHORTPRESS_RELEASED);
-		DVBD_SetButtonLongPressCallback(LED_BTN_2, &fan1_isr_long, NULL, 1000);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &fan1_isr, NULL, BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonLongPressCallback(DEV_SWITCH_3, &fan1_isr_long, NULL, 1000);
 		/* SW3 BTN/LED for additional wake-up interrupt */
-		DVBD_RegisterButtonIRQInput(LED_BTN_1, JUMPER_POS_2);
-		DVBD_SetButtonShortPressCallback(LED_BTN_1, &fan2_isr, NULL, BTN_SHORTPRESS_PRESSED);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &fan2_isr, NULL, BTN_SHORTPRESS_PRESSED);
 	}
 	else
 	{
 #if (USE_ADDITIONAL_WAKEUP_BUTTON == 1)
 		/* register buttons for other sensors */
 		/* SW3 BTN/LED for additional wake-up interrupt */
-		DVBD_RegisterButtonIRQInput(LED_BTN_2, JUMPER_POS_2);
-		DVBD_SetButtonShortPressCallback(LED_BTN_2, &wakeup_isr, NULL, BTN_SHORTPRESS_PRESSED);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &wakeup_isr, NULL, BTN_SHORTPRESS_PRESSED);
 #endif
 	}
 

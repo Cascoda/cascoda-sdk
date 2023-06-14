@@ -65,14 +65,14 @@ static ca_error ReportBattStatus(void *aContext)
 	TASKLET_ScheduleDelta(&g_report_batt_tasklet, REPORT_TIME, NULL);
 
 	if (vbusconnected)
-		DVBD_SetLED(LED_BTN_1, LED_ON);
+		DVBD_SetLED(DEV_SWITCH_2, LED_ON);
 	else
-		DVBD_SetLED(LED_BTN_1, LED_OFF);
+		DVBD_SetLED(DEV_SWITCH_2, LED_OFF);
 
 	if (charging)
-		DVBD_SetLED(LED_BTN_2, LED_ON);
+		DVBD_SetLED(DEV_SWITCH_3, LED_ON);
 	else
-		DVBD_SetLED(LED_BTN_2, LED_OFF);
+		DVBD_SetLED(DEV_SWITCH_3, LED_OFF);
 
 #if defined(USE_USB)
 	if (vbusconnected)
@@ -90,19 +90,19 @@ static ca_error ReportBattStatus(void *aContext)
 static void hardware_init(void)
 {
 	/* Register LED/Button pairs */
-	if (DVBD_RegisterLEDOutput(LED_BTN_0, JUMPER_POS_2))
+	if (DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_2))
 		printf("Failed to register SW1\n");
-	if (DVBD_RegisterLEDOutput(LED_BTN_1, JUMPER_POS_2))
+	if (DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_2))
 		printf("Failed to register SW2\n");
-	if (DVBD_RegisterLEDOutput(LED_BTN_2, JUMPER_POS_2))
+	if (DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_2))
 		printf("Failed to register SW3\n");
-	if (DVBD_RegisterLEDOutput(LED_BTN_3, JUMPER_POS_2))
+	if (DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2))
 		printf("Failed to register SW4\n");
 
-	DVBD_SetLED(LED_BTN_0, LED_ON);
-	DVBD_SetLED(LED_BTN_1, LED_OFF);
-	DVBD_SetLED(LED_BTN_2, LED_OFF);
-	DVBD_SetLED(LED_BTN_3, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_1, LED_ON);
+	DVBD_SetLED(DEV_SWITCH_2, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_3, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_4, LED_OFF);
 
 	if (GET_CHARGE_STAT)
 	{
