@@ -61,3 +61,32 @@ arm-none-eabi-gdb -ex "target remote localhost:2331" bin/mac-dongle
 | x <addr>| Examine the memory values at an address (can also use other forms like x/10xb to print 10 bytes in hex)
 
 GDB is a very powerful tool, there are many guides on the internet that will provide more detail, including the [GDB documentation itself.](https://sourceware.org/gdb/current/onlinedocs/gdb/)
+
+## Debugging with VSCode
+
+Rather than use raw GDB to debug we can use VSCode builtin debugger. 
+First install the [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) extension. With this you can now create a debug configuration (launch.json). This will look like:
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceFolder}/working_directory",
+            "executable": "./path/to/exe",
+            "request": "launch", #or attach
+            "type": "cortex-debug",
+            "serverpath": "C:\\Path\\To\\JLink\\JLinkGDBServerCL.exe",
+            "runToEntryPoint": "main",
+            "servertype": "jlink",
+            "device": "M2351KIAAE", #processor for Chili2D
+            "interface": "swd",
+        }
+    ]
+}
+```
+
+You should now be able to debug within VSCode and step through code interactively.

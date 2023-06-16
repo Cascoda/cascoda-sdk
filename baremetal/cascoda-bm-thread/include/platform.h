@@ -189,6 +189,13 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
 otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs);
 
 /**
+ * Helper function to erase the joiner credentials of this device.
+ *
+ * @param aInstance The openthread instance
+ */
+otError PlatformEraseJoinerCredentials(otInstance *aInstance);
+
+/**
  * Helper function to get the joiner credential of this device.
  *
  * @param aInstance The openthread instance

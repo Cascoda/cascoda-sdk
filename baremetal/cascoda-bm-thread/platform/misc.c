@@ -284,6 +284,17 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
 	return OT_ERROR_NONE;
 }
 
+otError PlatformEraseJoinerCredentials(otInstance *aInstance)
+{
+	uint8_t empty_creds[JOINER_CREDENTIAL_LEN];
+	memset(empty_creds, 0xFF, JOINER_CREDENTIAL_LEN);
+
+	otPlatSettingsWipe(aInstance);
+	otPlatSettingsSet(aInstance, joiner_credential_key, empty_creds, JOINER_CREDENTIAL_LEN);
+
+	return OT_ERROR_NONE;
+}
+
 ca_error EVBME_GET_OT_Attrib(enum evbme_attribute aAttrib, uint8_t *aOutBufLen, uint8_t *aOutBuf)
 {
 	ca_error       error = CA_ERROR_SUCCESS;

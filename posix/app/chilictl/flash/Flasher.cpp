@@ -55,6 +55,7 @@ Flasher::Flasher(const char       *aAppFilePath,
     : mAppFile(aAppFilePath, std::ios::in | std::ios::binary | std::ios::ate)
     , mOtaBootFile(aOtaBootFilePath, std::ios::in | std::ios::binary | std::ios::ate)
     , mManuDataFile(aManufacturerDataFilePath, std::ios::in | std::ios::binary | std::ios::ate)
+	, mAppFileSize(0)
     , mOtaBootFileSize(0)
     , mManuDataFileSize(0)
     , mPageSize()
@@ -176,8 +177,16 @@ ca_error Flasher::init()
 	if (mFlashType != APROM_CLEAR)
 	{
 		//Verify file size is less than device max size, and greater than zero
-		if (mAppFileSize == 0 || (mOtaBootFilePresent && (mOtaBootFileSize == 0)) ||
-		    (mFlashType == MANUFACTURER && mManuDataFileSize == 0))
+		//if mAppFileSize == 0 AND
+		//   !(isBootloader && otaFileSize != 0) AND
+		//   !(isManuFlash && manuDataSize != 0)
+		//then don't execute the if statement!
+		//the !(a && b != 0) means if a is true and b is not zero then we are good
+		//essentially if any of the expressions are false, we can skip the if statement
+		//if isBootloader and size != 0, invert that and skip
+		//same with manu flash
+		if (mAppFileSize == 0 && !(mOtaBootFilePresent && (mOtaBootFileSize != 0)) &&
+		    !(mFlashType == MANUFACTURER && mManuDataFileSize != 0))
 		{
 			fprintf(stderr, "Error: No file loaded\n");
 			status = CA_ERROR_INVALID_STATE;

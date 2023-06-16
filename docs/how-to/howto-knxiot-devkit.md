@@ -3,9 +3,11 @@
 This guide will get you up and running with your first KNX IoT application! No prior knowledge is needed, so all that is required is to have the correct hardware, and to follow the steps of the guide exactly as described.
 
 ## Step 0: Requirements
+
 Please ensure you have the following hardware and software requirements before proceeding any futher.
 
 ### Hardware
+
 - A pair of [Cascoda's KNX IoT Development Boards](https://www.cascoda.com/products/thread-development-kit/) (referred to as "devboards" from hereon).
 - Two USB-A to micro-USB cables for the devboards.
 - A [Cascoda KNX IoT Hub](https://www.cascoda.com/products/knx-iot-hub/) (referred to as "hub" from hereon).
@@ -14,12 +16,13 @@ Please ensure you have the following hardware and software requirements before p
 - A power adapter for the hub.
 - A Windows PC.
 
-
 ### Software (on your Windows PC)
+
 - An installation of [Cascoda's Windows Tools](https://github.com/Cascoda/cascoda-sdk/releases/download/v0.23-6/CascodaWindowsTools.zip). Two of the tools will be necessary for this guide, namely `chilictl.exe` and `serial-adapter.exe`.
 - An installation of Cascoda's KNX IoT Linker.
 
 ## Step 1: Set up
+
 1. Attach the antenna to the hub by screwing it in, then angle it upwards for maximum coverage.
 2. Connect the hub to your Windows PC via Ethernet (the cable goes into the PoE LAN1 port).
 
@@ -28,9 +31,11 @@ Please ensure you have the following hardware and software requirements before p
 3. Connect the hub to your internet router or switch via Ethernet, by connecting one end of the cable into the WAN/LAN2 port of the hub, and the other end of the cable into your internet router/switch.
 4. Now power up the hub using the power adapter.
 5. Connect the two devboards to your Windows PC via USB.
+
 ## Step 2: Create a Thread network
 
 ### Form a Thread network on the hub
+
 1. Access the hub's Web GUI hosted on http://openwrt.local. Note: It takes 1 minute for the hub to start up after powerup. So the Web GUI won't be accessible until then.
 2. If a login prompt comes up, just click OK, because the hub does not have a password by default.
 3. Double check that you have internet access via the hub by opening up any web browser and searching something.
@@ -40,6 +45,7 @@ Please ensure you have the following hardware and software requirements before p
 7. Your Thread network should now be visible under `Network -> Thread`!
 
 ### Join the devboards to the Thread network
+
 NOTE: This part of the guide will make use of the Cascoda Windows Tools that you have installed as part of the software requirements. By default, these tools are added to your `PATH`, enabling their execution in a shell in any directory. However, if this did not occur, you will only be able to execute the tools from within the directory in which they are installed. The default installation directory is `C:\Program Files (x86)\Cascoda Windows Tools`.
 
 1. Open an instance of Windows PowerShell.
@@ -105,40 +111,6 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 
 <p align="center"><img src="imgs/topology.PNG" width="80%" align="center"></p>
 
-## Step 3: Configuring using the Linker
+## Step 3: Configuring KNX devices
 
-### Discover your devices
-1. Launch the Linker. Check your hub firmware version by navigating to `Status -> Overview`. If your firmware version is `KNX-IoT-Hub-OpenWrt 1.5` or later, the Linker will be available at http://192.168.1.1:8081 . Otherwise, [download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
-    - Before flashing the image, ensure that the "Keep settings and retain the current configuration" checkbox is ticked. Otherwise, the hub will no longer have access to the Thread network created in Step 2. 
-2. Discover the devboards by clicking on `Discovery` from the menu bar, and selecting `Discover Devices (CoAP)` from the dropdown.
-3. After a few seconds, you will see two new devices get listed on the main window. One with a Serial Number 00fa10010710, and the other with Serial Number 00fa10010711. _DISAMBIGUATION: The term "Serial Number" as it appears in the Linker refers to the KNX Serial Number, which has nothing to do with the devboard serial number mentioned previously!_
-
-### Enrol your devices
-1. Click on the dropdown item which displays the text `List Programming Mode` by default. <p align="center"><img src="imgs/linker1.PNG" width="80%" align="center"></p>
-2. Select `Enrol device` from the options shown in the dropdown.
-3. Click on one of the two devices which have the aforementioned serial numbers. You will get prompted to enter a QR or password for that device.
-4. Referring back to the KNX QR code messages that you had copy-pasted earlier during joining: You will notice that it consists of two parts. The first part: `KNX:S:00fa10010710` contains the KNX serial number. The second part `P:4N6AFK6T83YWDUTW23U2` contains the password. Out of the two messages you had saved, locate the one which contains the serial number of the device that you are about to enrol.
-5. Copy the password (e.g. in this case 4N6AFK6T83YWDUTW23U2), and paste it into the input field, replacing `QR`.
-6. Click `Ok`.
-7. After a few seconds, you will see the word `Ok` in the `Status` column.
-8. Repeat from step 3 but with the other device.
-9. Both devices are now enrolled and are ready to be configured.
-
-### Configure your devices
-1. Under the menu bar, there is a selection of different tabs/pages that you can go to for different functions. Click on the `Configure` tab.
-2. From the menu bar, click on `Configure` and click on `Populate Functional Blocks`. A few seconds later, the tables in the main view will get populated with a total of 4 entries, 2 for each of the devboards. These are called functional blocks.
-3. Note that there are two tables: The sensor table, containing the `Sensor` column and the actuator table, containing the `Actuator` column. Each table contains a single entry for each devboard, distinguished by serial number (so 2 entries in the sensor table and 2 in the actuator table). The goal is to connect one devboard's "sensor" functionality to the other devboard's "actuator" functionality, so that the "sensor" may control the "actuator". From the sensor table, select one of the devboards by clicking on one of the entries under the `Serial Number` column. The selection will be displayed under the two tables.
-4. Take note of the serial number of the selected device, and select the other device (the one with the different serial number) from the actuator table. You should see both selections now appear under the tables as such: <p align="center"><img src="imgs/linker2.PNG" width="80%" align="center"></p>
-5. Terminology: Each selection is called a "Functional block", and the combination of mulitple associated blocks together is called a "Function". Click on the `Add Function` button to add this function! It will now appear under the `Functions` section, as such: <p align="center"><img src="imgs/linker3.PNG" width="80%" align="center"></p>
-6. Now repeat steps 3 to 5 for the two remaining functional blocks, so that the devboard that was selected as "actuator" now gets selected as sensor, and vice versa. The result is that you now have two "Functions", one connecting `00fa10010710`'s sensor to `00fa10010711`'s actuator, and another one connecting `00fa10010711`'s sensor to `00fa10010710`'s actuator.
-7. From the menu bar, click on `Configure`, click on `Create Configurations & Download All Devices`. This operation will take a few seconds to complete. Hover your mouse over the area where the sensor and actuator tables are located. If there is a loading wheel spinning then the operation is in progress. When it stops spinning, the operation is complete.
-
-## Step 4: Play with your devices
-If you have followed all the previous steps successfully, you will now have two configured KNX devices, which can mutually communicate with each other via the hub.
-
-Press the button that says SW1 on either of the devboards. This should cause the LED that is next to SW2 on the other devboard to toggle!
-
-## Step 5: Going further
-This KNX application is very simple, and just serves as an example to get you familiar with the process of setting up a KNX configuration. We offer a variety of much more sophisticated applications. A full list of those applications is available [here](https://github.com/Cascoda/cascoda-sdk/blob/master/docs/how-to/howto-knxiot.md) (Note that most of those will require additional hardware, such as e-Paper displays, sensors, etc.).
-
-Feel free to contact us for more information!
+This can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).

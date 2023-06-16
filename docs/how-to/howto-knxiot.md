@@ -4,15 +4,15 @@ We offer a wide range of KNX IoT over Thread demo applications. For an exhaustiv
 
 ## Applications
 
-| Application  | Description | # Functions | Click/Hardware |
-|--------------| ------------| ---------- | ------|
-| EINK_HVAC    | Eink display controlling RTS, RRHS and FA | RTC UHRS| EINK |
-| EINK_LIGHTING| Eink display controlling LSAB/LDAB| LSSB LDSB| EINK |
-| FA           | Fan Actuator | FA | Fan |
-| LSAB         | Light Switching Actuator Basic | LSAB | - |
-| LSSB         | Light Switching Sensor Basic | LSSB | - |
-| LDAB         | Light Dimming Actuator Basic | LDAB | LED Driver 2 |
-| LDSB         | Light Dimming Sensor Basic | LDSB| - |
-| PROD         | Production executable | LSAB & LSSB (no feedback)| - |
-| RTS          | Room Temperature Sensor| RTS | Thermo 3 |
-| RTS_RRHS     | Room Temperture & Humidity Sensor | RTS RHHS | SHT |
+| Application  | Description | # Functions | Click/Hardware | Bus |
+|--------------| ------------| ---------- | ------| ----|
+| EINK_HVAC    | Eink display controlling RTS, RRHS and FA | RTC UHRS| EINK | SPI |
+| EINK_LIGHTING| Eink display controlling LSAB/LDAB| LSSB LDSB| EINK | SPI|
+| FA           | Fan Actuator | FA | Fan | PWM |
+| LSAB         | Light Switching Actuator Basic | LSAB | - | GPIO |
+| LSSB         | Light Switching Sensor Basic | LSSB | - |GPIO |
+| LDAB         | Light Dimming Actuator Basic | LDAB | LED Driver 2 | PWM|
+| LDSB         | Light Dimming Sensor Basic | LDSB| - | GPIO |
+| PROD         | Production executable | LSAB & LSSB (no feedback)| - | GPIO |
+| RTS          | Room Temperature Sensor| RTS | Thermo 3 | I2C |
+| RTS_RRHS     | Room Temperture & Humidity Sensor | RTS RHHS | SHT | I2C|
