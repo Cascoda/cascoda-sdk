@@ -61,9 +61,77 @@
 #endif
 
 /**
- * Ethernet header for encapsulating IEEE802.15.4 frames for pcap.
+ * Pcap link types, see https://www.tcpdump.org/linktypes.html
  */
-uint8_t ethernet_header[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x80, 0x9a};
+#define LINKTYPE_ETHERNET                1		// ethernet used to encapsulate 802.15.4 frames
+#define LINKTYPE_IEEE802_15_4_WITHFCS  195		// direct 802.15.4 with FCS
+#define LINKTYPE_IEEE802_15_4_TAP      283      // direct 802.15.4 with TAP TLVs
+
+uint32_t link_type = LINKTYPE_IEEE802_15_4_TAP;
+
+
+/**
+ * headers for encapsulating IEEE802.15.4 frames for pcap.
+ */
+#define MAX_HEADER_LEN 512
+#define HEADER_LEN_ETH 14;
+#define HEADER_LEN_TAP 28;
+
+#define HEADER_POSITION_RSSI	16
+#define HEADER_POSITION_LQI		24
+
+/**
+ * headers for encapsulating IEEE802.15.4 frames for pcap.
+ */
+uint8_t ethernet_header[] = {
+	0xff,	// dst
+	0xff,
+	0xff,
+	0xff,
+	0xff,
+	0xff,
+	0x22,	// src
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x80,	// type
+	0x9a
+	};
+
+// uint8_t tap_header[] = {0x00, 0x00, 0x04, 0x00};
+
+uint8_t tap_header[] = {
+	0x00,	// version
+	0x00,	// reserved
+	0x1C,	// length
+	0x00,
+	0x00,	// FCS TLV
+	0x00,
+	0x01,
+	0x00,
+	0x01,
+	0x00,
+	0x00,
+	0x00,
+	0x01,	// RSSI TLV
+	0x00,
+	0x04,
+	0x00,
+	0x00,	// TSSI TLV value
+	0x00,
+	0x00,
+	0x00,
+	0x0A,	// LQI TLV
+	0x00,
+	0x01,
+	0x00,
+	0x00,	// LQI TLV value
+	0x00,
+	0x00,
+	0x00
+	};
 
 /**
  * Pcap file header struct as https://wiki.wireshark.org/Development/LibpcapFileFormat
@@ -193,6 +261,16 @@ static void configure_io(void);
 static void io_raw(void);
 
 /**
+ * fills in RSSI/ED value for LINKTYPE_IEEE802_15_4_TAP.
+ */
+static void fillRSSITap(uint8_t ed);
+
+/**
+ * fills in LIQ/CS value for LINKTYPE_IEEE802_15_4_TAP.
+ */
+static void fillLQITap(uint8_t cs);
+
+/**
  * Helper function to print the help information to stderr.
  */
 static void displayHelp()
@@ -219,6 +297,8 @@ static void displayHelp()
 	fprintf(stderr, "\t               and -n (random name for pipe if not provided separately).\n\n");
 	fprintf(stderr, "\t-W [PATH]      Open WireShark at the path to process the packet capture.\n");
 	fprintf(stderr, "\t               Implies -w.\n\n");
+	fprintf(stderr, "\t-e             Use PCap datalink type ETHERNET (default is IEEE802_15_4_TAP).\n");
+	fprintf(stderr, "\t-i             Use PCap datalink type IEEE802_15_4_WITHFCS (default is IEEE802_15_4_TAP).\n");
 }
 
 #if defined(_WIN32) //Windows abstraction
@@ -577,7 +657,7 @@ static void printPcapHeader(void)
 	    0,          //Timezone (dont care)
 	    0,          //Timestamp precision (dont care)
 	    300,        //Max packet size (good enough)
-	    1           //Network = ethernet, used to encapsulate 802.15.4 frames
+	    link_type,  //Network
 	};
 
 	ca_write(&hdr, sizeof(hdr));
@@ -642,13 +722,32 @@ static ca_error handlePcpsDataIndication(struct PCPS_DATA_indication_pset *param
 	{
 		pcaprec_hdr_t hdr   = {0, 0, 0, 0};
 		ca_error      error = CA_ERROR_SUCCESS;
+		uint8_t  pkt_header[MAX_HEADER_LEN];
+		uint32_t header_len = 0;
+
+		if(link_type == LINKTYPE_ETHERNET)
+		{
+			header_len = HEADER_LEN_ETH;
+			memcpy(pkt_header, ethernet_header, header_len);
+		}
+		else if(link_type == LINKTYPE_IEEE802_15_4_TAP)
+		{
+			fillRSSITap(params->ED);
+			fillLQITap(params->CS);
+			header_len = HEADER_LEN_TAP;
+			memcpy(pkt_header, tap_header, header_len);
+		}
+		else
+		{
+			header_len = 0;
+		}
 
 		fillTimestamp(&hdr, params);
-		hdr.incl_len = params->PsduLength + sizeof(ethernet_header);
-		hdr.orig_len = params->PsduLength + sizeof(ethernet_header);
+		hdr.incl_len = params->PsduLength + header_len;
+		hdr.orig_len = params->PsduLength + header_len;
 
 		error |= ca_write(&hdr, sizeof(hdr));
-		error |= ca_write(&ethernet_header, sizeof(ethernet_header));
+		error |= ca_write(&pkt_header, header_len);
 		error |= ca_write(params->Psdu, params->PsduLength);
 		ca_flush();
 
@@ -675,6 +774,28 @@ static ca_error handlePcpsDataIndication(struct PCPS_DATA_indication_pset *param
 	}
 
 	return CA_ERROR_SUCCESS;
+}
+
+static void fillRSSITap(uint8_t ed)
+{
+	float valdbm;
+	union {
+		float vfloat;
+		uint8_t vbytes[4];
+	} convert_t;
+
+	/* calculate dbm value from ed value */
+	valdbm = ((float)ed - 256.0)/2.0;
+	/* put float (32 bit) value into union */
+	convert_t.vfloat = valdbm;
+	/* copy uint8_t array part of union into tap header */
+	memcpy((tap_header+HEADER_POSITION_RSSI), convert_t.vbytes, 4);
+}
+
+static void fillLQITap(uint8_t cs)
+{
+	/* staight forward mapping as value is 8-bit 0-255 */
+	tap_header[HEADER_POSITION_LQI] = cs;
 }
 
 int main(int argc, char *argv[])
@@ -740,6 +861,14 @@ int main(int argc, char *argv[])
 		else if (strcmp(argv[i], "-s") == 0)
 		{
 			sniffer_arg.generic = argv[++i];
+		}
+		else if (strcmp(argv[i], "-e") == 0)
+		{
+			link_type = LINKTYPE_ETHERNET;
+		}
+		else if (strcmp(argv[i], "-i") == 0)
+		{
+			link_type = LINKTYPE_IEEE802_15_4_WITHFCS;
 		}
 		else
 		{

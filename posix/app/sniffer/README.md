@@ -96,6 +96,12 @@ The [Wireshark Display Filters](https://www.wireshark.org/docs/wsug_html_chunked
 
 You can right-click on a decoded packet header and select Apply as Filter to visually populate the Display Filter.
 
+### View Received Signal Strength & Link Quality Indication
+
+Out of the box, our sniffer displays RSS & LQI data for every single received packet. This can be seen by clicking on a packet and expanding it's "IEEE 802.15.4 TAP" header. This data can also be displayed in the main packet window by fully expanding the TAP header, right-clicking on the LQI or RSS measurement and selecting Apply as Column.
+
+![](rss-lqi-capture.png)
+
 ### Better CBOR decoding
 
 The CBOR view within Wireshark can be quite hard to read, but you can use it alongside the [online CBOR playground.](https://cbor.me/) In the packet dissection view, right click on the "Concise Binary Object Representation" field, select "Copy -> ...as a Hex Stream" paste it into the hex section of the website, and press the arrow to decode.
