@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2023, Cascoda Ltd.
  *  All rights reserved.
@@ -30,6 +29,8 @@
 #ifndef POSIX_APP_CHILICTL_REBOOT_REBOOT_HPP_
 #define POSIX_APP_CHILICTL_REBOOT_REBOOT_HPP_
 
+#include <mutex>
+
 #include "common/Args.hpp"
 #include "common/Command.hpp"
 #include "common/DeviceList.hpp"
@@ -41,6 +42,14 @@ namespace ca {
 class Reboot : public Command
 {
 public:
+	enum State
+	{
+		INIT,          /**< Initial state */
+		FACTORY_RESET, /**< Erasing Data Flash region */
+		REBOOT,        /**< Rebooting the device */
+		COMPLETE,      /**< Flashing completed successfully */
+		FAIL,          /**< Flashing failed */
+	};
 	Reboot();
 	~Reboot();
 
@@ -55,22 +64,48 @@ private:
 		kMsgSendTimeout = 5,
 	};
 
+	std::mutex       mMutex;
+	State            mState;
 	Args             mArgParser;
 	ArgOpt           mHelpArg;
 	ArgOpt           mSerialArg;
 	ArgOpt           mBatchArg;
+	ArgOpt           mFactoryReset;
 	ArgOpt           mEnumerateUartDevicesArg;
 	DeviceList       mDeviceList;
 	DeviceListFilter mDeviceListFilter;
 	ca821x_dev       mDeviceRef;
 	DeviceInfo       mDeviceInfo;
 
-	ca_error init();
-	ca_error reboot_done(bool success);
+	// State machine
 	ca_error reboot_process();
+
+	// init state
+	ca_error init();
+
+	// Requests factory reset from target device
+	ca_error factory_reset();
+
+	// Finalizes factory reset, this function is called from callback
+	// which is triggered when host receives EVBME DFU_STATUS from target device
+	ca_error factory_reset_done(ca_error status);
+
+	// Makes the target device reboot (normal reboot, APROM to APROM)
+	ca_error reboot();
+
+	// Callbacks for handling received EVBME_DFU from target device
+	ca_error        dfu_callback(EVBME_Message *params);
+	static ca_error dfu_callback(EVBME_Message *params, ca821x_dev *pDeviceRef);
+
+	// Callbacks for handling received EVBME_MESSAGES from target device
+	ca_error        handle_evbme_message(EVBME_Message *params);
+	static ca_error handle_evbme_message(EVBME_Message *params, ca821x_dev *pDeviceRef);
 
 	ca_error print_help_string(const char *aArg);
 	ca_error set_serialno_filter(const char *aArg);
+
+	void               set_state(State aNextState);
+	static const char *state_string(State aState);
 };
 
 } /* namespace ca */

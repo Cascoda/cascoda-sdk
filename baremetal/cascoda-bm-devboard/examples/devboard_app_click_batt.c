@@ -300,11 +300,11 @@ void hardware_init(void)
 	/* Application-Specific Button/LED Initialisation Routines */
 	/* SW4 BTN/LED is LED output; static for power-on */
 	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
-	#if(NO_LED)
+#if (NO_LED)
 	DVBD_SetLED(DEV_SWITCH_4, LED_OFF);
-	#else
+#else
 	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
-	#endif
+#endif
 
 	if ((CLICK1_TYPE == STYPE_RELAY) || (CLICK2_TYPE == STYPE_RELAY))
 	{

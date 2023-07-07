@@ -94,6 +94,7 @@ typedef struct
 	B1_t relay_2_state; // DPT_Switch, 1.001, dpa.420.61
 } knx_data_relay;
 
+
 /* application handlers */
 ca_error CLICK_Handler_THERMO(void);
 ca_error CLICK_Handler_THERMO3(void);
@@ -113,5 +114,4 @@ void convert_SHT_to_knx(data_sht data, knx_data_sht *knx_data);
 void convert_HVAC_to_knx(data_hvac data, knx_data_hvac *knx_data);
 void convert_MOTION_to_knx(data_motion data, knx_data_motion *knx_data);
 void convert_RELAY_to_knx(data_relay data, knx_data_relay *knx_data);
-
 #endif // KNX_CLICK_HANDLERS_H

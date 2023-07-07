@@ -69,9 +69,6 @@
 #if MIKROSDK_TEST_SHT
 #include "sht_click.h"
 #endif
-#if MIKROSDK_TEST_SPS30
-#include "sps30_click.h"
-#endif
 
 u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 {
@@ -111,9 +108,6 @@ u8_t MIKROSDK_Initialise(struct ca821x_dev *pDeviceRef)
 	SENSORIF_I2C_Config(1);
 	status |= MIKROSDK_SHT_Initialise();
 #endif
-#if (MIKROSDK_TEST_SPS30)
-	status |= MIKROSDK_SPS30_Initialise();
-#endif
 	return (status);
 }
 
@@ -144,9 +138,6 @@ void MIKROSDK_Handler(struct ca821x_dev *pDeviceRef)
 #endif
 #if (MIKROSDK_TEST_SHT)
 	MIKROSDK_Handler_SHT();
-#endif
-#if (MIKROSDK_TEST_SPS30)
-	MIKROSDK_Handler_SPS30();
 #endif
 }
 
@@ -287,7 +278,6 @@ void MIKROSDK_Handler_HVAC(void)
 	u32_t       t1, t2;
 
 	measurement_data_t      hvac_data;
-	mass_and_num_cnt_data_t sps30_data;
 	uint16_t                hum[2], temp[2];
 	int                     num_decimals = 2;
 
@@ -317,25 +307,6 @@ void MIKROSDK_Handler_HVAC(void)
 		printf("R. Humidity = %u.%02u %%RH\n", hum[0], hum[1]);
 		printf("- - - - - - - - - - - - - \n");
 
-		/* SPS30 is not working !!! */
-		// while ( HVAC_SPS30_NEW_DATA_IS_READY != hvac_sps30_get_ready_flag() );
-		// hvac_sps30_read_measured_data(&sps30_data );
-		// BSP_WaitTicks(100);
-
-		// printf( "   Mass Concentration :   \n" );
-		// printf( " PM 1.0 = %.2f ug/m3 \n", sps30_data.mass_pm_1_0 );
-		// printf( " PM 2.5 = %.2f ug/m3 \n", sps30_data.mass_pm_2_5 );
-		// printf( " PM 4.0 = %.2f ug/m3 \n", sps30_data.mass_pm_4_0 );
-		// printf( " PM 10  = %.2f ug/m3 \n", sps30_data.mass_pm_10 );
-		// printf( "-   -   -   -   -   -   - \n" );
-
-		// printf( "  Number Concentration :  \n" );
-		// printf( " PM 0.5 = %.2f n/cm3 \n", sps30_data.num_pm_0_5 );
-		// printf( " PM 1.0 = %.2f n/cm3 \n", sps30_data.num_pm_1_0 );
-		// printf( " PM 2.5 = %.2f n/cm3 \n", sps30_data.num_pm_2_5 );
-		// printf( " PM 4.0 = %.2f n/cm3 \n", sps30_data.num_pm_4_0 );
-		// printf( " PM 10  = %.2f n/cm3 \n", sps30_data.num_pm_10 );
-		// printf( "--------------------------\n" );
 
 		SENSORIF_I2C_Deinit();
 	}
@@ -625,59 +596,3 @@ void MIKROSDK_Handler_SHT(void)
 }
 #endif
 
-/******************************************************************************/
-/*******************************************
-********************************/ /**
- * \brief MIKROSDK Handler Example for SPS30 Click
- *******************************************************************************
- ******************************************************************************/
-#if (MIKROSDK_TEST_SPS30)
-void MIKROSDK_Handler_SPS30(void)
-{
-	static u8_t ticker  = 0;
-	static u8_t handled = 0;
-	u32_t       t1, t2;
-	u8_t        rx_buf[21] = {0x00};
-	u8_t        iter;
-
-	/* Note:
-	 * This is a tick based handler for polling only
-	 * In applications this should be based on timer-interrupts.
-	 */
-
-	if (((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) < MIKROSDK_MEASUREMENT_DELTA) && (!handled))
-	{
-		printf("-------------------------------------\n");
-		printf("SPS30: \n");
-
-		++ticker;
-		handled = 1;
-		t1      = TIME_ReadAbsoluteTime();
-		sps30_uart_read_device_serial_number(rx_buf);
-		t2 = TIME_ReadAbsoluteTime();
-		printf("Deice serial number:  ");
-		if (rx_buf)
-		{
-			for (iter = 0; iter < sizeof(rx_buf); ++iter)
-			{
-				printf("%02X", rx_buf[iter]);
-			}
-			printf("\n");
-		}
-		else
-		{
-			printf("Received buffer is empty\n");
-		}
-
-#if SENSORIF_REPORT_TMEAS
-		printf("; TmeasT=%ums", (t2 - t1));
-#endif
-		printf("\n");
-	}
-	if ((TIME_ReadAbsoluteTime() % MIKROSDK_MEASUREMENT_PERIOD) >
-	    (MIKROSDK_MEASUREMENT_PERIOD - MIKROSDK_MEASUREMENT_DELTA))
-	{
-		handled = 0;
-	}
-}
-#endif

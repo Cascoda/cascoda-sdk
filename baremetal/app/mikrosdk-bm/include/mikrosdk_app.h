@@ -51,8 +51,6 @@
 #define MIKROSDK_TEST_THERMO3 1
 #define MIKROSDK_TEST_SHT 0
 
-#define MIKROSDK_TEST_SPS30 0
-
 /* Decimal mask for temperature sensor */
 #define DECIMAL_MASK_FOUR_BITS 0x0F
 #define DECIMAL_MASK_TWO_BITS 0x03
@@ -83,5 +81,4 @@ void MIKROSDK_Handler_RELAY(void);
 void MIKROSDK_Handler_THERMO(void);
 void MIKROSDK_Handler_THERMO3(void);
 void MIKROSDK_Handler_SHT(void);
-void MIKROSDK_Handler_SPS30(void);
 #endif // MIKROSDK_APP_H

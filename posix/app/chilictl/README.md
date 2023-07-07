@@ -94,6 +94,21 @@ Device Found:
         External Flash Chip Available: No
 ```
 
+### Unavailable devices
+Only one Cascoda tool can use the USB link to a Chili at any given time. If, for example, `serial-adapter` is used with a device, chilictl will not be able to see its version number.
+```
+$ ./chilictl list
+2023-07-05 15:23:22.289 NOTE:  Host Cascoda SDK v0.24-44-g38f1b1a3 Jun 20 2023
+Device Found:
+        Device: Chili2
+        App: knx_iot_example_reed
+        Version: ???
+        Serial No: 627311A005488C1E
+        Path: \\?\hid#vid_0416&pid_5020#8&6ccf466&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+        Available: No
+        External Flash Chip Available: No
+```
+
 ## Flashing
 
 The flashing functionality is available over USB and UART, and requires firmware v0.14 or newer.
@@ -320,7 +335,9 @@ $ echo '45020000' | xxd -r -p | ./chilictl.exe pipe -s FBE1D029210B662B | xxd -p
 
 ## Rebooting
 
-The `Reboot` subcommand can be used to reboot connected chili devices.
+The `Reboot` subcommand can be used to reboot connected chili devices. It can also
+factory reset the target device, i.e. reset the Thread and KNX credentials,
+before doing the reboot.
 
 ### Reboot help page
 
@@ -343,17 +360,33 @@ COMMAND OPTIONS
                 Reboot the device with the given serial number.
         -b, --batch
                 Reboot all connected devices.
+        -r, --factory-reset
+                Resets the Thread and KNX credentials to their factory settings before rebooting.
         -u, --enumerate-uart
                 Will also enumerate devices connected to COM ports on your PC.
 ```
 
-### Reboot example
+### Reboot examples
 
 ```bash
+# EXAMPLE 1: Reboot all connected devices
 # Note use of -b option to reboot all connected devices
 $ .\chilictl.exe reboot -b
 2023-02-13 09:35:06.878 NOTE:  Host Cascoda SDK v0.22-361-g873af65f-dirty Feb 13 2023
 2 devices found.
+[302875043BF556ED]: INIT -> REBOOT
 [302875043BF556ED]: REBOOT -> DONE
+[6134A7B7122944B5]: INIT -> REBOOT
+[6134A7B7122944B5]: REBOOT -> DONE
+```
+
+```bash
+# EXAMPLE 2: Factory reset and reboot device with serial number 6134A7B7122944B5
+# Note use of -r option for factory reset
+$ .\chilictl.exe reboot -s 6134A7B7122944B5 -r
+2023-02-13 09:35:06.878 NOTE:  Host Cascoda SDK v0.22-361-g873af65f-dirty Feb 13 2023
+1 device found.
+[6134A7B7122944B5]: INIT -> FACTORY_RESET
+[6134A7B7122944B5]: FACTORY_RESET -> REBOOT
 [6134A7B7122944B5]: REBOOT -> DONE
 ```

@@ -15,14 +15,14 @@ jobs:
 
     - name: configure windows sdk
       run: |
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles"
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles" -D CASCODA_BUILD_OT=OFF -D CASCODA_BUILD_KNX=ON
 
     - name: build windows-sdk
       run: |
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
         mkdir ${{ github.workspace }}\release
         cd ${{ github.workspace }}\build-win\bin
-        Copy-Item -Path ocfctl.exe,chilictl.exe,knx-gen-data.exe,sniffer.exe,serial-adapter.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
+        Copy-Item -Path ocfctl.exe,chilictl.exe,sniffer.exe,serial-adapter.exe,evbme-get.exe -Destination ${{ github.workspace }}\release
         Copy-Item -Path ${{ github.workspace }}\cascoda-sdk\LICENSE -Destination ${{ github.workspace }}\release
         $readme = "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications"
         $readme | Out-File ${{ github.workspace }}\release\readme.txt
@@ -32,6 +32,22 @@ jobs:
         cmake.exe "${{ github.workspace }}\build-win" -D CASCODA_CA_VER=8212
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
 
+    - name: download priv
+      uses: dawidd6/action-download-artifact@v2.24.0
+      if: github.repository == 'Cascoda/cascoda-sdk'
+      with:
+        github_token: ${{secrets.CASCODA_PRIVATE}}
+        branch: master
+        name: Windows-SDK
+        path: ${{ github.workspace }}\windows-sdk-priv
+        repo: Cascoda/cascoda-sdk-priv
+        workflow: build.yml
+      
+    - name: Extract knx-gen-data from priv
+      if: github.repository == 'Cascoda/cascoda-sdk'
+      run: |
+        cp ${{ github.workspace }}\windows-sdk-priv\knx-gen-data.exe ${{ github.workspace }}\release
+  
     - name: create installer for windows executables
       run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
 
@@ -70,6 +86,7 @@ jobs:
 
     - name: download static libs from private repo
       uses: dawidd6/action-download-artifact@v2.24.0
+      if: github.repository == 'Cascoda/cascoda-sdk'
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
         branch: master
@@ -88,11 +105,15 @@ jobs:
     #     mingw32-make.exe -C ${{ github.workspace }}\build-ocf-chili2-win -j4
 
 
-    - name: configure KNX chili build on windows
+    - name: copy static libs
+      if: github.repository == 'Cascoda/cascoda-sdk'
       run: |
         arm-none-eabi-gcc --version
         New-Item -Type dir ${{ github.workspace }}\build-knx-chili2-win\lib
         Copy-Item -Path ${{ github.workspace }}\build-ocf-chili2-win\lib\libkis-port.a -Destination ${{ github.workspace }}\build-knx-chili2-win\lib
+
+    - name: configure KNX chili build on windows
+      run: |
         cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
       continue-on-error: true
 
@@ -116,7 +137,7 @@ jobs:
 
     - name: configure posix sdk
       run: |
-        cmake -S "${{ github.workspace }}/cascoda-sdk" -B "${{ github.workspace }}/build-posix" -D CMAKE_SH=CMAKE_SH-NOTFOUND
+        cmake -S "${{ github.workspace }}/cascoda-sdk" -B "${{ github.workspace }}/build-posix" -D CMAKE_SH=CMAKE_SH-NOTFOUND -D CA_BUILD_TESTING=OFF -D BUILD_TESTING=OFF 
 
     - name: build posix-sdk
       run: |
@@ -133,7 +154,7 @@ jobs:
         name: Posix-SDK
         path: ${{ github.workspace }}/release
 
-  # Build artifacts for macos - for build testing only, no artifacts
+  # Build artifacts for MacOS - for build testing only, no artifacts
   macos:
     runs-on: macos-latest
     # if: github.ref == 'refs/heads/master'
@@ -158,7 +179,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OCF_TARGETS: 'ocf-light ocf-reed-light ocf-cli-thermometer ocf-sleepy-thermometer ocf-sensorif ocf-sensorif-unsecure ocf-reed-module'
-      KNX_TARGETS: 'knx-iot-chilidev-pb knx-iot-chilidev-sa knx-iot-chilidev-therm'
 
     steps:
     - uses: actions/checkout@v3
@@ -259,8 +279,7 @@ jobs:
     - name: build Chili2D-USB-KNX
       run: |
         cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
-        make -C ${{ github.workspace }}/build-chili2 -j4 $KNX_TARGETS
-        cp ${{ github.workspace }}/build-chili2/bin/knx-*.bin ${{ github.workspace }}/upload-usb
+        make -C ${{ github.workspace }}/build-chili2 -j4
         
         # copy knx port library
         if [ ${{github.repository }} != Cascoda/cascoda-sdk ]

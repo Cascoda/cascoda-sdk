@@ -155,12 +155,12 @@ uint8_t gfx_drv_getPixel(int16_t x, int16_t y)
 // clear everything
 void gfx_drv_clearDisplay(void)
 {
-	ca_log_note("gfx_drv_clearDisplay");
+	ca_log_debg("gfx_drv_clearDisplay");
 	//white = 0xFF
 	//black = 0x00
 	memset(frame_buffer, 0xFF, LCDWIDTH * LCDHEIGHT / 8);
 	// check the first 8 pixels
-	ca_log_note("  frame_buffer[0] %d\n", frame_buffer[0]);
+	ca_log_debg("  frame_buffer[0] %d\n", frame_buffer[0]);
 }
 
 // set the rotation for drawing

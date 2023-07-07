@@ -32,7 +32,60 @@ Please ensure you have the following hardware and software requirements before p
 4. Now power up the hub using the power adapter.
 5. Connect the two devboards to your Windows PC via USB.
 
-## Step 2: Create a Thread network
+## Step 2: Update your firmware
+
+NOTE: This part of the guide will make use of the Cascoda Windows Tools that you have installed as part of the software requirements. By default, these tools are added to your `PATH`, enabling their execution in a shell in any directory. However, if this did not occur, you will only be able to execute the tools from within the directory in which they are installed. The default installation directory is `C:\Program Files (x86)\Cascoda Windows Tools`.
+
+### Updating the two devboards
+
+To ensure that the devboards are running the latest firmware, you will have to download the latest firmware and flash it onto both devices.
+
+1. Please [download the latest embedded binaries from our GitHub repository](https://github.com/Cascoda/knx-iot-example/releases/). For this guide, you will need the `embedded_secured.zip` archive.
+2. Extract the archive and open a terminal inside the folder containing the binaries - `embedded_secured/build_win_bin/bin`. 
+3. Inside this terminal, enter the `chilictl list` command.
+4. Information about both connected devboards should now be displayed on the screen in this fashion:
+    ```
+    PS C:\Users\Administrator> chilictl.exe list
+    2023-05-25 12:40:32.502 NOTE:  Host Cascoda SDK v0.23-6-gefd3f47 May 22 2023
+    Device Found:
+            Device: Chili2
+            App: knx_iot_example_240523_e730064
+            Version: v0.23-6-gefd3f47
+            Serial No: 82830D8702A7566B
+            Path: \\?\hid#vid_0416&pid_5020#a&13e664b5&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+            Available: Yes
+            External Flash Chip Available: Yes
+    Device Found:
+            Device: Chili2
+            App: knx_iot_example_240523_e730064
+            Version: v0.23-6-gefd3f47
+            Serial No: 60F373F8446594E6
+            Path: \\?\hid#vid_0416&pid_5020#a&235ac66c&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+            Available: Yes
+            External Flash Chip Available: Yes
+    ```
+    Please note down the serial numbers of the two devices, in this case 82830D8702A7566B and 60F373F8446594E6.
+5. Flash the devices one by one using the `chilictl flash -f knx_iot_example_reed.bin -s <SERIAL_NUMBER>`, using the serial numbers obtained from `chilictl list`. For example, here is what the result of flashing the device with serial number 82830D8702A7566B would look like:
+
+    ```
+    PS C:\Users\Administrator\Downloads\embedded_secured\build_win_bin\bin> chilictl flash -f .\knx_iot_example_reed.bin -s  82830D8702A7566B
+    Last write time of .\knx_iot_example_reed.bin is: 07/04/2023  15:07
+    2023-07-05 11:49:26.584 NOTE:  Host Cascoda SDK v0.24-44-g38f1b1a3 Jun 20 2023
+    1 devices found.
+    Flasher [82830D8702A7566B]: INIT -> REBOOT
+    Flasher [82830D8702A7566B]: REBOOT -> ERASE
+    Flasher [82830D8702A7566B]: ERASE -> FLASH
+    Flasher [82830D8702A7566B]: FLASH -> VERIFY
+    Flasher [82830D8702A7566B]: VERIFY -> VALIDATE
+    Flasher [82830D8702A7566B]: VALIDATE -> COMPLETE
+    ```
+
+
+### Updating the KNX-IoT Hub
+
+[Download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
+
+## Step 3: Create a Thread network
 
 ### Form a Thread network on the hub
 
@@ -45,8 +98,6 @@ Please ensure you have the following hardware and software requirements before p
 7. Your Thread network should now be visible under `Network -> Thread`!
 
 ### Join the devboards to the Thread network
-
-NOTE: This part of the guide will make use of the Cascoda Windows Tools that you have installed as part of the software requirements. By default, these tools are added to your `PATH`, enabling their execution in a shell in any directory. However, if this did not occur, you will only be able to execute the tools from within the directory in which they are installed. The default installation directory is `C:\Program Files (x86)\Cascoda Windows Tools`.
 
 1. Open an instance of Windows PowerShell.
 2. Type `chilictl.exe list`. If an error occurs, try prepending the path, e.g.
@@ -94,16 +145,12 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 9. Click on `Add` in the bottom right corner of the page. You will now see two input fields, one that says `New Joiner Credential` and one that says `Restrict to a Specific Joiner`.
 10. From the serial-adapter output, copy the `Thread Joining Credential` (in this case YR5XH9X3) and paste it into the `New Joiner Credential` field, replacing the default text there. Likewise, copy the `EUI64` (in this case 6a56a702870d8382) from the serial-adapter output and paste it into the `Restrict to a Specific Joiner` field.
 11. Click on `Add`.
-12. Monitor the running serial-adapter output, which will show a lot of messages after about 10 to 30 seconds. If you see the following message, it means that the devboard successfully joined the network!
+12. Monitor the running serial-adapter output, until the KNX QR code (such as the one shown below) is printed. This means that the device has successfully joined the network.
+    - **If the device does not join after two minutes, you may need to restart the Border Agent**. [See the Troubleshooting section of this guide for more information.](#troubleshooting)
+13. Make a record of the enrollment data, displayed in the KNX QR code string format - you will need it for enrolling the devices using either the Linker or ETS6. The message you need will look something like this:
     ```
-    Rx: Role: 2
+    Rx:  === QR Code: KNX:S:00FA10010710;P:4N6AFK6T83YWDUTW23U2 ===
     ```
-    - **If the device does not join after two minutes, you may need to restart the Border Agent**. Please navigate to `System -> Startup`, scroll down until you find `otbr-agent`, then press Restart on the `otbr-agent` row. Afterwards, repeat steps 7 through 12 of this guide and the joining should be successful.
-13. Among all the messages displayed, there is one message in particular that you have to find and copy-paste somewhere else, because it will be needed later in this guide. This message is called the "KNX QR code format", and looks something like this:
-    ```
-    Rx:  === QR Code: KNX:S:00fa10010710;P:4N6AFK6T83YWDUTW23U2 ===
-    ```
-    You may need to scroll up a little bit until you find this message. 
 14. You may now terminate serial-adapter (this won't affect the devboard, it will only close the communication channel) by pressing Ctrl + C in PowerShell.
 15. Repeat the exact same thing from step 5, but this time providing the serial number of the other devboard, in this case 60F373F8446594E6.
 16. You should now have both devboards joined to the network formed by the hub.
@@ -111,6 +158,16 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 
 <p align="center"><img src="imgs/topology.PNG" width="80%" align="center"></p>
 
-## Step 3: Configuring KNX devices
+## Step 4: Configuring KNX devices
 
 This can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).
+
+## Troubleshooting
+
+### Devboards do not join the Thread network
+If the device does not join after two minutes, you may need to restart the Border Agent. On the KNX IoT Hub UI, Please navigate to `System -> Startup`, scroll down until you find `otbr-agent`, then press Restart on the `otbr-agent` row. Afterwards, add the devices to the Thread network once more, according to steps 7 through 12 of 
+
+### Cannot flash devboard / Cannot access devboard logs using serial-adapter
+A devboard can only be controlled by one Cascoda tool at any given time. This means that you will not be able to flash a device if you have serial-adapter communicating to the same device - you must close serial-adapter first. Likewise, only one serial-adapter instance can be used per device, and serial-adapter cannot be opened on a device while it is being flashed.
+
+To see if a particular device is available, use `chilictl list` and look at the "Version" field. Available devices will have a version number such as "v0.23-6-gefd3f47", whereas unavailable devices will show "???" under the Version field.

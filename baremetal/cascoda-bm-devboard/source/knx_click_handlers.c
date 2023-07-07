@@ -354,6 +354,7 @@ void convert_RELAY_to_knx(data_relay data, knx_data_relay *knx_data)
 		knx_data->relay_2_state = 0;
 }
 
+
 /* Handler for THERMO Click */
 ca_error CLICK_Handler_THERMO(void)
 {
@@ -512,6 +513,7 @@ ca_error CLICK_Handler_RELAY(void)
 	return CA_ERROR_SUCCESS;
 }
 
+
 /* print time and click type */
 static void printClickType(dvbd_click_type type)
 {
@@ -614,3 +616,4 @@ static void report_RELAY(knx_data_relay data)
 	printf(" Relay 1 is %s; Relay 2 is %s", (data.relay_1_state ? " ON" : "OFF"), (data.relay_2_state ? " ON" : "OFF"));
 	printf("\n");
 }
+

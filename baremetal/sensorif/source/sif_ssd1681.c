@@ -207,11 +207,11 @@ static void SIF_SSD1681_TurnOnDisplay(SIF_SSD1681_Update_Mode mode)
 static void SIF_SSD1681_Reset(void)
 {
 	BSP_ModuleSetGPIOPin(SIF_SSD1681_RST_PIN, 1);
-	WAIT_ms(200);
+	WAIT_ms(50); // Originally WAIT_ms(200)
 	BSP_ModuleSetGPIOPin(SIF_SSD1681_RST_PIN, 0);
 	WAIT_ms(2);
 	BSP_ModuleSetGPIOPin(SIF_SSD1681_RST_PIN, 1);
-	WAIT_ms(200);
+	WAIT_ms(50); // Originally WAIT_ms(200)
 }
 
 /******************************************************************************/

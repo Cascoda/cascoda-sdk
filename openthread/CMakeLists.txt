@@ -1,6 +1,14 @@
 # Global config ---------------------------------------------------------------
 project (ca821x-openthread)
 
+if(NOT (WIN32 OR UNIX))
+	set(CASCODA_BUILD_OT ON CACHE BOOL "Whether to build OpenThread" FORCE)
+endif()
+
+if(NOT CASCODA_BUILD_OT)
+	return()
+endif()
+
 # Set configuration variables -------------------------------------------------
 set(CASCODA_OPENTHREAD_DEV OFF CACHE BOOL "Whether to use the latest development build of openthread, or the known stable version.")
 set(CASCODA_OPENTHREAD_MESSAGE_BUFS 44 CACHE STRING "Integer number of message buffers for openthread to use. Recommend >44")
@@ -105,6 +113,7 @@ if(CASCODA_OPENTHREAD_FTD)
 	if(UNIX)
 		list(APPEND OT_PLATFORM_DEFINES
 			"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=50000"
+			"OPENTHREAD_CONFIG_COMMISSIONER_MAX_JOINER_ENTRIES=64"
 		)
 	else()
 		list(APPEND OT_PLATFORM_DEFINES

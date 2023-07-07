@@ -87,43 +87,49 @@
 #endif
 
 /* initialisation functions for all clicks - have to be in correct order */
-static ca_error (*click_init_function[])(void) = {NULL,
-                                                  CLICK_THERMO_initialise,
-                                                  CLICK_THERMO3_initialise,
-                                                  CLICK_AIRQUALITY4_initialise,
-                                                  CLICK_ENVIRONMENT2_initialise,
-                                                  CLICK_SHT_initialise,
-                                                  CLICK_HVAC_initialise,
-                                                  CLICK_MOTION_initialise,
-                                                  CLICK_RELAY_initialise,
-                                                  CLICK_AMBIENT8_initialise,
-                                                  CLICK_FAN_initialise};
+static ca_error (*click_init_function[])(void) = {
+    NULL,
+    CLICK_THERMO_initialise,
+    CLICK_THERMO3_initialise,
+    CLICK_AIRQUALITY4_initialise,
+    CLICK_ENVIRONMENT2_initialise,
+    CLICK_SHT_initialise,
+    CLICK_HVAC_initialise,
+    CLICK_MOTION_initialise,
+    CLICK_RELAY_initialise,
+    CLICK_AMBIENT8_initialise,
+    CLICK_FAN_initialise,
+};
 
 /* handler functions for all clicks (including acquisition) - have to be in correct order */
-static ca_error (*click_handler_function[])(void) = {NULL,
-                                                     CLICK_Handler_Default_THERMO,
-                                                     CLICK_Handler_Default_THERMO3,
-                                                     CLICK_Handler_Default_AIRQUALITY4,
-                                                     CLICK_Handler_Default_ENVIRONMENT2,
-                                                     CLICK_Handler_Default_SHT,
-                                                     CLICK_Handler_Default_HVAC,
-                                                     CLICK_Handler_Default_MOTION,
-                                                     CLICK_Handler_Default_RELAY,
-                                                     CLICK_Handler_Default_AMBIENT8,
-                                                     CLICK_Handler_Default_FAN};
+static ca_error (*click_handler_function[])(void) = {
+    NULL,
+    CLICK_Handler_Default_THERMO,
+    CLICK_Handler_Default_THERMO3,
+    CLICK_Handler_Default_AIRQUALITY4,
+    CLICK_Handler_Default_ENVIRONMENT2,
+    CLICK_Handler_Default_SHT,
+    CLICK_Handler_Default_HVAC,
+    CLICK_Handler_Default_MOTION,
+    CLICK_Handler_Default_RELAY,
+    CLICK_Handler_Default_AMBIENT8,
+    CLICK_Handler_Default_FAN,
+};
 
 /* alarm functions for all clicks - have to be in correct order */
-static ca_error (*click_alarm_function[])(void) = {NULL,
-                                                   NULL,
-                                                   MIKROSDK_THERMO3_alarm_triggered,
-                                                   NULL,
-                                                   NULL,
-                                                   MIKROSDK_SHT_alarm_triggered,
-                                                   NULL,
-                                                   MIKROSDK_MOTION_alarm_triggered,
-                                                   NULL,
-                                                   NULL,
-                                                   MIKROSDK_FAN_alarm_triggered};
+static ca_error (*click_alarm_function[])(void) = {
+    NULL,
+    NULL,
+    MIKROSDK_THERMO3_alarm_triggered,
+    NULL,
+    NULL,
+    MIKROSDK_SHT_alarm_triggered,
+    NULL,
+    MIKROSDK_MOTION_alarm_triggered,
+    NULL,
+    NULL,
+    MIKROSDK_FAN_alarm_triggered,
+};
 /* for reporting */
 extern const char *click_name_default[];
 

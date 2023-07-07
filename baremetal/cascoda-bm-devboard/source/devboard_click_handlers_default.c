@@ -226,6 +226,7 @@ ca_error CLICK_Handler_Default_FAN(void)
 	return CA_ERROR_SUCCESS;
 }
 
+
 /* print time and click type */
 static void printClickType(dvbd_click_type type)
 {
@@ -515,3 +516,4 @@ static void report_FAN(data_fan data)
 	}
 	printf("\n");
 }
+

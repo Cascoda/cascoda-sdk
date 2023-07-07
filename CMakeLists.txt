@@ -29,7 +29,7 @@ set(CMAKE_C_STANDARD 99)
 enable_language(ASM)
 
 # Include testing library
-if(BUILD_TESTING AND (UNIX OR MINGW))
+if(CA_BUILD_TESTING AND (UNIX OR MINGW))
 	enable_testing()
 	add_subdirectory(third-party/cmocka-1.1.3)
 	cascoda_put_subdir(test cmocka)

@@ -1,7 +1,7 @@
 # Global config ---------------------------------------------------------------
 project (cascoda-util-tests)
 
-if(NOT BUILD_TESTING)
+if(NOT CA_BUILD_TESTING)
 	return()
 endif()
 

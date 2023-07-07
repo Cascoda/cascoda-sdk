@@ -53,8 +53,21 @@
 
 /* Dataflash: on top of APROM */
 /* Leave one  page free for factory-configured constant data */
-#define DATA_FLASH_BASE (FMC_APROM_END - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE) - FMC_FLASH_PAGE_SIZE)
-#define MANUFACTURER_DATA_FLASH_BASE (FMC_APROM_END - FMC_FLASH_PAGE_SIZE)
+
+/* MEMORY LAYOUT
+
+--------------------------------------------- <-- FMC_APROM_END
+            MANU DATA (1 page)
+--------------------------------------------- <-- MANUFACTURER_DATA_FLASH_BASE
+DATA FLASH (CASCODA_CHILI_FLASH_PAGES pages)
+--------------------------------------------- <-- DATA_FLASH_BASE
+                APPLICATION 
+--------------------------------------------- <-- FMC_APROM_BASE (0x0)
+
+*/
+#define MANUFACTURER_DATA_FLASH_SIZE (FMC_FLASH_PAGE_SIZE)
+#define MANUFACTURER_DATA_FLASH_BASE (FMC_APROM_END - MANUFACTURER_DATA_FLASH_SIZE)
+#define DATA_FLASH_BASE (MANUFACTURER_DATA_FLASH_BASE - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE))
 
 const struct ca_flash_info BSP_FlashInfo = {FMC_APROM_BASE,
                                             DATA_FLASH_BASE,

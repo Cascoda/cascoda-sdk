@@ -13,6 +13,6 @@ We offer a wide range of KNX IoT over Thread demo applications. For an exhaustiv
 | LSSB         | Light Switching Sensor Basic | LSSB | - |GPIO |
 | LDAB         | Light Dimming Actuator Basic | LDAB | LED Driver 2 | PWM|
 | LDSB         | Light Dimming Sensor Basic | LDSB| - | GPIO |
-| PROD         | Production executable | LSAB & LSSB (no feedback)| - | GPIO |
+| EXAMPLE      | Production executable | LSAB & LSSB (no feedback)| - | GPIO |
 | RTS          | Room Temperature Sensor| RTS | Thermo 3 | I2C |
 | RTS_RRHS     | Room Temperture & Humidity Sensor | RTS RHHS | SHT | I2C|

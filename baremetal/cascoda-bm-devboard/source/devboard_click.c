@@ -278,6 +278,7 @@ ca_error CLICK_FAN_acquisition(data_fan *data)
 	return CA_ERROR_SUCCESS;
 }
 
+
 /* THERMO3 click initialisation */
 ca_error CLICK_THERMO3_initialise(void)
 {
@@ -387,3 +388,4 @@ ca_error CLICK_FAN_initialise(void)
 		return CA_ERROR_FAIL;
 	return CA_ERROR_SUCCESS;
 }
+

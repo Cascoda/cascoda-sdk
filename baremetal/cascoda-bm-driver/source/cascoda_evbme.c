@@ -453,6 +453,14 @@ static ca_error EVBME_GET_request(struct EVBME_GET_request *req)
 		getInd->mAttributeLen = maxAttrLen;
 		status                = EVBME_GET_OT_Attrib(req->mAttributeId, &(getInd->mAttributeLen), getInd->mAttribute);
 		break;
+	case EVBME_ONBOARD_FLASH_INFO:
+	{
+		struct ca_flash_info flash_info;
+		BSP_GetFlashInfo(&flash_info);
+		getInd->mAttributeLen = sizeof(flash_info);
+		memcpy(getInd->mAttribute, &flash_info, getInd->mAttributeLen);
+		break;
+	}
 	default:
 		status = CA_ERROR_UNKNOWN;
 		break;

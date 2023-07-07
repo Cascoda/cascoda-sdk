@@ -42,7 +42,7 @@ Before Wireshark can decode secured Thread traffic, the master key of the Thread
 Once the key is obtained, navigate to Edit -> Preferences, expand the Protocol tab in the left-hand side of the pop-up window and scroll down to the "IEEE 802.15.4" protocol. Hit the Edit button next to Decryption Keys, and then hit the plus button to add a new key. After pasting in your key, ensure that the "Key hash" value of the key entry is set to "Thread hash", so that the newly made key entry is used for Thread networks. Hit "Ok" on all windows to save your work.
 
 Here is an example configuration where two Thread key entries have been added:
-![Wireshark thread keys window, showing two correctly configured Thread master keys](correctly-configured-keys.png)
+![Wireshark thread keys window, showing two correctly configured Thread master keys](./imgs/correctly-configured-keys.png)
 
 After a correct master key has been input, 15.4 traffic should automatically be decoded as Thread - you should be able to see the 6LoWPAN headers on most packets. Some application-layer protocols such as DNS, NTP, CoAP are also decoded.
 
@@ -80,11 +80,11 @@ Here is an example Access Token created by our Linker. The information Wireshark
 
 Within Wireshark, this Access Token corresponds to the first Security Context in the screenshot below.
 
-![](oscore-contexts.png)
+![](imgs/oscore-contexts.png)
 
 Once you have configured your security contexts, you should be able to see every detail of the KNX-IoT communications, as seen below:
 
-![](successful-oscore-decryption.png)
+![](./imgs/successful-oscore-decryption.png)
 
  If you are using the Cascoda KNX-IoT Linker, some views of the Access Token are encoded as Base64. These [must be decoded to Hex before being put into Wireshark, using an online tool](https://base64.guru/converter/decode/hex).
 
@@ -100,7 +100,7 @@ You can right-click on a decoded packet header and select Apply as Filter to vis
 
 Out of the box, our sniffer displays RSS & LQI data for every single received packet. This can be seen by clicking on a packet and expanding it's "IEEE 802.15.4 TAP" header. This data can also be displayed in the main packet window by fully expanding the TAP header, right-clicking on the LQI or RSS measurement and selecting Apply as Column.
 
-![](rss-lqi-capture.png)
+![](./imgs/rss-lqi-capture.png)
 
 ### Better CBOR decoding
 
@@ -124,23 +124,37 @@ sniffer.exe [OPTIONS] CHANNEL
 DESCRIPTION
         Sniffer program to use the CA-8211 to capture packets on a channel.
 
-        -p             PCap mode, output pcap data instead of descriptive hex
-                       dump. If this is used in conjunction with pipes, can be
-                       used to stream to wireshark
+        -b [DURATION]    Ring-buffer mode. Wireshark will save and start a new capture
+                         every number of seconds specified by the DURATION argument.
+                         Note: This HAS to be used in conjunction with -o, to specify
+                         the output directory path where the pcap files will be created.
 
-        -d             Debug mode, print verbose information to stderr.
+        -d               Debug mode, print verbose information to stderr.
 
-        -n [PIPENAME]  Output to a named pipe/fifo, which can be read by
-                       wireshark or another program. Most useful in conjunction
-                       with '-p'.
+        -e               Use PCap datalink type ETHERNET (default is IEEE802_15_4_TAP).
 
-        -w             Open WireShark to process the packet capture. Implies -p
-                       and -n (random name for pipe if not provided separately).
+        -i               Use PCap datalink type IEEE802_15_4_WITHFCS (default is IEEE802_15_4_TAP).
 
-        -W [PATH]      Open WireShark at the path to process the packet capture.
-                       Implies -w.
+        -o [PATH]        If provided, wireshark will save the current capture in the output
+                         directory provided. Otherwise, Wireshark will not save the capture.
+                         NOTE: This option is mandatory if -b is used.
 
-        -s [SerialNo]  (Optional) Specify the serial number of the target device.
+        -n [PIPENAME]    Output to a named pipe/fifo, which can be read by
+                         wireshark or another program. Most useful in conjunction
+                         with '-p'.
+
+        -p               PCap mode, output pcap data instead of descriptive hex
+                         dump. If this is used in conjunction with pipes, can be
+                         used to stream to wireshark
+
+        -s [SERIALNO]    This application will use the sniffer with the serial number specified.
+                         If not specified, the first sniffer detected will be used.
+
+        -w               Open WireShark to process the packet capture. Implies -p
+                         and -n (random name for pipe if not provided separately).
+
+        -W [PATH]        Open WireShark at the path to process the packet capture.
+                         Implies -w.
 ```
 
 For instance the ``-w`` argument can be used to automatically boot wireshark and connect. On unix platforms the usage is more flexible and can use command line pipes such as:

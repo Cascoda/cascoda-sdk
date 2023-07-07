@@ -52,8 +52,6 @@
 #include "ca821x-posix/ca821x-posix.h"
 #include "evbme_messages.h"
 
-#if CASCODA_CA_VER != 8210
-
 #if _WIN32
 #define DEFAULT_PIPE "\\\\.\\pipe\\cascoda_"
 #else
@@ -61,14 +59,46 @@
 #endif
 
 /**
+ * parameter structures which have been duplicated from mac_messages.h to be able to handle all devices
+ */
+struct PCPS_DATA_indication_pset_8211
+{
+	uint8_t CS;                      /**< Carrier sense value of received frame*/
+	uint8_t ED;                      /**< Energy detect value of received frame */
+	uint8_t PsduLength;              /**< Length of received PSDU */
+	uint8_t Psdu[aMaxPHYPacketSize]; /**< Received PSDU */
+};
+
+struct PCPS_DATA_indication_pset_8212
+{
+	uint8_t CS;                      /**< Carrier sense value of received frame*/
+	uint8_t ED;                      /**< Energy detect value of received frame */
+	uint8_t Timestamp[4];            /**< Timestamp the frame was received at */
+	uint8_t PsduLength;              /**< Length of received PSDU */
+	uint8_t Psdu[aMaxPHYPacketSize]; /**< Received PSDU */
+};
+
+/**
+ * device type
+ */
+typedef enum ca_device_type
+{
+	DEV_UNKNOWN = 0,
+	DEV_CA8210  = 1,
+	DEV_CA8211  = 2,
+	DEV_CA8212  = 3
+} ca_device_type;
+
+ca_device_type DeviceType = DEV_UNKNOWN;
+
+/**
  * Pcap link types, see https://www.tcpdump.org/linktypes.html
  */
-#define LINKTYPE_ETHERNET                1		// ethernet used to encapsulate 802.15.4 frames
-#define LINKTYPE_IEEE802_15_4_WITHFCS  195		// direct 802.15.4 with FCS
-#define LINKTYPE_IEEE802_15_4_TAP      283      // direct 802.15.4 with TAP TLVs
+#define LINKTYPE_ETHERNET 1               // ethernet used to encapsulate 802.15.4 frames
+#define LINKTYPE_IEEE802_15_4_WITHFCS 195 // direct 802.15.4 with FCS
+#define LINKTYPE_IEEE802_15_4_TAP 283     // direct 802.15.4 with TAP TLVs
 
 uint32_t link_type = LINKTYPE_IEEE802_15_4_TAP;
-
 
 /**
  * headers for encapsulating IEEE802.15.4 frames for pcap.
@@ -77,61 +107,43 @@ uint32_t link_type = LINKTYPE_IEEE802_15_4_TAP;
 #define HEADER_LEN_ETH 14;
 #define HEADER_LEN_TAP 28;
 
-#define HEADER_POSITION_RSSI	16
-#define HEADER_POSITION_LQI		24
+#define HEADER_POSITION_RSSI 16
+#define HEADER_POSITION_LQI 24
 
 /**
  * headers for encapsulating IEEE802.15.4 frames for pcap.
+ * for TAP header doc see:
+ * https://github.com/jkcko/ieee802.15.4-tap/blob/master/IEEE%20802.15.4%20TAP%20Link%20Type%20Specification.pdf
  */
-uint8_t ethernet_header[] = {
-	0xff,	// dst
-	0xff,
-	0xff,
-	0xff,
-	0xff,
-	0xff,
-	0x22,	// src
-	0x22,
-	0x22,
-	0x22,
-	0x22,
-	0x22,
-	0x80,	// type
-	0x9a
-	};
+uint8_t ethernet_header[] = {0xff, // dst
+                             0xff,
+                             0xff,
+                             0xff,
+                             0xff,
+                             0xff,
+                             0x22, // src
+                             0x22,
+                             0x22,
+                             0x22,
+                             0x22,
+                             0x22,
+                             0x80, // type
+                             0x9a};
 
-// uint8_t tap_header[] = {0x00, 0x00, 0x04, 0x00};
-
-uint8_t tap_header[] = {
-	0x00,	// version
-	0x00,	// reserved
-	0x1C,	// length
-	0x00,
-	0x00,	// FCS TLV
-	0x00,
-	0x01,
-	0x00,
-	0x01,
-	0x00,
-	0x00,
-	0x00,
-	0x01,	// RSSI TLV
-	0x00,
-	0x04,
-	0x00,
-	0x00,	// TSSI TLV value
-	0x00,
-	0x00,
-	0x00,
-	0x0A,	// LQI TLV
-	0x00,
-	0x01,
-	0x00,
-	0x00,	// LQI TLV value
-	0x00,
-	0x00,
-	0x00
-	};
+uint8_t tap_header[] = {0x00, // version
+                        0x00, // reserved
+                        0x1C, // length
+                        0x00,
+                        0x00, // FCS TLV
+                        0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
+                        0x01, // RSSI TLV
+                        0x00, 0x04, 0x00,
+                        0x00, // TSSI TLV value
+                        0x00, 0x00, 0x00,
+                        0x0A, // LQI TLV
+                        0x00, 0x01, 0x00,
+                        0x00, // LQI TLV value
+                        0x00, 0x00, 0x00};
 
 /**
  * Pcap file header struct as https://wiki.wireshark.org/Development/LibpcapFileFormat
@@ -191,6 +203,11 @@ char default_pipe[30];
 /** Pointer to dynamic pipe name. */
 char *dPipeName = NULL; //Dynamic memory
 
+/** If this is nonzero, then wireshark will be used in ring buffer mode, and a 
+ * new capture will be started once every "time_till_new_capture" seconds.
+*/
+uint32_t time_till_new_capture = 0;
+
 /**
  * Platform abstraction function to flush the output, causing data to be written now.
  */
@@ -235,8 +252,10 @@ static char *getDefaultWiresharkPath(void);
 
 /**
  * Platform abstraction function to start wireshark and bind it to this program.
+ * @param wspath Path to Wireshark
+ * @param outpath Path to output directory for Wireshark captures
  */
-static void start_wireshark(const char *wspath);
+static void start_wireshark(const char *wspath, const char *outpath);
 
 /**
  * Platform abstraction function to register the start time of the program.
@@ -244,11 +263,18 @@ static void start_wireshark(const char *wspath);
 static void setStartTime(void);
 
 /**
- * Platform abstraction function to fill in the timing information for the pcap header.
+ * Platform abstraction function to fill in the timing information for the pcap header from Operating System.
  * @param pcapHeader A pointer to the pcap header to be filled.
  * @param params A pointer to the received PCPS indication
  */
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params);
+static void fillTimestampFromOS(pcaprec_hdr_t *pcapHeader);
+
+/**
+ * Platform abstraction function to fill in the timing information for the pcap header from MAC
+ * @param pcapHeader A pointer to the pcap header to be filled.
+ * @param params A pointer to the received PCPS indication
+ */
+static void fillTimestampFromMAC(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset_8212 *params);
 
 /**
  * Platform abstraction function to configure the default system output.
@@ -262,13 +288,20 @@ static void io_raw(void);
 
 /**
  * fills in RSSI/ED value for LINKTYPE_IEEE802_15_4_TAP.
+ * @param ed ED/RSSI value from device (0-255)
  */
 static void fillRSSITap(uint8_t ed);
 
 /**
  * fills in LIQ/CS value for LINKTYPE_IEEE802_15_4_TAP.
+ * @param cs CS/LQI value from device (0-255)
  */
 static void fillLQITap(uint8_t cs);
+
+/**
+ * reads the device version (note that CASCODA_CA_VER should not be used outside baremetal)
+ */
+static void GetDeviceVersion(struct ca821x_dev *pDeviceRef);
 
 /**
  * Helper function to print the help information to stderr.
@@ -286,19 +319,29 @@ static void displayHelp()
 	fprintf(stderr, "\tPrint all received packets on channel (11-26)\n\n");
 	fprintf(stderr, "DESCRIPTION\n");
 	fprintf(stderr, "\tSniffer program to use the CA-8211 to capture packets on a channel.\n\n");
-	fprintf(stderr, "\t-p             PCap mode, output pcap data instead of descriptive hex\n");
-	fprintf(stderr, "\t               dump. If this is used in conjunction with pipes, can be\n");
-	fprintf(stderr, "\t               used to stream to wireshark\n\n");
-	fprintf(stderr, "\t-d             Debug mode, print verbose information to stderr.\n\n");
-	fprintf(stderr, "\t-n [PIPENAME]  Output to a named pipe/fifo, which can be read by\n");
-	fprintf(stderr, "\t               wireshark or another program. Most useful in conjunction\n");
-	fprintf(stderr, "\t               with '-p'.\n\n");
-	fprintf(stderr, "\t-w             Open WireShark to process the packet capture. Implies -p\n");
-	fprintf(stderr, "\t               and -n (random name for pipe if not provided separately).\n\n");
-	fprintf(stderr, "\t-W [PATH]      Open WireShark at the path to process the packet capture.\n");
-	fprintf(stderr, "\t               Implies -w.\n\n");
-	fprintf(stderr, "\t-e             Use PCap datalink type ETHERNET (default is IEEE802_15_4_TAP).\n");
-	fprintf(stderr, "\t-i             Use PCap datalink type IEEE802_15_4_WITHFCS (default is IEEE802_15_4_TAP).\n");
+	fprintf(stderr, "\t-b [DURATION]    Ring-buffer mode. Wireshark will save and start a new capture\n");
+	fprintf(stderr, "\t                 every number of seconds specified by the DURATION argument.\n");
+	fprintf(stderr, "\t                 Note: This HAS to be used in conjunction with -o, to specify\n");
+	fprintf(stderr, "\t                 the output directory path where the pcap files will be created.\n\n");
+	fprintf(stderr, "\t-d               Debug mode, print verbose information to stderr.\n\n");
+	fprintf(stderr, "\t-e               Use PCap datalink type ETHERNET (default is IEEE802_15_4_TAP).\n\n");
+	fprintf(stderr,
+	        "\t-i               Use PCap datalink type IEEE802_15_4_WITHFCS (default is IEEE802_15_4_TAP).\n\n");
+	fprintf(stderr, "\t-o [PATH]        If provided, wireshark will save the current capture in the output\n");
+	fprintf(stderr, "\t                 directory provided. Otherwise, Wireshark will not save the capture.\n");
+	fprintf(stderr, "\t                 NOTE: This option is mandatory if -b is used.\n\n");
+	fprintf(stderr, "\t-n [PIPENAME]    Output to a named pipe/fifo, which can be read by\n");
+	fprintf(stderr, "\t                 wireshark or another program. Most useful in conjunction\n");
+	fprintf(stderr, "\t                 with '-p'.\n\n");
+	fprintf(stderr, "\t-p               PCap mode, output pcap data instead of descriptive hex\n");
+	fprintf(stderr, "\t                 dump. If this is used in conjunction with pipes, can be\n");
+	fprintf(stderr, "\t                 used to stream to wireshark\n\n");
+	fprintf(stderr, "\t-s [SERIALNO]    This application will use the sniffer with the serial number specified.\n");
+	fprintf(stderr, "\t                 If not specified, the first sniffer detected will be used.\n\n");
+	fprintf(stderr, "\t-w               Open WireShark to process the packet capture. Implies -p\n");
+	fprintf(stderr, "\t                 and -n (random name for pipe if not provided separately).\n\n");
+	fprintf(stderr, "\t-W [PATH]        Open WireShark at the path to process the packet capture.\n");
+	fprintf(stderr, "\t                 Implies -w.\n\n");
 }
 
 #if defined(_WIN32) //Windows abstraction
@@ -401,23 +444,48 @@ static char *getDefaultWiresharkPath(void)
 	return success ? FullPath : NULL;
 }
 
-static void start_wireshark(const char *wspath)
+static void start_wireshark(const char *wspath, const char *outpath)
 {
 	int                 rval;
-	int                 arglen = strlen(dPipeName) + 20;
+	int                 arglen = strlen(dPipeName) + 200;
 	char                args[arglen];
+	char                savePath[MAX_PATH];
+	char                saveSuffix[MAX_PATH];
 	STARTUPINFO         StartupInfo;
 	PROCESS_INFORMATION ProcessInfo;
 
+	if (outpath)
+	{
+		strcpy(savePath, outpath);
+		snprintf(saveSuffix, MAX_PATH, "\\ch_%d.pcapng", channel);
+		strcat(savePath, saveSuffix);
+	}
+
 	memset(&StartupInfo, 0, sizeof(StartupInfo));
 	memset(&ProcessInfo, 0, sizeof(ProcessInfo));
-	snprintf(args, arglen, " -i %s -k", dPipeName);
+
+	// Wireshark commandline arguments, see https://www.wireshark.org/docs/wsug_html_chunked/ChCustCommandLine.html
+	// -i selects the interface (which is the pipe that was created by the sniffer)
+	// -w selects an output file
+	// -k makes it start capturing immediately
+	// -b duration:<value>, causes wireshark to run in "ring buffer" mode, and save/write
+	// to a new output file every <value> seconds.
+	if (time_till_new_capture != 0)
+		snprintf(args, arglen, " -i %s -w %s -k -b duration:%d", dPipeName, savePath, time_till_new_capture);
+	else if (outpath)
+		snprintf(args, arglen, " -i %s -w %s -k", dPipeName, savePath);
+	else
+		snprintf(args, arglen, " -i %s -k", dPipeName);
 
 	fprintf(stderr, "Starting wireshark...\n");
 	rval = CreateProcess(wspath, args, NULL, NULL, false, 0, NULL, NULL, &StartupInfo, &ProcessInfo);
 
 	if (!rval)
+	{
 		fprintf(stderr, "Failed to start Wireshark, check path.\n");
+		DWORD dw = GetLastError();
+		printf("%d\n", dw);
+	}
 }
 
 static void setStartTime(void)
@@ -434,11 +502,10 @@ static void setStartTime(void)
 	}
 }
 
-#if CASCODA_CA_VER <= 8211
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
+static void fillTimestampFromOS(pcaprec_hdr_t *pcapHeader)
 {
 	LARGE_INTEGER now;
-	(void)params;
+
 	if (QueryPerformanceCounter(&now) == 0)
 	{
 		perror("QueryPerformanceTimer");
@@ -452,7 +519,6 @@ static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication
 	now.QuadPart -= pcapHeader->ts_sec * 1000000;
 	pcapHeader->ts_usec = (uint32_t)now.QuadPart;
 }
-#endif // CASCODA_CA_VER <= 8211
 
 static void configure_io(void)
 {
@@ -463,8 +529,10 @@ static void io_raw(void)
 {
 	setmode(STDOUT_FILENO, O_BINARY);
 }
+
 //End of windows abstraction
-#else //posix abstraction
+#else  //posix abstraction
+
 /**
  * Subtract one timespec from another.
  * @param t1 timespec 1
@@ -558,16 +626,39 @@ static char *getDefaultWiresharkPath(void)
 	return "wireshark";
 }
 
-static void start_wireshark(const char *wspath)
+static void start_wireshark(const char *wspath, const char *outpath)
 {
 	int pid = fork();
 	if (pid == 0)
 	{
-		int rval;
+		int  rval;
+		char savePath[200];
+		char saveSuffix[200];
 		// We are in the child process, execute the command
-		int  cmdlen = strlen(wspath) + strlen(dPipeName) + 20;
+		int  cmdlen = strlen(wspath) + strlen(dPipeName) + 200;
 		char buffer[cmdlen];
-		snprintf(buffer, cmdlen, "%s -i %s -k", wspath, dPipeName);
+
+		if (outpath)
+		{
+			strcpy(savePath, outpath);
+			snprintf(saveSuffix, 200, "\\ch_%d.pcapng", channel);
+			strcat(savePath, saveSuffix);
+		}
+
+		// Wireshark commandline arguments, see https://www.wireshark.org/docs/wsug_html_chunked/ChCustCommandLine.html
+		// -i selects the interface (which is the pipe that was created by the sniffer)
+		// -w selects an output file
+		// -k makes it start capturing immediately
+		// -b duration:<value>, causes wireshark to run in "ring buffer" mode, and save/write
+		// to a new output file every <value> seconds.
+		if (time_till_new_capture != 0)
+			snprintf(
+			    buffer, cmdlen, "%s -i %s -w %s -k -b duration:%d", wspath, dPipeName, savePath, time_till_new_capture);
+		else if (outpath)
+			snprintf(buffer, cmdlen, "%s -i %s -w %s -k", wspath, dPipeName, savePath);
+		else
+			snprintf(buffer, cmdlen, "%s -i %s -k", wspath, dPipeName);
+
 		rval = system(buffer);
 		if (rval < 0)
 			fprintf(stderr, "Wireshark failed to start. Check path.\n");
@@ -585,12 +676,10 @@ static void setStartTime(void)
 	}
 }
 
-#if CASCODA_CA_VER <= 8211
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
+static void fillTimestampFromOS(pcaprec_hdr_t *pcapHeader)
 {
 	struct timespec now;
 
-	(void)params;
 	if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
 	{
 		perror("clock gettime");
@@ -600,7 +689,6 @@ static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication
 	pcapHeader->ts_sec  = (uint32_t)(now.tv_sec);
 	pcapHeader->ts_usec = (uint32_t)(now.tv_nsec / 1000);
 }
-#endif // CASCODA_CA_VER <= 8211
 
 static void configure_io(void)
 {
@@ -612,8 +700,7 @@ static void io_raw(void)
 }
 #endif //End of posix abstraction
 
-#if CASCODA_CA_VER >= 8212
-static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset *params)
+static void fillTimestampFromMAC(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication_pset_8212 *params)
 {
 	const uint64_t micros = 1000000;
 	uint32_t       ts     = GETLE32(params->Timestamp); // timestamp in symbols
@@ -623,7 +710,6 @@ static void fillTimestamp(pcaprec_hdr_t *pcapHeader, struct PCPS_DATA_indication
 	pcapHeader->ts_sec  = (uint32_t)ts_s;
 	pcapHeader->ts_usec = (uint32_t)(ts_us - (ts_s * micros));
 }
-#endif // CASCODA_CA_VER >= 8212
 
 /**
  * Helper function to print the system time to the given output.
@@ -666,26 +752,154 @@ static void printPcapHeader(void)
 
 /**
  * Reset and initialise the radio for sniffing.
+ * @param from_startup initialise from startup when 1, re-initialisation only when 0.
  * @param pDeviceRef cascoda device reference.
  */
-static void initialiseRadio(struct ca821x_dev *pDeviceRef)
+static void initialiseRadio(uint8_t from_startup, struct ca821x_dev *pDeviceRef)
 {
-	EVBME_HOST_CONNECTED_notify(pDeviceRef); // reset device with hardware reset
+	if (from_startup)
+	{
+		ca_error status;
+		status = EVBME_HOST_CONNECTED_notify(pDeviceRef); // reset device with hardware reset
+		if (status)
+		{
+			fprintf(stderr, "Failed to connect, status %02X\n", status);
+			exit(EXIT_FAILURE);
+		}
+		GetDeviceVersion(pDeviceRef);
+	}
 	MLME_RESET_request_sync(1, pDeviceRef);
-	uint8_t one = 1;
-	//Set RxMode to PCPS
-	HWME_SET_request_sync(HWME_RXMODE, 1, &one, pDeviceRef);
-	//Set current channel to selected
-	MLME_SET_request_sync(phyCurrentChannel, 0, 1, &channel, pDeviceRef);
-	//Enable promiscuous mode, to receive all frames
-	MLME_SET_request_sync(macPromiscuousMode, 0, 1, &one, pDeviceRef);
-	//Enable receiving FCS field
-	uint8_t macCfg = 0;
-	TDME_GETSFR_request_sync(0, 0xD9, &macCfg, pDeviceRef);
-	macCfg |= 0x10;
-	TDME_SETSFR_request_sync(0, 0xD9, macCfg, pDeviceRef);
-	//Set Rx enabled
-	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &one, pDeviceRef);
+
+	if (DeviceType == DEV_CA8210) /* TDME interface */
+	{
+		//Reset test mode
+		TDME_TESTMODE_request_sync(TDME_TEST_OFF, pDeviceRef);
+		// Set current channel to selected
+		TDME_SET_request_sync(TDME_CHANNEL, 1, &channel, pDeviceRef);
+		//Enable receiving FCS field
+		uint8_t macCfg = 0;
+		TDME_GETSFR_request_sync(0, 0xD9, &macCfg, pDeviceRef);
+		macCfg |= 0x10;
+		TDME_SETSFR_request_sync(0, 0xD9, macCfg, pDeviceRef);
+		//Set test mode to Rx
+		TDME_TESTMODE_request_sync(TDME_TEST_RX, pDeviceRef);
+	}
+	else /* PCPS interface */
+	{
+		uint8_t att = 1;
+		//Set RxMode to PCPS
+		HWME_SET_request_sync(HWME_RXMODE, 1, &att, pDeviceRef);
+		//Set current channel to selected
+		MLME_SET_request_sync(phyCurrentChannel, 0, 1, &channel, pDeviceRef);
+		//Enable promiscuous mode, to receive all frames
+		att = 1;
+		MLME_SET_request_sync(macPromiscuousMode, 0, 1, &att, pDeviceRef);
+		//Enable receiving FCS field
+		uint8_t macCfg = 0;
+		TDME_GETSFR_request_sync(0, 0xD9, &macCfg, pDeviceRef);
+		macCfg |= 0x10;
+		TDME_SETSFR_request_sync(0, 0xD9, macCfg, pDeviceRef);
+		//Set Rx enabled
+		if (DeviceType == DEV_CA8212)
+		{
+			//Set LQI limit to 0
+			att = 0;
+			HWME_SET_request_sync(HWME_LQILIMIT, 1, &att, pDeviceRef);
+		}
+		att = 1;
+		MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &att, pDeviceRef);
+	}
+}
+
+/**
+ * Output packet in Hex Mode
+ * @param payload pointer to payload
+ * @param length payload length
+ * @param cs CS/LQI value
+ * @param ed ED/RSSI value
+ */
+static void OutputHex(uint8_t *payload, uint8_t length, uint8_t cs, uint8_t ed)
+{
+	printTime(NULL);
+	ca_print("Rx len %d, CS: %d, ED: %d >", length, cs, ed);
+	for (int i = 0; i < length; i++)
+	{
+		ca_print(" %02x", payload[i]);
+	}
+	ca_print("\n");
+}
+
+/**
+ * Output packet in Debug Mode
+ * @param payload pointer to payload
+ * @param length payload length
+ * @param cs CS/LQI value
+ * @param ed ED/RSSI value
+ */
+static void OutputDebug(uint8_t *payload, uint8_t length, uint8_t cs, uint8_t ed)
+{
+	printTime(stderr);
+	fprintf(stderr, "Rx len %d, CS: %d, ED: %d >", length, cs, ed);
+	for (int i = 0; i < length; i++)
+	{
+		fprintf(stderr, " %02x", payload[i]);
+	}
+	fprintf(stderr, "\n");
+}
+
+/**
+ * Output packet in PCap Mode
+ * @param payload pointer to the pcap header
+ * @param payload pointer to payload
+ * @param length payload length
+ * @param cs CS/LQI value
+ * @param ed ED/RSSI value
+ * @param pDeviceRef cascoda device reference.
+ */
+static void OutputPcap(pcaprec_hdr_t     *hdr,
+                       uint8_t           *payload,
+                       uint8_t            length,
+                       uint8_t            cs,
+                       uint8_t            ed,
+                       struct ca821x_dev *pDeviceRef)
+{
+	ca_error error = CA_ERROR_SUCCESS;
+	uint8_t  pkt_header[MAX_HEADER_LEN];
+	uint32_t header_len = 0;
+
+	if (link_type == LINKTYPE_ETHERNET)
+	{
+		header_len = HEADER_LEN_ETH;
+		memcpy(pkt_header, ethernet_header, header_len);
+	}
+	else if (link_type == LINKTYPE_IEEE802_15_4_TAP)
+	{
+		fillRSSITap(ed);
+		fillLQITap(cs);
+		header_len = HEADER_LEN_TAP;
+		memcpy(pkt_header, tap_header, header_len);
+	}
+	else
+	{
+		header_len = 0;
+	}
+
+	hdr->incl_len = length + header_len;
+	hdr->orig_len = length + header_len;
+
+	error |= ca_write(hdr, sizeof(pcaprec_hdr_t));
+	error |= ca_write(&pkt_header, header_len);
+	error |= ca_write(payload, length);
+	ca_flush();
+
+	if (error && dPipeName)
+	{
+		//There has been an issue with writing, pipe probably disconnected at other end.
+		//Try to reconnect.
+		open_pipe(dPipeName);           //Blocking call to re-open the pipe
+		printPcapHeader();              //Print the pcap header so connection is valid
+		initialiseRadio(0, pDeviceRef); //Reinitialise radio
+	}
 }
 
 /**
@@ -706,90 +920,123 @@ static ca_error handleEvbmeMessage(struct EVBME_Message *params, struct ca821x_d
  * @param pDeviceRef  Cascoda device reference
  * @return CA_ERROR_SUCCESS
  */
-static ca_error handlePcpsDataIndication(struct PCPS_DATA_indication_pset *params, struct ca821x_dev *pDeviceRef)
+static ca_error handlePcpsDataIndication8211(struct PCPS_DATA_indication_pset_8211 *params,
+                                             struct ca821x_dev                     *pDeviceRef)
 {
 	if (out_mode == OUT_MODE_HEX)
 	{
-		printTime(NULL);
-		ca_print("Rx len %d, CS: %d, ED: %d >", params->PsduLength, params->CS, params->ED);
-		for (int i = 0; i < params->PsduLength; i++)
-		{
-			ca_print(" %02x", params->Psdu[i]);
-		}
-		ca_print("\n");
+		OutputHex(params->Psdu, params->PsduLength, params->CS, params->ED);
 	}
 	else if (out_mode == OUT_MODE_PCAP)
 	{
-		pcaprec_hdr_t hdr   = {0, 0, 0, 0};
-		ca_error      error = CA_ERROR_SUCCESS;
-		uint8_t  pkt_header[MAX_HEADER_LEN];
-		uint32_t header_len = 0;
-
-		if(link_type == LINKTYPE_ETHERNET)
-		{
-			header_len = HEADER_LEN_ETH;
-			memcpy(pkt_header, ethernet_header, header_len);
-		}
-		else if(link_type == LINKTYPE_IEEE802_15_4_TAP)
-		{
-			fillRSSITap(params->ED);
-			fillLQITap(params->CS);
-			header_len = HEADER_LEN_TAP;
-			memcpy(pkt_header, tap_header, header_len);
-		}
-		else
-		{
-			header_len = 0;
-		}
-
-		fillTimestamp(&hdr, params);
-		hdr.incl_len = params->PsduLength + header_len;
-		hdr.orig_len = params->PsduLength + header_len;
-
-		error |= ca_write(&hdr, sizeof(hdr));
-		error |= ca_write(&pkt_header, header_len);
-		error |= ca_write(params->Psdu, params->PsduLength);
-		ca_flush();
-
-		if (error && dPipeName)
-		{
-			//There has been an issue with writing, pipe probably disconnected at other end.
-			//Try to reconnect.
-			MLME_RESET_request_sync(1, pDeviceRef); //reset radio so we don't consume all of the memory
-			open_pipe(dPipeName);                   //Blocking call to re-open the pipe
-			printPcapHeader();                      //Print the pcap header so connection is valid
-			initialiseRadio(pDeviceRef);            //Reinitialise radio
-		}
-
+		pcaprec_hdr_t hdr = {0, 0, 0, 0};
+		fillTimestampFromOS(&hdr);
+		OutputPcap(&hdr, params->Psdu, params->PsduLength, params->CS, params->ED, pDeviceRef);
 		if (debugMode)
 		{
-			printTime(stderr);
-			fprintf(stderr, "Rx len %d, CS: %d, ED: %d >", params->PsduLength, params->CS, params->ED);
-			for (int i = 0; i < params->PsduLength; i++)
-			{
-				fprintf(stderr, " %02x", params->Psdu[i]);
-			}
-			fprintf(stderr, "\n");
+			OutputDebug(params->Psdu, params->PsduLength, params->CS, params->ED);
 		}
 	}
+	return CA_ERROR_SUCCESS;
+}
 
+/**
+ * Callback for handling CA8212 PCPS data indications for received 802.15.4 frames
+ * @param params  PCPS Data indication struct
+ * @param pDeviceRef  Cascoda device reference
+ * @return CA_ERROR_SUCCESS
+ */
+static ca_error handlePcpsDataIndication8212(struct PCPS_DATA_indication_pset_8212 *params,
+                                             struct ca821x_dev                     *pDeviceRef)
+{
+	if (out_mode == OUT_MODE_HEX)
+	{
+		OutputHex(params->Psdu, params->PsduLength, params->CS, params->ED);
+	}
+	else if (out_mode == OUT_MODE_PCAP)
+	{
+		pcaprec_hdr_t hdr = {0, 0, 0, 0};
+		fillTimestampFromMAC(&hdr, params);
+		OutputPcap(&hdr, params->Psdu, params->PsduLength, params->CS, params->ED, pDeviceRef);
+		if (debugMode)
+		{
+			OutputDebug(params->Psdu, params->PsduLength, params->CS, params->ED);
+		}
+	}
+	return CA_ERROR_SUCCESS;
+}
+
+/**
+ * Callback for handling PCPS data indications, switching between CA8211 and CA8212 for further processing
+ * @param msg generic MAC_Message struct, as different parameter sets have to be extracted
+ * @param pDeviceRef  Cascoda device reference
+ * @return CA_ERROR_SUCCESS
+ */
+static ca_error handleAndSwitchPcpsDataIndication(const struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
+{
+	if (msg->CommandId == SPI_PCPS_DATA_INDICATION)
+	{
+		if (DeviceType == DEV_CA8212)
+			handlePcpsDataIndication8212((struct PCPS_DATA_indication_pset_8212 *)(msg->PData.Payload), pDeviceRef);
+		else
+			handlePcpsDataIndication8211((struct PCPS_DATA_indication_pset_8211 *)(msg->PData.Payload), pDeviceRef);
+	}
+
+	return CA_ERROR_SUCCESS;
+}
+
+/**
+ * Callback for handling CA8210 TDME rx packet indications for received 802.15.4 frames
+ * @param params TDME RXPKT indication struct
+ * @param pDeviceRef  Cascoda device reference
+ * @return CA_ERROR_SUCCESS
+ */
+static ca_error handleTdmeRxpktIndication(struct TDME_RXPKT_indication_pset *params, struct ca821x_dev *pDeviceRef)
+{
+	if (!params->Status) /* handle only packets without any errors */
+	{
+		if (out_mode == OUT_MODE_HEX)
+		{
+			OutputHex(
+			    params->TestPacketData, params->TestPacketLength, params->TestPacketCSValue, params->TestPacketEDValue);
+		}
+		else if (out_mode == OUT_MODE_PCAP)
+		{
+			pcaprec_hdr_t hdr = {0, 0, 0, 0};
+			fillTimestampFromOS(&hdr);
+			OutputPcap(&hdr,
+			           params->TestPacketData,
+			           params->TestPacketLength,
+			           params->TestPacketCSValue,
+			           params->TestPacketEDValue,
+			           pDeviceRef);
+			if (debugMode)
+			{
+				OutputDebug(params->TestPacketData,
+				            params->TestPacketLength,
+				            params->TestPacketCSValue,
+				            params->TestPacketEDValue);
+			}
+		}
+	} // !params->Status
 	return CA_ERROR_SUCCESS;
 }
 
 static void fillRSSITap(uint8_t ed)
 {
 	float valdbm;
-	union {
-		float vfloat;
+	union
+	{
+		float   vfloat;
 		uint8_t vbytes[4];
 	} convert_t;
 
 	/* calculate dbm value from ed value */
-	valdbm = ((float)ed - 256.0)/2.0;
+	valdbm = ((float)ed - 256.0) / 2.0;
 	/* put float (32 bit) value into union */
 	convert_t.vfloat = valdbm;
 	/* copy uint8_t array part of union into tap header */
-	memcpy((tap_header+HEADER_POSITION_RSSI), convert_t.vbytes, 4);
+	memcpy((tap_header + HEADER_POSITION_RSSI), convert_t.vbytes, 4);
 }
 
 static void fillLQITap(uint8_t cs)
@@ -798,12 +1045,46 @@ static void fillLQITap(uint8_t cs)
 	tap_header[HEADER_POSITION_LQI] = cs;
 }
 
+static void GetDeviceVersion(struct ca821x_dev *pDeviceRef)
+{
+	struct hwme_chipid
+	{
+		uint8_t hw_version; // hardware version / pid
+		uint8_t fw_version; // firmware version / version number
+	};
+	struct hwme_chipid chipid;
+	uint8_t            attlen;
+	uint8_t            status;
+
+	status = HWME_GET_request_sync(HWME_CHIPID, &attlen, (uint8_t *)&chipid, pDeviceRef);
+	if (status)
+	{
+		fprintf(stderr, "GetDeviceVersion Status: %02X\n", status);
+		exit(EXIT_FAILURE);
+	}
+	if ((chipid.hw_version == 1) && (chipid.fw_version <= 2))
+		DeviceType = DEV_CA8210;
+	else if ((chipid.hw_version == 1) && (chipid.fw_version == 3))
+		DeviceType = DEV_CA8211;
+	else if (chipid.hw_version == 2)
+		DeviceType = DEV_CA8212;
+	else
+		DeviceType = DEV_UNKNOWN;
+
+	if (DeviceType == DEV_UNKNOWN)
+	{
+		fprintf(stderr, "unknown sniffing device (%u.%u)\n", chipid.hw_version, chipid.fw_version);
+		exit(EXIT_FAILURE);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	struct ca821x_dev *pDeviceRef    = &(sDeviceRef);
 	ca_error           error         = CA_ERROR_SUCCESS;
 	char              *pipeName      = NULL;
 	char              *wiresharkPath = NULL;
+	char              *outputDirPath = NULL;
 
 	union ca821x_util_init_extra_arg sniffer_arg = {.generic = NULL};
 
@@ -827,7 +1108,7 @@ int main(int argc, char *argv[])
 		{
 			if (++i >= argc)
 			{
-				fprintf(stderr, "'-n' option requires filename argument.\n", argv[i]);
+				fprintf(stderr, "'-n' option requires filename argument.\n");
 				error = CA_ERROR_INVALID_ARGS;
 				break;
 			}
@@ -845,7 +1126,7 @@ int main(int argc, char *argv[])
 		{
 			if (++i >= argc)
 			{
-				fprintf(stderr, "'-W' option requires program path argument.\n", argv[i]);
+				fprintf(stderr, "'-W' option requires program path argument.\n");
 				error = CA_ERROR_INVALID_ARGS;
 				break;
 			}
@@ -853,10 +1134,6 @@ int main(int argc, char *argv[])
 			out_mode      = OUT_MODE_PCAP;
 			if (!pipeName)
 				pipeName = default_pipe;
-		}
-		else if (temp >= 11 && temp <= 26)
-		{
-			channel = temp;
 		}
 		else if (strcmp(argv[i], "-s") == 0)
 		{
@@ -869,6 +1146,31 @@ int main(int argc, char *argv[])
 		else if (strcmp(argv[i], "-i") == 0)
 		{
 			link_type = LINKTYPE_IEEE802_15_4_WITHFCS;
+		}
+		else if (strcmp(argv[i], "-b") == 0)
+		{
+			if (++i >= argc)
+			{
+				fprintf(stderr, "'-b' option requires time (s) argument.\n");
+				error = CA_ERROR_INVALID_ARGS;
+				break;
+			}
+			time_till_new_capture = atoi(argv[i]);
+		}
+		else if (strcmp(argv[i], "-o") == 0)
+		{
+			if (++i >= argc)
+			{
+				printf("checkpoint\n");
+				fprintf(stderr, "'-o' option requires output directory path argument.\n");
+				error = CA_ERROR_INVALID_ARGS;
+				break;
+			}
+			outputDirPath = argv[i];
+		}
+		else if (temp >= 11 && temp <= 26)
+		{
+			channel = temp;
 		}
 		else
 		{
@@ -891,6 +1193,13 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (time_till_new_capture != 0 && outputDirPath == NULL)
+	{
+		fprintf(stderr, "You have to provide an output directory path when using ring-buffer mode.\n");
+		displayHelp();
+		exit(EXIT_FAILURE);
+	}
+
 	if (pipeName)
 	{
 		create_pipe(pipeName);
@@ -898,7 +1207,7 @@ int main(int argc, char *argv[])
 
 	if (wiresharkPath)
 	{
-		start_wireshark(wiresharkPath);
+		start_wireshark(wiresharkPath, outputDirPath);
 	}
 
 	if (pipeName)
@@ -920,12 +1229,22 @@ int main(int argc, char *argv[])
 		printPcapHeader();
 	}
 
+	initialiseRadio(1, pDeviceRef);
+
 	//Register callbacks for async messages
-	pDeviceRef->callbacks.PCPS_DATA_indication                    = &handlePcpsDataIndication;
+	if (DeviceType == DEV_CA8210)
+	{
+		pDeviceRef->callbacks.TDME_RXPKT_indication = &handleTdmeRxpktIndication;
+	}
+	else
+	{
+		/* can't use pDeviceRef->callbacks.PCPS_DATA_indication as params differ between 8211 and 8212 */
+		/* so have to use generic callback to get MAC_Message and then dissect */
+		pDeviceRef->callbacks.generic_dispatch = &handleAndSwitchPcpsDataIndication;
+	}
+
 	EVBME_GetCallbackStruct(pDeviceRef)->EVBME_MESSAGE_indication = &handleEvbmeMessage;
 	ca821x_util_start_upstream_dispatch_worker();
-
-	initialiseRadio(pDeviceRef);
 
 	fprintf(stderr, "\r\nInitialised.\r\n\n");
 
@@ -935,11 +1254,3 @@ int main(int argc, char *argv[])
 	}
 	return 0;
 }
-
-#else  // CASCODA_CA_VER != 8210
-int main(int argc, char *argv[])
-{
-	fprintf(stderr, "ERROR: sniffer not compatible with ca8210.");
-	return -1;
-}
-#endif // CASCODA_CA_VER != 8210

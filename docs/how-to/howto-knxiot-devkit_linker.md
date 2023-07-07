@@ -39,6 +39,14 @@ Press the button that says SW1 on either of the devboards. This should cause the
 
 ## Step 2: Going further
 
-This KNX application is very simple, and just serves as an example to get you familiar with the process of setting up a KNX configuration. We offer a variety of much more sophisticated applications. A full list of those applications is available [here](https://github.com/Cascoda/cascoda-sdk/blob/master/docs/how-to/howto-knxiot.md) (Note that most of those will require additional hardware, such as e-Paper displays, sensors, etc.).
+This KNX application may receive updates from time to time. To grab the latest version, [click here](https://github.com/Cascoda/knx-iot-example).
 
-Feel free to contact us for more information!
+This application just serves as an example to get you familiar with the process of setting up a KNX configuration. We offer a variety of much more sophisticated applications. A [full list of KNX IoT applications is available here](https://github.com/Cascoda/cascoda-sdk/blob/master/docs/how-to/howto-knxiot.md). Note that most of those will require additional hardware, such as e-Paper displays, sensors, etc.
+
+If you would like to get to know the Cascoda SDK better, you may [take a look at the main Readme document](https://github.com/Cascoda/cascoda-sdk/blob/master/README.md)
+
+We also provide [a packet sniffer that is designed to work alongside KNX-IoT](https://www.cascoda.com/products/packet-sniffer/). The sniffer is able to decrypt the OSCORE communications used by KNX-IoT and is therefore an invaluable development tool.
+
+Finally, the [Cascoda SDK Reference document](https://github.com/Cascoda/cascoda-sdk/blob/master/docs/reference/full-reference.md) contains a comprehensive overview of all of our documentation, which includes tutorials, detailed information on using Thread, flashing and debugging using device programmers, system architecture & API reference.
+
+Feel free to [contact us for more information!](mailto:support@cascoda.com)

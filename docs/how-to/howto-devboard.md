@@ -44,7 +44,7 @@ If you are running the `devboard-click` application, then you need to connect on
 If you are running the `devboard-blinky`, nothing else is needed and you can directly interact with the LEDs by pushing the buttons (the exact behaviour depends on how the application is written).
 
 ## KNX IoT
-The above two examples get you acquainted with the process of building and flashing applications for the development board. Now, you can explore the KNX IoT applications available in the Cascoda SDK and run them on the development board. [Click here](../../knx-iot/README.md) for more information.
+The above two examples get you acquainted with the process of building and flashing applications for the development board. Now, you can try out the [KNX IoT Example Application](../../knx-iot/example/README.md).
 
 ## Running Thread applications
 You can explore the Thread applications available in the Cascoda SDK, and build and flash them in exactly the same manner. Note that you will need more than one device in order to run Thread applications, because networking is involved. [Here is a beginner-friendly guide to get started with Thread](howto-thread.md).

@@ -6,6 +6,8 @@ option(CASCODA_BUILD_OCF "Whether to build Iotivity-Lite. Turning this on will a
 
 option(CASCODA_BUILD_KNX "Whether to build the KNX-IoT stack.")
 
+option(CASCODA_BUILD_OT "Whether to build OpenThread" ON)
+
 option(CASCODA_BUILD_SECURE_LWM2M "Whether to build LWM2M stack wakaama with security. Incompatible with CASCODA_BUILD_OCF." OFF)
 
 option(CASCODA_BUILD_LWIP "Build the LwIP stack into the Cascoda SDK" OFF)
@@ -24,10 +26,8 @@ if(CASCODA_BUILD_OCF AND CASCODA_BUILD_KNX)
 	message(FATAL_ERROR "Not possible to enable CASCODA_BUILD_OCF and CASCODA_BUILD_KNX simultaneously")
 endif()
 
-if(CASCODA_BUILD_KNX)
-    if(NOT (CASCODA_CHILI2_CONFIG_STRING STREQUAL "DEV_BOARD"))
-        message(FATAL_ERROR "Not possible to enable CASCODA_BUILD_KNX, unless CASCODA_CHILI2_CONFIG_STRING is DEV_BOARD")
-    endif()
+if(CASCODA_BUILD_OT AND CASCODA_BUILD_KNX AND (WIN32 OR UNIX))
+    message(FATAL_ERROR "Not possible to build KIS AND OpenThread for posix due to MbedTLS clash")
 endif()
 
 if(CASCODA_CHILI2_TRUSTZONE AND CASCODA_EXTERNAL_FLASHCHIP_PRESENT)

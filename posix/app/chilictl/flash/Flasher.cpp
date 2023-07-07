@@ -55,7 +55,7 @@ Flasher::Flasher(const char       *aAppFilePath,
     : mAppFile(aAppFilePath, std::ios::in | std::ios::binary | std::ios::ate)
     , mOtaBootFile(aOtaBootFilePath, std::ios::in | std::ios::binary | std::ios::ate)
     , mManuDataFile(aManufacturerDataFilePath, std::ios::in | std::ios::binary | std::ios::ate)
-	, mAppFileSize(0)
+    , mAppFileSize(0)
     , mOtaBootFileSize(0)
     , mManuDataFileSize(0)
     , mPageSize()

@@ -81,7 +81,8 @@ enum evbme_attribute
 	EVBME_SERIALNO                 = 0x83, //!< SerialNo 64 bit binary - Read only
 	EVBME_OT_EUI64                 = 0x84, //!< Openthread EUI64 for commissioning - Read only
 	EVBME_OT_JOINCRED              = 0x85, //!< Openthread joining credential for commissioning - Read only
-	EVBME_EXTERNAL_FLASH_AVAILABLE = 0x86  //!< Whether an external flash chip is available - Read only
+	EVBME_EXTERNAL_FLASH_AVAILABLE = 0x86, //!< Whether an external flash chip is available - Read only
+	EVBME_ONBOARD_FLASH_INFO       = 0x87, //!< Information about the usage of onboard flash - Read only
 };
 
 /**

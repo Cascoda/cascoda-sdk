@@ -118,7 +118,7 @@ static uint8_t MIKROSDK_HVAC_calc_crc(uint8_t data_0, uint8_t data_1)
 	{
 		crc ^= crc_data[i_cnt];
 
-		for (j_cnt = 8; j_cnt > 0; --j_cnt)
+		for (j_cnt = 0; j_cnt < 8; ++j_cnt)
 		{
 			if (crc & 0x80)
 				crc = (crc << 1) ^ 0x31u;

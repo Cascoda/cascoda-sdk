@@ -167,6 +167,7 @@ typedef struct
 	uint16_t speed_tach_rpm;    // speed, rpm (tachometer)
 } data_fan;
 
+
 /* globals */
 extern uint8_t  g_relay_1_state, g_relay_2_state; /* states for controlling RELAY */
 extern uint8_t  g_fan_speed_pwm_percent;          /* fan speed pwm percent */

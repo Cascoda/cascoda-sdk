@@ -1,6 +1,6 @@
 add_subdirectory(longtest_test)
 
-if(NOT BUILD_TESTING)
+if(NOT CA_BUILD_TESTING)
     return()
 endif()
 

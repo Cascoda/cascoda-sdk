@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "gfx_driver.h"
@@ -1164,9 +1165,10 @@ void display_drawBitmapV2_bg(uint16_t       x,
 
 void display_double(char *text, int text_size, double v, int decimalDigits)
 {
+	int pow_ten_decimalDigits = pow(10, decimalDigits);
 	int i = 1;
 	int intPart, fractPart;
-	for (; decimalDigits != 0; i *= 10, decimalDigits--)
+	for (int cnt = decimalDigits; cnt != 0; i *= 10, cnt--)
 		;
 	intPart   = (int)v;
 	fractPart = (int)((v - (double)(int)v) * i);
@@ -1176,6 +1178,10 @@ void display_double(char *text, int text_size, double v, int decimalDigits)
 	if (v < 0 && intPart == 0)
 	{
 		snprintf(text, text_size, "-%d.%d", intPart, fractPart);
+	}
+	else if (fractPart < pow_ten_decimalDigits)
+	{
+		snprintf(text, text_size, "%d.%0*d", intPart, decimalDigits, fractPart);
 	}
 	else
 	{
