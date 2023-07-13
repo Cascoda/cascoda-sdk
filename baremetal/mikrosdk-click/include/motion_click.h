@@ -39,7 +39,9 @@
 #include <stdint.h>
 
 /* use detection pin as interrupt (1) instead of polling (0) */
+#ifndef MOTION_USE_INTERRUPT
 #define MOTION_USE_INTERRUPT 0
+#endif
 
 /* new state inluding changes or static behaviour */
 typedef enum
@@ -58,7 +60,9 @@ enum motion_status
 };
 
 /* timing parameters [ms] */
+#ifndef MOTION_T_TONMIN
 #define MOTION_T_TONMIN 1000 /* 1 second minimum on time */
+#endif
 
 /* new functions */
 motion_detect_state_changes_t MIKROSDK_MOTION_get_detected(void);

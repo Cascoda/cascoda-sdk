@@ -206,13 +206,13 @@ jobs:
         echo "${{ github.workspace }}/gcc-arm-none-eabi-9-2019-q4-major/bin" >> $GITHUB_PATH
 
     # We configure non-ocf chili build first because building OCF adds bloat to MBedTls, which increases all openthread binary sizes.
-    - name: configure Chili2S-UART0-1Mbaud
+    - name: configure Chili2S-UART4-115200baud
       run: |
         arm-none-eabi-gcc --version
-        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_UART_BAUDRATE=1000000 -DCASCODA_CHILI2_UART_CHANNEL=0 -DCASCODA_CHILI2_CONFIG_STRING=ONE_SIDED
+        cmake -S ${{ github.workspace }}/cascoda-sdk -B ${{ github.workspace }}/build-chili2 -DCMAKE_TOOLCHAIN_FILE=toolchain/arm_gcc_m2351.cmake -DCASCODA_BM_INTERFACE=UART -DCASCODA_CHILI2_UART_BAUDRATE=115200 -DCASCODA_CHILI2_UART_CHANNEL=4 -DCASCODA_CHILI2_CONFIG_STRING=ONE_SIDED
         mkdir ${{ github.workspace }}/upload-uart
 
-    - name: build Chili2S-UART0-1Mbaud
+    - name: build Chili2S-UART4-115200baud
       run: |
         make -C ${{ github.workspace }}/build-chili2 clean
         make -C ${{ github.workspace }}/build-chili2 -j4
@@ -233,7 +233,7 @@ jobs:
         repo: Cascoda/cascoda-sdk-priv
         workflow: build.yml
 
-    # - name: build Chili2S-UART0-1Mbaud-OCF
+    # - name: build Chili2S-UART4-115200baud-OCF
     #   run: |
     #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_BUILD_OCF=ON -DCASCODA_BUILD_OCF_PKI=ON  -DCASCODA_BUILD_SECURE_LWM2M=OFF -DCASCODA_CHILI_FLASH_PAGES=16
     #     make -C ${{ github.workspace }}/build-chili2 -j4 $OCF_TARGETS
@@ -299,10 +299,10 @@ jobs:
     #     fi
 
 
-    - name: Upload Chili2S-UART0-1Mbaud
+    - name: Upload Chili2S-UART4-115200baud
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Chili2S-UART0-1Mbaud
+        name: Chili2S-UART4-115200baud
         path: ${{ github.workspace }}/upload-uart
 
     - name: Upload Chili2D-USB
@@ -370,7 +370,7 @@ jobs:
         name: Chili2D-USB
     - uses: actions/download-artifact@v1
       with:
-        name: Chili2S-UART0-1Mbaud
+        name: Chili2S-UART4-115200baud
     - uses: actions/download-artifact@v1
       with:
         name: Posix-SDK
@@ -390,7 +390,7 @@ jobs:
         zip -r CascodaWindowsTools.zip CascodaWindowsTools
         zip -r Windows-SDK.zip Windows-SDK
         zip -r Chili2D-USB.zip Chili2D-USB
-        zip -r Chili2S-UART0-1Mbaud.zip Chili2S-UART0-1Mbaud
+        zip -r Chili2S-UART4-115200baud.zip Chili2S-UART4-115200baud
         zip -r Posix-SDK.zip Posix-SDK	
         zip Chili2-Lib.zip Chili2-Lib/*
 
@@ -441,8 +441,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
-        asset_path: ./Chili2S-UART0-1Mbaud.zip
-        asset_name: Chili2S-UART0-1Mbaud.zip
+        asset_path: ./Chili2S-UART4-115200baud.zip
+        asset_name: Chili2S-UART4-115200baud.zip
         asset_content_type: application/zip
 
     - name: Release Posix

@@ -40,7 +40,7 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 
 To ensure that the devboards are running the latest firmware, you will have to download the latest firmware and flash it onto both devices.
 
-1. Please [download the latest embedded binaries from our GitHub repository](https://github.com/Cascoda/knx-iot-example/releases/). For this guide, you will need the `embedded_secured.zip` archive.
+1. Please [download the latest embedded binaries from our GitHub repository](https://github.com/Cascoda/knx_iot_example/releases/). For this guide, you will need the `embedded_secured.zip` archive.
 2. Extract the archive and open a terminal inside the folder containing the binaries - `embedded_secured/build_win_bin/bin`. 
 3. Inside this terminal, enter the `chilictl list` command.
 4. Information about both connected devboards should now be displayed on the screen in this fashion:

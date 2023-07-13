@@ -13,12 +13,12 @@ The Cascoda SDK contains three implementations of this interface, one for bareme
 The underlying UART configuration is flexible, as the higher layer protocol described in this document does not rely on it. In particular, the baud rate is configurable using the ``CASCODA_CHILI2_UART_BAUDRATE`` CMake cache variable for the Chili 2, or the ``CASCODA_UART`` environment variable on Posix systems ([see here](../../posix/ca821x-posix/README.md#uart)).
 
 The Default parameters for the UART using the Chili 2 are:
-- 1 000 000 Baud (1MBaud)
+- 115 200 Baud
 - 8 bit characters
 - 1 stop bit
 - No hardware flow control
 - No parity bit
-- UART0 Channel
+- UART4 Channel
 
 ## Message Structure
 

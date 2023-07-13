@@ -49,9 +49,9 @@ mark_as_advanced(CASCODA_CHILI_DISABLE_CA821x)
 if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	cascoda_dropdown(CASCODA_CHILI2_UART_CHANNEL
 		"The hardware UART channel to use for UART comms"
-		0 1 2 4 5
+		4 0 1 2 5
 		)
-	set(CASCODA_CHILI2_UART_BAUDRATE 1000000 CACHE STRING "The baud rate to use for UART. Max 6MHz")
+	set(CASCODA_CHILI2_UART_BAUDRATE 115200 CACHE STRING "The baud rate to use for UART. Max 6MHz")
 	if(CASCODA_CHILI2_UART_BAUDRATE GREATER 6000000)
 		message( FATAL_ERROR "Baud rate must be under 6MHz")
 	endif()

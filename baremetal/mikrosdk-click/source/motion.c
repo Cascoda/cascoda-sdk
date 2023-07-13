@@ -43,7 +43,7 @@
 #include "cascoda-util/cascoda_time.h"
 
 /* flag if alarm / interrupt has been triggered */
-static uint8_t motion_alarm = 0;
+volatile static uint8_t motion_alarm = 0;
 
 /* declare <device>_t <device> and <device>_cfg_t cfg structures for click objects */
 static motion_t     motion;

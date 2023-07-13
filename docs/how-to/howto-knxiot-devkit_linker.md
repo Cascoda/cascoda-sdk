@@ -39,7 +39,7 @@ Press the button that says SW1 on either of the devboards. This should cause the
 
 ## Step 2: Going further
 
-This KNX application may receive updates from time to time. To grab the latest version, [click here](https://github.com/Cascoda/knx-iot-example).
+This KNX application may receive updates from time to time. To grab the latest version, [click here](https://github.com/Cascoda/knx_iot_example).
 
 This application just serves as an example to get you familiar with the process of setting up a KNX configuration. We offer a variety of much more sophisticated applications. A [full list of KNX IoT applications is available here](https://github.com/Cascoda/cascoda-sdk/blob/master/docs/how-to/howto-knxiot.md). Note that most of those will require additional hardware, such as e-Paper displays, sensors, etc.
 
