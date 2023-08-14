@@ -44,7 +44,6 @@
 #include "mbedtls/bignum.h"
 #include "mbedtls/ecp.h"
 
-
 typedef struct dummy_mbedtls_mpi
 {
 	uint8_t data_offset[2]; //uint16_t
@@ -52,9 +51,9 @@ typedef struct dummy_mbedtls_mpi
 
 typedef struct dummy_mbedtls_ecp_point
 {
-	dummy_mbedtls_mpi X;	
-	dummy_mbedtls_mpi Y;	
-	dummy_mbedtls_mpi Z;	
+	dummy_mbedtls_mpi X;
+	dummy_mbedtls_mpi Y;
+	dummy_mbedtls_mpi Z;
 } dummy_mbedtls_ecp_point;
 
 struct knx_manufacturer_storage
@@ -69,11 +68,11 @@ struct knx_manufacturer_storage
 	/// @brief SPAKE2+ offline record
 	struct spake_record_storage
 	{
-		uint8_t password[32];
-		uint8_t rand[32];
-		uint8_t salt[32];
-		uint8_t iter[4]; //uint32_t
-		dummy_mbedtls_mpi w0;
+		uint8_t                 password[32];
+		uint8_t                 rand[32];
+		uint8_t                 salt[32];
+		uint8_t                 iter[4]; //uint32_t
+		dummy_mbedtls_mpi       w0;
 		dummy_mbedtls_ecp_point L;
 	} spake_record;
 };

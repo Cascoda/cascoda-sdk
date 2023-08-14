@@ -18,8 +18,7 @@ Please ensure you have the following hardware and software requirements before p
 
 ### Software (on your Windows PC)
 
-- An installation of [Cascoda's Windows Tools](https://github.com/Cascoda/cascoda-sdk/releases/download/v0.23-6/CascodaWindowsTools.zip). Two of the tools will be necessary for this guide, namely `chilictl.exe` and `serial-adapter.exe`.
-- An installation of Cascoda's KNX IoT Linker.
+- An installation of Cascoda's Windows Tools. Please [download CascodaWindowsTools.zip and run the installer within](https://github.com/Cascoda/cascoda-sdk/releases/latest). Two of the tools will be necessary for this guide, namely `chilictl.exe` and `serial-adapter.exe`.
 
 ## Step 1: Set up
 

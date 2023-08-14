@@ -45,12 +45,12 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
 #include "gfx_driver.h"
@@ -118,9 +118,12 @@ void    fillRect(uint16_t x0, uint16_t y0, uint16_t x1, int16_t y1, uint16_t col
 #ifdef EPAPER_2_9_INCH
 uint16_t      display_width  = SIF_IL3820_WIDTH;
 uint16_t      display_height = SIF_IL3820_HEIGHT;
-#elif defined EPAPER_1_54_INCH
+#elif defined EPAPER_WAVESHARE_1_54_INCH
 uint16_t display_width  = SIF_SSD1681_WIDTH;
 uint16_t display_height = SIF_SSD1681_HEIGHT;
+#elif defined EPAPER_MIKROE_1_54_INCH
+uint16_t display_width  = SIF_SSD1608_WIDTH;
+uint16_t display_height = SIF_SSD1608_HEIGHT;
 #endif
 
 // generic draw pixel
@@ -145,7 +148,30 @@ void display_render(SIF_IL3820_Update_Mode updt_mode, SIF_IL3820_Clear_Mode clr_
 	SIF_IL3820_Deinitialise();
 }
 
-#elif defined EPAPER_1_54_INCH
+void display_fixed_image(const uint8_t *image)
+{
+	SIF_IL3820_Initialise(FULL_UPDATE);
+	SIF_IL3820_DisplayImage(image, WITH_CLEAR);
+	SIF_IL3820_Deinitialise();
+}
+
+#elif defined EPAPER_MIKROE_1_54_INCH
+
+void display_render(SIF_SSD1608_Update_Mode updt_mode, SIF_SSD1608_Clear_Mode clr_mode)
+{
+	SIF_SSD1608_Initialise(updt_mode);
+	SIF_SSD1608_DisplayImage(get_framebuffer(), clr_mode, false);
+	SIF_SSD1608_Deinitialise();
+}
+
+void display_fixed_image(const uint8_t *image)
+{
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_DisplayImage(image, WITH_CLEAR, true);
+	SIF_SSD1608_Deinitialise();
+}
+
+#elif defined EPAPER_WAVESHARE_1_54_INCH
 
 void display_render_full(void)
 {
@@ -1166,7 +1192,7 @@ void display_drawBitmapV2_bg(uint16_t       x,
 void display_double(char *text, int text_size, double v, int decimalDigits)
 {
 	int pow_ten_decimalDigits = pow(10, decimalDigits);
-	int i = 1;
+	int i                     = 1;
 	int intPart, fractPart;
 	for (int cnt = decimalDigits; cnt != 0; i *= 10, cnt--)
 		;

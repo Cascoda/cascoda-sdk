@@ -49,8 +49,12 @@
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
 #include "devboard_btn.h"
+#include "knx_iot_image_1_54.h"
+#ifdef EPAPER_WAVESHARE_1_54_INCH
 #include "sif_ssd1681.h"
-#include "sif_ssd1681_knx_iot_image.h"
+#elif defined EPAPER_MIKROE_1_54_INCH
+#include "sif_ssd1608.h"
+#endif
 
 #include "gfx_driver.h" // include  controller driver source code
 
@@ -86,7 +90,11 @@ static void load_screen(u8_t nr)
 	{
 		display_drawRect(0, 0, display_width - 1, display_width - 1, BLACK);
 		char qr[] = "KNX:S:00FA10010400;P:ABY8B77J50YXMUDW3DG4";
+#ifdef EPAPER_WAVESHARE_1_54_INCH
 		SIF_SSD1681_overlay_qr_code(qr, get_framebuffer(), 2, 2, 2);
+#elif defined EPAPER_MIKROE_1_54_INCH
+		SIF_SSD1608_overlay_qr_code(qr, get_framebuffer(), 2, 2, 2);
+#endif
 		//display_setRotation(1);
 		display_setCursor(1, 65);
 		display_setTextColor(BLACK, WHITE);
@@ -164,10 +172,17 @@ static void load_screen(u8_t nr)
 	display_setCursor(0, 0);
 	display_setTextSize(1);
 
+#ifdef EPAPER_WAVESHARE_1_54_INCH
 	if (nr == 1)
 		display_render_full();
 	else
 		display_render_partial(false);
+#elif defined EPAPER_MIKROE_1_54_INCH
+	if (nr == 1)
+		display_render(FULL_UPDATE, WITH_CLEAR);
+	else
+		display_render(PARTIAL_UPDATE, WITHOUT_CLEAR);
+#endif
 
 	printf("Loading complete.\n");
 }
@@ -208,7 +223,12 @@ static void app_initialise(void)
 {
 	/* Eink Initialisation */
 	SENSORIF_SPI_Config(SPI_NUM);
+
+#ifdef EPAPER_WAVESHARE_1_54_INCH
 	SIF_SSD1681_Initialise();
+#elif defined EPAPER_MIKROE_1_54_INCH
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+#endif
 
 	/* 3rd BTN/LED (2) is LED output; static for power-on */
 	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_1);

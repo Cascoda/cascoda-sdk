@@ -14,5 +14,6 @@ List of supported devices:
 | LITEON            | LTR-303ALS-01 | I2C | Ambient Light Sensor | sif_ltr303als.h         | 
 | Good Display      | IL3820        | SPI | E-Paper Display Driver | sif_il3820.h |
 | Solomon Systech   | SSD1681       | SPI | E-Paper Display Driver | sif_ssd1681.h |
+| Solomon Systech   | SSD1608       | SPI | E-Paper Display Driver | sif_ssd1608.h |
 
 Note that the gfx library is working on the E-Paper Display only.

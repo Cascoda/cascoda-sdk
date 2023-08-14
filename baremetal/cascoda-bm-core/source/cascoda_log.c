@@ -68,7 +68,7 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 		break;
 	}
 
-	printf("%dms %s", TIME_ReadAbsoluteTime(), lev_str);
+	printf("%ums %s", TIME_ReadAbsoluteTime(), lev_str);
 	vprintf(format, argp);
 	printf("\r\n");
 }

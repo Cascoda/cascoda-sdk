@@ -12,8 +12,10 @@ Copyright 2023 Cascoda LTD.
 
 #ifdef EPAPER_2_9_INCH
 #include "sif_il3820.h"
-#elif defined EPAPER_1_54_INCH
+#elif defined EPAPER_WAVESHARE_1_54_INCH
 #include "sif_ssd1681.h"
+#elif defined EPAPER_MIKROE_1_54_INCH
+#include "sif_ssd1608.h"
 #endif
 
 //#define WRITE_RAM 0x24

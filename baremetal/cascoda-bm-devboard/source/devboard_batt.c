@@ -45,10 +45,81 @@ uint16_t DVBD_BattGetVolts(void)
 	/* input voltage (volts) divided on board by 330/550, so vbatt = 5.5/3.3 * volts */
 	/* vbatt = adcval / 4096 * 5.5 = adcval / 745 */
 	/* Note: reading is off by factor 1.085 measured over several boards (settling/rin/tolerance?) */
-	/* => 745 -> 690 */
-	vbatt = (uint16_t)(adcval / 690);
+	/* => 745 -> 685 */
+	vbatt = (uint16_t)(adcval / 685);
 
 	return (vbatt);
+}
+
+// get the battery percentage (%)
+// vBatt[mV] = uint16_t * 10
+uint8_t DVBD_BattGetPercent(uint16_t vBatt)
+{
+	uint16_t battPercent;
+#if defined BATT_TYPE_RCR123A
+	if (vBatt > 41100) // vBatt > 4.11V
+	{
+		battPercent = (vBatt - 32983) / 90;
+		if (battPercent >= 100)
+			return 100;
+		else
+			return battPercent;
+	}
+	else if (vBatt > 38700) // vBatt > 3.87V
+	{
+		return ((vBatt - 33832) / 81);
+	}
+	else if (vBatt > 36900) // vBatt > 3.69V
+	{
+		return ((vBatt - 36589) / 36);
+	}
+	else if (vBatt >= 36100) // vBatt > 3.61V
+	{
+		return ((vBatt - 35300) / 160);
+	}
+	else if (vBatt >= 32700) // vBatt > 3.27V
+	{
+		return ((vBatt - 32700) / 680);
+	}
+	else
+	{
+		return 0;
+	}
+
+/* Battery monitoring function does not work on 
+   the non-rechargeable 3V Lithium battery because
+   the reference voltage goes below 3.3V */
+/* keeping this code for future use */
+#elif defined BATT_TYPE_CR123A
+	if (vBatt > 29100) // vBatt > 2.91V
+	{
+		battPercent = (vBatt - 16500) / 480;
+		if (battPercent >= 100)
+			return 100;
+		else
+			return battPercent;
+	}
+	else if (vBatt >= 27500) // vBatt >= 2.75V
+	{
+		return ((vBatt - 26807) / 24);
+	}
+	else if (vBatt > 25300) // vBatt > 2.53V
+	{
+		return ((vBatt - 24300) / 108);
+	}
+	else if (vBatt >= 23500) // vBatt >= 2.35V
+	{
+		return ((vBatt - 21700) / 360);
+	}
+	else if (vBatt >= 20000) // vBatt >= 2.00V
+	{
+		return ((vBatt - 20000) / 700);
+	}
+	else
+	{
+		return 0;
+	}
+#endif
 }
 
 // get the battery charging status

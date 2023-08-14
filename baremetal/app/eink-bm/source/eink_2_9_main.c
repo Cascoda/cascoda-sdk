@@ -28,7 +28,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Application for E-ink display of images.
+ * Application to test the EINK 2.9 inch driver
 */
 #include <stdbool.h>
 #include <stdio.h>
@@ -49,6 +49,39 @@
 #include "sif_il3820.h"
 #include "sif_il3820_image.h"
 
+void partial_display_cycle(void)
+{
+	uint8_t num_of_cycles = 5;
+
+	for (uint8_t i = 0; i < num_of_cycles; ++i)
+	{
+		SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 1, 90, 20);
+		SIF_IL3820_Initialise(PARTIAL_UPDATE);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
+		SIF_IL3820_Deinitialise();
+
+		SIF_IL3820_overlay_qr_code("https://www.different.com", cascoda_img_2in9, 1, 90, 20);
+		SIF_IL3820_Initialise(PARTIAL_UPDATE);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
+		SIF_IL3820_Deinitialise();
+
+		SIF_IL3820_overlay_qr_code("https://www.nothtesame.com", cascoda_img_2in9, 1, 90, 20);
+		SIF_IL3820_Initialise(PARTIAL_UPDATE);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
+		SIF_IL3820_Deinitialise();
+
+		SIF_IL3820_overlay_qr_code("https://www.sdiffagain.com", cascoda_img_2in9, 2, 40, 50);
+		SIF_IL3820_Initialise(PARTIAL_UPDATE);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
+		SIF_IL3820_Deinitialise();
+
+		SIF_IL3820_overlay_qr_code("https://www.againdiff.com", cascoda_img_2in9, 2, 40, 50);
+		SIF_IL3820_Initialise(PARTIAL_UPDATE);
+		SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
+		SIF_IL3820_Deinitialise();
+	}
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Main Program Endless Loop
@@ -68,35 +101,21 @@ int main(void)
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	/* Application-Specific Initialisation Routines */
+
+	// Full display
 	SIF_IL3820_Initialise(FULL_UPDATE);
 	SIF_IL3820_DisplayImage(cascoda_img_2in9, WITH_CLEAR);
 	SIF_IL3820_Deinitialise();
 
-	WAIT_ms(1000);
+	// Partial update
+	partial_display_cycle();
 
-	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 1, 90, 20);
-	SIF_IL3820_Initialise(PARTIAL_UPDATE);
-	SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
-	SIF_IL3820_Deinitialise();
-
-	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 1, 80, 10);
-	SIF_IL3820_Initialise(PARTIAL_UPDATE);
-	SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
-	SIF_IL3820_Deinitialise();
-
-	SIF_IL3820_overlay_qr_code("https://www.cascoda.com", cascoda_img_2in9, 1, 70, 50);
-	SIF_IL3820_Initialise(PARTIAL_UPDATE);
-	SIF_IL3820_DisplayImage(cascoda_img_2in9, WITHOUT_CLEAR);
-	SIF_IL3820_Deinitialise();
-
-	WAIT_ms(1000);
-
+	// Full display again
 	SIF_IL3820_Initialise(FULL_UPDATE);
 	SIF_IL3820_DisplayImage(cascoda_img_2in9, WITH_CLEAR);
 	SIF_IL3820_Deinitialise();
 
 	WAIT_ms(3000);
-
 	SIF_IL3820_Initialise(FULL_UPDATE);
 	SIF_IL3820_StrongClearDisplay();
 	SIF_IL3820_DeepSleep();

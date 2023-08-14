@@ -6,7 +6,7 @@
  */
 #include "cascoda-bm/cascoda_interface.h"
 
-volatile u32_t AbsoluteTicks = 0; // Global Timer Absolute Ticks in ms
+volatile u32_t AbsoluteTicks = UINT32_MAX - 5 * 60 * 1000; // Global Timer Absolute Ticks in ms
 
 //TODO: The 1ms tick function isn't remotely ISR safe, so should be fixed.
 //The 1msTick function needs some kind of locking.

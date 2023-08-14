@@ -1,7 +1,7 @@
 /**
  * @file
  *//*
- *  Copyright (c) 2019, Cascoda Ltd.
+ *  Copyright (c) 2023, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Application for E-ink display of images.
+ * Application to test the MIKROE EINK 1.54 inch driver
 */
 #include <stdbool.h>
 #include <stdio.h>
@@ -46,40 +46,42 @@
 
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
-#include "sif_ssd1681.h"
-#include "sif_ssd1681_image.h"
+#include "sif_ssd1608.h"
+#include "sif_ssd16xx_image.h"
+
+#define IGNORED 1
 
 void partial_display_cycle(void)
 {
-	uint8_t num_of_cycles = 2;
-
-	SIF_SSD1681_Initialise();
-	SIF_SSD1681_DisplayPartBaseImageWhite();
+	uint8_t num_of_cycles = 5;
 
 	for (uint8_t i = 0; i < num_of_cycles; ++i)
 	{
-		SIF_SSD1681_overlay_qr_code("https://www.cascoda.com", waveshare_example_img, 1, 30, 20);
-		SIF_SSD1681_SetFrameMemoryPartial(waveshare_example_img);
-		SIF_SSD1681_DisplayPartFrame();
+		SIF_SSD1608_overlay_qr_code("https://www.cascoda.com", waveshare_example_img, 1, 30, 20);
+		SIF_SSD1608_Initialise(PARTIAL_UPDATE);
+		SIF_SSD1608_DisplayImage(waveshare_example_img, WITHOUT_CLEAR, IGNORED);
+		SIF_SSD1608_Deinitialise();
 
-		SIF_SSD1681_overlay_qr_code("https://www.somethingelse.com", waveshare_example_img, 1, 30, 20);
-		SIF_SSD1681_SetFrameMemoryPartial(waveshare_example_img);
-		SIF_SSD1681_DisplayPartFrame();
+		SIF_SSD1608_overlay_qr_code("https://www.somethingelse.com", waveshare_example_img, 1, 30, 20);
+		SIF_SSD1608_Initialise(PARTIAL_UPDATE);
+		SIF_SSD1608_DisplayImage(waveshare_example_img, WITHOUT_CLEAR, IGNORED);
+		SIF_SSD1608_Deinitialise();
 
-		SIF_SSD1681_overlay_qr_code("https://www.differentQRCODEE.com", waveshare_example_img, 1, 30, 20);
-		SIF_SSD1681_SetFrameMemoryPartial(waveshare_example_img);
-		SIF_SSD1681_DisplayPartFrame();
+		SIF_SSD1608_overlay_qr_code("https://www.differentQRCODEE.com", waveshare_example_img, 1, 30, 20);
+		SIF_SSD1608_Initialise(PARTIAL_UPDATE);
+		SIF_SSD1608_DisplayImage(waveshare_example_img, WITHOUT_CLEAR, IGNORED);
+		SIF_SSD1608_Deinitialise();
 
-		SIF_SSD1681_overlay_qr_code("https://www.difflol.com", waveshare_example_img, 2, 80, 40);
-		SIF_SSD1681_SetFrameMemoryPartial(waveshare_example_img);
-		SIF_SSD1681_DisplayPartFrame();
+		SIF_SSD1608_overlay_qr_code("https://www.difflol.com", waveshare_example_img, 2, 80, 40);
+		SIF_SSD1608_Initialise(PARTIAL_UPDATE);
+		SIF_SSD1608_DisplayImage(waveshare_example_img, WITHOUT_CLEAR, IGNORED);
+		SIF_SSD1608_Deinitialise();
 
-		SIF_SSD1681_overlay_qr_code("https://www.anothre.com", waveshare_example_img, 2, 80, 40);
-		SIF_SSD1681_SetFrameMemoryPartial(waveshare_example_img);
-		SIF_SSD1681_DisplayPartFrame();
+		SIF_SSD1608_overlay_qr_code("https://www.anothre.com", waveshare_example_img, 2, 80, 40);
+		SIF_SSD1608_Initialise(PARTIAL_UPDATE);
+		SIF_SSD1608_DisplayImage(waveshare_example_img, WITHOUT_CLEAR, IGNORED);
+		SIF_SSD1608_Deinitialise();
 	}
-
-	SIF_SSD1681_DeepSleep();
 }
 
 /******************************************************************************/
@@ -91,7 +93,6 @@ void partial_display_cycle(void)
  ******************************************************************************/
 int main(void)
 {
-#define IGNORED 1
 	struct ca821x_dev dev;
 	ca821x_api_init(&dev);
 	SENSORIF_SPI_Config(1);
@@ -104,27 +105,23 @@ int main(void)
 	/* Application-Specific Initialisation Routines */
 
 	// Full display
-	SIF_SSD1681_Initialise();
-	SIF_SSD1681_ClearDisplay();
-	SIF_SSD1681_SetFrameMemory(waveshare_example_img, IGNORED);
-	SIF_SSD1681_DisplayFrame();
-	SIF_SSD1681_DeepSleep();
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_DisplayImage(waveshare_example_img, WITH_CLEAR, IGNORED);
+	SIF_SSD1608_Deinitialise();
 
 	// Partial update
 	partial_display_cycle();
 
 	// Full display again
-	SIF_SSD1681_Initialise();
-	SIF_SSD1681_ClearDisplay();
-	SIF_SSD1681_SetFrameMemory(waveshare_example_img, IGNORED);
-	SIF_SSD1681_DisplayFrame();
-	SIF_SSD1681_DeepSleep();
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_DisplayImage(waveshare_example_img, WITH_CLEAR, IGNORED);
+	SIF_SSD1608_Deinitialise();
 
 	// Clear
 	WAIT_ms(3000);
-	SIF_SSD1681_Initialise();
-	SIF_SSD1681_StrongClearDisplay();
-	SIF_SSD1681_DeepSleep();
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_StrongClearDisplay();
+	SIF_SSD1608_DeepSleep();
 
 	/* Endless Polling Loop */
 	while (1)

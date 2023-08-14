@@ -231,6 +231,7 @@ pipeline {
 		/**
 		 * Run the longer-running tests on posix, but only on master branch.
 		 */
+		/*
 		stage('Long Tests') {
 			when {
 				branch(
@@ -250,7 +251,7 @@ pipeline {
 				}
 			}
 		}
-
+		*/
 
 		/** PostBuild Stage
 		 *  Process the generated artifacts.

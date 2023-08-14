@@ -8,12 +8,12 @@ This module contains example applications to demonstrate the use of the APIs for
 
 | Binary name | Application source code |  Description|
 | --- | --- | --- |
-| evboard-btn | `examples/devboard_app_btn.c` | Example app demonstrating intrinsic devboard features: LEDs and buttons. |
+| devboard-btn | `examples/devboard_app_btn.c` | Example app demonstrating intrinsic devboard features: LEDs and buttons. |
 | devboard-click | `examples/devboard_app_click.c` | Example app demonstrating how the devboard can communicate with externally connected peripherals. |
 | devboard-eink | `examples/devboard_app_eink.c` | Example app demonstrating how the devboard can show images on an eink display. Note: this only supports the 2.9 inch display. |
 | devboard-gfx-x-x | `examples/devboard_app_gfx_x_x.c` | Example app demonstrating how the devboard can show graphics (menu) on an eink display (where x-x is replaced by the size, e.g. 2-9 meaning 2.9 inches). |
 | devboard-sleep | `examples/devboard_app_sleep.c`  | Example app demonstrating the sleep modes. |
-| devboard-batt | `examples/devboard_app_batt.c`  | Example app demonstrating the battery monitoring functions. |
+| devboard-batt | `examples/devboard_app_batt.c`  | Example app demonstrating the [battery monitoring](../../docs/reference/battery-monitoring.md) functions. |
 | devboard-click-batt | `examples/devboard_app_click_batt.c`  | Example app demonstrating combined use of peripherals and battery monitoring. |
 ## Building instructions
 

@@ -17,6 +17,8 @@ Click Board          | Interface | Supply | Type | Declarations for Interface Fu
 [Relay Click](https://www.mikroe.com/relay-click)    | GPIO | 5V | Relay Actuator | relay_click.h |
 [Ambient 8 Click](https://www.mikroe.com/ambient-8-click)    | I2C | 3.3V | Illuminance Sensor | ambient8_click.h |
 [Fan Click](https://www.mikroe.com/fan-click)    | I2C | 3.3V+5V | Fan Control Actuator | fan_click.h |
+[Buzz 2 Click](https://www.mikroe.com/buzz-2-click)    | PWM | 3.3V/5V | Buzzer | buzz2_click.h |
+[LED Driver 3 Click](https://www.mikroe.com/led-driver-3-click)    | I2C | 3.3V+5V | RGB LED | led3_click.h |
 
 For boards marked as 3.3V/5V the supply voltage can be selected by a solder jumper on the Click Board.<br>
 <sup>1)</sup>: It is recommended to supply the Click Board with 5V due to sensitivity to supply noise at 3.3V.<br>
@@ -37,6 +39,8 @@ Motion Click         | Silvan Chip Electronics | BISS0001 | Motion | Yes |
 Relay Click          | Omron | G6D | Dual Relay Actuator | No |
 Ambient 8 Click      | Liteon | LTR-329ALS | Illuminance (Visible, IR, Ambient) | No |
 Fan Click            | Microchip | EMC2301 | 5V 4-Wire Fan Control Actuator (Open Loop, Closed Loop) | Yes |
+Buzz 2 Click         | CUI Devices | CMT-8540S-SMT | Magnetic Buzzer Transducer | No |
+LED 3 Driver Click   | ON Semiconductor | NCP5623B | RGB LED Actuator | No |
 
 
 ## Functions required for Interfacing with an Application:

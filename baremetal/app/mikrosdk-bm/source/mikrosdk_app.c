@@ -277,9 +277,9 @@ void MIKROSDK_Handler_HVAC(void)
 	static u8_t handled = 0;
 	u32_t       t1, t2;
 
-	measurement_data_t      hvac_data;
-	uint16_t                hum[2], temp[2];
-	int                     num_decimals = 2;
+	measurement_data_t hvac_data;
+	uint16_t hum[2], temp[2];
+	int      num_decimals = 2;
 
 	/* Note:
 	 * This is a tick based handler for polling only

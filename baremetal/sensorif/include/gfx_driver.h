@@ -15,11 +15,16 @@ extern "C" {
 
 #define LCDWIDTH SIF_IL3820_WIDTH
 #define LCDHEIGHT SIF_IL3820_HEIGHT
-#elif defined EPAPER_1_54_INCH
+#elif defined EPAPER_WAVESHARE_1_54_INCH
 #include "sif_ssd1681.h"
 
 #define LCDWIDTH SIF_SSD1681_WIDTH
 #define LCDHEIGHT SIF_SSD1681_HEIGHT
+#elif defined EPAPER_MIKROE_1_54_INCH
+#include "sif_ssd1608.h"
+
+#define LCDWIDTH SIF_SSD1608_WIDTH
+#define LCDHEIGHT SIF_SSD1608_HEIGHT
 #endif
 
 #define BLACK 0

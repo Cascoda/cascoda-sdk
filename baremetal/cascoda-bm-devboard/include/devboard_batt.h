@@ -46,6 +46,10 @@ enum dvbd_vbus_state
 	CONNECTED     = 1,
 };
 
+/* battery type connected to devboard */
+#define BATT_TYPE_RCR123A 1
+#define BATT_TYPE_CR123A 0
+
 /* devboard pin assignments (chili2 pins) for battery functions */
 #define BATT_USB_PRESENT_PIN 5
 #define BATT_VOLTS_TEST_PIN 6
@@ -58,6 +62,13 @@ enum dvbd_vbus_state
  *
  */
 uint16_t DVBD_BattGetVolts(void);
+
+/**
+ * \brief get the battery percentage
+ * \return battery percentage (%)
+ *
+ */
+uint8_t DVBD_BattGetPercent(uint16_t vBatt);
 
 /**
  * \brief get the battery charging status

@@ -65,7 +65,9 @@ GDB is a very powerful tool, there are many guides on the internet that will pro
 ## Debugging with VSCode
 
 Rather than use raw GDB to debug we can use VSCode builtin debugger. 
-First install the [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) extension. With this you can now create a debug configuration (launch.json). This will look like:
+First install the [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) extension. With this you can now create a debug configuration (launch.json). 
+
+To use with the J-Link, this will look like:
 ```json
 {
     // Use IntelliSense to learn about possible attributes.
@@ -84,6 +86,37 @@ First install the [Cortex-Debug](https://marketplace.visualstudio.com/items?item
             "servertype": "jlink",
             "device": "M2351KIAAE", #processor for Chili2D
             "interface": "swd",
+        }
+    ]
+}
+```
+
+To use with OpenOCD, this will look like:
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "./path/to/exe",
+            // "request": "launch",
+            "request": "attach",
+            "serverpath": "C:\\Path\\To\\OpenOCD-Nuvoton\\src\\openocd.exe",
+            "type": "cortex-debug",
+            "servertype": "external", //NOTE: this means you will have to start the server manually
+            "device": "M2351KIAAE",
+            "configFiles": [
+                "interface/nulink.cfg",
+                "target/numicroM23.cfg"
+            ],
+            "gdbTarget": "localhost:3335",
+            "searchDir": [
+                "C:\\Path\\To\\OpenOCD-Nuvoton\\tcl"
+            ],
         }
     ]
 }

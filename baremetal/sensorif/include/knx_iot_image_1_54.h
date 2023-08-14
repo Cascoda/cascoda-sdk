@@ -1,5 +1,5 @@
-#ifndef SIF_SSD1681_KNX_IOT_IMAGE_H
-#define SIF_SSD1681_KNX_IOT_IMAGE_H
+#ifndef KNX_IOT_IMAGE_1_54_H
+#define KNX_IOT_IMAGE_1_54_H
 
 #include <stdint.h>
 
@@ -269,4 +269,4 @@ const uint8_t knx_iot_logo[] = {
     0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF,
     0XFF, 0XFF, 0XFF};
 
-#endif // SIF_SSD1681_KNX_IOT_IMAGE_H
+#endif // KNX_IOT_IMAGE_1_54_H

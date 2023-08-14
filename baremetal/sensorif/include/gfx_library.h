@@ -159,7 +159,8 @@ uint16_t display_getHeight();
 */
 void display_clear(void);
 
-/* GENERAL NOTES ON USAGE, and differences between using the 2.9inch vs 1.54inch functions:
+/* GENERAL NOTES ON USAGE, and differences between using the 2.9inch (and MIKROE 1.54inch) vs 
+1.54inch (waveshare) functions:
 - It is simple to do any kind of displaying with the 2.9inch eink display. Simply call the
 `display_render()` function, with the arguments of your choice. E.g.
   . To display the frame buffer using full update, with a clear happening before displaying, 
@@ -171,7 +172,7 @@ void display_clear(void);
   . To do a partial update, call the function `display_render_partial()`, with `true` or `false` as the argument depending
     on whether you want the eink display to be put in Deep Sleep mode after the update is done.
 */
-#ifdef EPAPER_2_9_INCH
+#if (defined EPAPER_2_9_INCH || defined EPAPER_MIKROE_1_54_INCH)
 
 /**
     \brief Displays the frame buffer onto the eink display, in 4 possible different ways,
@@ -182,9 +183,16 @@ void display_clear(void);
     \param clr_mode WITH_CLEAR or WITHOUT_CLEAR. This determines whether the screen
     will be cleared before the frame buffer is displayed.
 */
-void display_render(SIF_IL3820_Update_Mode updt_mode, SIF_IL3820_Clear_Mode clr_mode);
+void display_render(
+#ifdef EPAPER_2_9_INCH
+    SIF_IL3820_Update_Mode updt_mode,
+    SIF_IL3820_Clear_Mode  clr_mode);
+#elif defined EPAPER_MIKROE_1_54_INCH
+    SIF_SSD1608_Update_Mode updt_mode,
+    SIF_SSD1608_Clear_Mode  clr_mode);
+#endif
 
-#elif defined EPAPER_1_54_INCH
+#elif defined EPAPER_WAVESHARE_1_54_INCH
 
 /**
     \brief Displays the frame buffer onto the eink display using full update (slow)
@@ -198,13 +206,13 @@ void display_render_full(void);
 */
 void display_render_partial(bool sleep_when_done);
 
+#endif
+
 /**
     \brief Displays the image provided, using full update (slow).
     \param image The image to be displayed.
 */
 void display_fixed_image(const uint8_t *image);
-
-#endif
 
 // not documented
 //void display_setTextWrap(bool w);

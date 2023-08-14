@@ -33,36 +33,36 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include "ca821x-posix-thread/posix-platform.h"
 #include "openthread/platform/alarm-milli.h"
 
 static bool           s_is_running = false;
 static uint32_t       s_alarm      = 0;
-static struct timeval s_start;
+static struct timespec s_start;
 
 void posixPlatformAlarmInit(void)
 {
-	gettimeofday(&s_start, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &s_start);
 }
 
 uint32_t otPlatAlarmMilliGetNow(void)
 {
-	struct timeval tv;
+	struct timespec tv;
 
-	gettimeofday(&tv, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &tv);
 
 	tv.tv_sec  = tv.tv_sec - s_start.tv_sec;
-	tv.tv_usec = tv.tv_usec - s_start.tv_usec;
+	tv.tv_nsec = tv.tv_nsec - s_start.tv_nsec;
 
-	if (tv.tv_usec < 0)
+	if (tv.tv_nsec < 0)
 	{
 		--tv.tv_sec;
-		tv.tv_usec += 1000000;
+		tv.tv_nsec += 1000000000;
 	}
 
-	return (uint32_t)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+	return (uint32_t)((tv.tv_sec * 1000) + (tv.tv_nsec / 1000000));
 }
 
 void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t t0, uint32_t dt)

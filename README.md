@@ -17,7 +17,7 @@ The Cascoda Software Development Kit ...
 # Getting started
 
 We offer binaries that can be flashed directly onto our Chili2D USB module
-inside `Chili2D-USB.zip`. Cascoda's Windows Tools are provided via an installer ([click here to download](https://github.com/Cascoda/cascoda-sdk/releases/download/v0.23-6/CascodaWindowsTools.zip)). However, `Chili2S-UART0-1Mbaud.zip` is _for advanced users
+inside `Chili2D-USB.zip`. Cascoda's Windows Tools are provided via an installer ([click here to download](https://github.com/Cascoda/cascoda-sdk/releases/latest)). However, `Chili2S-UART0-1Mbaud.zip` is _for advanced users
 only_ as these binaries _cannot be used with our USB module_, only with Chili2S
 devices soldered onto a PCB.
 

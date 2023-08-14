@@ -360,7 +360,7 @@ void SIF_IL3820_Deinitialise(void)
 	    SIF_IL3820_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
 }
 
-void SIF_IL3820_Display(const uint8_t *image)
+static void SIF_IL3820_Display(const uint8_t *image)
 {
 	u16_t width, height;
 	width  = (SIF_IL3820_WIDTH % 8 == 0) ? (SIF_IL3820_WIDTH / 8) : (SIF_IL3820_WIDTH / 8 + 1);
@@ -442,7 +442,7 @@ ca_error SIF_IL3820_overlay_qr_code(const char *text, uint8_t *image, uint8_t sc
 	return CA_ERROR_FAIL;
 }
 
-void SIF_IL3820_DisplayImage(uint8_t *image, SIF_IL3820_Clear_Mode mode)
+void SIF_IL3820_DisplayImage(const uint8_t *image, SIF_IL3820_Clear_Mode mode)
 {
 	if (mode == WITH_CLEAR)
 		SIF_IL3820_ClearDisplay();

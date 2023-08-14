@@ -29,7 +29,7 @@
  * Image data source file for application for E-ink display of images.
 */
 
-#include "sif_ssd1681_image.h"
+#include "sif_ssd16xx_image.h"
 
 #define EPAPER_HEIGHT 200
 #define EPAPER_WIDTH 200

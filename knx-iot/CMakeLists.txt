@@ -30,15 +30,30 @@ set(KNX_LOG_CAST_64_BIT_INTS_ENABLED ON CACHE BOOL "Cast int64_t and uint64_t va
 
 include(FetchContent)
 
+set(KNX_REPO knx-iot-stack)
+set(KNX_REPO_URL https://github.com/KNX-IOT/KNX-IOT-STACK.git)
+
+if(DEFINED CASCODA_USE_KNX_REF)
+  set(KNX_IOT_STACK_REF ${CASCODA_USE_KNX_REF} CACHE STRING "")
+else()
+  set(KNX_IOT_STACK_REF master CACHE STRING "")
+endif()
+
+if(DEFINED CASCODA_USE_KNX_REPO_URL)
+  set(KNX_IOT_STACK_REPO ${CASCODA_USE_KNX_REPO_URL} CACHE STRING "")
+else()
+  set(KNX_IOT_STACK_REPO ${KNX_REPO_URL} CACHE STRING "")
+endif()
+
 FetchContent_Declare(
-    knx-iot-stack
-    GIT_REPOSITORY https://github.com/KNX-IOT/KNX-IOT-STACK.git
-    GIT_TAG master
+    ${KNX_REPO}
+    GIT_REPOSITORY ${KNX_IOT_STACK_REPO}
+    GIT_TAG ${KNX_IOT_STACK_REF}
 )
 
-if(NOT knx-iot-stack_POPULATED)
-	FetchContent_Populate(knx-iot-stack)
-	add_subdirectory(${knx-iot-stack_SOURCE_DIR} ${knx-iot-stack_BINARY_DIR})
+if(NOT ${KNX_REPO}_POPULATED)
+	FetchContent_Populate(${KNX_REPO})
+	add_subdirectory(${${KNX_REPO}_SOURCE_DIR} ${${KNX_REPO}_BINARY_DIR})
 endif()
 
 #Don't build any of the port or demo apps on POSIX

@@ -19,6 +19,8 @@ if(TARGET cascoda-bm-plat)
 		add_subdirectory(app/mikrosdk-bm)
 		add_subdirectory(cascoda-bm-devboard)
 		add_subdirectory(app/pwm-led-dimming)
+		add_subdirectory(app/buzz2-click-test)
+		add_subdirectory(app/led3-click-test)
 	endif()
 	# Openthread platform
 	add_subdirectory(cascoda-bm-thread)
