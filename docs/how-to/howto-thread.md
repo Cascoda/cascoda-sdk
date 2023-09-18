@@ -2,7 +2,7 @@
 
 This document aims to introduce the Thread Protocol, and how to form and use a Thread Network using Cascoda hardware.
 
-This document assumes the use of the [Cascoda Thread Evaluation Kit.](https://innovelec.co.uk/brand/cascoda/)
+This document assumes the use of the [Cascoda Thread Evaluation Kit.](https://www.cascoda.com/wheretobuy/)
 
 ![Thread Certified Component Logo](../../etc/img/thread_certified_component.png)
 
@@ -23,7 +23,7 @@ This document assumes the use of the [Cascoda Thread Evaluation Kit.](https://in
 
 ## The System Overview
 
-The [Cascoda Thread Evaluation Kit](https://innovelec.co.uk/brand/cascoda/) contains most of the required parts for evaluating Thread functionality. In addition, a Cascoda Border Router is required.
+The [Cascoda Thread Evaluation Kit](https://www.cascoda.com/wheretobuy/) contains most of the required parts for evaluating Thread functionality. In addition, a Cascoda Border Router is required.
 
 The Chili2D USB dongles are used as Thread devices, which in a real network could be sensors or actuators. 
 The Thread stack is running on the Chili2 in the [ot-cli](../../baremetal/cascoda-bm-thread/example) firmware, and can be controlled using the 'OpenThread CLI' which is available over USB.

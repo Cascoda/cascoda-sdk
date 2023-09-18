@@ -11,7 +11,16 @@ Prebuilt Windows binaries of the sniffer can be found in the [Windows release of
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
   - [Configuring Wireshark](#configuring-wireshark)
-  - [Detailed Explanation](#detailed-explanation)
+    - [Thread Configuration](#thread-configuration)
+    - [CoAP Configuration](#coap-configuration)
+    - [OSCORE Configuration](#oscore-configuration)
+      - [Getting keys from the Linker](#getting-keys-from-the-linker)
+      - [Getting keys from ETS](#getting-keys-from-ets)
+  - [Wireshark Tips](#wireshark-tips)
+    - [Filtering Packets](#filtering-packets)
+    - [View Received Signal Strength \& Link Quality Indication](#view-received-signal-strength--link-quality-indication)
+    - [Better CBOR decoding](#better-cbor-decoding)
+  - [Sniffer Details](#sniffer-details)
 
 
 ## Quick Start
@@ -56,6 +65,8 @@ Once the CoAP headers are configured, you should be able to see KNX-IoT discover
 
 Right-click an OSCORE packet you want to decode, and navigate to Protocol Preferences -> Object Security for Constrained RESTful Environments -> Security Contexts. In this window, you may press the Plus button to add a new security context. You must populate the Sender ID and Master Secret fields with details from the Access Token, encoded as hexdecimal strings. If the Recipient ID and/or ID Context are set in the Access Token, you will also have to populate these fields, or decryption will fail.
 
+#### Getting keys from the Linker
+
 Here is an example Access Token created by our Linker. The information Wireshark needs lives under the keys 8 -> 4. Within this map, the value under CBOR integer key 2 corresponds to the Master Secret, 7 is the Sender ID and 0 is the Recipient ID. The ID Context would be found at key 6 of this map.
 
 ```
@@ -87,6 +98,20 @@ Once you have configured your security contexts, you should be able to see every
 ![](./imgs/successful-oscore-decryption.png)
 
  If you are using the Cascoda KNX-IoT Linker, some views of the Access Token are encoded as Base64. These [must be decoded to Hex before being put into Wireshark, using an online tool](https://base64.guru/converter/decode/hex).
+
+#### Getting keys from ETS
+
+Navigate to Panels -> All Panels -> Security reports, and select Project Security. Here you will see the tool keys and group communications keys used for the project.
+
+![](./imgs/security-report.png)
+
+As of ETS Build 5922, the Sender ID & Context ID are missing from the security report. However, they can be obtained by inspecting the CoAP header of an OSCORE packet, and then added to the Security Contexts alongside the corresponding key.
+
+Tool keys are used by ETS when downloading a device, and for other operations. The Sender ID of these tool keys contains the serial number of the device being programmed, so you must match it to the name / individual address of the device. Below is an example of the key ID of a packet, which must go into the Sender ID field of the security context.
+![](./imgs/packet-with-tool-key.png)
+
+Group keys are in use when the device use group communications, or when ETS sends a message to a group using the Group monitor. The Sender ID of these messages tends to look like the group address. Below is an example of the Sender ID for a device sending on group address 0/0/2.
+![](./imgs/packet-with-group-key.png)
 
 ## Wireshark Tips
 

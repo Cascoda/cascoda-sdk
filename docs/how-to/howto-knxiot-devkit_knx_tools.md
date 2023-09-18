@@ -6,6 +6,7 @@ Please ensure you have the following hardware and software:
 
 - ETS, version with KNX IoT enabled - ETS 6.1.1 build 5752 or later
 - [Cascoda's KNX-IoT Development Kit](https://www.cascoda.com/products/thread-development-kit/)
+    - The factory binaries do not work with ETS builds later than 5886 - this is because the later builds implement version 1.1.0 of the Point API specifications, which is not backwards compatible. If you would like to use later builds of ETS, you must first update the binaries on the development board.
 
 You also need to follow the [KNX IoT Getting Started Guide](howto-knxiot-devkit.md). You should have:
 - A border router connected to your PC, accessible via Ethernet

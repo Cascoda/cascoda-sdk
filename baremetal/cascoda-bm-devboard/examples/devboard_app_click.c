@@ -32,6 +32,15 @@
 /*
  * Example application for external click sensor interfaces
 */
+/*
+ * SW Usage					Default		RELAY	FAN			EXTEND13
+ *
+ * SW1: Button 1	POS2				relay 1				Btn1
+ * SW2: Button 2	POS2				relay 2	control		Btn2
+ * SW3: Button 3	POS2	wakeup				wakeup		Btn3
+ * SW4: Led 4 		POS2	on
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -46,6 +55,7 @@
 #include "cascoda-bm/test15_4_evbme.h"
 
 #include "devboard_btn.h"
+#include "devboard_btn_ext.h"
 #include "devboard_click.h"
 
 #include "airquality4_click.h"
@@ -56,6 +66,7 @@
 #include "motion_click.h"
 #include "relay_click.h"
 #include "sht_click.h"
+#include "expand13_click.h"
 #include "thermo3_click.h"
 #include "thermo_click.h"
 
@@ -63,7 +74,7 @@
 #include "devboard_click_handlers_default.h"
 
 /* mikrobus click interface 1 and 2 configuration */
-#define CLICK1_TYPE STYPE_THERMO3
+#define CLICK1_TYPE STYPE_EXPAND13
 #define CLICK2_TYPE STYPE_NONE
 
 /* sleep (1) or stay awake (0) */
@@ -73,17 +84,19 @@
 /* note: jumper has to be populated when 1 */
 #define USE_POWER_CONTROL_ON_POWERDOWN 0
 
-/* use additional wakeup button (button SW3) */
-#define USE_ADDITIONAL_WAKEUP_BUTTON 1
+/* button parameters */
+#define BTN_LONG_TIME_THRESHOLD 2000 /* time threshold to trigger button long function */
+#define BTN_HOLD_TIME_INTERVAL 400   /* Time intervall for button hold time function */
 
 /* measurement period in [ms] */
 #if ((((CLICK1_TYPE == STYPE_THERMO3) || (CLICK2_TYPE == STYPE_THERMO3)) && (THERMO3_USE_INTERRUPT)) || \
      (((CLICK1_TYPE == STYPE_SHT) || (CLICK2_TYPE == STYPE_SHT)) && (SHT_USE_INTERRUPT)) ||             \
      (((CLICK1_TYPE == STYPE_MOTION) || (CLICK2_TYPE == STYPE_MOTION)) && (MOTION_USE_INTERRUPT)) ||    \
-     (((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN)) && (FAN_USE_INTERRUPT)))
+     (((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN)) && (FAN_USE_INTERRUPT)) ||             \
+     (((CLICK1_TYPE == STYPE_EXPAND13) || (CLICK2_TYPE == STYPE_EXPAND13)) && (EXPAND13_USE_INTERRUPT)))
 #define MEASUREMENT_PERIOD DVBD_MAX_SLEEP_TIME
 #else
-#define MEASUREMENT_PERIOD 5000
+#define MEASUREMENT_PERIOD 1000
 #endif
 
 /* initialisation functions for all clicks - have to be in correct order */
@@ -99,6 +112,7 @@ static ca_error (*click_init_function[])(void) = {
     CLICK_RELAY_initialise,
     CLICK_AMBIENT8_initialise,
     CLICK_FAN_initialise,
+    CLICK_EXPAND13_initialise,
 };
 
 /* handler functions for all clicks (including acquisition) - have to be in correct order */
@@ -114,6 +128,7 @@ static ca_error (*click_handler_function[])(void) = {
     CLICK_Handler_Default_RELAY,
     CLICK_Handler_Default_AMBIENT8,
     CLICK_Handler_Default_FAN,
+    NULL, // EXPAND13 integrated into button handling
 };
 
 /* alarm functions for all clicks - have to be in correct order */
@@ -129,6 +144,7 @@ static ca_error (*click_alarm_function[])(void) = {
     NULL,
     NULL,
     MIKROSDK_FAN_alarm_triggered,
+    NULL, // EXPAND13 integrated into button handling
 };
 /* for reporting */
 extern const char *click_name_default[];
@@ -215,6 +231,27 @@ static void wakeup_isr(void *context)
 	g_sensors_handled = false;
 }
 
+// button short press callbacks
+static void btn_short_press_cb(void *context)
+{
+	u8_t nr = *(u8_t *)context;
+	printf("Button %d short pressed\n", nr);
+}
+
+// button hold callbacks
+static void btn_hold_cb(void *context)
+{
+	u8_t nr = *(u8_t *)context;
+	printf("Button %d held\n", nr);
+}
+
+// button long press callbacks
+static void btn_long_press_cb(void *context)
+{
+	u8_t nr = *(u8_t *)context;
+	printf("Button %d long pressed\n", nr);
+}
+
 /* set hardware error */
 static void set_hw_error(void)
 {
@@ -267,46 +304,66 @@ static ca_error sensor_wakeup(void *aContext)
 // application initialisation
 void hardware_init(void)
 {
+	static u8_t swnr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
 	/* Application-Specific Button/LED Initialisation Routines */
-	/* SW4 BTN/LED is LED output; static for power-on */
-	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_1);
+	/* SW4 is LED output; static for power-on */
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
 	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
 	if ((CLICK1_TYPE == STYPE_RELAY) || (CLICK2_TYPE == STYPE_RELAY))
 	{
 		/* register buttons for RELAY */
-		/* SW1 BTN/LED is button for toggling relay_1 */
-		/* SW2 BTN/LED is button for toggling relay_2 */
-		DVBD_RegisterButtonIRQInput(DEV_SWITCH_1, JUMPER_POS_1);
-		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_1);
+		/* SW1 button for toggling relay_1 */
+		/* SW2 button for toggling relay_2 */
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_1, JUMPER_POS_2);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_2);
 		DVBD_SetButtonShortPressCallback(DEV_SWITCH_1, &relay1_isr, NULL, BTN_SHORTPRESS_PRESSED);
 		DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &relay2_isr, NULL, BTN_SHORTPRESS_PRESSED);
 	}
 	else if ((CLICK1_TYPE == STYPE_FAN) || (CLICK2_TYPE == STYPE_FAN))
 	{
 		/* register buttons for FAN */
-		/* SW3 BTN/LED for increasing speed */
-		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_1);
-		DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &fan1_isr, NULL, BTN_SHORTPRESS_RELEASED);
-		DVBD_SetButtonLongPressCallback(DEV_SWITCH_3, &fan1_isr_long, NULL, 1000);
-		/* SW3 BTN/LED for additional wake-up interrupt */
-		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_1);
-		DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &fan2_isr, NULL, BTN_SHORTPRESS_PRESSED);
+		/* SW2 for increasing speed (short) and on/off (long) */
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &fan1_isr, NULL, BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonLongPressCallback(DEV_SWITCH_2, &fan1_isr_long, NULL, 1000);
+		/* SW3 for additional wake-up interrupt */
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &fan2_isr, NULL, BTN_SHORTPRESS_PRESSED);
+	}
+	else if ((CLICK1_TYPE == STYPE_EXPAND13) || (CLICK2_TYPE == STYPE_EXPAND13))
+	{
+		/* register buttons for EXPAND13 */
+		/* Register SW1/SW2/SW3 as Buttons for comparison */
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_1, JUMPER_POS_2);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS_2);
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
+		DVBD_SetButtonShortPressCallback(
+		    DEV_SWITCH_1, &btn_short_press_cb, &swnr[DEV_SWITCH_1], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonShortPressCallback(
+		    DEV_SWITCH_2, &btn_short_press_cb, &swnr[DEV_SWITCH_2], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonShortPressCallback(
+		    DEV_SWITCH_3, &btn_short_press_cb, &swnr[DEV_SWITCH_3], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonHoldCallback(DEV_SWITCH_1, &btn_hold_cb, &swnr[DEV_SWITCH_1], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonHoldCallback(DEV_SWITCH_2, &btn_hold_cb, &swnr[DEV_SWITCH_2], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonHoldCallback(DEV_SWITCH_3, &btn_hold_cb, &swnr[DEV_SWITCH_3], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonLongPressCallback(DEV_SWITCH_1, &btn_long_press_cb, &swnr[DEV_SWITCH_1], BTN_LONG_TIME_THRESHOLD);
+		DVBD_SetButtonLongPressCallback(DEV_SWITCH_2, &btn_long_press_cb, &swnr[DEV_SWITCH_2], BTN_LONG_TIME_THRESHOLD);
+		DVBD_SetButtonLongPressCallback(DEV_SWITCH_3, &btn_long_press_cb, &swnr[DEV_SWITCH_3], BTN_LONG_TIME_THRESHOLD);
 	}
 	else
 	{
-#if (USE_ADDITIONAL_WAKEUP_BUTTON == 1)
-		/* register buttons for other sensors */
-		/* SW3 BTN/LED for additional wake-up interrupt */
-		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_1);
+		/* SW3 for additional wake-up interrupt */
+		DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS_2);
 		DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &wakeup_isr, NULL, BTN_SHORTPRESS_PRESSED);
-#endif
 	}
 
-/* power up click interfaces if power control is used */
-#if (USE_POWER_CONTROL_ON_POWERDOWN)
-	if (DVBD_click_power_init())
-		printf("No access to power control pin for mikrobus interfaces\n");
-#endif
+	/* power up click interfaces if power control is used */
+	if (USE_POWER_CONTROL_ON_POWERDOWN)
+	{
+		if (DVBD_click_power_init())
+			printf("No access to power control pin for mikrobus interfaces\n");
+	}
 
 	printf("Initialising devices:\n");
 	printf("Interface 1: %s\n", click_name_default[CLICK1_TYPE]);
@@ -330,6 +387,39 @@ void hardware_init(void)
 			printf("Click Sensor Number 2 (%s): Initialisation failed\n", click_name_default[CLICK2_TYPE]);
 			set_hw_error();
 		}
+	}
+
+	if ((CLICK1_TYPE == STYPE_EXPAND13) || (CLICK2_TYPE == STYPE_EXPAND13))
+	{
+		/* Register extended switches as buttons */
+		DVBD_RegisterButtonInputExt(DEV_SWITCH_EXT_1);
+		DVBD_RegisterButtonInputExt(DEV_SWITCH_EXT_2);
+		DVBD_RegisterButtonInputExt(DEV_SWITCH_EXT_3);
+		DVBD_RegisterButtonInputExt(DEV_SWITCH_EXT_4);
+		DVBD_SetButtonShortPressCallbackExt(
+		    DEV_SWITCH_EXT_1, &btn_short_press_cb, &swnr[DEV_SWITCH_EXT_1 + NUM_LEDBTN], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonShortPressCallbackExt(
+		    DEV_SWITCH_EXT_2, &btn_short_press_cb, &swnr[DEV_SWITCH_EXT_2 + NUM_LEDBTN], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonShortPressCallbackExt(
+		    DEV_SWITCH_EXT_3, &btn_short_press_cb, &swnr[DEV_SWITCH_EXT_3 + NUM_LEDBTN], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonShortPressCallbackExt(
+		    DEV_SWITCH_EXT_4, &btn_short_press_cb, &swnr[DEV_SWITCH_EXT_4 + NUM_LEDBTN], BTN_SHORTPRESS_RELEASED);
+		DVBD_SetButtonHoldCallbackExt(
+		    DEV_SWITCH_EXT_1, &btn_hold_cb, &swnr[DEV_SWITCH_EXT_1 + NUM_LEDBTN], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonHoldCallbackExt(
+		    DEV_SWITCH_EXT_2, &btn_hold_cb, &swnr[DEV_SWITCH_EXT_2 + NUM_LEDBTN], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonHoldCallbackExt(
+		    DEV_SWITCH_EXT_3, &btn_hold_cb, &swnr[DEV_SWITCH_EXT_3 + NUM_LEDBTN], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonHoldCallbackExt(
+		    DEV_SWITCH_EXT_4, &btn_hold_cb, &swnr[DEV_SWITCH_EXT_4 + NUM_LEDBTN], BTN_HOLD_TIME_INTERVAL);
+		DVBD_SetButtonLongPressCallbackExt(
+		    DEV_SWITCH_EXT_1, &btn_long_press_cb, &swnr[DEV_SWITCH_EXT_1 + NUM_LEDBTN], BTN_LONG_TIME_THRESHOLD);
+		DVBD_SetButtonLongPressCallbackExt(
+		    DEV_SWITCH_EXT_2, &btn_long_press_cb, &swnr[DEV_SWITCH_EXT_2 + NUM_LEDBTN], BTN_LONG_TIME_THRESHOLD);
+		DVBD_SetButtonLongPressCallbackExt(
+		    DEV_SWITCH_EXT_3, &btn_long_press_cb, &swnr[DEV_SWITCH_EXT_3 + NUM_LEDBTN], BTN_LONG_TIME_THRESHOLD);
+		DVBD_SetButtonLongPressCallbackExt(
+		    DEV_SWITCH_EXT_4, &btn_long_press_cb, &swnr[DEV_SWITCH_EXT_4 + NUM_LEDBTN], BTN_LONG_TIME_THRESHOLD);
 	}
 
 	/* init scheduling, and trigger first calls (after 100 ms) to initialise click sensor interface in handlers */
@@ -444,6 +534,9 @@ int main(void)
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	hardware_init();
+
+	/* initialise startup time */
+	WakeUpTime = TIME_ReadAbsoluteTime();
 
 	/* Endless Polling Loop */
 	while (1)

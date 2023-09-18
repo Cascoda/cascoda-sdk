@@ -332,6 +332,15 @@ ca_error BSP_ModuleRegisterGPIOOutput(u8_t mpin, module_pin_type isled);
 ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled);
 
 /**
+ * \brief Registers GPIO Input AND Open Drain Output Functionality for Module Pin
+ * \param args  - gpio input args
+ * \param isled - pin is attached to led (Used to prevent power down leakage)
+ * \return status
+ *
+ */
+ca_error BSP_ModuleRegisterGPIOSharedInputOutputOD(struct gpio_input_args *args, module_pin_type isled);
+
+/**
  * \brief Unregisters GPIO Functionality for Module Pin to Default Settings
  * \param mpin  - module pin number
  * \return status
@@ -370,6 +379,19 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val);
  *
  */
 ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val);
+
+/**
+ * \brief Senses GPIO Output Value of Module Pin
+ *
+ * Output pins must be registered before they can be used. 
+ * See BSP_ModuleRegisterGPIOOutput().
+ *
+ * \param mpin  - module pin
+ * \param val - value read
+ * \return status
+ *
+ */
+ca_error BSP_ModuleSenseGPIOPinOutput(u8_t mpin, u8_t *val);
 
 /**
  * \brief Sets Module Pin GPIO Output as permanently driven (don't tristate in Power-Down)

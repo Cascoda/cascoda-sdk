@@ -29,10 +29,18 @@
 #include "devboard_btn.h"
 #include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
+#include "devboard_btn_ext.h"
 
 // For the following arrays,
 // each LED/Button corresponds to an array index (from 0 to 3)
+
+// if an external GPIO extender chip is used, NUM_LEDBTN_EXT has to be set in devboard_btn_ext.h
+// Default for NUM_LEDBTN_EXT is 0
+// Maximum for NUM_LEDBTN_EXT is 8
+// Note that even if NUM_LEDBTN_EXT is non-zero and no extender chip is declared, all button
+// functions behave as normal if no callbacks for extended buttons are declared.
 
 // Map from LED/Button -> POSSIBLE module pin number (depending on jumper position)
 u8_t possiblePinMappings[][2] = {{5, 31}, {6, 32}, {35, 33}, {36, 34}};
@@ -41,7 +49,10 @@ u8_t possiblePinMappings[][2] = {{5, 31}, {6, 32}, {35, 33}, {36, 34}};
 u8_t registeredPinMappings[NUM_LEDBTN];
 
 // Map from Button -> Callback function
-dvbd_btn_callback_info buttonCallbacks[NUM_LEDBTN];
+dvbd_btn_callback_info buttonCallbacks[NUM_LEDBTN + NUM_LEDBTN_EXT];
+
+// Store LED/Button type
+u8_t registeredPinTypes[NUM_LEDBTN];
 
 // Powerdown/sleep mode selection:
 // PDM_POWERDOWN if any GPIO interrupts wakeups declared
@@ -76,6 +87,7 @@ ca_error DVBD_RegisterLEDOutput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_positio
 	// Remap the pin
 	mapLEDBtnToPin(ledBtn, jumperPos);
 	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_LED;
 
 	// Register the pin
 	return BSP_ModuleRegisterGPIOOutputOD(registeredPinMappings[ledBtn], MODULE_PIN_TYPE_LED);
@@ -94,6 +106,7 @@ ca_error DVBD_RegisterButtonInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_posit
 	// Remap the pin
 	mapLEDBtnToPin(ledBtn, jumperPos);
 	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
 
 	// Define the GPIO arguments
 	struct gpio_input_args args;
@@ -112,6 +125,7 @@ ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_po
 	// Remap the pin
 	mapLEDBtnToPin(ledBtn, jumperPos);
 	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
 
 	// Define the GPIO arguments
 	struct gpio_input_args args;
@@ -126,6 +140,44 @@ ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_po
 	return BSP_ModuleRegisterGPIOInput(&args);
 }
 
+// set the functionality of a pin to be shared LED and button
+ca_error DVBD_RegisterSharedButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos)
+{
+	mapLEDBtnToPin(ledBtn, jumperPos);
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+
+	// Define the GPIO arguments
+	struct gpio_input_args args;
+	args.mpin     = registeredPinMappings[ledBtn];
+	args.pullup   = MODULE_PIN_PULLUP_OFF;
+	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.irq      = MODULE_PIN_IRQ_OFF;
+
+	// Register the pin
+	return BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED);
+}
+
+// set the functionality of a pin to be shared LED and IRQ button
+ca_error DVBD_RegisterSharedIRQButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos)
+{
+	mapLEDBtnToPin(ledBtn, jumperPos);
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+
+	// Define the GPIO arguments
+	struct gpio_input_args args;
+	args.mpin     = registeredPinMappings[ledBtn];
+	args.pullup   = MODULE_PIN_PULLUP_OFF;
+	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.irq      = MODULE_PIN_IRQ_FALL;
+	args.callback = btn_isr;
+	DVBD_SetGPIOWakeup();
+
+	// Register the pin
+	return BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED);
+}
+
 ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos)
 {
 	// Remap the pin
@@ -138,8 +190,42 @@ ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumpe
 // Get the state of the LED/button
 ca_error DVBD_Sense(dvbd_led_btn ledBtn, u8_t *val)
 {
-	// Change the state of the LED
-	return BSP_ModuleSenseGPIOPin(registeredPinMappings[ledBtn], val);
+	u8_t     save;
+	ca_error ret;
+	u8_t     type = registeredPinTypes[ledBtn];
+
+	if (type == PINTYPE_SHARED)
+	{
+		// Save the current output latch value
+		ret = DVBD_SenseOutput(ledBtn, &save);
+		if (ret != CA_ERROR_SUCCESS)
+			return ret;
+		// Set the output to high briefly
+		// only works since we use open drain outputs.
+		DVBD_SetLED(ledBtn, 1);
+
+		// We need a very small delay here to allow for
+		// RC time constant of pullup resistor
+		WAIT_ms(BTN_SHARED_SENSE_DELAY);
+	}
+
+	// Detect the state of the button
+	ret = BSP_ModuleSenseGPIOPin(registeredPinMappings[ledBtn], val);
+
+	if (type == PINTYPE_SHARED && ret == CA_ERROR_SUCCESS)
+	{
+		// Restore the output latch value
+		// Ensure we set-back the saved value
+		// even if there is a read error
+		ret |= DVBD_SetLED(ledBtn, save);
+	}
+	return ret;
+}
+
+ca_error DVBD_SenseOutput(dvbd_led_btn ledBtn, u8_t *val)
+{
+	// Get the output state of a pin
+	return BSP_ModuleSenseGPIOPinOutput(registeredPinMappings[ledBtn], val);
 }
 
 // Set a callback function to a button when it is short pressed
@@ -183,15 +269,26 @@ ca_error DVBD_PollButtons()
 	u32_t current_time;
 
 	// Loop through each button
-	for (u8_t ledBtn = 0; ledBtn < NUM_LEDBTN; ledBtn++)
+	for (u8_t ledBtn = 0; ledBtn < NUM_LEDBTN + NUM_LEDBTN_EXT; ledBtn++)
 	{
 		// Check if the button is registered with any callback
 		if (CALLBACKS.shortPressCallback != NULL || CALLBACKS.longPressCallback != NULL ||
 		    CALLBACKS.holdCallback != NULL)
 		{
 			// Get the current state of the button
-			u8_t pressed;
-			DVBD_Sense(ledBtn, &pressed);
+			u8_t pressed, port;
+
+			if (ledBtn < NUM_LEDBTN)
+				DVBD_Sense(ledBtn, &pressed);
+			else
+			{
+				if (ledBtn == NUM_LEDBTN) // read all extended at once to minimise i2c comms
+				{
+					DVBD_SenseAllExt(&port);
+				}
+				pressed = (port >> (ledBtn - NUM_LEDBTN)) & 0x01;
+			}
+
 			current_time = TIME_ReadAbsoluteTime();
 
 			/* button pressed */
@@ -271,7 +368,7 @@ void DVBD_SetGPIOWakeup(void)
 // Note: Only use when DVBD_PollButtons() is in the main loop
 bool DVBD_CanSleep(void)
 {
-	for (u8_t ledBtn = 0; ledBtn < NUM_LEDBTN; ledBtn++)
+	for (u8_t ledBtn = 0; ledBtn < NUM_LEDBTN + NUM_LEDBTN_EXT; ledBtn++)
 	{
 		if (buttonCallbacks[ledBtn].lastState == BTN_PRESSED)
 			return false;

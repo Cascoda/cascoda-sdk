@@ -78,6 +78,7 @@ typedef enum dvbd_click_type
 	STYPE_RELAY        = 8,
 	STYPE_AMBIENT8     = 9,
 	STYPE_FAN          = 10,
+	STYPE_EXPAND13 = 12,
 } dvbd_click_type;
 
 /* structures for click sensor data */
@@ -168,6 +169,13 @@ typedef struct
 } data_fan;
 
 
+/* data structure for EXPAND13 */
+typedef struct
+{
+	uint8_t status; // expand13_status
+	uint8_t port0;  // port0 value
+} data_expand13;
+
 /* globals */
 extern uint8_t  g_relay_1_state, g_relay_2_state; /* states for controlling RELAY */
 extern uint8_t  g_fan_speed_pwm_percent;          /* fan speed pwm percent */
@@ -188,6 +196,7 @@ ca_error CLICK_MOTION_acquisition(data_motion *data);
 ca_error CLICK_RELAY_acquisition(data_relay *data);
 ca_error CLICK_AMBIENT8_acquisition(data_ambient8 *data);
 ca_error CLICK_FAN_acquisition(data_fan *data);
+ca_error CLICK_EXPAND13_acquisition(data_expand13 *data);
 
 /* separate initialisation functions */
 ca_error CLICK_THERMO3_initialise(void);
@@ -200,5 +209,6 @@ ca_error CLICK_MOTION_initialise(void);
 ca_error CLICK_RELAY_initialise(void);
 ca_error CLICK_AMBIENT8_initialise(void);
 ca_error CLICK_FAN_initialise(void);
+ca_error CLICK_EXPAND13_initialise(void);
 
 #endif // DEVBOARD_CLICK_H

@@ -3,6 +3,7 @@ project (cascoda-bm-devboard)
 
 add_library(cascoda-bm-devboard
     ${PROJECT_SOURCE_DIR}/source/devboard_btn.c
+    ${PROJECT_SOURCE_DIR}/source/devboard_btn_ext.c
     ${PROJECT_SOURCE_DIR}/source/devboard_batt.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click_handlers_default.c

@@ -32,6 +32,8 @@
 #ifndef DEVBOARD_CLICK_HANDLERS_DEFAULT_H
 #define DEVBOARD_CLICK_HANDLERS_DEFAULT_H
 
+extern uint32_t WakeUpTime;
+
 /* application handlers */
 ca_error CLICK_Handler_Default_THERMO(void);
 ca_error CLICK_Handler_Default_THERMO3(void);
@@ -43,5 +45,6 @@ ca_error CLICK_Handler_Default_MOTION(void);
 ca_error CLICK_Handler_Default_RELAY(void);
 ca_error CLICK_Handler_Default_AMBIENT8(void);
 ca_error CLICK_Handler_Default_FAN(void);
+ca_error CLICK_Handler_Default_EXPAND13(void);
 
 #endif // DEVBOARD_CLICK_HANDLERS_DEFAULT_H

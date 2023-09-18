@@ -33,8 +33,6 @@
  * CLICK sensor interface for devboard
 */
 
-#include <stdio.h>
-
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_wait.h"
@@ -47,6 +45,7 @@
 #include "airquality4_click.h"
 #include "ambient8_click.h"
 #include "environment2_click.h"
+#include "expand13_click.h"
 #include "fan_click.h"
 #include "hvac_click.h"
 #include "motion_click.h"
@@ -279,6 +278,15 @@ ca_error CLICK_FAN_acquisition(data_fan *data)
 }
 
 
+ca_error CLICK_EXPAND13_acquisition(data_expand13 *data)
+{
+	data->status = MIKROSDK_EXPAND13_Acquire(&data->port0);
+
+	if (data->status == EXPAND13_ST_FAIL)
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}
+
 /* THERMO3 click initialisation */
 ca_error CLICK_THERMO3_initialise(void)
 {
@@ -389,3 +397,18 @@ ca_error CLICK_FAN_initialise(void)
 	return CA_ERROR_SUCCESS;
 }
 
+
+/* EXPAND13 click initialisation */
+ca_error CLICK_EXPAND13_initialise(void)
+{
+	SENSORIF_I2C_Config(I2C_PORTNUM);
+	// NReset, Int
+	MIKROSDK_EXPAND13_pin_mapping(CLICK_RST_PIN, CLICK_INT_PIN);
+	// Alarm
+#if (EXPAND13_USE_INTERRUPT)
+	DVBD_SetGPIOWakeup();
+#endif
+	if (MIKROSDK_EXPAND13_Initialise())
+		return CA_ERROR_FAIL;
+	return CA_ERROR_SUCCESS;
+}

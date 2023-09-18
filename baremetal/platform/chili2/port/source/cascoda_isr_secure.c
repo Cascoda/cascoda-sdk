@@ -183,6 +183,7 @@ void TMR1_IRQHandler(void)
 {
 	/* clear all timer interrupt status bits */
 	TIMER1->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
+	CHILI_MicroTimerTick();
 }
 
 /******************************************************************************/

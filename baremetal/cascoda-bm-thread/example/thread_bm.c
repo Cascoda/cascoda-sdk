@@ -83,8 +83,6 @@ static void NCP_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 
 	BSP_ModuleSetGPIOPin(special_pins.LED_RED, LED_OFF);
 	BSP_ModuleSetGPIOPin(special_pins.LED_GREEN, LED_ON);
-
-	EVBME_SwitchClock(pDeviceRef, 1);
 }
 
 /**

@@ -119,8 +119,6 @@ static void System_Init()
 	// Initialisation of Chip and EVBME
 	StartupStatus = EVBMEInitialise(CA_TARGET_NAME, &sDeviceRef);
 
-	EVBME_SwitchClock(&sDeviceRef, 1);
-
 	PlatformRadioInitWithDev(&sDeviceRef);
 
 	OT_INSTANCE = otInstanceInitSingle();

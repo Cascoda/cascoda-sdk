@@ -38,8 +38,8 @@
 #include "ca821x-posix-thread/posix-platform.h"
 #include "openthread/platform/alarm-milli.h"
 
-static bool           s_is_running = false;
-static uint32_t       s_alarm      = 0;
+static bool            s_is_running = false;
+static uint32_t        s_alarm      = 0;
 static struct timespec s_start;
 
 void posixPlatformAlarmInit(void)

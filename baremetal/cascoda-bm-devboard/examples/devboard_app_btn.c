@@ -4,7 +4,13 @@
  *
  */
 /*
- * Example application for onboard LEDs and Buttons
+ * Example application for onboard Buttons
+*/
+/*
+ * SW1: Button 1	POS2
+ * SW2: Button 2	POS2
+ * SW3: Button 3	POS2
+ * SW4: Led for On	POS2
 */
 
 #include <stdio.h>
@@ -19,154 +25,89 @@
 #include "cascoda-bm/test15_4_evbme.h"
 #include "devboard_btn.h"
 
-#define LED_0_PERIOD 1000
-#define LED_1_PERIOD 1000
-#define LED_2_PERIOD 1000
-#define LED_0_DELAY 0
-#define LED_1_DELAY 333
-#define LED_2_DELAY 666
-
 #define DEF_SHORT_CB 1 /* short callback defined */
 #define DEF_HOLD_CB 1  /* hold  callback defined */
 #define DEF_LONG_CB 1  /* long  callback defined */
 
 #define BTN_LONG_TIME_THRESHOLD 2000 /* time threshold to trigger button long function */
 #define BTN_HOLD_TIME_INTERVAL 400   /* Time intervall for button hold time function */
-#define BTN_LED_ONTIME 200           /* LED on time for button functions */
 
 #define WAKEUP_TIME 10000
 
 #define USE_INTERRUPTS 0 /* power-down and interrupts when 1, polling when 0 */
 
-static ca_tasklet LEDsWakeupTasklet;
+#define BLINK_PERIOD_MS 500
 
-static u32_t holdcount               = 0;
-static u32_t led_on_time[NUM_LEDBTN] = {0, 0, 0, 0};
+static u32_t holdcount[3] = {0, 0, 0};
+ca_tasklet   blink_tasklet;
 
-// button short press callback
+struct blink_ctx
+{
+	ca_tasklet *tasklet;
+	u8_t        led;
+};
+
+// button short press callbacks
 static void short_press_cb(void *context)
 {
-	(void)context;
-	led_on_time[DEV_SWITCH_1] = TIME_ReadAbsoluteTime();
-	printf("Button short pressed!\n");
-	holdcount = 0;
+	u8_t nr = *(u8_t *)context;
+	printf("Button %d short pressed\n", nr);
+	holdcount[nr - 1] = 0;
 }
 
-// button hold callback
+// button hold callbacks
 static void hold_cb(void *context)
 {
-	(void)context;
-	led_on_time[DEV_SWITCH_2] = TIME_ReadAbsoluteTime();
-	++holdcount;
-	printf("Button held! (%ld)\n", holdcount);
+	u8_t nr = *(u8_t *)context;
+	++holdcount[nr - 1];
+	printf("Button %d held (%ld)\n", nr, holdcount[nr - 1]);
 }
 
-// button long press callback
+// button long press callbacks
 static void long_press_cb(void *context)
 {
-	(void)context;
-	led_on_time[DEV_SWITCH_3] = TIME_ReadAbsoluteTime();
-	printf("Button long pressed!\n");
-	holdcount = 0;
-}
-
-// LEDs blinking, used when not compiled in interrupt/powerdown mode as messages are available
-#if (!USE_INTERRUPTS)
-static void LEDBlinkHandler(void)
-{
-	static u32_t lastcurTime = 0;
-	u32_t        curTime     = TIME_ReadAbsoluteTime();
-	u8_t         pinstate;
-
-	/* turns the LEDs on and off for LED_X_PERIOD after LED_X_DELAY (to be able to stagger them) */
-	if (((curTime % LED_0_PERIOD) == LED_0_DELAY) && ((lastcurTime % LED_0_PERIOD) != LED_0_DELAY) &&
-	    (curTime >= LED_0_PERIOD))
-	{
-		DVBD_Sense(DEV_SWITCH_1, &pinstate);
-		DVBD_SetLED(DEV_SWITCH_1, !pinstate);
-	}
-	if (((curTime % LED_1_PERIOD) == LED_1_DELAY) && ((lastcurTime % LED_1_PERIOD) != LED_1_DELAY) &&
-	    (curTime >= LED_1_PERIOD))
-	{
-		DVBD_Sense(DEV_SWITCH_2, &pinstate);
-		DVBD_SetLED(DEV_SWITCH_2, !pinstate);
-	}
-	if (((curTime % LED_2_PERIOD) == LED_2_DELAY) && ((lastcurTime % LED_2_PERIOD) != LED_2_DELAY) &&
-	    (curTime >= LED_2_PERIOD))
-	{
-		DVBD_Sense(DEV_SWITCH_3, &pinstate);
-		DVBD_SetLED(DEV_SWITCH_3, !pinstate);
-	}
-
-	lastcurTime = curTime;
-}
-#endif
-
-// LEDs mirroring button presses, used when compiled in interrupt/powerdown mode
-// led 0: short press
-// led 1: hold
-// led 2: long press
-#if USE_INTERRUPTS
-static void LEDBtnHandler(void)
-{
-	for (u8_t i = 0; i < NUM_LEDBTN; ++i)
-	{
-		if (led_on_time[i] != 0)
-		{
-			if (TIME_ReadAbsoluteTime() < (led_on_time[i] + BTN_LED_ONTIME))
-			{
-				DVBD_SetLED(i, LED_ON);
-			}
-			else
-			{
-				led_on_time[i] = 0;
-				DVBD_SetLED(i, LED_OFF);
-			}
-		}
-		else
-		{
-			DVBD_SetLED(i, LED_OFF);
-		}
-	}
-}
-#endif
-
-// LEDs all on periodaically for wakeup
-static ca_error LEDsWakeUp(void *aContext)
-{
-	led_on_time[DEV_SWITCH_1] = TIME_ReadAbsoluteTime();
-	led_on_time[DEV_SWITCH_2] = TIME_ReadAbsoluteTime();
-	led_on_time[DEV_SWITCH_3] = TIME_ReadAbsoluteTime();
-	TASKLET_ScheduleDelta(&LEDsWakeupTasklet, WAKEUP_TIME, NULL);
-	return CA_ERROR_SUCCESS;
+	u8_t nr = *(u8_t *)context;
+	printf("Button %d long pressed!\n", nr);
+	holdcount[nr - 1] = 0;
 }
 
 // application initialisation
 static void hardware_init(void)
 {
-	/* Register the first 3 LEDS as output */
-	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_2);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_2);
+	static u8_t nr[3] = {1, 2, 3};
 
-// Register the last button (3) as input
+	/* Register the SW4 as LED */
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
+	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
+
+	/* Register SW1/SW2/SW3 as Buttons */
 #if USE_INTERRUPTS
-	DVBD_RegisterButtonIRQInput(DEV_SWITCH_4, JUMPER_POS_2);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_3, JUMPER_POS_2);
 #else
-	DVBD_RegisterButtonInput(DEV_SWITCH_4, JUMPER_POS_2);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_1, JUMPER_POS_2);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_2, JUMPER_POS_2);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_3, JUMPER_POS_2);
 #endif
+	DVBD_SetLED(DEV_SWITCH_1, 1);
+	DVBD_SetLED(DEV_SWITCH_2, 1);
+	DVBD_SetLED(DEV_SWITCH_3, 0);
 #if DEF_SHORT_CB
-	DVBD_SetButtonShortPressCallback(DEV_SWITCH_4, &short_press_cb, NULL, BTN_SHORTPRESS_RELEASED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_1, &short_press_cb, &nr[0], BTN_SHORTPRESS_RELEASED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &short_press_cb, &nr[1], BTN_SHORTPRESS_RELEASED);
+	DVBD_SetButtonShortPressCallback(DEV_SWITCH_3, &short_press_cb, &nr[2], BTN_SHORTPRESS_RELEASED);
 #endif
 #if DEF_HOLD_CB
-	DVBD_SetButtonHoldCallback(DEV_SWITCH_4, &hold_cb, NULL, BTN_HOLD_TIME_INTERVAL);
+	DVBD_SetButtonHoldCallback(DEV_SWITCH_1, &hold_cb, &nr[0], BTN_HOLD_TIME_INTERVAL);
+	DVBD_SetButtonHoldCallback(DEV_SWITCH_2, &hold_cb, &nr[1], BTN_HOLD_TIME_INTERVAL);
+	DVBD_SetButtonHoldCallback(DEV_SWITCH_3, &hold_cb, &nr[2], BTN_HOLD_TIME_INTERVAL);
 #endif
 #if DEF_LONG_CB
-	DVBD_SetButtonLongPressCallback(DEV_SWITCH_4, &long_press_cb, NULL, BTN_LONG_TIME_THRESHOLD);
+	DVBD_SetButtonLongPressCallback(DEV_SWITCH_1, &long_press_cb, &nr[0], BTN_LONG_TIME_THRESHOLD);
+	DVBD_SetButtonLongPressCallback(DEV_SWITCH_2, &long_press_cb, &nr[1], BTN_LONG_TIME_THRESHOLD);
+	DVBD_SetButtonLongPressCallback(DEV_SWITCH_3, &long_press_cb, &nr[2], BTN_LONG_TIME_THRESHOLD);
 #endif
-
-	TASKLET_Init(&LEDsWakeupTasklet, &LEDsWakeUp);
-	TASKLET_ScheduleDelta(&LEDsWakeupTasklet, WAKEUP_TIME, NULL);
 }
 
 // application polling function
@@ -174,22 +115,14 @@ void hardware_poll(void)
 {
 	/* check buttons */
 	DVBD_PollButtons();
-
-/* handle LEDs */
-#if (USE_INTERRUPTS)
-	LEDBtnHandler();
-#else
-	LEDBlinkHandler();
-#endif
-
-	/* check buttons */
-	DVBD_PollButtons();
 }
 
 // application reinitialise after wakeup
 void hardware_reinitialise(void)
 {
-	holdcount = 0;
+	holdcount[0] = 0;
+	holdcount[1] = 0;
+	holdcount[2] = 0;
 }
 
 // application level check if device can go to sleep
@@ -200,12 +133,6 @@ bool hardware_can_sleep(void)
 
 	if (!DVBD_CanSleep())
 		return false;
-
-	for (u8_t i = 0; i < NUM_LEDBTN; ++i)
-	{
-		if (led_on_time[i] != 0)
-			return false;
-	}
 
 	return true;
 }
@@ -219,7 +146,7 @@ void hardware_sleep(struct ca821x_dev *pDeviceRef)
 	TASKLET_GetTimeToNext(&taskletTimeLeft);
 
 	/* check that it's worth going to sleep */
-	if (taskletTimeLeft > BTN_LED_ONTIME)
+	if (taskletTimeLeft > 100)
 	{
 		/* and sleep */
 		DVBD_DevboardSleep(taskletTimeLeft, pDeviceRef);
@@ -254,6 +181,18 @@ static void sleep_if_possible(struct ca821x_dev *pDeviceRef)
 	hardware_sleep(pDeviceRef);
 }
 
+ca_error blinkCB(void *_ctx)
+{
+	struct blink_ctx *ctx = (struct blink_ctx *)_ctx;
+	u8_t              out;
+	DVBD_SenseOutput(ctx->led, &out);
+	out = !out;
+	DVBD_SetLED(ctx->led, out);
+
+	TASKLET_ScheduleDelta(ctx->tasklet, BLINK_PERIOD_MS, _ctx);
+	return CA_ERROR_SUCCESS;
+}
+
 // main loop
 int main(void)
 {
@@ -265,6 +204,13 @@ int main(void)
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
 	hardware_init();
+
+	struct blink_ctx ctx = {
+	    &blink_tasklet,
+	    DEV_SWITCH_1,
+	};
+	TASKLET_Init(&blink_tasklet, &blinkCB);
+	TASKLET_ScheduleDelta(&blink_tasklet, BLINK_PERIOD_MS, &ctx);
 
 	/* Endless Polling Loop */
 	while (1)

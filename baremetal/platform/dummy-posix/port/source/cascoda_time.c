@@ -49,3 +49,26 @@ void BSP_WaitTicks(u32_t ticks)
 	Start = AbsoluteTicks;
 	while ((AbsoluteTicks - Start) < ticks) BSP_Waiting();
 } // End of BSP_WaitTicks()
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface_core.h for docs                          *
+ *---------------------------------------------------------------------------*/
+void BSP_MicroTimerStart(void)
+{
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface_core.h for docs                          *
+ *---------------------------------------------------------------------------*/
+u32_t BSP_MicroTimerStop(void)
+{
+	return (0);
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface_core.h for docs                          *
+ *---------------------------------------------------------------------------*/
+u32_t BSP_MicroTimerGet(void)
+{
+	return (0);
+}

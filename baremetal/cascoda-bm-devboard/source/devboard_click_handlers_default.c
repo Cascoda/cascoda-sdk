@@ -47,8 +47,12 @@
 #include "motion_click.h"
 #include "relay_click.h"
 #include "sht_click.h"
+#include "expand13_click.h"
 #include "thermo3_click.h"
 #include "thermo_click.h"
+
+/* wakeup time */
+uint32_t WakeUpTime = 0;
 
 const char *click_name_default[] = {
     "-",
@@ -62,6 +66,7 @@ const char *click_name_default[] = {
     "RELAY",
     "AMBIENT8",
     "FAN",
+    "EXPAND13",
 };
 
 /* reporting functions used here */
@@ -75,6 +80,7 @@ static void report_MOTION(data_motion data);
 static void report_RELAY(data_relay data);
 static void report_AMBIENT8(data_ambient8 data);
 static void report_FAN(data_fan data);
+static void report_EXPAND13(data_expand13 data);
 
 /* Handler for THERMO Click */
 ca_error CLICK_Handler_Default_THERMO(void)
@@ -227,10 +233,25 @@ ca_error CLICK_Handler_Default_FAN(void)
 }
 
 
+/* Handler Example for EXPAND13 Click */
+ca_error CLICK_Handler_Default_EXPAND13(void)
+{
+	data_expand13 data;
+
+	/* data acquisition */
+	if (CLICK_EXPAND13_acquisition(&data))
+		return CA_ERROR_FAIL;
+
+	/* data processing */
+	report_EXPAND13(data);
+
+	return CA_ERROR_SUCCESS;
+}
+
 /* print time and click type */
 static void printClickType(dvbd_click_type type)
 {
-	printf("%4us %-12s: ", (TIME_ReadAbsoluteTime() / 1000), click_name_default[type]);
+	printf("%4us %-12s: ", ((TIME_ReadAbsoluteTime() - WakeUpTime) / 1000), click_name_default[type]);
 }
 
 /* Reporting for THERMO Click */
@@ -517,3 +538,19 @@ static void report_FAN(data_fan data)
 	printf("\n");
 }
 
+
+/* Reporting for EXPAND13 Click */
+static void report_EXPAND13(data_expand13 data)
+{
+	printClickType(STYPE_EXPAND13);
+
+	if (data.status == RELAY_ST_FAIL)
+	{
+		printf("Data Acquisition Fail");
+	}
+	else
+	{
+		printf(" Port 0: %02X", data.port0);
+	}
+	printf("\n");
+}

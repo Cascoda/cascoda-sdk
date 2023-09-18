@@ -37,3 +37,18 @@ u32_t TIME_ReadAbsoluteTime(void)
 {
 	return BSP_ReadAbsoluteTime();
 }
+
+void TIME_MicroTimerStart(void)
+{
+	BSP_MicroTimerStart();
+}
+
+u32_t TIME_MicroTimerStop(void)
+{
+	return (BSP_MicroTimerStop());
+}
+
+u32_t TIME_MicroTimerGet(void)
+{
+	return (BSP_MicroTimerGet());
+}

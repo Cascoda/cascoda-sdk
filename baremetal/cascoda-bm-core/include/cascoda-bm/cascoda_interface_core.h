@@ -156,6 +156,24 @@ void BSP_SetSPIMOSIOutput(void);
  */
 void BSP_SetSPIMOSITristate(void);
 
+/**
+ * \brief start microseconds timer
+ *
+ */
+void BSP_MicroTimerStart(void);
+
+/**
+ * \brief stop microseconds timer
+ * @return time since start in [us]
+ */
+u32_t BSP_MicroTimerStop(void);
+
+/**
+ * \brief get microseconds timer while running
+ * @return time since start in [us]
+ */
+u32_t BSP_MicroTimerGet(void);
+
 #endif // CASCODA_INTERFACE_CORE_H
 
 /**

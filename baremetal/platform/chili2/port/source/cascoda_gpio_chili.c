@@ -438,6 +438,100 @@ ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled)
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleRegisterGPIOSharedInputOutputOD(struct gpio_input_args *args, module_pin_type isled)
+{
+	u8_t                mpin     = args->mpin;
+	module_pin_pullup   pullup   = args->pullup;
+	module_pin_debounce debounce = args->debounce;
+	module_pin_irq      irq      = args->irq;
+	int (*callback)(void)        = args->callback;
+
+	u8_t    index;
+	GPIO_T *port;
+
+	/* pin in dynamic list ? */
+	if (((index = CHILI_ModuleGetIndexFromPin(mpin))) == P_NA)
+		return CA_ERROR_NO_ACCESS;
+	/* pin already registered or used ? */
+	if (ModulePinStatus[index].blocked)
+		return CA_ERROR_NO_ACCESS;
+	/* irq but no callback function defined ? */
+	if ((irq != MODULE_PIN_IRQ_OFF) && (callback == NULL))
+		return CA_ERROR_INVALID_ARGS;
+
+	port = MGPIO_PORT(ModulePinList[index].portnum);
+
+	GPIO_SetMode(port, BITMASK(ModulePinList[index].portbit), GPIO_MODE_OPEN_DRAIN);
+	if (pullup == MODULE_PIN_PULLUP_ON)
+		GPIO_SetPullCtl(port, BITMASK(ModulePinList[index].portbit), GPIO_PUSEL_PULL_UP);
+	else
+		GPIO_SetPullCtl(port, BITMASK(ModulePinList[index].portbit), GPIO_PUSEL_DISABLE);
+	if (debounce == MODULE_PIN_DEBOUNCE_ON)
+		GPIO_ENABLE_DEBOUNCE(port, BITMASK(ModulePinList[index].portbit));
+	else
+		GPIO_DISABLE_DEBOUNCE(port, BITMASK(ModulePinList[index].portbit));
+	if (irq != MODULE_PIN_IRQ_OFF)
+	{
+		if (irq == MODULE_PIN_IRQ_BOTH)
+			GPIO_EnableInt(port, ModulePinList[index].portbit, GPIO_INT_BOTH_EDGE);
+		else if (irq == MODULE_PIN_IRQ_RISE)
+			GPIO_EnableInt(port, ModulePinList[index].portbit, GPIO_INT_RISING);
+		else if (irq == MODULE_PIN_IRQ_FALL)
+			GPIO_EnableInt(port, ModulePinList[index].portbit, GPIO_INT_FALLING);
+		if (ModulePinList[index].portnum == PN_A)
+		{
+			NVIC_EnableIRQ(GPA_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_B)
+		{
+			NVIC_EnableIRQ(GPB_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_C)
+		{
+			NVIC_EnableIRQ(GPC_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_D)
+		{
+			NVIC_EnableIRQ(GPD_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_E)
+		{
+			NVIC_EnableIRQ(GPE_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_F)
+		{
+			NVIC_EnableIRQ(GPF_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_G)
+		{
+			NVIC_EnableIRQ(GPG_IRQn);
+		}
+		else if (ModulePinList[index].portnum == PN_H)
+		{
+			NVIC_EnableIRQ(GPH_IRQn);
+		}
+	}
+	else
+	{
+		GPIO_DisableInt(port, ModulePinList[index].portbit);
+		/* don't disable NVIC otherwise other interrupts might be compromised */
+	}
+
+	ModulePinStatus[index].blocked   = 1;
+	ModulePinStatus[index].io        = MODULE_PIN_DIR_OUT;
+	ModulePinStatus[index].pullup    = pullup;
+	ModulePinStatus[index].debounce  = debounce;
+	ModulePinStatus[index].isled     = isled;
+	ModulePinStatus[index].permanent = 0;
+	ModulePinStatus[index].irq       = irq;
+	ModulePinCallbacks[index]        = callback;
+
+	return CA_ERROR_SUCCESS;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	u8_t    index;
@@ -513,6 +607,30 @@ ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val)
 		return CA_ERROR_NO_ACCESS;
 
 	*val = MGPIO_PORTPIN(ModulePinList[index].portnum, ModulePinList[index].portbit);
+
+	return CA_ERROR_SUCCESS;
+}
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleSenseGPIOPinOutput(u8_t mpin, u8_t *val)
+{
+	u8_t index;
+
+	/* pin in dynamic list ? */
+	if (((index = CHILI_ModuleGetIndexFromPin(mpin))) == P_NA)
+		return CA_ERROR_NO_ACCESS;
+	/* pin not registered ? */
+	if (!ModulePinStatus[index].blocked)
+		return CA_ERROR_NO_ACCESS;
+	GPIO_T  *port = MGPIO_PORT(ModulePinList[index].portnum);
+	uint32_t mode = port->MODE;
+	/* pin not an output? */
+	if (((mode >> (2 * ModulePinList[index].portbit)) & 0x03) == 0)
+		return CA_ERROR_NO_ACCESS;
+
+	*val = ((port->DOUT) >> ModulePinList[index].portbit) & 1;
 
 	return CA_ERROR_SUCCESS;
 }

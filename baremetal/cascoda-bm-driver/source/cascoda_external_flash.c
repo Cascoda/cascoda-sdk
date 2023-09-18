@@ -294,6 +294,7 @@ ca_error external_flash_evbme_send_upstream(void *aContext)
 
 ca_error external_flash_erase_helper(void *aContext)
 {
+	ca_log_debg("external_flash_erase_helper()");
 	ca_error           cmd_status = CA_ERROR_SUCCESS;
 	ExtFlashEraseInfo *info       = ((ExtFlashEraseInfo *)aContext);
 
@@ -346,11 +347,15 @@ ca_error external_flash_write_helper(void *aContext)
 		if (info->upstreamCallback)
 		{
 			upstream_status = cmd_status;
+			ca_log_debg("executing upstream callback()");
 			info->upstreamCallback(&upstream_status);
 		}
 
 		if (cmd_status == CA_ERROR_SUCCESS && info->otaCallback)
+		{
+			ca_log_debg("executing ota callback()");
 			info->otaCallback(NULL);
+		}
 	}
 
 	return CA_ERROR_SUCCESS;

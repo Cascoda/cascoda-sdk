@@ -133,7 +133,6 @@ static void SED_Initialise(u8_t status, struct ca821x_dev *pDeviceRef)
 
 	BSP_ModuleSetGPIOPin(ledPin, LED_ON);
 
-	EVBME_SwitchClock(pDeviceRef, 1);
 	SENSORIF_I2C_Config(1); // I2C Portnum = 1
 	SENSORIF_I2C_Init();
 	SIF_LTR303ALS_Initialise();

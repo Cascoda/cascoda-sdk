@@ -37,6 +37,10 @@
 
 #define BTN_MIN_PRESS_TIME 5 /* minimum press time for additional de-bouncing */
 
+#ifndef BTN_SHARED_SENSE_DELAY
+#define BTN_SHARED_SENSE_DELAY 2
+#endif
+
 /** Jumper position controls which module pin is used for the LED/Button */
 typedef enum dvbd_led_btn_jumper_position
 {
@@ -69,6 +73,14 @@ enum dvbd_button_state
 {
 	BTN_PRESSED  = 0,
 	BTN_RELEASED = 1
+};
+
+enum dvbd_pin_type
+{
+	PINTYPE_NONE   = 0,
+	PINTYPE_LED    = 1,
+	PINTYPE_BTN    = 2,
+	PINTYPE_SHARED = 3,
 };
 
 /* dvbd callback type definition */
@@ -131,6 +143,24 @@ ca_error DVBD_RegisterButtonInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_posit
 ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
+ * \brief Set the functionality of a button to be a shared input/output
+ * \param ledBtn - reference to button
+ * \param jumperPos - posititon of the jumper
+ * \return status
+ *
+ */
+ca_error DVBD_RegisterSharedButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
+
+/**
+ * \brief Set the functionality of a button to be shared interrupt input/output
+ * \param ledBtn - reference to button
+ * \param jumperPos - posititon of the jumper
+ * \return status
+ *
+ */
+ca_error DVBD_RegisterSharedIRQButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
+
+/**
  * \brief De-Register an LED or Button Pin
  * \param ledBtn - reference to LED/Button
  * \param jumperPos - position of the jumper
@@ -147,6 +177,15 @@ ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumpe
  *
  */
 ca_error DVBD_Sense(dvbd_led_btn ledBtn, u8_t* val);
+
+/**
+ * \brief Get the output state of the LED
+ * \param ledBtn - reference to LED
+ * \param val - the state of the LED
+ * \return status
+ *
+ */
+ca_error DVBD_SenseOutput(dvbd_led_btn ledBtn, u8_t* val);
 
 /**
  * \brief Set a callback function to a button when it is short pressed

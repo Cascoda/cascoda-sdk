@@ -63,6 +63,31 @@ uint32_t TIME_ReadAbsoluteTime(void);
  */
 int TIME_Cmp(uint32_t aT1, uint32_t aT2);
 
+/*---------------------------------------------------------------------------*/
+/* MicroSeconds Timer functions:                                             */
+/* Timer has to be specifically enabled (by calling BSP_MicroTimerStart()).  */
+/* 32-bit extension gives a run time of 71.582 minutes until wrap-around.    */
+/* Timer does not operate in power-down modes as no time base available.     */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * \brief start microseconds timer
+ *
+ */
+void TIME_MicroTimerStart(void);
+
+/**
+ * \brief stop microseconds timer
+ * @return time since start in [us]
+ */
+uint32_t TIME_MicroTimerStop(void);
+
+/**
+ * \brief get microseconds timer while running
+ * @return time since start in [us]
+ */
+uint32_t TIME_MicroTimerGet(void);
+
 #endif /* INCLUDE_CASCODA_BM_CASCODA_TIME_H_ */
 
 /**

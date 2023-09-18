@@ -16,6 +16,7 @@ add_library(mikrosdk-click
 	${PROJECT_SOURCE_DIR}/source/fan.c
 	${PROJECT_SOURCE_DIR}/source/buzz2.c
 	${PROJECT_SOURCE_DIR}/source/led3.c
+	${PROJECT_SOURCE_DIR}/source/expand13.c
 	)
 
 target_include_directories(mikrosdk-click

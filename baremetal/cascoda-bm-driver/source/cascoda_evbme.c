@@ -1075,6 +1075,9 @@ ca_error EVBMEInitialise(const char *aAppName, struct ca821x_dev *pDeviceRef)
 
 	pDeviceRef->callbacks.generic_dispatch = &EVBME_NotHandled;
 
+	// EVBME connected, so use the radio for the clock reference
+	EVBME_SwitchClock(pDeviceRef, 1);
+
 	if (status == CA_ERROR_SUCCESS)
 	{
 		RAND_SetCryptoEntropyDev(pDeviceRef);

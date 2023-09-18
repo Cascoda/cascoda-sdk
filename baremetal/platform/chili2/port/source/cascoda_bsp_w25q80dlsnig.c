@@ -183,15 +183,21 @@ static bool pageOverflow(uint32_t startAddress, uint8_t numOfBytes)
 */
 static ca_error external_flash_schedule(void *_notused)
 {
+	ca_log_debg("external_flash_schedule()");
 	(void)_notused;
 
 	isCalledWithinCallback = true;
 
 	if (nextCallbackToRun)
 	{
+		ca_log_debg("\tnextCallbackToRun is set");
 		ExternalFlashCallback tempCallback = nextCallbackToRun;
 		nextCallbackToRun                  = NULL;
 		tempCallback(callbackContext);
+	}
+	else
+	{
+		ca_log_debg("\tnextCallbackToRun is NULL");
 	}
 
 	// In case no BSP_ExternalFlash* functions were called in the scheduled callback.
@@ -223,9 +229,14 @@ static ca_error handlePostInstructionWaiting(void *_notused)
 
 	if (nextCallbackToRun)
 	{
+		ca_log_debg("\tnextCallbackToRun is set");
 		ExternalFlashCallback tempCallback = nextCallbackToRun;
 		nextCallbackToRun                  = NULL;
 		tempCallback(callbackContext);
+	}
+	else
+	{
+		ca_log_debg("\tnextCallbackToRun is NULL");
 	}
 
 	// In case no BSP_ExternalFlash* functions were called in the scheduled callback.
@@ -817,14 +828,22 @@ ca_error BSP_ExternalFlashGetStatus(struct ExternalFlashStatus *status)
  *---------------------------------------------------------------------------*/
 ca_error BSP_ExternalFlashScheduleCallback(ExternalFlashCallback aCallback, void *aContext)
 {
+	ca_log_debg("BSP_ExternalFlashScheduleCallback()");
 	if (nextCallbackToRun)
+	{
+		ca_log_debg("\tnextCallbackToRun is set");
 		return CA_ERROR_ALREADY;
+	}
+
+	ca_log_debg("\tnextCallbackToRun is NULL");
 
 	nextCallbackToRun = aCallback;
 	callbackContext   = aContext;
 
 	if (!cycleInProgress)
 		return TASKLET_ScheduleDelta(&callbackSchedulingTasklet, 0, NULL);
+	else
+		return CA_ERROR_BUSY;
 
 	return CA_ERROR_SUCCESS;
 }

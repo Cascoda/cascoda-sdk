@@ -232,6 +232,11 @@ ca_error BSP_ModuleRegisterGPIOOutputOD(u8_t mpin, module_pin_type isled)
 	return CA_ERROR_NOT_HANDLED;
 }
 
+ca_error BSP_ModuleRegisterGPIOSharedInputOutputOD(struct gpio_input_args *args, module_pin_type isled)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
 ca_error BSP_ModuleDeregisterGPIOPin(u8_t mpin)
 {
 	return CA_ERROR_NOT_HANDLED;
@@ -248,6 +253,11 @@ ca_error BSP_ModuleSetGPIOPin(u8_t mpin, u8_t val)
 }
 
 ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
+ca_error BSP_ModuleSenseGPIOPinOutput(u8_t mpin, u8_t *val)
 {
 	return CA_ERROR_NOT_HANDLED;
 }

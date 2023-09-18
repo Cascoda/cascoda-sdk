@@ -80,7 +80,9 @@ uint64_t HASH_fnv1a_64(const void *data_in, size_t num_bytes)
 
 void HASH_fnv1a_64_stream(const void *data_in, size_t num_bytes, uint64_t *hash)
 {
+	ca_log_debg("Data in hash function: num_bytes:%d", num_bytes);
 	const uint8_t *data = data_in;
+	for (uint8_t i = 0; i < 10; ++i) ca_log_debg("%02x ", data[i]);
 
 	for (size_t i = 0; i < num_bytes; i++)
 	{

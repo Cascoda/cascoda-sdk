@@ -7,14 +7,14 @@ The Thread development provides four programmable buttons and LEDs, and two Mikr
 
 <br><br>
 
-<p align="center"><img src="imgs/devboard.jpg" width="50%" align="center"></p>
+<p align="center"><img src="imgs/devboard.jpg" width="80%" align="center"></p>
 
 ### Features
 - Certified Thread-based radio supporting meshed networking, with long range
 - Easy integration with Cascoda's Border Router for IPv4/IPv6 backhaul connectivity
 - Ultra-low-power battery operation & battery charging
 - Four programmable buttons & LEDs
-- E-Paper display integration
+- E-Paper display integration ([click here](./howto-devboard-epaper.md) for help connecting the display)
 - A library of sensor & actuator plug-in boards, to develop your solution
 - Automatic code generation for your chosen target combination of sensors/actuators/switches/leds
 

@@ -33,8 +33,6 @@
  * Example click interface driver
 */
 
-#include <stdio.h>
-
 /* include <device>_drv.h and <device>_click.h */
 #include "fan_click.h"
 #include "fan_drv.h"
