@@ -9,7 +9,7 @@ This also generates a random device password and precomputed SPAKE2+ records
 to allow much higher PBKDF iteration counts and improve security of OC_SPAKE.
 The password and other parameters of knx-gen-data can also be manually 
 controlled as additional command line arguments. The form for this is 
-`knx-gen-data <output-file.bin> <serial-number> [password [salt [rand [iter]]]]`.  
+`knx-gen-data <output-file.bin> <serial-number> [password [eui64 [thread_pw [salt]]]]`.  
 The command for flashing `serialno.bin` onto a Chili is 
 `chilictl flash -m serialno.bin`
 

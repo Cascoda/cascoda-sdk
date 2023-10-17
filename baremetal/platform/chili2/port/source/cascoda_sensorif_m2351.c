@@ -48,6 +48,11 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_config.h"
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 

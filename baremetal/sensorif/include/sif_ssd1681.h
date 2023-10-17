@@ -38,9 +38,14 @@
 
 #include <stdint.h>
 #include "ca821x_error.h"
+#include "cascoda_chili_config.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
 #endif
 
 /***********************************************************/

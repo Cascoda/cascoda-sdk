@@ -47,7 +47,9 @@ if((UNIX OR MINGW) AND (NOT CASCODA_BUILD_DUMMY))
 endif()
 
 # Baremetal
+if(CASCODA_BUILD_DUMMY OR ((NOT UNIX) AND (NOT MINGW)))
 add_subdirectory(baremetal)
+endif()
 
 # IoTivity-Lite port & source code
 add_subdirectory(ocf)

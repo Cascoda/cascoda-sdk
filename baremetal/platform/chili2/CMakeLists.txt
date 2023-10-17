@@ -163,6 +163,10 @@ if(NOT CASCODA_CHILI2_TRUSTZONE)
 	
 	#The non-trustzone chili2 platform can use the default partition file, so explicitly add this compile define here to dodge the error.
 	target_compile_definitions(chili2 PRIVATE CUSTOM_PARTITION_H)
+if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "NUMAKER_SPI0_NU6" 
+   OR CASCODA_CHILI2_CONFIG_STRING STREQUAL "NUMAKER_SPI1_CTR")
+	target_compile_definitions(chili2 INTERFACE USE_CRYSTAL_ON_NUMAKER_BOARD)
+endif()
 
 	target_link_libraries(chili2
 	PUBLIC

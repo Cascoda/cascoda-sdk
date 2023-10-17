@@ -10,6 +10,11 @@
 #include "cascoda-bm/cascoda_sensorif.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_config.h"
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 static uint8_t SENSORIF_I2CNUM_S;
 static I2C_T*  SENSORIF_I2CIF_S;
@@ -299,6 +304,13 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Init(void)
 
 __NONSECURE_ENTRY void SENSORIF_I2C_Deinit(void)
 {
+	/* wait (max. 100 us) until bus access has ended */
+	for (u8_t i = 0; i < 10; ++i)
+	{
+		BSP_WaitUs(10);
+		if (!(I2C_SMBusGetStatus(SENSORIF_I2CIF_S) & I2C_BUSSTS_BUSY_Msk))
+			break;
+	}
 	I2C_DisableInt(SENSORIF_I2CIF_S);
 	I2C_Close(SENSORIF_I2CIF_S);
 	if (SENSORIF_I2CNUM_S == 0)

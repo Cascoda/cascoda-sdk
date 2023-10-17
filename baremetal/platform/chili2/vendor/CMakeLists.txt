@@ -1,6 +1,11 @@
 # Global config ---------------------------------------------------------------
 project (nuvoton-vendor-lib)
 
+if(CASCODA_CHILI2_CONFIG_STRING STREQUAL "NUMAKER_SPI0_NU6" 
+   OR CASCODA_CHILI2_CONFIG_STRING STREQUAL "NUMAKER_SPI1_CTR")
+	add_compile_definitions(USE_CRYSTAL_ON_NUMAKER_BOARD)
+endif()
+
 set(VENDOR_SOURCES
 	${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/acmp.c
 	${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/bpwm.c
@@ -97,4 +102,3 @@ target_include_directories(m2351-ns
 target_link_libraries(m2351 PUBLIC m2351-mkrom)
 target_link_libraries(m2351-s PUBLIC m2351-mkrom)
 target_link_libraries(m2351-ns PUBLIC m2351-mkrom)
-

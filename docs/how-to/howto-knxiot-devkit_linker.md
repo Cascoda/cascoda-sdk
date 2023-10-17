@@ -1,5 +1,6 @@
-# KNX IoT Example Application - Getting Started Guide Linker
+# KNX IoT Example Application - Getting Started with the Linker
 
+This guide will help you configure your two development boards once they are on-boarded onto the same Thread network. By the end, you will be able to use a button on one devboard to control a light on the other.
 
 ## Step 0: Configuring using the Linker
 

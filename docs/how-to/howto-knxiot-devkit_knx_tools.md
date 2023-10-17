@@ -1,16 +1,20 @@
-# KNX IoT - Getting Started Guide with KNX tooling
+# KNX IoT - Getting Started Guide with ETS
+
+This guide will help you configure your two development boards once they are on-boarded onto the same Thread network. By the end, you will be able to use a button on one devboard to control a light on the other.
 
 ## Step 0: Requirements
 
 Please ensure you have the following hardware and software:
 
-- ETS, version with KNX IoT enabled - ETS 6.1.1 build 5752 or later
-- [Cascoda's KNX-IoT Development Kit](https://www.cascoda.com/products/thread-development-kit/)
+- ETS, version with KNX IoT enabled - ETS 6.1.1 build 5752 or later. A Beta version is available for KNX members.
+- [Cascoda's KNX-IoT Development Kit](https://www.cascoda.com/products/thread-development-kit/). 
     - The factory binaries do not work with ETS builds later than 5886 - this is because the later builds implement version 1.1.0 of the Point API specifications, which is not backwards compatible. If you would like to use later builds of ETS, you must first update the binaries on the development board.
 
 You also need to follow the [KNX IoT Getting Started Guide](howto-knxiot-devkit.md). You should have:
 - A border router connected to your PC, accessible via Ethernet
 - Devboards onboarded onto the Thread & visible on the Network Topology page
+
+If you have no prior knowledge of using ETS, please create an account at [my.knx.org](https://my.knx.org/en/index) and complete the free ETS eCampus course before proceeding with this guide.
 
 ## Step 1: Import the Test Project into ETS
 

@@ -621,7 +621,7 @@ static ca_error handleWakeupIndication(struct HWME_WAKEUP_indication_pset *param
 	return CA_ERROR_SUCCESS;
 }
 
-int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
+static int platformRadioInitWithDevNoEui(struct ca821x_dev *apDeviceRef)
 {
 	pDeviceRef = apDeviceRef;
 
@@ -644,10 +644,25 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 	//Reset the MAC to a default state
 	otPlatMlmeReset(NULL, true);
 
-	initIeeeEui64();
 	sRadioInitialised = 1;
 
 	return 0;
+}
+
+int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
+{
+	int error = platformRadioInitWithDevNoEui(apDeviceRef);
+	initIeeeEui64();
+
+	return error;
+}
+
+int PlatformRadioInitWithDevEui64(struct ca821x_dev *apDeviceRef, uint8_t *pEui64)
+{
+	int error = platformRadioInitWithDevNoEui(apDeviceRef);
+	memcpy(sIeeeEui64, pEui64, sizeof(sIeeeEui64));
+
+	return error;
 }
 
 int PlatformRadioInit(void)

@@ -44,7 +44,7 @@
 #include "mac_messages.h"
 
 /**
- * \brief Wait for specified Time in Microseconds (max. 1000)
+ * \brief Wait for specified Time in Microseconds (max. 999)
  *
  * \param us - Time in microseconds
  *

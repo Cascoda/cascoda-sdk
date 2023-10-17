@@ -110,6 +110,19 @@ int PlatformRadioInit(void);
 int PlatformRadioInitWithDev(struct ca821x_dev *pDeviceRef);
 
 /**
+ * Initialise the openthread platform layer with pDeviceRef as the device, and pEui64 as the EUI64.
+ *
+ * Either this, PlatformRadioInit or PlatformRadioInitWithDev must be used before openthread will
+ * be functional.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param pEui64 pointer to array containing the EUI64 to use
+ *
+ * @retval zero on success, nonzero on failure
+ */
+int PlatformRadioInitWithDevEui64(struct ca821x_dev *apDeviceRef, uint8_t *pEui64);
+
+/**
  * Determines whether or not an MCPS-DATA-INDICATION is currently expected,
  * based on the result of the previous poll.
  *
@@ -175,6 +188,25 @@ otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength);
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
 
 /**
+ * Helper function to attempt the Thread joining process, with an explicit
+ * passcode. The state of the Thread IPv6 interface (otIp6SetEnabled) upon
+ * returning from this function depends on the return code. Upon a success
+ * (OT_ERROR_ALREADY or OT_ERROR_NONE), the interface is left up, anticipating
+ * further radio activity.  Otherwise, it is brought down, anticipating being
+ * retried after a wait period.
+ * 
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param aInstance The openthread instance
+ * @param aPskd Pre-shared Key to use during the join
+ *
+ * @return Status of the join
+ * @retval OT_ERROR_NONE Successfully joined Thread Network (Thread IPv6 interface is left up)
+ * @retval OT_ERROR_ALREADY Device was already joined to Thread network (can leave with otInstanceFactoryReset) (Thread IPv6 interface is left up)
+ * @retval (other) Failed to join a Thread Network for the given reason. (Thread IPv6 interface is brought down)
+ */
+otError PlatformTryJoinWithPskd(struct ca821x_dev *pDeviceRef, otInstance *aInstance, const char *aPskd);
+
+/**
  * Helper function to print the Thread Joiner credentials (for instance, upon boot).
  *
  * This function prints the Thread Joiner credentials using printf. It also handles leaving the
@@ -187,6 +219,24 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
  * @param aMaxWaitMs The maximum time to stay awake to allow credentials to be read (USB only). Only required for devices that sleep.
  */
 otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs);
+
+/**
+ * Helper function to print the Thread Joiner credentials, with an explicit passcode (for instance, upon boot).
+ *
+ * This function prints the Thread Joiner credentials using printf. It also handles leaving the
+ * interface active in the case of USB, where going to sleep will kill the USB interface and prevent
+ * the information from being read. This function will not print the credentials if the device is
+ * already commissioned.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param aInstance The openthread instance
+ * @param aPskd Pre-shared Key to use during the join
+ * @param aMaxWaitMs The maximum time to stay awake to allow credentials to be read (USB only). Only required for devices that sleep.
+ */
+otError PlatformPrintJoinerCredentialsWithPskd(struct ca821x_dev *pDeviceRef,
+                                               otInstance        *aInstance,
+                                               uint32_t           aMaxWaitMs,
+                                               const char        *aPskd);
 
 /**
  * Helper function to erase the joiner credentials of this device.

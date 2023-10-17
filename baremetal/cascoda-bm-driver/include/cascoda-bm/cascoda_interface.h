@@ -47,9 +47,14 @@
 #include "cascoda-bm/cascoda_interface_core.h"
 #include "cascoda-util/cascoda_flash.h"
 #include "ca821x_api.h"
+#include "cascoda_chili_config.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
 #endif
 
 /****** Enum system core clock frequency [MHz] ******/
@@ -61,7 +66,17 @@ typedef enum fsys_mhz
 	FSYS_24MHZ = 24,
 	FSYS_32MHZ = 32,
 	FSYS_48MHZ = 48,
-	FSYS_64MHZ = 64
+	FSYS_64MHZ = 64,
+	// NOTE: The below mappings are there to clarify some of the logic in configuring the clocks.
+	FSYS_EXTERNAL_CA821X  = FSYS_4MHZ,
+	FSYS_EXTERNAL_NUMAKER = FSYS_12MHZ,
+	FSYS_INTERNAL_HIRC    = FSYS_12MHZ,
+	FSYS_INTERNAL_HIRC48  = FSYS_48MHZ,
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+	FSYS_EXTERNAL_SOURCE = FSYS_EXTERNAL_NUMAKER,
+#else
+	FSYS_EXTERNAL_SOURCE = FSYS_EXTERNAL_CA821X,
+#endif
 } fsys_mhz;
 
 /****** Enum for wakeup condition after reset ******/

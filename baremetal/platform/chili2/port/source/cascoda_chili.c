@@ -50,12 +50,17 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_config.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_secure.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 /* define system configuaration mask */
 #define CLKCFG_ENPLL 0x01
@@ -288,6 +293,14 @@ void CHILI_GPIOInit(void)
 	CHILI_ModuleSetMFP(X32O_PNUM, X32O_PIN, PMFP_X32);
 	GPIO_SetPullCtl(X32I_PORT, BITMASK(X32I_PIN), GPIO_PUSEL_DISABLE);
 	GPIO_SetPullCtl(X32O_PORT, BITMASK(X32O_PIN), GPIO_PUSEL_DISABLE);
+
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+	/* XT1I / XT1O MFP */
+	CHILI_ModuleSetMFP(XT1I_PNUM, XT1I_PIN, PMFP_XT1);
+	CHILI_ModuleSetMFP(XT1O_PNUM, XT1O_PIN, PMFP_XT1);
+	GPIO_SetPullCtl(XT1I_PORT, BITMASK(XT1I_PIN), GPIO_PUSEL_DISABLE);
+	GPIO_SetPullCtl(XT1O_PORT, BITMASK(XT1O_PIN), GPIO_PUSEL_DISABLE);
+#endif
 }
 
 void CHILI_GPIOPowerDown(u8_t useGPIOforWakeup)

@@ -75,6 +75,9 @@ struct knx_manufacturer_storage
 		dummy_mbedtls_mpi       w0;
 		dummy_mbedtls_ecp_point L;
 	} spake_record;
+	uint8_t thread_magic[4];
+	uint8_t thread_password[32];
+	uint8_t eui64[8];
 };
 
 /**
@@ -88,10 +91,26 @@ int knx_get_stored_serial_number(uint8_t output_buffer[6]);
 /**
  * @brief Get the stored password used for authentication
  * 
- * @param output_buffer 16-byte array to copy password into
+ * @param output_buffer 33-byte array to copy password into (null terminated)
  * @return int 0 on success, 1 if the manufacturer storage is empty or corrupt
 */
-int knx_get_stored_password(uint8_t output_buffer[16]);
+int knx_get_stored_password(uint8_t output_buffer[33]);
+
+/**
+ * @brief Get the EUI64 stored within the manufacturer storage flash page
+ * 
+ * @param output_buffer 8-byte array to copy EUI64 into
+ * @return int 0 on success, 1 if the manufacturer storage is empty or corrupt
+ */
+int knx_get_stored_eui64(uint8_t output_buffer[8]);
+
+/**
+ * @brief Get the stored Thread password used for JPAKE authentication
+ * 
+ * @param output_buffer 33-byte array to copy password into (null terminated)
+ * @return int 0 on success, 1 if the manufacturer storage is empty or corrupt
+*/
+int knx_get_stored_thread_password(uint8_t output_buffer[33]);
 
 /**
  * @brief Get the stored w0 value for SPAKE2+

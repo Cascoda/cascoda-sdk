@@ -1,20 +1,26 @@
 # KNX IoT Example Application - Getting Started Guide
 
-This guide will get you up and running with your first KNX IoT application! No prior knowledge is needed, so all that is required is to have the correct hardware, and to follow the steps of the guide exactly as described.
+This guide will get you up and running with your first KNX IoT application! Little to no prior knowledge is needed, all that is required is to have the correct hardware, and to follow the steps of the guide exactly as described.
+
+This guide showcases KNX IoT over Thread by enabling the two devboards to talk to each other. At the end of the guide, and following configuration with ETS or the Linker, you will be able to toggle an LED on one devboard with a button press on the other.
+
+Here is the network topology that will be created as a result of the guide:
+
+![](./puml/getting-started/png/wired-network-topology.png)
+
+The KNX IoT Hub firmware is based on OpenWRT. Its purpose is to provide a link between your computer and the Thread mesh network. At the same time, if connected to the Internet it forwards said internet connection to your computer, just like a residential WiFi router would.
 
 ## Step 0: Requirements
 
-Please ensure you have the following hardware and software requirements before proceeding any futher.
+Please ensure you have the following hardware and software requirements before proceeding any further.
 
 ### Hardware
 
-- A pair of [Cascoda's KNX IoT Development Boards](https://www.cascoda.com/products/thread-development-kit/) (referred to as "devboards" from hereon).
-- Two USB-A to micro-USB cables for the devboards.
-- A [Cascoda KNX IoT Hub](https://www.cascoda.com/products/knx-iot-hub/) (referred to as "hub" from hereon).
-- An antenna that comes with the hub.
-- An Ethernet cable for the hub.
-- A power adapter for the hub.
-- A Windows PC.
+- [The Cascoda KNX IoT Development Kit](https://www.cascoda.com/products/knx-iot-development-kit/), consisting of the KNX IoT hub, two devboards & necessary accessories
+- A Windows PC
+- Access to the Internet through an Ethernet port & one extra Ethernet cable
+    - It is possible to access the internet wirelessly, or complete the guide without access to the internet. If this is a requirement please take a look at the [alternative topologies guide](howto-knxiot-topologies.md).
+    - If you do not have access to the Internet through the Hub, you will need to download the Hub & Devboard binaries beforehand. Additionally, the Thread Network Topology graph will not render.
 
 ### Software (on your Windows PC)
 
@@ -34,6 +40,10 @@ Please ensure you have the following hardware and software requirements before p
 ## Step 2: Update your firmware
 
 NOTE: This part of the guide will make use of the Cascoda Windows Tools that you have installed as part of the software requirements. By default, these tools are added to your `PATH`, enabling their execution in a shell in any directory. However, if this did not occur, you will only be able to execute the tools from within the directory in which they are installed. The default installation directory is `C:\Program Files (x86)\Cascoda Windows Tools`.
+
+### Updating the KNX IoT Hub
+
+[Download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
 
 ### Updating the two devboards
 
@@ -79,16 +89,11 @@ To ensure that the devboards are running the latest firmware, you will have to d
     Flasher [82830D8702A7566B]: VALIDATE -> COMPLETE
     ```
 
-
-### Updating the KNX-IoT Hub
-
-[Download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
-
 ## Step 3: Create a Thread network
 
 ### Form a Thread network on the hub
 
-1. Access the hub's Web GUI hosted on http://openwrt.local. Note: It takes 1 minute for the hub to start up after powerup. So the Web GUI won't be accessible until then.
+1. Access the hub's Web GUI hosted on http://openwrt.local. Note: It takes 1 minute for the hub to start up after power-up. So the Web GUI won't be accessible until then.
 2. If a login prompt comes up, just click OK, because the hub does not have a password by default.
 3. Double check that you have internet access via the hub by opening up any web browser and searching something.
 4. Now back to the hub's web GUI, you will see a menu bar at the top, hover over `Network`, and click on `Thread`.
@@ -153,13 +158,16 @@ To ensure that the devboards are running the latest firmware, you will have to d
 14. You may now terminate serial-adapter (this won't affect the devboard, it will only close the communication channel) by pressing Ctrl + C in PowerShell.
 15. Repeat the exact same thing from step 5, but this time providing the serial number of the other devboard, in this case 60F373F8446594E6.
 16. You should now have both devboards joined to the network formed by the hub.
+    - Note that once the devboards have joined the Thread network, they will remain attached on the Thread network until a factory reset is performed by pressing and holding the programming mode button for more than 10 seconds.
 17. Finally, verify that the devices are truly on the network, by looking at the network topology in the hub: Navigate to `Network -> Thread`, click on `View`, then `Topology Graph`. You should see something that looks like this (NOTE: this will only work if you've successfully connected to the internet via the hub): 
 
 <p align="center"><img src="imgs/topology.PNG" width="80%" align="center"></p>
 
+- Please note that the network might look slightly different if you are using REED devices, as they are capable of upgrading to routers after they have joined. It is also not mandatory for the Hub to be the leader.
+
 ## Step 4: Configuring KNX devices
 
-This can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).
+As stated in the intro, this can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).
 
 ## Troubleshooting
 

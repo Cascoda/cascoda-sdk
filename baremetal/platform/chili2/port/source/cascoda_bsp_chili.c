@@ -53,6 +53,7 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_config.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_secure.h"
 #include "crypto-misc.h"
@@ -60,6 +61,10 @@
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -431,8 +436,13 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 	targetm2351_aes_register();
 	targetm2351_hwpoll_register();
 
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+	/* configure HXT to external crystal oscillator */
+	CHILI_SetClockExternalCFGXT1(0);
+#else
 	/* configure HXT to external clock input */
 	CHILI_SetClockExternalCFGXT1(1);
+#endif
 
 	CHILI_GPIOEnableInterrupts();
 
@@ -473,13 +483,10 @@ u8_t BSP_IsUSBPresent(void)
 
 void BSP_UseExternalClock(u8_t useExternalClock)
 {
+	//NOTE: For CASCODA_CHILI2_CONFIG == 3 or 4, use crystal available on the board (Y2)
 	if (CHILI_GetUseExternalClock() == useExternalClock)
 		return;
 	CHILI_SetUseExternalClock(useExternalClock);
-
-#ifdef USE_UART
-	CHILI_UARTWaitWhileBusy();
-#endif
 
 	if (useExternalClock)
 	{
@@ -504,7 +511,7 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 {
 	if (enable_comms)
 	{
-		/* check frequency settings */
+/* check frequency settings */
 #if defined(USE_USB)
 		if (fsys == FSYS_4MHZ)
 		{
@@ -525,10 +532,6 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 		}
 #endif
 	}
-
-#ifdef USE_UART
-	CHILI_UARTWaitWhileBusy();
-#endif
 
 	CHILI_SetSystemFrequency(fsys);
 	CHILI_SetEnableCommsInterface(enable_comms);

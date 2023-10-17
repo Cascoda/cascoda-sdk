@@ -101,6 +101,9 @@ typedef enum enPortnum
 #define PMFP_UART 6
 #endif /* USE_UART */
 #define PMFP_X32 10
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+#define PMFP_XT1 10
+#endif
 
 /******************************************************************************/
 /****** Hard Connected Ports / Pins                                      ******/
@@ -239,6 +242,16 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_H
 #define SPI_CS_PIN 9
 #define SPI_CS_PVAL PH9
+/* XT1I: PF.3 */
+#define XT1I_PORT PF
+#define XT1I_PNUM PN_F
+#define XT1I_PIN 3
+#define XT1I_PVAL PF3
+/* XT1O: PF.2 */
+#define XT1O_PORT PF
+#define XT1O_PNUM PN_F
+#define XT1O_PIN 2
+#define XT1O_PVAL PF2
 /* NuMaker-PFM-M2351 dev. board with arduino-style breakout - SIP connect D10-D13 */
 #elif (CASCODA_CHILI2_CONFIG == 4)
 /* ZIG_RESET: PC.10 */
@@ -272,6 +285,16 @@ typedef enum enPortnum
 #define SPI_CS_PNUM PN_F
 #define SPI_CS_PIN 9
 #define SPI_CS_PVAL PF9
+/* XT1I: PF.3 */
+#define XT1I_PORT PF
+#define XT1I_PNUM PN_F
+#define XT1I_PIN 3
+#define XT1I_PVAL PF3
+/* XT1O: PF.2 */
+#define XT1O_PORT PF
+#define XT1O_PNUM PN_F
+#define XT1O_PIN 2
+#define XT1O_PVAL PF2
 #endif /* CASCODA_CHILI2_CONFIG */
 /* CHARGE_STAT: PB.0 */
 #define CHARGE_STAT_PORT PB

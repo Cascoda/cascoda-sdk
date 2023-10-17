@@ -47,6 +47,10 @@
 #include "cascoda_chili_usb.h"
 #include "cascoda_secure.h"
 
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
+
 /* define system configuaration mask */
 #define CLKCFG_ENPLL 0x01
 #define CLKCFG_ENHXT 0x02
@@ -176,60 +180,112 @@ __NONSECURE_ENTRY void CHILI_SetClockExternalCFGXT1(u8_t clk_external)
 	SYS_LockReg();
 }
 
-u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
+static bool should_enable_hxt(bool useExtClk)
 {
-	u8_t mask      = 0;
-	bool useExtClk = CHILI_GetUseExternalClock();
+	// External clock always requires HXT. Otherwise, use HIRC
+	return useExtClk;
+}
 
-	/* check if PLL required */
+static bool should_enable_pll(bool useExtClk, fsys_mhz fsys, u8_t enable_comms)
+{
+	if (enable_comms)
+	{
+#ifdef USE_UART /* Is PLL required for UART? */
+		/* PLL required for UART if baudrate exceeds 115200 */
+		if (UART_BAUDRATE > 115200)
+			return true;
+#endif
+
+#ifdef USE_USB /* Is PLL required for USB? */
+		/* PLL required for USB if using external clock source, 
+		   unless fsys == 64 MHz, in which case HIRC48 should be used,
+		   (handled in the section that checks whether HIRC48 is required) */
+		if (useExtClk && fsys != FSYS_64MHZ)
+			return true;
+#endif
+	}
+
+	/* Is PLL required for system clock? */
 	if (useExtClk)
 	{
-		if (fsys > FSYS_4MHZ) /* PLL needed to generate fsys from HXT */
-			mask |= CLKCFG_ENPLL;
-#ifdef USE_USB
-		if (enable_comms) /* PLL needed to USB Clock */
-			mask |= CLKCFG_ENPLL;
-#endif
+		/* PLL needed to generate fsys from HXT if the
+		   required fsys frequency is greater than the one
+		   provided by HXT */
+		if (fsys > FSYS_EXTERNAL_SOURCE)
+			return true;
 	}
 	else
 	{
-		if ((fsys == FSYS_32MHZ) || (fsys == FSYS_64MHZ)) /* PLL needed to generate fsys from HIRC */
-			mask |= CLKCFG_ENPLL;
+		/* PLL needed to generate fsys from HIRC if fsys == 32 MHz or fsys == 64 MHz.
+		   If fsys == 32 MHz, then need PLL FOUT 96 MHz (div by 3),
+		   and if fsys == 64 MHz, then need PLL FOUT 64 MHz (div by 1).
+		   So PLL has to be used because HIRC (12 MHz) has a frequency that is
+		   too low, and HIRC48 (48 MHz) cannot be
+		   divided to obtain 32 MHz or 64 MHz.
+		*/
+		if ((fsys == FSYS_32MHZ) || (fsys == FSYS_64MHZ))
+			return true;
 	}
+
+	/* If none of the above apply, then PLL will not be needed */
+	return false;
+}
+
+static bool should_enable_hirc48(bool useExtClk, fsys_mhz fsys, u8_t enable_comms, bool pllEnabled)
+{
 	if (enable_comms)
 	{
-#ifdef USE_UART
-		if (UART_BAUDRATE > 115200) /* PLL needed to generate UART clock */
-			mask |= CLKCFG_ENPLL;
+#ifdef USE_USB /* Is HIRC48 required for USB? */
+		/* If using an internal clock source, or if fsys == 64 MHz,
+		 HIRC48 is used for USB clock */
+		if (!useExtClk || (fsys == FSYS_64MHZ))
+			return true;
 #endif
 	}
 
+	if (!useExtClk && !pllEnabled && fsys > FSYS_INTERNAL_HIRC) /* Is HIRC48 required for system clock? */
+	{
+		/* HIRC48 needed to generate fsys from HIRC48, if 
+		   required fsys frequency is greater than the one
+		   provided by HIRC, and if internal clock is used, and PLL hasn't yet been enabled */
+		return true;
+	}
+
+	/* If none of the above apply, then HIRC48 will not be needed */
+	return false;
+}
+
+u8_t CHILI_GetClockConfigMask(fsys_mhz fsys, u8_t enable_comms)
+{
+	u8_t mask       = 0;
+	bool useExtClk  = CHILI_GetUseExternalClock();
+	bool pllEnabled = false;
+
+	/*********************************/
 	/* check if HXT or HIRC required */
-	if (useExtClk)
+	/*********************************/
+	if (should_enable_hxt(useExtClk))
 		mask |= CLKCFG_ENHXT; /* external clock always requires HXT */
 	else
 		mask |= CLKCFG_ENHIRC; /* internal clock always requires HIRC for timers etc. */
 
-	/* check if HIRC48 required */
-	if (fsys == FSYS_64MHZ) /* if 64MHz HIRC48 is needed for USB clock */
+	/********************************************************************************/
+	/* check if PLL required: NOTE, may be required for system, for USB or for UART */
+	/********************************************************************************/
+	if (should_enable_pll(useExtClk, fsys, enable_comms))
 	{
-#ifdef USE_USB
-		if (enable_comms)
-			mask |= CLKCFG_ENHIRC48;
-#endif
+		mask |= CLKCFG_ENPLL;
+		pllEnabled = true;
 	}
-	if (!useExtClk) /* internal clock */
-	{
-#ifdef USE_USB
-		if (enable_comms) /* HIRC48 always used for USB clock */
-			mask |= CLKCFG_ENHIRC48;
-#endif
-		if (!(mask & CLKCFG_ENPLL))
-		{
-			if (fsys > FSYS_12MHZ) /* HIRC48 needed to generate fsys from HIRC48 */
-				mask |= CLKCFG_ENHIRC48;
-		}
-	}
+
+	/*************************************************************************/
+	/* check if HIRC48 required: Note, may be required for system or for USB */
+	/*************************************************************************/
+	// NOTE: the function should be called after should_enable_pll(), since one of
+	// its arguments is the value of a variable set depending on the outcome of
+	// should_enable_pll().
+	if (should_enable_hirc48(useExtClk, fsys, enable_comms, pllEnabled))
+		mask |= CLKCFG_ENHIRC48;
 
 	return (mask);
 }
@@ -264,31 +320,62 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	switch (fsys)
 	{
 	case FSYS_4MHZ:
+		// Possibilities:
+		// (a) Use HXT 4 MHz (from CA821x), (divide by 1)
+		// (b) Use HXT 12 MHz (from numaker crystal oscillator) (divide by 3)
+		// (c) Use PLL FOUT 48 MHz (divide by "divisor=12")
+		// (d) Use HIRC 12 MHz (divide by 3)
+		// (e) Use HIRC48 48 MHz (divide by "divisor=12")
 		divisor = 12;
 		break;
 	case FSYS_12MHZ:
+		// Possibilities:
+		// (a) Use HXT 12 MHz (from numaker crystal oscillator) (divide by 1)
+		// (c) Use PLL FOUT 48 MHz (divide by "divisor=4")
+		// (e) Use HIRC48 48 MHz (divide by "divisor=4")
+		// (f) Use HIRC 12 MHz (divide by 1)
 		divisor = 4;
 		break;
 	case FSYS_16MHZ:
-	case FSYS_32MHZ: //For 32MHz a 96MHz PLL is used, hence the out-of-sequence divisor
+		// Possibilities:
+		// (c) Use PLL FOUT 48 MHz (divide by "divisor=3")
+		// (e) Use HIRC48 48 MHz (divide by "divisor=3")
+	case FSYS_32MHZ:
+		// Possibilities:
+		// (c) Use PLL FOUT 96 MHz (divide by "divisor=3")
 		divisor = 3;
 		break;
 	case FSYS_24MHZ:
+		// Possibilities:
+		// (c) Use PLL FOUT 48 MHz (divide by "divisor=2")
+		// (e) Use HIRC48 MHz (divide by "divisor=2")
 		divisor = 2;
 		break;
 	case FSYS_48MHZ:
+		// Possibilities:
+		// (c) Use PLL FOUT 48 MHz (divide by "divisor=1")
+		// (e) Use HIRC48 MHz (divide by "divisor=1")
 	case FSYS_64MHZ:
+		// Possibilities:
+		// (c) Use PLL FOUT 64 MHz (divide by "divisor=1")
 		divisor = 1;
 		break;
 	}
 
 	/* NOTE: __HXT in system_M2351.h has to be changed to correct input clock frequency !! */
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+#if __HXT != 12000000UL
+#error "__HXT Not set correctly in system_M2351.h. Please set to 12MHz for use with numaker board."
+#endif // _HXT != 12000000UL
+#else
 #if __HXT != 4000000UL
-#error "__HXT Not set correctly in system_M2351.h"
-#endif
+#error "__HXT Not set correctly in system_M2351.h. Please set to 4MHz when not using the numaker board"
+#endif // __HXT != 4000000UL
+#endif // ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
 
 	/* Oscillator sources:
-	 *	- HXT 		 4 MHz
+	 *	- HXT 		 4 MHz (from ca821x)
+	 *	- HXT       12 MHz (from numaker board)
 	 *	- HIRC		12 MHz
 	 *	- HIRC48	48 MHz */
 
@@ -346,24 +433,36 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 		FOUT = 48 MHz:
 		HIRC      12    4   96   48   3 12  2     2    10      1   0x0008440A
 		HXT        4    4   96   48   1 12  2     0    10      1   0x0000400A
+		HXT       12    4   96   48   3 12  2     2    10      1   0x0000440A
 		FOUT = 96 MHz (for 32MHz HCLK)
 		HIRC      12    4   96   48   3 12  1     2    10      0   0x0008040A
 		HXT        4    4   96   48   1 12  1     0    10      0   0x0000000A
+		HXT       12    4   96   48   3 12  1     2    10      0   0x0000040A
 		FOUT = 64 MHz:(for 64MHz HCLK)
 		HIRC      12    4  128   64   3 16  2     2    14      1   0x0008440E
 		HXT        4    4  128   64   1 16  2     0    14      1   0x0000400E
+		HXT       12    4  128   64   3 16  2     2    14      1   0x0000440E
 		*****************************************************************************************
 		Note: Using CLK_EnablePLL() does not always give correct results, so avoid!
 		*/
 		SYS_UnlockReg();
 		if (clkcfg & CLKCFG_ENHXT)
 		{
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+			if (fsys == FSYS_64MHZ)
+				CLK->PLLCTL = 0x0000440E;
+			else if (fsys == FSYS_32MHZ)
+				CLK->PLLCTL = 0x0000040A;
+			else
+				CLK->PLLCTL = 0x0000440A;
+#else
 			if (fsys == FSYS_64MHZ)
 				CLK->PLLCTL = 0x0000400E;
 			else if (fsys == FSYS_32MHZ)
 				CLK->PLLCTL = 0x0000000A;
 			else
 				CLK->PLLCTL = 0x0000400A;
+#endif
 		}
 		else
 		{
@@ -389,28 +488,29 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	}
 
 	/* set system clock */
+	/* NOTE: The commented letters in parentheses refer to the comments 
+	   written in the switch statement at the start of this function. Those
+	   help to make it easier to understand the code below. */
 	SYS_UnlockReg();
 	if (clkcfg & CLKCFG_ENHXT)
 	{
-		if (fsys == FSYS_4MHZ)
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HXT, CLK_CLKDIV0_HCLK(1));
+		if (fsys == FSYS_EXTERNAL_SOURCE)
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HXT, CLK_CLKDIV0_HCLK(1)); // (a)
+		else if ((fsys == FSYS_4MHZ) && (FSYS_EXTERNAL_SOURCE == FSYS_EXTERNAL_NUMAKER))
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HXT, CLK_CLKDIV0_HCLK(3)); // (b)
 		else
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor));
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor)); // (c)
 	}
 	else
 	{
 		if ((clkcfg & CLKCFG_ENHIRC) && (fsys == FSYS_4MHZ))
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(3));
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(3)); // (d)
 		else if ((clkcfg & CLKCFG_ENHIRC) && (fsys == FSYS_12MHZ))
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1));
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1)); // (f)
 		else if (clkcfg & CLKCFG_ENPLL)
-		{
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor));
-		}
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_PLL, CLK_CLKDIV0_HCLK(divisor)); // (c)
 		else if (clkcfg & CLKCFG_ENHIRC48)
-		{
-			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(divisor));
-		}
+			CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC48, CLK_CLKDIV0_HCLK(divisor)); // (e)
 	}
 
 #ifdef USE_USB
@@ -541,7 +641,8 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	CLK_EnableModuleClock(TMR1_MODULE);
 
 	/* configure clock selects and dividers for timers 0 and 1 */
-	/* clocks are fixed to HXT (4 MHz) or HIRC (12 MHz) */
+	/* clocks are fixed to HXT (4 MHz from ca821x, or 12 MHz from numaker crystal oscillator), 
+	or HIRC (12 MHz) */
 	if (useExtClk)
 	{
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HXT, 0);
@@ -559,10 +660,17 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	/* prescale value has to be set after TIMER_Open() is called! */
 	if (useExtClk)
 	{
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+		/* 12 MHZ Clock: prescaler 11 gives 1 uSec units */
+		TIMER_SET_PRESCALE_VALUE(TIMER0, 11);
+		/* 12 MHZ Clock: prescalar 11 gives 1 uSec units */
+		TIMER_SET_PRESCALE_VALUE(TIMER1, 11);
+#else
 		/*  4 MHZ Clock: prescaler 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER0, 3);
 		/*  4 MHZ Clock: prescalar 3 gives 1 uSec units */
 		TIMER_SET_PRESCALE_VALUE(TIMER1, 3);
+#endif
 	}
 	else
 	{
@@ -703,17 +811,27 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	{
 		// 4 MHz
 		if (CHILI_GetUseExternalClock())
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_HXT, UART_CLKDIV(1));
+#if ((CASCODA_CHILI2_CONFIG == 3) || (CASCODA_CHILI2_CONFIG == 4))
+			CLK_SetModuleClock(UART_MODULE, UART_CLK_HXT, UART_CLKDIV(3)); // 12 MHz HXT, div by 3 = 4 MHz
+#else
+			CLK_SetModuleClock(UART_MODULE, UART_CLK_HXT, UART_CLKDIV(1)); // 4 MHz HXT, div by 1 = 4 MHz
+#endif
 		else
-			CLK_SetModuleClock(UART_MODULE, UART_CLK_HIRC, UART_CLKDIV(3));
+			CLK_SetModuleClock(UART_MODULE, UART_CLK_HIRC, UART_CLKDIV(3)); // 12 MHz HIRC, div by 3 = 4 MHz
 	}
 	else
 	{
-		// 48 MHz
 		if ((CHILI_GetSystemFrequency() == FSYS_32MHZ) || (CHILI_GetSystemFrequency() == FSYS_64MHZ))
+		{
+			// 48 MHz or 32 MHz (for fsys 32 MHz, 96 MHz PLL used, so divide by 2 = 48;
+			// for fsys 64 MHz, 64 MHz PLL used, so divide by 2 = 32).
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(2));
+		}
 		else
+		{
+			// Otherwise, 48 MHz PLL used, so div by 1.
 			CLK_SetModuleClock(UART_MODULE, UART_CLK_PLL, UART_CLKDIV(1));
+		}
 	}
 
 	CLK_EnableModuleClock(UART_MODULE);

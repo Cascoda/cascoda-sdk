@@ -48,9 +48,14 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_bm_internal.h"
+#include "cascoda_chili_config.h"
 #include "cascoda_external_flash.h"
 #include "evbme_messages.h"
 #include "mac_messages.h"
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 /******************************************************************************/
 /****** Global Parameters that can by set via EVBME_SET_request          ******/
@@ -75,11 +80,14 @@ int (*cascoda_serial_dispatch)(u8_t *buf, size_t len, struct ca821x_dev *pDevice
 static ca_error EVBME_WakeupCallback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRef);
-static ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_Wakeup_callback(struct HWME_WAKEUP_indication_pset *params, struct ca821x_dev *pDeviceRef);
 static ca_error EVBME_CAX_Wakeup(enum powerdown_mode mode, u32_t timeout_ms, struct ca821x_dev *pDeviceRef);
 static void     EVBME_WakeUpRF(void);
+
+#if ((CASCODA_CHILI2_CONFIG != 3) && (CASCODA_CHILI2_CONFIG != 4))
+static ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDeviceRef);
+#endif
 
 #if defined(USE_USB) || defined(USE_UART)
 static void     EVBME_COMM_CHECK_request(struct EVBME_Message *rxBuf);
@@ -628,6 +636,10 @@ static ca_error EVBME_ResetRF(uint8_t ms, struct ca821x_dev *pDeviceRef)
 	// save external clock status
 	CLKExternal_saved = CLKExternal;
 
+#if defined(USE_UART)
+	BSP_SerialWaitWhileBusy();
+#endif /* USE_UART */
+
 	// switch off external clock
 	EVBME_SwitchClock(pDeviceRef, 0);
 
@@ -685,6 +697,7 @@ static ca_error EVBME_Connect(const char *aAppName, struct ca821x_dev *pDeviceRe
 	return status;
 } // End of EVBME_Connect()
 
+#if ((CASCODA_CHILI2_CONFIG != 3) && (CASCODA_CHILI2_CONFIG != 4))
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Switch External Clock from CAX on or off
@@ -714,6 +727,7 @@ static ca_error EVBME_CAX_ExternalClock(u8_t on_offb, struct ca821x_dev *pDevice
 	}
 	return CA_ERROR_SUCCESS;
 } // End of EVBME_CAX_ExternalClock()
+#endif
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -899,7 +913,11 @@ ca_error EVBME_NotHandled(const struct MAC_Message *msg, struct ca821x_dev *pDev
 void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
 {
 	if (CLKExternal == useExternalClock)
+	{
+		(void)pDeviceRef;
 		return;
+	}
+
 	CLKExternal = useExternalClock;
 
 	if (!CLKExternal)
@@ -908,6 +926,8 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
 		BSP_UseExternalClock(CLKExternal);
 	}
 
+// We don't use the clock from CA821x on the numaker boards
+#if ((CASCODA_CHILI2_CONFIG != 3) && (CASCODA_CHILI2_CONFIG != 4))
 	if (EVBME_CAX_ExternalClock(CLKExternal, pDeviceRef))
 	{
 		//Failed
@@ -915,6 +935,7 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock)
 		BSP_UseExternalClock(CLKExternal);
 		return;
 	}
+#endif
 
 	if (CLKExternal)
 	{
@@ -942,6 +963,9 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 #if defined(USE_USB)
 	BSP_DisableUSB();
 #endif /* USE_USB */
+#if defined(USE_UART)
+	BSP_SerialWaitWhileBusy();
+#endif /* USE_UART */
 #if defined(USE_USB) || defined(USE_UART)
 	BSP_SystemConfig(BSP_GetSystemFrequency(), 0);
 #endif /* USE_UART || USE_USB */

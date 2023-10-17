@@ -1,0 +1,21 @@
+@startuml
+
+cloud "Internet" as inet
+
+node "Internet Router" as inet_r
+
+node "KNX-IoT Hub" as br
+
+node "Devboard 1" as router
+node "Devboard 2" as router2
+
+node "Computer" as computer
+
+inet -[#blue,thickness=4]- inet_r
+inet_r -[#blue,thickness=4]- br : Ethernet
+br -[#blue,thickness=4]- computer : Ethernet
+br -[#orange,dashed,thickness=4]- router : Thread Link
+router -[#orange,dashed,thickness=4] router2
+br -[#orange,dashed,thickness=4]- router2
+
+@enduml

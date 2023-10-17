@@ -48,6 +48,10 @@
 extern "C" {
 #endif
 
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
+
 /******************************************************************************/
 /****** Global Variables defined in cascoda_bsp_*.c                      ******/
 /******************************************************************************/

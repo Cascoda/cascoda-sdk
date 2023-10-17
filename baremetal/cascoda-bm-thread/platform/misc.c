@@ -222,10 +222,9 @@ static otError PlatformInjectCreds(otInstance *aInstance)
 #endif
 }
 
-otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
+otError PlatformTryJoinWithPskd(struct ca821x_dev *pDeviceRef, otInstance *aInstance, const char *aPskd)
 {
 	struct join_status join_status = {0, 0};
-	const char        *aPskd;
 
 	otIp6SetEnabled(OT_INSTANCE, true);
 
@@ -238,8 +237,6 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 	{
 		return OT_ERROR_ALREADY;
 	}
-
-	aPskd = PlatformGetJoinerCredential(aInstance);
 
 	//Attempt to join
 	otJoinerStart(
@@ -261,12 +258,15 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 	return join_status.error;
 }
 
-otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs)
+otError PlatformPrintJoinerCredentialsWithPskd(struct ca821x_dev *pDeviceRef,
+                                               otInstance        *aInstance,
+                                               uint32_t           aMaxWaitMs,
+                                               const char        *aPskd)
 {
 	otExtAddress extAddress;
 
 	otLinkGetFactoryAssignedIeeeEui64(aInstance, &extAddress);
-	printf("Thread Joining Credential: %s, EUI64: ", PlatformGetJoinerCredential(aInstance));
+	printf("Thread Joining Credential: %s\nEUI64: ", aPskd);
 	for (size_t i = 0; i < sizeof(extAddress); i++) printf("%02x", extAddress.m8[i]);
 	printf("\n");
 
@@ -282,6 +282,17 @@ otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance
 	}
 #endif
 	return OT_ERROR_NONE;
+}
+
+otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
+{
+	return PlatformTryJoinWithPskd(pDeviceRef, aInstance, PlatformGetJoinerCredential(aInstance));
+}
+
+otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs)
+{
+	return PlatformPrintJoinerCredentialsWithPskd(
+	    pDeviceRef, aInstance, aMaxWaitMs, PlatformGetJoinerCredential(aInstance));
 }
 
 otError PlatformEraseJoinerCredentials(otInstance *aInstance)

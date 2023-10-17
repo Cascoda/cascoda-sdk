@@ -51,12 +51,17 @@
 #include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "cascoda_chili.h"
+#include "cascoda_chili_config.h"
 #include "cascoda_chili_gpio.h"
 #include "cascoda_secure.h"
 #ifdef USE_USB
 #include "cascoda-bm/cascoda_usbhid.h"
 #include "cascoda_chili_usb.h"
 #endif /* USE_USB */
+
+#ifndef CASCODA_CHILI2_CONFIG
+#error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
+#endif
 
 /******************************************************************************/
 /****** Dynamically configurable Ports / Pins                            ******/

@@ -50,7 +50,11 @@ extern "C" {
 /*----------------------------------------------------------------------------
   Define SYSCLK
  *----------------------------------------------------------------------------*/
+#ifdef USE_CRYSTAL_ON_NUMAKER_BOARD
+#define __HXT       (12000000UL)    /*!< External Crystal Clock Frequency     */
+#else
 #define __HXT       (4000000UL)    /*!< External Crystal Clock Frequency     */
+#endif
 #define __LIRC      (10000UL)       /*!< Internal 10K RC Oscillator Frequency */
 #define __HIRC      (12000000UL)    /*!< Internal 12M RC Oscillator Frequency */
 #define __LXT       (32768UL)       /*!< External Crystal Clock Frequency 32.768KHz */
