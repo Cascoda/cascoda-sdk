@@ -11,6 +11,7 @@ cascoda_dropdown(CASCODA_LOG_LEVEL
 cascoda_mark_important(CASCODA_LOG_LEVEL)
 
 set(CASCODA_MAC_BLACKLIST 0 CACHE STRING "The number of MAC-level blacklist entries. Setting this to 0 disables the blacklist feature.")
+mark_as_advanced(CASCODA_MAC_BLACKLIST)
 
 # Config file generation ------------------------------------------------------
 configure_file(

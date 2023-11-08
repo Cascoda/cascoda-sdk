@@ -7,10 +7,13 @@ option(CASCODA_BUILD_OCF "Whether to build Iotivity-Lite. Turning this on will a
 option(CASCODA_BUILD_KNX "Whether to build the KNX-IoT stack.")
 
 option(CASCODA_BUILD_OT "Whether to build OpenThread" ON)
+mark_as_advanced(CASCODA_BUILD_OT)
 
 option(CASCODA_BUILD_SECURE_LWM2M "Whether to build LWM2M stack wakaama with security. Incompatible with CASCODA_BUILD_OCF." OFF)
+mark_as_advanced(CASCODA_BUILD_SECURE_LWM2M)
 
 option(CASCODA_BUILD_LWIP "Build the LwIP stack into the Cascoda SDK" OFF)
+mark_as_advanced(CASCODA_BUILD_LWIP)
 
 option(CASCODA_BUILD_DUMMY "Build the dummy baremetal layer for posix instead of the posix SDK. This replaces standard posix behaviour. Only for unit testing baremetal." OFF)
 mark_as_advanced(FORCE CASCODA_BUILD_DUMMY)

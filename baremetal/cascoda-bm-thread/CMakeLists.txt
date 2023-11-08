@@ -30,6 +30,7 @@ target_link_libraries(ca821x-openthread-bm-plat
 
 # NTP server used by platform/sntp_helper.c
 set(CASCODA_NTP_SERVER "time.google.com" CACHE STRING "The domain name of the NTP server to use for updating the RTC")
+mark_as_advanced(CASCODA_NTP_SERVER)
 set(CASCODA_SNTP_INTERVAL 2880 CACHE STRING "The interval beween SNTP requests, in minutes. Default is two days (2880 minutes).")
 mark_as_advanced(CASCODA_SNTP_INTERVAL)
 target_compile_definitions(ca821x-openthread-bm-plat PRIVATE NTP_SERVER=\"${CASCODA_NTP_SERVER}\")
@@ -50,10 +51,11 @@ option(CASCODA_OT_FORCE_CREDS "DEVELOPMENT/DEMO ONLY: Inject credentials into th
 set(CASCODA_OT_FORCE_CHANNEL 20 CACHE STRING "Force a channel (integer 11-26) to be used to bootstrap an openthread node - used with CASCODA_OT_FORCE_CREDS")
 set(CASCODA_OT_FORCE_PANID 0x1234 CACHE STRING "Force a panid (hex 0x0000 - 0xFFFE) to be used to bootstrap an openthread node - used with CASCODA_OT_FORCE_CREDS")
 set(CASCODA_OT_FORCE_MASTERKEY 00112233445566778899aabbccddeeff CACHE STRING "Force a masterkey (16 byte hex string) to be used to bootstrap an openthread node - used with CASCODA_OT_FORCE_CREDS")
+
+mark_as_advanced(CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_CREDS CASCODA_OT_FORCE_MASTERKEY)
 if(CASCODA_OT_FORCE_CREDS)
 	message(WARNING "CASCODA_OT_FORCE_CREDS is not secure or reliable, and is for development purposes only. Should never be used for real applications! Consider using CASCODA_OT_JOINER_CREDENTIAL instead!")
 	cascoda_mark_important(CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_MASTERKEY)
-	mark_as_advanced(CLEAR CASCODA_OT_FORCE_CHANNEL CASCODA_OT_FORCE_PANID CASCODA_OT_FORCE_MASTERKEY)
 
 	# Check that all credential injections are valid
 	if(NOT (CASCODA_OT_FORCE_CHANNEL GREATER_EQUAL 11 AND CASCODA_OT_FORCE_CHANNEL LESS_EQUAL 26))
@@ -88,6 +90,7 @@ endif()
 
 #Hardcode Joiner Credentials
 set(CASCODA_OT_JOINER_CREDENTIAL "" CACHE STRING "DEVELOPMENT ONLY: Hardcode a Joiner Credential - useful for developing applications with no serial interface.")
+mark_as_advanced(CASCODA_OT_JOINER_CREDENTIAL)
 if (CASCODA_OT_JOINER_CREDENTIAL)
 	message(WARNING "CASCODA_OT_JOINER_CREDENTIAL is not secure, and is for development purposes only. Production applications should use a different credential for every device!")
 

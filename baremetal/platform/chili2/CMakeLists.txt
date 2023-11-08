@@ -30,6 +30,7 @@ set(CASCODA_HF_REBOOT OFF CACHE BOOL "Reboot the device after a hard fault. If f
 
 # Enable trustzone
 set(CASCODA_CHILI2_TRUSTZONE OFF CACHE BOOL "Enable the Chili2 armv8-m CSME build (TrustZone)")
+mark_as_advanced(CASCODA_CHILI2_TRUSTZONE)
 
 # Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")

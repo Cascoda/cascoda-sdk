@@ -72,6 +72,9 @@ set(OT_SERVICE "OFF" CACHE BOOL "Needed for the Cascoda SDK - please do not chan
 set(OT_ECDSA "ON" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
 set(OT_SRP_CLIENT "ON" CACHE BOOL "Needed for the Cascoda SDK - please do not change")
 
+set(CASCODA_MAX_EXT_MCAST_ADDR "7" CACHE STRING "Number of external multicast addresses stored on this device")
+mark_as_advanced(CASCODA_MAX_EXT_MCAST_ADDR)
+
 if(CASCODA_OPENTHREAD_FTD)
 	option(OT_BORDER_AGENT "enable border agent support" ON)
 	option(OT_BORDER_ROUTER "enable border router support" ON)
@@ -117,7 +120,7 @@ if(CASCODA_OPENTHREAD_FTD)
 		)
 	else()
 		list(APPEND OT_PLATFORM_DEFINES
-			"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=7"
+			"OPENTHREAD_CONFIG_IP6_MAX_EXT_MCAST_ADDRS=${CASCODA_MAX_EXT_MCAST_ADDR}"
 		)
 	endif()
 endif()

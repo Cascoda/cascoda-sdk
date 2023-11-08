@@ -149,6 +149,23 @@ static void SIF_SSD1608_SetCursor(u16_t Xstart, u16_t Ystart)
 	SIF_SSD1608_SendData((Ystart >> 8) & 0xFF);
 }
 
+#if USE_BSP_SENSE == 0
+// Copied from device_btn_ext.h in the co2-sensor repsoitory
+// Number of the extended LED/Button
+
+typedef enum co2dev_led_btn_ext
+{
+	DEV_BTN_BR  = 0,
+	DEV_BTN_BL  = 1,
+	DEV_BTN_TR  = 2,
+	DEV_BTN_TL  = 3,
+	DEV_EP_BUSY = 4,
+} co2dev_led_btn_ext;
+ca_error CO2DEV_SenseExt(co2dev_led_btn_ext ledBtn, u8_t *val);
+ca_error CO2DEV_RegisterButtonInputExt(co2dev_led_btn_ext ledBtn);
+ca_error CO2DEV_DeRegisterExt(co2dev_led_btn_ext ledBtn);
+#endif
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Wait until BUSY pin is LOW
@@ -156,6 +173,7 @@ static void SIF_SSD1608_SetCursor(u16_t Xstart, u16_t Ystart)
  ******************************************************************************/
 static void SIF_SSD1608_WaitUntilIdle(void)
 {
+#if USE_BSP_SENSE == 1
 	u8_t BUSY_value = 0;
 	BSP_ModuleSenseGPIOPin(SIF_SSD1608_BUSY_PIN, &BUSY_value);
 	while (BUSY_value == 1)
@@ -163,6 +181,17 @@ static void SIF_SSD1608_WaitUntilIdle(void)
 		WAIT_ms(2);
 		BSP_ModuleSenseGPIOPin(SIF_SSD1608_BUSY_PIN, &BUSY_value);
 	}
+
+#else
+	u8_t co2dev_BUSY_val;
+	CO2DEV_SenseExt(DEV_EP_BUSY, &co2dev_BUSY_val);
+	while (co2dev_BUSY_val == 1)
+	{
+		WAIT_ms(2);
+		CO2DEV_SenseExt(DEV_EP_BUSY, &co2dev_BUSY_val);
+	}
+
+#endif
 }
 
 /******************************************************************************/
@@ -316,10 +345,17 @@ ca_error SIF_SSD1608_Initialise(SIF_SSD1608_Update_Mode mode)
 	/* De-register all non-SPI pins first in case they are used */
 	BSP_ModuleDeregisterGPIOPin(SIF_SSD1608_RST_PIN);
 	BSP_ModuleDeregisterGPIOPin(SIF_SSD1608_DC_PIN);
+#if USE_BSP_SENSE == 1
 	BSP_ModuleDeregisterGPIOPin(SIF_SSD1608_BUSY_PIN);
 	/* BUSY - Pin 31 */
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    SIF_SSD1608_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
+
+#else
+
+	CO2DEV_DeRegisterExt(DEV_EP_BUSY);
+	CO2DEV_RegisterButtonInputExt(DEV_EP_BUSY);
+#endif
 	/* RST - Pin 15 */
 	BSP_ModuleRegisterGPIOOutput(SIF_SSD1608_RST_PIN, MODULE_PIN_TYPE_GENERIC);
 	/* D/C - Pin 34 */
@@ -355,9 +391,14 @@ void SIF_SSD1608_Deinitialise(void)
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    SIF_SSD1608_DC_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
 
+#if USE_BSP_SENSE == 1
 	BSP_ModuleDeregisterGPIOPin(SIF_SSD1608_BUSY_PIN);
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    SIF_SSD1608_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
+#else
+	CO2DEV_DeRegisterExt(DEV_EP_BUSY);
+	CO2DEV_RegisterButtonInputExt(DEV_EP_BUSY);
+#endif
 }
 
 #ifndef EPAPER_FULL_RESOLUTION

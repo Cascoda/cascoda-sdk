@@ -320,7 +320,7 @@ ca_error DVBD_PollButtons()
 				/* handle short press functionality if not already handled */
 				if ((CALLBACKS.shortPressCallback != NULL) && (CALLBACKS.shortPressMode == BTN_SHORTPRESS_RELEASED))
 				{
-					if ((current_time <= (CALLBACKS.currentPressTime + CALLBACKS.longPressTimeThreshold)) &&
+					if (((current_time <= (CALLBACKS.currentPressTime + CALLBACKS.longPressTimeThreshold)) || (CALLBACKS.longPressCallback == NULL)) &&
 					    (current_time > (CALLBACKS.currentPressTime + BTN_MIN_PRESS_TIME)))
 					{
 						CALLBACKS.shortPressCallback(CALLBACKS.shortPressContext);
