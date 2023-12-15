@@ -857,7 +857,7 @@ void display_putc(uint8_t c)
 }
 
 // print string
-void display_puts(uint8_t *s)
+void display_puts(const uint8_t *s)
 {
 	while (*s) display_putc(*s++);
 }

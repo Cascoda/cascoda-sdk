@@ -111,7 +111,7 @@ void display_putc(uint8_t c);
     snprintf does not display floating numbers
     use display_double() to display floating numbers
 */
-void display_puts(uint8_t *s);
+void display_puts(const uint8_t *s);
 
 /**
     \brief  convert a float to a string
