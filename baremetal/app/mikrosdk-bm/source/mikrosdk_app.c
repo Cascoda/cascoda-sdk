@@ -458,7 +458,7 @@ void MIKROSDK_Handler_THERMO(void)
 		++ticker;
 		handled = 1;
 
-		SENSORIF_SPI_Init();
+		SENSORIF_SPI_Init(false);
 		temp = thermo_get_temperature(); /* read temperature */
 		SENSORIF_SPI_Deinit();
 		printf("Meas %u:\n", ticker);
@@ -473,7 +473,7 @@ void MIKROSDK_Handler_THERMO(void)
 		printf("%u.%02u'C", ((temp >> 2) & 0xFFF), (((u32_t)(temp & DECIMAL_MASK_TWO_BITS) * 25)));
 		printf("\n");
 
-		SENSORIF_SPI_Init();
+		SENSORIF_SPI_Init(false);
 		temp = thermo_get_junction_temperature(); /* read temperature */
 		SENSORIF_SPI_Deinit();
 

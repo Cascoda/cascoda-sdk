@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-#define OC_INOUT_BUFFER_POOL (2)
+#define OC_INOUT_BUFFER_POOL (6)
 #define OC_INOUT_BUFFER_SIZE (1232)
 
 typedef uint64_t oc_clock_time_t;

@@ -196,6 +196,10 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	BSP_WaitTicks(sleeptime_ms);
 }
 
+void BSP_SetPowerDown(void)
+{
+}
+
 void BSP_SetSPIMOSIOutput(void)
 {
 }
@@ -419,8 +423,9 @@ ca_error SENSORIF_SPI_Write(u8_t out_data)
 	return CA_ERROR_NOT_FOUND;
 }
 
-void SENSORIF_SPI_Init(void)
+void SENSORIF_SPI_Init(bool is_eink_display_present)
 {
+	(void)is_eink_display_present;
 }
 
 ca_error utilsFlashDeinit(struct ca821x_dev *aInstance)

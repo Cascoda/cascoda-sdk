@@ -48,7 +48,7 @@
 volatile u8_t     WDTimeout            = 0;
 volatile u8_t     UseExternalClock     = 0;
 volatile fsys_mhz SystemFrequency      = DEFAULT_FSYS;
-volatile u8_t     EnableCommsInterface = 1;
+volatile u8_t     EnableCommsInterface = 0;
 
 __NONSECURE_ENTRY void CHILI_SetUseExternalClock(u8_t use_ext_clock)
 {

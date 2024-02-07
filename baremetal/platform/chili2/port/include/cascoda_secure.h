@@ -101,7 +101,19 @@ void CHILI_SetAsleep(u8_t new_asleep);
 u8_t CHILI_GetWakeup();
 
 /** Set wake up state */
-void CHILI_SetWakeup(u8_t new_asleep);
+void CHILI_SetWakeup(u8_t new_wakeup);
+
+/** Has gpio interrupt occured during power-down sequence? */
+u8_t CHILI_GetGPIOInt();
+
+/** Set gpio interrrupt occured during power-down sequence flag */
+void CHILI_SetGPIOInt(u8_t new_gpioint);
+
+/** Get power-down flag (device is powering down) ? */
+u8_t CHILI_GetPowerDown();
+
+/** Set power-down flag */
+void CHILI_SetPowerDown(u8_t new_powerdown);
 
 /** Configure the chili to boot from LDROM next time */
 void CHILI_SetLDROMBoot(void);

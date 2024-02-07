@@ -206,7 +206,7 @@ uint8_t MIKROSDK_THERMO_Reinitialise(void)
 {
 	WAIT_ms(THERMO_T_POWERUP);
 
-	SENSORIF_SPI_Init(); /* enable interface */
+	SENSORIF_SPI_Init(false); /* enable interface */
 
 	if (MIKROSDK_THERMO_check_fault())
 		return THERMO_ST_FAIL;
@@ -221,7 +221,7 @@ uint8_t MIKROSDK_THERMO_Reinitialise(void)
 /* Note: junction_temperature: T('C) = compl(uint16_t / 16) */
 uint8_t MIKROSDK_THERMO_Acquire(uint16_t *thermo_temperature, uint16_t *junction_temperature)
 {
-	SENSORIF_SPI_Init(); /* enable interface */
+	SENSORIF_SPI_Init(false); /* enable interface */
 	if (MIKROSDK_THERMO_get_all_temperatures(thermo_temperature, junction_temperature))
 		return THERMO_ST_FAIL;
 	SENSORIF_SPI_Deinit(); /* disable interface */

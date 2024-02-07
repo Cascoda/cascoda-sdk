@@ -137,7 +137,7 @@ double       g_varianturl_valuenumber = 0; /* current value of property "valuenu
 static char *g_varianturl_RESOURCE_PROPERTY_NAME_valuestring = "valuestring"; /* the name for the attribute */
 char         g_varianturl_valuestring[100]                   = ""
                                                                "";
-/* current value of property "valuestring" value string, using a different length than the default lenght. */ /* registration data variables for the resources */
+/* current value of property "valuestring" value string, using a different length than the default length. */ /* registration data variables for the resources */
 
 /* global resource variables for path: /queryurl */
 static char *g_queryurl_RESOURCE_ENDPOINT         = "/queryurl";          /* used path for this resource */
@@ -1152,7 +1152,7 @@ void initialize_variables(void)
 	strcpy(
 	    g_varianturl_valuestring,
 	    ""
-	    ""); /* current value of property "valuestring" value string, using a different length than the default lenght. */
+	    ""); /* current value of property "valuestring" value string, using a different length than the default length. */
 
 	/* set the flag for oic/con resource. */
 	oc_set_con_res_announced(true);

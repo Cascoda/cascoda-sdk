@@ -150,20 +150,9 @@ static void SIF_SSD1608_SetCursor(u16_t Xstart, u16_t Ystart)
 }
 
 #if USE_BSP_SENSE == 0
-// Copied from device_btn_ext.h in the co2-sensor repsoitory
-// Number of the extended LED/Button
-
-typedef enum co2dev_led_btn_ext
-{
-	DEV_BTN_BR  = 0,
-	DEV_BTN_BL  = 1,
-	DEV_BTN_TR  = 2,
-	DEV_BTN_TL  = 3,
-	DEV_EP_BUSY = 4,
-} co2dev_led_btn_ext;
-ca_error CO2DEV_SenseExt(co2dev_led_btn_ext ledBtn, u8_t *val);
-ca_error CO2DEV_RegisterButtonInputExt(co2dev_led_btn_ext ledBtn);
-ca_error CO2DEV_DeRegisterExt(co2dev_led_btn_ext ledBtn);
+#include "sif_btn_ext_pi4ioe5v6408.h"
+/* use gpio extender button 4 */
+#define EP_BUSY_PIN_EXT 4
 #endif
 
 /******************************************************************************/
@@ -184,11 +173,11 @@ static void SIF_SSD1608_WaitUntilIdle(void)
 
 #else
 	u8_t co2dev_BUSY_val;
-	CO2DEV_SenseExt(DEV_EP_BUSY, &co2dev_BUSY_val);
+	SIF_SenseExt(EP_BUSY_PIN_EXT, &co2dev_BUSY_val);
 	while (co2dev_BUSY_val == 1)
 	{
 		WAIT_ms(2);
-		CO2DEV_SenseExt(DEV_EP_BUSY, &co2dev_BUSY_val);
+		SIF_SenseExt(EP_BUSY_PIN_EXT, &co2dev_BUSY_val);
 	}
 
 #endif
@@ -353,8 +342,8 @@ ca_error SIF_SSD1608_Initialise(SIF_SSD1608_Update_Mode mode)
 
 #else
 
-	CO2DEV_DeRegisterExt(DEV_EP_BUSY);
-	CO2DEV_RegisterButtonInputExt(DEV_EP_BUSY);
+	SIF_DeRegisterExt(EP_BUSY_PIN_EXT);
+	SIF_RegisterGeneralInputExt(EP_BUSY_PIN_EXT, MODULE_PIN_PULLUP_ON);
 #endif
 	/* RST - Pin 15 */
 	BSP_ModuleRegisterGPIOOutput(SIF_SSD1608_RST_PIN, MODULE_PIN_TYPE_GENERIC);
@@ -364,7 +353,7 @@ ca_error SIF_SSD1608_Initialise(SIF_SSD1608_Update_Mode mode)
 	/*****************************************/
 	/*** Initialise the SPI communication  ***/
 	/*****************************************/
-	SENSORIF_SPI_Init();
+	SENSORIF_SPI_Init(true);
 
 	/*****************************************/
 	/*** Set GPIO pins high                ***/
@@ -396,15 +385,15 @@ void SIF_SSD1608_Deinitialise(void)
 	BSP_ModuleRegisterGPIOInput(&(struct gpio_input_args){
 	    SIF_SSD1608_BUSY_PIN, MODULE_PIN_PULLUP_ON, MODULE_PIN_DEBOUNCE_ON, MODULE_PIN_IRQ_OFF, NULL});
 #else
-	CO2DEV_DeRegisterExt(DEV_EP_BUSY);
-	CO2DEV_RegisterButtonInputExt(DEV_EP_BUSY);
+	SIF_DeRegisterExt(EP_BUSY_PIN_EXT);
+	SIF_RegisterGeneralInputExt(EP_BUSY_PIN_EXT, MODULE_PIN_PULLUP_ON);
 #endif
 }
 
 #ifndef EPAPER_FULL_RESOLUTION
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief This function will transform an input byte into an output buffer 
+ * \brief This function will transform an input byte into an output buffer
  * containing two bytes, in the following manner:
  * Every bit of the input byte is doubled, e.g.
  * (0xC3) 1  1  0  0  0  0  1  1
@@ -515,7 +504,7 @@ static void SIF_SSD1608_ClearBottomEdge(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Actually copies the image into the eink's RAM. 
+ * \brief Actually copies the image into the eink's RAM.
  * Half resolution.
  *******************************************************************************
  * \param[in] image - The image that is to be copied.

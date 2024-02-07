@@ -63,8 +63,10 @@
        included. This should define the CUSTOM_PARTITION_H preprocessor macro.
 #endif
 
-static volatile u8_t asleep = 0;
-static volatile u8_t wakeup = 0;
+static volatile u8_t asleep    = 0;
+static volatile u8_t wakeup    = 0;
+static volatile u8_t gpioint   = 0;
+static volatile u8_t powerdown = 0;
 static u8_t          lxt_connected;
 static uint32_t      systick_freq = 0;
 
@@ -197,7 +199,7 @@ static bool should_enable_pll(bool useExtClk, fsys_mhz fsys, u8_t enable_comms)
 #endif
 
 #ifdef USE_USB /* Is PLL required for USB? */
-		/* PLL required for USB if using external clock source, 
+		/* PLL required for USB if using external clock source,
 		   unless fsys == 64 MHz, in which case HIRC48 should be used,
 		   (handled in the section that checks whether HIRC48 is required) */
 		if (useExtClk && fsys != FSYS_64MHZ)
@@ -245,7 +247,7 @@ static bool should_enable_hirc48(bool useExtClk, fsys_mhz fsys, u8_t enable_comm
 
 	if (!useExtClk && !pllEnabled && fsys > FSYS_INTERNAL_HIRC) /* Is HIRC48 required for system clock? */
 	{
-		/* HIRC48 needed to generate fsys from HIRC48, if 
+		/* HIRC48 needed to generate fsys from HIRC48, if
 		   required fsys frequency is greater than the one
 		   provided by HIRC, and if internal clock is used, and PLL hasn't yet been enabled */
 		return true;
@@ -488,7 +490,7 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 	}
 
 	/* set system clock */
-	/* NOTE: The commented letters in parentheses refer to the comments 
+	/* NOTE: The commented letters in parentheses refer to the comments
 	   written in the switch statement at the start of this function. Those
 	   help to make it easier to understand the code below. */
 	SYS_UnlockReg();
@@ -641,7 +643,7 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	CLK_EnableModuleClock(TMR1_MODULE);
 
 	/* configure clock selects and dividers for timers 0 and 1 */
-	/* clocks are fixed to HXT (4 MHz from ca821x, or 12 MHz from numaker crystal oscillator), 
+	/* clocks are fixed to HXT (4 MHz from ca821x, or 12 MHz from numaker crystal oscillator),
 	or HIRC (12 MHz) */
 	if (useExtClk)
 	{
@@ -1063,17 +1065,25 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 		CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_ULLPD); /* ULLPD */
 	}
 
-	CHILI_SetWakeup(WUP_CLEAR);
+	CHILI_SetPowerDown(0); /* power-down sequence complete */
 
-	do
+	/* if a gpio interrupt during power-down sequence don't sleep as it requires servicing */
+	/* otherwise go to sleep */
+	if (!CHILI_GetGPIOInt())
 	{
-		CLK->PWRCTL |= CLK_PWRCTL_PDEN_Msk; /* Set power down bit */
-		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;  /* Sleep Deep */
-		__WFI();                            /* really enter power down here !!! */
+		CHILI_SetWakeup(WUP_CLEAR);
 
-		__DSB();
-		__ISB();
-	} while (!CHILI_GetWakeup());
+		do
+		{
+			CLK->PWRCTL |= CLK_PWRCTL_PDEN_Msk; /* Set power down bit */
+			SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;  /* Sleep Deep */
+			__WFI();                            /* really enter power down here !!! */
+
+			__DSB();
+			__ISB();
+
+		} while (!CHILI_GetWakeup());
+	}
 
 	/* re-enable peripheral memory */
 	SYS->SRAMPPCT = 0x00000000;
@@ -1084,24 +1094,34 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 		BSP_RTCDisableAlarm();
 
 	/* determine wakeup time */
-	if (use_timer0)
+	if (CHILI_GetGPIOInt())
 	{
-		wakeuptime = TIMER_GetCounter(TIMER0);
-		/* add sleep_time if timer timeout but avoid situation where fast gpio interrupt has been triggered */
-		if ((wakeuptime == 0) && (CHILI_GetWakeup() != WUP_GPIO))
-		{
-			wakeuptime = sleeptime_ms;
-		}
-		else
-		{
-			if ((lxt_connected) && (sleeptime_ms >= 1000))
-				wakeuptime = (wakeuptime * 1000) / 128;
-		}
+		wakeuptime = 0;
 	}
 	else
 	{
-		wakeuptime = sleeptime_ms;
+		if (use_timer0)
+		{
+			wakeuptime = TIMER_GetCounter(TIMER0);
+			/* add sleep_time if timer timeout but avoid situation where fast gpio interrupt has been triggered */
+			if ((wakeuptime == 0) && (CHILI_GetWakeup() != WUP_GPIO))
+			{
+				wakeuptime = sleeptime_ms;
+			}
+			else
+			{
+				if ((lxt_connected) && (sleeptime_ms >= 1000))
+					wakeuptime = (wakeuptime * 1000) / 128;
+			}
+		}
+		else
+		{
+			wakeuptime = sleeptime_ms;
+		}
 	}
+
+	CHILI_SetGPIOInt(0);
+
 	TIMER_Stop(TIMER0);
 	SYS_ResetModule(TMR0_RST);
 
@@ -1135,6 +1155,26 @@ __NONSECURE_ENTRY void CHILI_SetAsleep(u8_t new_asleep)
 __NONSECURE_ENTRY u8_t CHILI_GetAsleep()
 {
 	return asleep;
+}
+
+__NONSECURE_ENTRY void CHILI_SetGPIOInt(u8_t new_gpioint)
+{
+	gpioint = new_gpioint;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetGPIOInt()
+{
+	return gpioint;
+}
+
+__NONSECURE_ENTRY void CHILI_SetPowerDown(u8_t new_powerdown)
+{
+	powerdown = new_powerdown;
+}
+
+__NONSECURE_ENTRY u8_t CHILI_GetPowerDown(void)
+{
+	return powerdown;
 }
 
 /** Wait until system is stable after potential usb plug-in */

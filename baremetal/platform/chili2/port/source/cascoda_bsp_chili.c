@@ -145,6 +145,11 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	CHILI_SetAsleep(0);
 }
 
+void BSP_SetPowerDown(void)
+{
+	CHILI_SetPowerDown(1);
+}
+
 void BSP_SetSPIMOSIOutput(void)
 {
 	/* connect port to SPI MOSI and disable pull-up */
@@ -430,6 +435,9 @@ void BSP_Initialise(struct ca821x_dev *pDeviceRef)
 	CHILI_WaitForSystemStable();
 
 	/* system  initialisation (clocks, timers ..) */
+#if defined(USE_USB) || defined(USE_UART)
+	CHILI_SetEnableCommsInterface(1);
+#endif
 	CHILI_SystemReInit();
 	cascoda_isr_chili_init();
 	targetm2351_ecp_register();
@@ -544,4 +552,12 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 bool BSP_IsInsideInterrupt(void)
 {
 	return SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk;
+}
+
+bool BSP_IsCommsInterfaceEnabled(void)
+{
+	if (CHILI_GetEnableCommsInterface())
+		return (true);
+
+	return (false);
 }

@@ -38,7 +38,14 @@ static uint32_t SENSORIF_PWM_RST_S;
 
 static void SENSORIF_SECURE_PWM_Pin_Config_Helper()
 {
-	if (SENSORIF_PWM_PIN_S == 15)
+	if (SENSORIF_PWM_PIN_S == 5)
+	{
+		GPIO_ENABLE_DIGITAL_PATH(PB, BIT12);
+		GPIO_DISABLE_DEBOUNCE(PB, BIT12);
+		GPIO_SetPullCtl(PB, BIT12, GPIO_PUSEL_DISABLE);
+		SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SYS_GPB_MFPH_PB12MFP_Msk)) | SYS_GPB_MFPH_PB12MFP_EPWM1_CH3;
+	}
+	else if (SENSORIF_PWM_PIN_S == 15)
 	{
 		GPIO_ENABLE_DIGITAL_PATH(PA, BIT15);
 		GPIO_DISABLE_DEBOUNCE(PA, BIT15);
@@ -92,7 +99,16 @@ static ca_error SENSORIF_PWM_Config(u8_t pin)
 
 	SENSORIF_PWM_PIN_S = pin;
 
-	if (SENSORIF_PWM_PIN_S == 15)
+	if (SENSORIF_PWM_PIN_S == 5)
+	{
+		SENSORIF_PWM_TYPE_S         = USING_EPWM;
+		SENSORIF_PWM_EPWMIF_S       = EPWM1;
+		SENSORIF_PWM_MODULE_S       = EPWM1_MODULE;
+		SENSORIF_PWM_CHANNEL_NUM_S  = 3;
+		SENSORIF_PWM_CHANNEL_MASK_S = EPWM_CH_3_MASK;
+		SENSORIF_PWM_RST_S          = EPWM1_RST;
+	}
+	else if (SENSORIF_PWM_PIN_S == 15)
 	{
 		SENSORIF_PWM_TYPE_S         = USING_BPWM;
 		SENSORIF_PWM_BPWMIF_S       = BPWM1;
@@ -321,7 +337,7 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Deinit(void)
 		CLK_DisableModuleClock(I2C2_MODULE);
 }
 
-__NONSECURE_ENTRY void SENSORIF_SPI_Init(void)
+__NONSECURE_ENTRY void SENSORIF_SPI_Init(bool is_eink_display_present)
 {
 	/* enable SPI peripheral clock */
 	if (SENSORIF_SPINUM_S == 1)
@@ -332,14 +348,15 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(void)
 	/* MOSI/MISO/CLK/SS port configurations*/
 	if (SENSORIF_SPINUM_S == 1)
 	{
-#if (!CASCODA_EINK_DISPLAY_PRESENT)
-		/* re-config PB.5 for MISO pin for full duplex mode*/
-		GPIO_ENABLE_DIGITAL_PATH(PB, BIT5);
-		GPIO_DISABLE_DEBOUNCE(PB, BIT5);
-		GPIO_SetPullCtl(PB, BIT5, GPIO_PUSEL_DISABLE);
-		/* initialise PB MFP for MISO */
-		SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB5MFP_Msk)) | SYS_GPB_MFPL_PB5MFP_SPI1_MISO;
-#endif
+		if (!is_eink_display_present)
+		{
+			/* re-config PB.5 for MISO pin for full duplex mode*/
+			GPIO_ENABLE_DIGITAL_PATH(PB, BIT5);
+			GPIO_DISABLE_DEBOUNCE(PB, BIT5);
+			GPIO_SetPullCtl(PB, BIT5, GPIO_PUSEL_DISABLE);
+			/* initialise PB MFP for MISO */
+			SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB5MFP_Msk)) | SYS_GPB_MFPL_PB5MFP_SPI1_MISO;
+		}
 		/* re-config PB.4, PB.3 and PB.2 */
 		GPIO_ENABLE_DIGITAL_PATH(PB, BIT4);
 		GPIO_ENABLE_DIGITAL_PATH(PB, BIT3);
@@ -387,17 +404,17 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(void)
 
 	/* clear transmit fifo but only clear receive fifo for full-duplex mode*/
 	SPI_ClearTxFIFO(SENSORIF_SPIIF_S);
-#if (!CASCODA_EINK_DISPLAY_PRESENT)
-	SPI_ClearRxFIFO(SENSORIF_SPIIF_S);
-#endif
+	if (!is_eink_display_present)
+		SPI_ClearRxFIFO(SENSORIF_SPIIF_S);
 
 	/* enable SPI */
 	SPI_Open(SENSORIF_SPIIF_S, SPI_MASTER, SPI_MODE_0, SENSORIF_SPI_DATA_WIDTH, SENSORIF_SPI_CLK_FREQUENCY);
 
-#if (CASCODA_EINK_DISPLAY_PRESENT)
-	/* Set SPI commmunication to half-duplex mode with output data direction */
-	SENSORIF_SPIIF_S->CTL |= (SPI_CTL_HALFDPX_Msk | SPI_CTL_DATDIR_Msk);
-#endif
+	if (is_eink_display_present)
+	{
+		/* Set SPI commmunication to half-duplex mode with output data direction */
+		SENSORIF_SPIIF_S->CTL |= (SPI_CTL_HALFDPX_Msk | SPI_CTL_DATDIR_Msk);
+	}
 }
 
 __NONSECURE_ENTRY void SENSORIF_SPI_Deinit(void)

@@ -595,7 +595,7 @@ void SIF_SSD1681_Initialise(void)
 	/*****************************************/
 	/*** Initialise the SPI communication  ***/
 	/*****************************************/
-	SENSORIF_SPI_Init();
+	SENSORIF_SPI_Init(true);
 
 	/*****************************************/
 	/*** Set GPIO pins high                ***/

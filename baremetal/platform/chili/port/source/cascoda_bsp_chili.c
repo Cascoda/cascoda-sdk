@@ -563,6 +563,10 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	CHILI_FastForward(sleeptime_ms);
 }
 
+void BSP_SetPowerDown(void)
+{
+}
+
 /*---------------------------------------------------------------------------*
  * See cascoda-bm/cascoda_interface.h for docs                               *
  *---------------------------------------------------------------------------*/
@@ -798,4 +802,10 @@ void BSP_SystemConfig(fsys_mhz fsys, u8_t enable_comms)
 bool BSP_IsInsideInterrupt(void)
 {
 	return SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk;
+}
+
+// not implemented
+void BSP_FlashLock(void)
+{
+	return;
 }

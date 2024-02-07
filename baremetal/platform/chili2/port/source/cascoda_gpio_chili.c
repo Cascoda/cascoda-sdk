@@ -274,6 +274,9 @@ void CHILI_ModulePinIRQHandler(enPortnum portnum)
 				{
 					ModulePinCallbacks[i]();
 					CHILI_SetWakeup(WUP_GPIO);
+					/* flag that interrupt has occured during powerdown sequence */
+					if (CHILI_GetPowerDown())
+						CHILI_SetGPIOInt(1);
 				}
 			}
 		}

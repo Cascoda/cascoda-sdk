@@ -953,6 +953,10 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 	u8_t attlen;
 	u8_t dsn[1];
 
+	/* set the powerdown flag as soon as possible */
+	/* to avoid issues with gpio interrupts not being serviced during power-down sequence */
+	BSP_SetPowerDown();
+
 	// preserve running counter values from MAC
 	if ((mode == PDM_POWERDOWN) || (mode == PDM_POWEROFF))
 	{
@@ -965,6 +969,8 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 #endif /* USE_USB */
 #if defined(USE_UART)
 	BSP_SerialWaitWhileBusy();
+	/* don't wait for RxRdy, power down immediately */
+	SerialResetTxStalled();
 #endif /* USE_UART */
 #if defined(USE_USB) || defined(USE_UART)
 	BSP_SystemConfig(BSP_GetSystemFrequency(), 0);

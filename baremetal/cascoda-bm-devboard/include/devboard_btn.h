@@ -32,14 +32,7 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "ca821x_error.h"
-
-#define NUM_LEDBTN 4 /* number of LED/Button pairs on devboard */
-
-#define BTN_MIN_PRESS_TIME 5 /* minimum press time for additional de-bouncing */
-
-#ifndef BTN_SHARED_SENSE_DELAY
-#define BTN_SHARED_SENSE_DELAY 2
-#endif
+#include "cascoda_btn.h"
 
 /** Jumper position controls which module pin is used for the LED/Button */
 typedef enum dvbd_led_btn_jumper_position
@@ -57,57 +50,20 @@ typedef enum dvbd_led_btn
 	DEV_SWITCH_4 = 3
 } dvbd_led_btn;
 
-/* Execute short press callback when pressed or on release
- * Note: BTN_SHORTPRESS_RELEASED should only be used when
- * the same button is being registered with a long press
- * callback.
- */
-enum dvbd_shortpress_mode
-{
-	BTN_SHORTPRESS_PRESSED  = 0,
-	BTN_SHORTPRESS_RELEASED = 1
-};
-
-/* Button state */
-enum dvbd_button_state
-{
-	BTN_PRESSED  = 0,
-	BTN_RELEASED = 1
-};
-
-enum dvbd_pin_type
-{
-	PINTYPE_NONE   = 0,
-	PINTYPE_LED    = 1,
-	PINTYPE_BTN    = 2,
-	PINTYPE_SHARED = 3,
-};
-
-/* dvbd callback type definition */
-typedef void (*dvbd_btn_callback)(void* context);
-
-/** Callbacks and associated timers for the buttons */
-typedef struct dvbd_btn_callback_info
-{
-	dvbd_btn_callback shortPressCallback; /**< Callback function for a short button press */
-	void*             shortPressContext;  /**< Context for shortPressCallback */
-
-	dvbd_btn_callback longPressCallback; /**< Callback function for a long button press */
-	void*             longPressContext;  /**< Context for longPressCallback */
-
-	dvbd_btn_callback holdCallback; /**< Callback function for when the button is held */
-	void*             holdContext;  /**< Context for holdCallback */
-
-	u32_t currentPressTime;       /**< Time [ms] when the button has been pressed */
-	u32_t longPressTimeThreshold; /**< Time limit [ms] above which a button press is considered a long press */
-	u32_t holdTimeInterval;       /**< Time interval [ms] for triggering the hold function */
-	u32_t holdTimeLast;           /**< Time [ms] when hold callback was last called */
-	u8_t  lastState;              /**< Last button state */
-	u8_t  shortPressMode;         /**< Short Press callback when pressed or on release */
-} dvbd_btn_callback_info;
+/* re-mapping for functions that have 1-to-1 functionality */
+#define DVBD_SetLED Btn_SetLED
+#define DVBD_SetGPIOWakeup Btn_SetGPIOWakeup
+#define DVBD_Sense Btn_Sense
+#define DVBD_SenseOutput Btn_SenseOutput
+#define DVBD_SetButtonShortPressCallback Btn_SetButtonShortPressCallback
+#define DVBD_SetButtonLongPressCallback Btn_SetButtonLongPressCallback
+#define DVBD_SetButtonHoldCallback Btn_SetButtonHoldCallback
+#define DVBD_PollButtons Btn_PollButtons
+#define DVBD_CanSleep Btn_CanSleep
+#define DVBD_DevboardSleep Btn_DevboardSleep
 
 /**
- * \brief Set the functionality of an LED to be an output
+ * \brief Register LED output (open drain)
  * \param ledBtn - reference to LED
  * \param jumperPos - posititon of the jumper
  * \return status
@@ -116,16 +72,7 @@ typedef struct dvbd_btn_callback_info
 ca_error DVBD_RegisterLEDOutput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
- * \brief Set the state of the LED
- * \param ledBtn - reference to LED
- * \param val - the state of the LED
- * \return status
- *
- */
-ca_error DVBD_SetLED(dvbd_led_btn ledBtn, u8_t val);
-
-/**
- * \brief Set the functionality of a button to be an input
+ * \brief Register button input
  * \param ledBtn - reference to button
  * \param jumperPos - posititon of the jumper
  * \return status
@@ -134,7 +81,7 @@ ca_error DVBD_SetLED(dvbd_led_btn ledBtn, u8_t val);
 ca_error DVBD_RegisterButtonInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
- * \brief Set the functionality of a button to be an interrupt input
+ * \brief Register button input with interrupt (for sleepy devices)
  * \param ledBtn - reference to button
  * \param jumperPos - posititon of the jumper
  * \return status
@@ -143,7 +90,7 @@ ca_error DVBD_RegisterButtonInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_posit
 ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
- * \brief Set the functionality of a button to be a shared input/output
+ * \brief Register button as shared input/output
  * \param ledBtn - reference to button
  * \param jumperPos - posititon of the jumper
  * \return status
@@ -170,98 +117,10 @@ ca_error DVBD_RegisterSharedIRQButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumpe
 ca_error DVBD_DeRegister(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos);
 
 /**
- * \brief Get the state of the LED/Button
- * \param ledBtn - reference to LED/Button
- * \param val - the state of the LED/Button
- * \return status
- *
- */
-ca_error DVBD_Sense(dvbd_led_btn ledBtn, u8_t* val);
-
-/**
- * \brief Get the output state of the LED
- * \param ledBtn - reference to LED
- * \param val - the state of the LED
- * \return status
- *
- */
-ca_error DVBD_SenseOutput(dvbd_led_btn ledBtn, u8_t* val);
-
-/**
- * \brief Set a callback function to a button when it is short pressed
- * \param ledBtn - reference to LED/Button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if no context is needed.
- * \param shortPressMode - short press mode (when pressed or when released). Note:
- * BTN_SHORTPRESS_RELEASED should only be used when
- * the same button is being registered with a long press
- * callback.
- * \return status
- *
- */
-ca_error DVBD_SetButtonShortPressCallback(dvbd_led_btn      ledBtn,
-                                          dvbd_btn_callback callback,
-                                          void*             context,
-                                          uint8_t           shortPressMode);
-
-/**
- * \brief Set a callback function to a button when it is long pressed
- * \param ledBtn - reference to LED/Button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if not context is needed.
- * \param timeThreshold - time above which a button press is considered a long press
- * \return status
- *
- */
-ca_error DVBD_SetButtonLongPressCallback(dvbd_led_btn      ledBtn,
-                                         dvbd_btn_callback callback,
-                                         void*             context,
-                                         u32_t             timeThreshold);
-
-/**
- * \brief Set a callback function to a button when it is held
- * \param ledBtn - reference to LED/Button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if not context is needed.
- * \param TimeInterval - time interval in [ms] in which callback function is called
- * \return status
- *
- */
-ca_error DVBD_SetButtonHoldCallback(dvbd_led_btn ledBtn, dvbd_btn_callback callback, void* context, u32_t TimeInterval);
-
-/**
- * \brief Activate callbacks for any buttons that are currently being pressed
- * \return status
- *
- */
-ca_error DVBD_PollButtons();
-
-/**
  * \brief Modify possible pin mappings
  * \return status
  *
  */
 ca_error DVBD_modifyPinMappings(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_position jumperPos, u8_t new_pin);
-
-/**
- * \brief Register that GPIOs are used for wakeup
- * \return true/false
- *
- */
-void DVBD_SetGPIOWakeup(void);
-
-/**
- * \brief Check if all buttons have been handled
- * \return true/false
- *
- */
-bool DVBD_CanSleep(void);
-
-/**
- * \brief Put board to sleep / powerdown
- * \return status
- *
- */
-ca_error DVBD_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev* pDeviceRef);
 
 #endif // DEVBOARD_BTN_H

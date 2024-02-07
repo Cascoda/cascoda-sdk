@@ -121,7 +121,7 @@ err_t hal_spi_master_open(handle_t *handle, bool hal_obj_open_state)
 			}
 		}
 
-		SENSORIF_SPI_Init();
+		SENSORIF_SPI_Init(false);
 		hal_status = ACQUIRE_SUCCESS;
 
 		if (hal_status == ACQUIRE_SUCCESS)

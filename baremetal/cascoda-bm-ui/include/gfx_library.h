@@ -111,7 +111,7 @@ void display_putc(uint8_t c);
     snprintf does not display floating numbers
     use display_double() to display floating numbers
 */
-void display_puts(uint8_t *s);
+void display_puts(const uint8_t *s);
 
 /**
     \brief  convert a float to a string
@@ -245,8 +245,8 @@ void display_customChar(const uint8_t *c);
 void display_drawChar(uint16_t x, uint16_t y, uint8_t c, uint16_t color, uint16_t bg, uint8_t size);
 
 void display_setContrast(uint32_t contrast);
-void display_slider(int x, int y, int lenght, int value);
-void display_progressbar(int x, int y, int lenght, int value);
+void display_slider(int x, int y, int length, int value);
+void display_progressbar(int x, int y, int length, int value);
 
 #ifdef __cplusplus
 }

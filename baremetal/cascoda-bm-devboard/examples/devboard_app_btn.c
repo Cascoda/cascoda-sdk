@@ -34,7 +34,18 @@
 
 #define WAKEUP_TIME 10000
 
-#define USE_INTERRUPTS 0 /* power-down and interrupts when 1, polling when 0 */
+/* use interrupts when 1, polling only when 0 */
+#define USE_INTERRUPTS 1
+
+/* sleep (1) or stay awake (0) */
+/* USE_INTERRUPTS also has to be set to (1) for sleeping */
+#define USE_SLEEP_MODE 0
+
+/* use shared Button/LED (1) or 'classic' (separate) mode (0) */
+#define USE_SHARED_BUTTONS 0
+
+/* jumper position (JUMPER_POS_1 or JUMPER_POS_2) */
+#define JUMPER_POS JUMPER_POS_1
 
 #define BLINK_PERIOD_MS 500
 
@@ -77,22 +88,35 @@ static void hardware_init(void)
 	static u8_t nr[3] = {1, 2, 3};
 
 	/* Register the SW4 as LED */
-	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_2);
+	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS);
 	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
 
+#if USE_SHARED_BUTTONS
 	/* Register SW1/SW2/SW3 as Buttons */
 #if USE_INTERRUPTS
-	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_1, JUMPER_POS_2);
-	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_2, JUMPER_POS_2);
-	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_3, JUMPER_POS_2);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_1, JUMPER_POS);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_2, JUMPER_POS);
+	DVBD_RegisterSharedIRQButtonLED(DEV_SWITCH_3, JUMPER_POS);
 #else
-	DVBD_RegisterSharedButtonLED(DEV_SWITCH_1, JUMPER_POS_2);
-	DVBD_RegisterSharedButtonLED(DEV_SWITCH_2, JUMPER_POS_2);
-	DVBD_RegisterSharedButtonLED(DEV_SWITCH_3, JUMPER_POS_2);
-#endif
-	DVBD_SetLED(DEV_SWITCH_1, 1);
-	DVBD_SetLED(DEV_SWITCH_2, 1);
-	DVBD_SetLED(DEV_SWITCH_3, 0);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_1, JUMPER_POS);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_2, JUMPER_POS);
+	DVBD_RegisterSharedButtonLED(DEV_SWITCH_3, JUMPER_POS);
+#endif // USE_INTERRUPTS
+	DVBD_SetLED(DEV_SWITCH_1, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_2, LED_OFF);
+	DVBD_SetLED(DEV_SWITCH_3, LED_ON);
+#else
+#if USE_INTERRUPTS
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_1, JUMPER_POS);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_2, JUMPER_POS);
+	DVBD_RegisterButtonIRQInput(DEV_SWITCH_3, JUMPER_POS);
+#else
+	DVBD_RegisterButtonInput(DEV_SWITCH_1, JUMPER_POS);
+	DVBD_RegisterButtonInput(DEV_SWITCH_2, JUMPER_POS);
+	DVBD_RegisterButtonInput(DEV_SWITCH_3, JUMPER_POS);
+#endif // USE_INTERRUPTS
+#endif // USE_SHARED_BUTTONS
+
 #if DEF_SHORT_CB
 	DVBD_SetButtonShortPressCallback(DEV_SWITCH_1, &short_press_cb, &nr[0], BTN_SHORTPRESS_RELEASED);
 	DVBD_SetButtonShortPressCallback(DEV_SWITCH_2, &short_press_cb, &nr[1], BTN_SHORTPRESS_RELEASED);
@@ -129,6 +153,9 @@ void hardware_reinitialise(void)
 bool hardware_can_sleep(void)
 {
 	if (!USE_INTERRUPTS) /* polling only */
+		return false;
+
+	if (!USE_SLEEP_MODE) /* not sleeping */
 		return false;
 
 	if (!DVBD_CanSleep())
@@ -205,12 +232,14 @@ int main(void)
 
 	hardware_init();
 
+#if (USE_SHARED_BUTTONS)
 	struct blink_ctx ctx = {
 	    &blink_tasklet,
 	    DEV_SWITCH_1,
 	};
 	TASKLET_Init(&blink_tasklet, &blinkCB);
 	TASKLET_ScheduleDelta(&blink_tasklet, BLINK_PERIOD_MS, &ctx);
+#endif // USE_SHARED_BUTTONS
 
 	/* Endless Polling Loop */
 	while (1)

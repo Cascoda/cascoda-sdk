@@ -3,7 +3,6 @@ project (cascoda-bm-devboard)
 
 add_library(cascoda-bm-devboard
     ${PROJECT_SOURCE_DIR}/source/devboard_btn.c
-    ${PROJECT_SOURCE_DIR}/source/devboard_btn_ext.c
     ${PROJECT_SOURCE_DIR}/source/devboard_batt.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click.c
     ${PROJECT_SOURCE_DIR}/source/devboard_click_handlers_default.c
@@ -12,7 +11,7 @@ add_library(cascoda-bm-devboard
 )
 
 
-target_link_libraries(cascoda-bm-devboard PUBLIC cascoda-bm mikrosdk-click)
+target_link_libraries(cascoda-bm-devboard PUBLIC cascoda-bm cascoda-btn mikrosdk-click)
 
 target_include_directories(cascoda-bm-devboard PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
@@ -31,7 +30,7 @@ add_executable(devboard-click
     ${PROJECT_SOURCE_DIR}/examples/devboard_app_click.c
 )
 
-target_link_libraries(devboard-click cascoda-bm cascoda-bm-devboard mikrosdk-click)
+target_link_libraries(devboard-click cascoda-bm cascoda-bm-devboard mikrosdk-click btn-ext-pi4ioe5v96248)
 cascoda_make_binary(devboard-click CASCODA_BUILD_BINARIES)
 cascoda_put_subdir(devboard devboard-click)
 

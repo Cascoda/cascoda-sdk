@@ -1,9 +1,5 @@
-/**
- * @file
- * @brief mikrosdk interface
- */
 /*
- *  Copyright (c) 2022, Cascoda Ltd.
+ *  Copyright (c) 2023, Cascoda Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -30,63 +26,72 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Example click interface driver
+ * Sensor interface for Diodes/Pericom PI4IOE5V96248 48-bit gpio expander
+ * (Currently limited to 8 (port 0)
 */
 
-#ifndef EXPAND13_CLICK_H
-#define EXPAND13_CLICK_H
+#ifndef SIF_PI4IOE5V96248_H
+#define SIF_PI4IOE5V96248_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 
-/* use alarm pin as interrupt (1) with continuous mode instead of polling (0) with one-shot mode */
-#define EXPAND13_USE_INTERRUPT 1
+#define I2C_PORTNUM 1 // CLICK interface port for I2C
+
+/* interrupt pin */
+#define SIF_PI4IOE5V96248_INT_PIN 5
+
+/* reset pin */
+#define SIF_PI4IOE5V96248_RST_PIN 6
 
 /* pin masks */
-#define EXPAND13_NO_PIN_MASK 0x00
-#define EXPAND13_PIN_0_MASK 0x01
-#define EXPAND13_PIN_1_MASK 0x02
-#define EXPAND13_PIN_2_MASK 0x04
-#define EXPAND13_PIN_3_MASK 0x08
-#define EXPAND13_PIN_4_MASK 0x10
-#define EXPAND13_PIN_5_MASK 0x20
-#define EXPAND13_PIN_6_MASK 0x40
-#define EXPAND13_PIN_7_MASK 0x80
-#define EXPAND13_ALL_PINS_MASK 0xFF
+#define SIF_PI4IOE5V96248_NO_PIN_MASK 0x00
+#define SIF_PI4IOE5V96248_PIN_0_MASK 0x01
+#define SIF_PI4IOE5V96248_PIN_1_MASK 0x02
+#define SIF_PI4IOE5V96248_PIN_2_MASK 0x04
+#define SIF_PI4IOE5V96248_PIN_3_MASK 0x08
+#define SIF_PI4IOE5V96248_PIN_4_MASK 0x10
+#define SIF_PI4IOE5V96248_PIN_5_MASK 0x20
+#define SIF_PI4IOE5V96248_PIN_6_MASK 0x40
+#define SIF_PI4IOE5V96248_PIN_7_MASK 0x80
+#define SIF_PI4IOE5V96248_ALL_PINS_MASK 0xFF
 
 /* port numbers (note: only port 0 used in implementation */
-#define EXPAND13_PORT_0 0x00
-#define EXPAND13_PORT_1 0x01
-#define EXPAND13_PORT_2 0x02
-#define EXPAND13_PORT_3 0x03
-#define EXPAND13_PORT_4 0x04
-#define EXPAND13_PORT_5 0x05
+#define SIF_PI4IOE5V96248_PORT_0 0x00
+#define SIF_PI4IOE5V96248_PORT_1 0x01
+#define SIF_PI4IOE5V96248_PORT_2 0x02
+#define SIF_PI4IOE5V96248_PORT_3 0x03
+#define SIF_PI4IOE5V96248_PORT_4 0x04
+#define SIF_PI4IOE5V96248_PORT_5 0x05
 
 /*  i2c address */
-#define EXPAND13_I2C_ADDR 0x20
+#define SIF_PI4IOE5V96248_I2C_ADDR 0x20
 
 /* timing parameters [ms] */
-#define EXPAND13_T_RESET 1 /* 1 ms for reset */
+#define SIF_PI4IOE5V96248_T_RESET 1 /* 1 ms for reset */
 
 /* interrupt active low */
 enum expand13_alarm_state
 {
-	EXPAND13_INT_TRIGGERED = 0,
-	EXPAND13_INT_CLEARED   = 1
+	SIF_PI4IOE5V96248_INT_TRIGGERED = 0,
+	SIF_PI4IOE5V96248_INT_CLEARED   = 1
 };
 
 /* data acquisition status */
 enum expand13_status
 {
-	EXPAND13_ST_OK   = 0, /* read values ok */
-	EXPAND13_ST_FAIL = 3  /* acquisition failed */
+	SIF_PI4IOE5V96248_ST_OK   = 0, /* read values ok */
+	SIF_PI4IOE5V96248_ST_FAIL = 3  /* acquisition failed */
 };
 
 /* new functions */
-void    MIKROSDK_EXPAND13_pin_mapping(uint8_t reset, uint8_t irq);
-uint8_t MIKROSDK_EXPAND13_alarm_triggered(void);
-uint8_t MIKROSDK_EXPAND13_Initialise(void);
-uint8_t MIKROSDK_EXPAND13_Acquire(uint8_t *port0);
-uint8_t MIKROSDK_EXPAND13_SetOutput(uint8_t io, uint8_t val);
-uint8_t MIKROSDK_EXPAND13_Sense(uint8_t io, uint8_t *val);
+uint8_t SIF_PI4IOE5V96248_alarm_triggered(void);
+uint8_t SIF_PI4IOE5V96248_Initialise(void);
+uint8_t SIF_PI4IOE5V96248_Acquire(uint8_t *port0);
+uint8_t SIF_PI4IOE5V96248_SetOutput(uint8_t io, uint8_t val);
+uint8_t SIF_PI4IOE5V96248_Sense(uint8_t io, uint8_t *val);
 
-#endif // EXPAND13_CLICK_H
+#endif // SIF_PI4IOE5V96248_H

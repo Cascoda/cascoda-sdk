@@ -36,13 +36,7 @@
 #include "cascoda-bm/cascoda_types.h"
 #include "ca821x_api.h"
 #include "ca821x_error.h"
-#include "devboard_btn.h"
-
-/* Number of extended I/Os supported
- * Set to 0 if no I/O expander chip used
- * Maximum is 8
- */
-#define NUM_LEDBTN_EXT 0
+#include "sif_btn_ext_pi4ioe5v96248.h"
 
 /* Number of the extended LED/Button */
 typedef enum dvbd_led_btn_ext
@@ -56,100 +50,5 @@ typedef enum dvbd_led_btn_ext
 	DEV_SWITCH_EXT_7 = 6,
 	DEV_SWITCH_EXT_8 = 7,
 } dvbd_led_btn_ext;
-
-/**
- * \brief Set the functionality of an LED to be an output
- * \param ledBtn - reference to LED
- * \return status
- *
- */
-ca_error DVBD_RegisterLEDOutputExt(dvbd_led_btn_ext ledBtn);
-
-/**
- * \brief Set the state of the LED
- * \param ledBtn - reference to LED
- * \param val - the state of the LED
- * \return status
- *
- */
-ca_error DVBD_SetLEDExt(dvbd_led_btn_ext ledBtn, u8_t val);
-
-/**
- * \brief Set the functionality of a button to be an input
- * \param ledBtn - reference to button
- * \return status
- *
- */
-ca_error DVBD_RegisterButtonInputExt(dvbd_led_btn_ext ledBtn);
-
-/**
- * \brief De-Register an LED or Button Pin
- * \param ledBtn - reference to LED/Button
- * \return status
- *
- */
-ca_error DVBD_DeRegisterExt(dvbd_led_btn_ext ledBtn);
-
-/**
- * \brief Get the state of the LED/Button
- * \param ionr - I/O number
- * \param val - the state of the LED/Button
- * \return status
- *
- */
-ca_error DVBD_SenseExt(dvbd_led_btn_ext ledBtn, u8_t* val);
-
-/**
- * \brief Get the state all buttons
- * \param values - the state of all buttons
- * \return status
- *
- */
-ca_error DVBD_SenseAllExt(u8_t* values);
-
-/**
- * \brief Set a callback function to a button when it is short pressed
- * \param ledBtn - reference to button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if no context is needed.
- * \param shortPressMode - short press mode (when pressed or when released). Note:
- * BTN_SHORTPRESS_RELEASED should only be used when
- * the same button is being registered with a long press
- * callback.
- * \return status
- *
- */
-ca_error DVBD_SetButtonShortPressCallbackExt(dvbd_led_btn_ext  ledBtn,
-                                             dvbd_btn_callback callback,
-                                             void*             context,
-                                             uint8_t           shortPressMode);
-
-/**
- * \brief Set a callback function to a button when it is long pressed
- * \param ledBtn - reference to button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if not context is needed.
- * \param timeThreshold - time above which a button press is considered a long press
- * \return status
- *
- */
-ca_error DVBD_SetButtonLongPressCallbackExt(dvbd_led_btn_ext  ledBtn,
-                                            dvbd_btn_callback callback,
-                                            void*             context,
-                                            u32_t             timeThreshold);
-
-/**
- * \brief Set a callback function to a button when it is held
- * \param ledBtn - reference to button
- * \param callback - function to call
- * \param context - context for the callback, should be set to NULL if not context is needed.
- * \param TimeInterval - time interval in [ms] in which callback function is called
- * \return status
- *
- */
-ca_error DVBD_SetButtonHoldCallbackExt(dvbd_led_btn_ext  ledBtn,
-                                       dvbd_btn_callback callback,
-                                       void*             context,
-                                       u32_t             TimeInterval);
 
 #endif // DEVBOARD_BTN_EXT_H

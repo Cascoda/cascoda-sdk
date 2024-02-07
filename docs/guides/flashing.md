@@ -32,15 +32,14 @@ Hardware requirements:
 
 ### Procedure
 
-Chilictl is currently a command line only application.
+Chilictl is a command line application used for working with Chili devices. A binary can be flashed using the `chilictl flash` command, with the `-f` flag specifying the binary file to flash.
 
-The first time that chilictl is used with a device, it must be updated with the correct DFU bootloader using the ``-d`` flag, as follows:
 
-```
+```bash
 # The -s argument is optional, and specifies the specific chili to flash (by serial number)
-# Replace the ldrom_hid.bin path with the your own path to the binary
-$ ./chilictl.exe flash -s FBC647CDB300A0DA -df "../Chili2D-USB/ldrom_hid.bin"
-2020-12-16 12:56:46.510 NOTE:  Cascoda SDK v0.14 Dec 16 2020
+# Replace the path with your own path to the desired binary
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -f "../Chili2D-USB/ot-cli.bin"
+2020-12-16 12:56:12.130 NOTE:  Cascoda SDK v0.14 Dec 16 2020
 Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
 Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE
 Flasher [FBC647CDB300A0DA]: ERASE -> FLASH
@@ -49,13 +48,11 @@ Flasher [FBC647CDB300A0DA]: VERIFY -> VALIDATE
 Flasher [FBC647CDB300A0DA]: VALIDATE -> COMPLETE
 ```
 
-Following this, the chilictl program can be used to replace the application firmware on a device as follows:
+Chili2Ds ship with the USB bootloader pre-installed - in normal operation you will not need to flash the bootloader. However, Chilictl allows you to do so using the `-df` flag.
 
-```
-# The -s argument is optional, and specifies the specific chili to flash (by serial number)
-# Replace the path with the your own path to the desired binary
-$ ./chilictl.exe flash -s FBC647CDB300A0DA -f "../Chili2D-USB/ldrom_hid.bin"
-2020-12-16 12:59:12.130 NOTE:  Cascoda SDK v0.14 Dec 16 2020
+```bash
+$ ./chilictl.exe flash -s FBC647CDB300A0DA -df "../Chili2D-USB/ldrom_hid.bin"
+2020-12-16 12:59:46.510 NOTE:  Cascoda SDK v0.14 Dec 16 2020
 Flasher [FBC647CDB300A0DA]: INIT -> REBOOT
 Flasher [FBC647CDB300A0DA]: REBOOT -> ERASE
 Flasher [FBC647CDB300A0DA]: ERASE -> FLASH

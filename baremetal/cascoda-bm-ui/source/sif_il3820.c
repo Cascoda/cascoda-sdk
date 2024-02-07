@@ -328,7 +328,7 @@ ca_error SIF_IL3820_Initialise(SIF_IL3820_Update_Mode mode)
 	/*****************************************/
 	/*** Initialise the SPI communication  ***/
 	/*****************************************/
-	SENSORIF_SPI_Init();
+	SENSORIF_SPI_Init(true);
 
 	/*****************************************/
 	/*** Set GPIO pins high                ***/

@@ -223,7 +223,7 @@ uint8_t MIKROSDK_EXPAND13_SetOutput(uint8_t io, uint8_t val)
 }
 
 /* sense input */
-uint8_t MIKROSDK_EXPAND13_SenseInput(uint8_t io, uint8_t *val)
+uint8_t MIKROSDK_EXPAND13_Sense(uint8_t io, uint8_t *val)
 {
 	uint8_t data;
 

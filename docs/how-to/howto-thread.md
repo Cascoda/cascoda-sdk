@@ -18,6 +18,7 @@ This document assumes the use of the [Cascoda Thread Evaluation Kit.](https://ww
 	- [Step 3 - Form the Network](#step-3---form-the-network)
 	- [Step 4 - Join the other devices to the network](#step-4---join-the-other-devices-to-the-network)
 	- [Step 5 - Demonstrate communication](#step-5---demonstrate-communication)
+	- [Next Steps](#next-steps)
 
 <!-- /TOC -->
 
@@ -105,3 +106,7 @@ You should also be able to ping from the border router.
 In order to determine the topology of the network, the ``neighbor table`` command can be used on the CLI. To allow a device
 to become a router (or force it to become a child), the ``routerrole enable`` and ``routerrole disable`` commands can be used.
 For more information on commands, see the [OpenThread CLI Reference.](https://github.com/Cascoda/openthread/blob/ext-mac-dev/src/cli/README.md)
+
+## Next Steps
+
+Learn more about Thread by [reading the OpenThread Primer](https://openthread.io/guides/thread-primer).

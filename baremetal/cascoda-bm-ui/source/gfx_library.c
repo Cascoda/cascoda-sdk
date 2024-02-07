@@ -857,7 +857,7 @@ void display_putc(uint8_t c)
 }
 
 // print string
-void display_puts(uint8_t *s)
+void display_puts(const uint8_t *s)
 {
 	while (*s) display_putc(*s++);
 }
@@ -1215,20 +1215,20 @@ void display_double(char *text, int text_size, double v, int decimalDigits)
 	}
 }
 
-void display_slider(int x, int y, int lenght, int value)
+void display_slider(int x, int y, int length, int value)
 {
 	int radius = 4;
-	display_drawLine(x, y, x + lenght, y, BLACK);
-	display_drawLine(x, y + 1, x + lenght, y + 1, BLACK);
-	int center = ((lenght - (radius / 2)) * value) / 100;
+	display_drawLine(x, y, x + length, y, BLACK);
+	display_drawLine(x, y + 1, x + length, y + 1, BLACK);
+	int center = ((length - (radius / 2)) * value) / 100;
 	display_fillCircle(x + center + (radius / 2), y, radius, BLACK);
 }
 
-void display_progressbar(int x, int y, int lenght, int value)
+void display_progressbar(int x, int y, int length, int value)
 {
 	// absolute values
-	int center = (lenght * value) / 100;
-	display_drawRect(x, y, lenght - x, 6, BLACK);
+	int center = (length * value) / 100;
+	display_drawRect(x, y, length, 6, BLACK);
 	display_fillRect(x, y, center, 5, BLACK);
 }
 // end of library code.

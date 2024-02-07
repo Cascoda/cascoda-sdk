@@ -33,7 +33,7 @@ set(CASCODA_CHILI2_TRUSTZONE OFF CACHE BOOL "Enable the Chili2 armv8-m CSME buil
 mark_as_advanced(CASCODA_CHILI2_TRUSTZONE)
 
 # Number of flash pages
-set(CASCODA_CHILI_FLASH_PAGES 2 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
+set(CASCODA_CHILI_FLASH_PAGES 8 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
 
 # Disable onboard CA-821x if we're using an external one - reconfigure nreset to PB5 (pin 31)
 set(CASCODA_CHILI_DISABLE_CA821x OFF CACHE BOOL "Disable the onboard CA-821x, and use pin 31 (PB5) as external reset instead.")

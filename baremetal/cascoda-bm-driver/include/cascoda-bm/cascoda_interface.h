@@ -302,6 +302,12 @@ void BSP_SerialWaitWhileBusy(void);
 void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
 
 /**
+ * \brief Set flag that system has started power-down sequence
+ *
+ */
+void BSP_SetPowerDown(void);
+
+/**
  * \brief Initialise the system for a given ca821x_dev
  *
  */
@@ -398,7 +404,7 @@ ca_error BSP_ModuleSenseGPIOPin(u8_t mpin, u8_t *val);
 /**
  * \brief Senses GPIO Output Value of Module Pin
  *
- * Output pins must be registered before they can be used. 
+ * Output pins must be registered before they can be used.
  * See BSP_ModuleRegisterGPIOOutput().
  *
  * \param mpin  - module pin
@@ -607,6 +613,17 @@ ca_error BSP_FlashErase(u32_t startaddr);
  * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
  */
 ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize);
+
+/**
+ * @brief Prevent ICP access to Flash
+ * 
+ * After calling this function & resetting the microcontroller, reads to APROM & LDROM region
+ * using the ICP programming interface will fail.
+ * 
+ * The lock can only be undone by performing a mass erase of the microcontroller.
+ * 
+ */
+void BSP_FlashLock(void);
 
 /**
  * Check that a given range of flash matches the provided CRC32 checksum.

@@ -48,7 +48,11 @@
 #endif
 
 #if (CASCODA_CHILI2_CONFIG == 2)
-#include "devboard_btn.h"
+/* pin configuration for switch/LED pairs on devboard (position 1) */
+#define SWITCH_1_PIN 5
+#define SWITCH_2_PIN 6
+#define SWITCH_3_PIN 35
+#define SWITCH_4_PIN 36
 #endif
 
 /******************************************************************************/
@@ -629,18 +633,18 @@ static void CHILI_TEST_LEDComplete(uint8_t status)
 static void CHILI_TEST_LEDInit(void)
 {
 	/* All LEDs on */
-	DVBD_DeRegister(DEV_SWITCH_1, JUMPER_POS_1);
-	DVBD_DeRegister(DEV_SWITCH_2, JUMPER_POS_1);
-	DVBD_DeRegister(DEV_SWITCH_3, JUMPER_POS_1);
-	DVBD_DeRegister(DEV_SWITCH_4, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_1, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_2, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_3, JUMPER_POS_1);
-	DVBD_RegisterLEDOutput(DEV_SWITCH_4, JUMPER_POS_1);
-	DVBD_SetLED(DEV_SWITCH_1, LED_ON);
-	DVBD_SetLED(DEV_SWITCH_2, LED_ON);
-	DVBD_SetLED(DEV_SWITCH_3, LED_ON);
-	DVBD_SetLED(DEV_SWITCH_4, LED_ON);
+	BSP_ModuleDeregisterGPIOPin(SWITCH_1_PIN);
+	BSP_ModuleDeregisterGPIOPin(SWITCH_2_PIN);
+	BSP_ModuleDeregisterGPIOPin(SWITCH_3_PIN);
+	BSP_ModuleDeregisterGPIOPin(SWITCH_4_PIN);
+	BSP_ModuleRegisterGPIOOutputOD(SWITCH_1_PIN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutputOD(SWITCH_2_PIN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutputOD(SWITCH_3_PIN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleRegisterGPIOOutputOD(SWITCH_4_PIN, MODULE_PIN_TYPE_LED);
+	BSP_ModuleSetGPIOPin(SWITCH_1_PIN, LED_ON);
+	BSP_ModuleSetGPIOPin(SWITCH_2_PIN, LED_ON);
+	BSP_ModuleSetGPIOPin(SWITCH_3_PIN, LED_ON);
+	BSP_ModuleSetGPIOPin(SWITCH_4_PIN, LED_ON);
 }
 
 // devboard specific test result
@@ -655,12 +659,12 @@ static void CHILI_TEST_LEDResult(uint8_t status)
 	}
 	else
 	{
-		DVBD_Sense(DEV_SWITCH_1, &ledstate);
+		BSP_ModuleSenseGPIOPin(SWITCH_1_PIN, &ledstate);
 		ledstate = 1 - ledstate;
 	}
-	DVBD_SetLED(DEV_SWITCH_1, ledstate);
-	DVBD_SetLED(DEV_SWITCH_2, ledstate);
-	DVBD_SetLED(DEV_SWITCH_3, ledstate);
-	DVBD_SetLED(DEV_SWITCH_4, ledstate);
+	BSP_ModuleSetGPIOPin(SWITCH_1_PIN, ledstate);
+	BSP_ModuleSetGPIOPin(SWITCH_2_PIN, ledstate);
+	BSP_ModuleSetGPIOPin(SWITCH_3_PIN, ledstate);
+	BSP_ModuleSetGPIOPin(SWITCH_4_PIN, ledstate);
 }
 #endif

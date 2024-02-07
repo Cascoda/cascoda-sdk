@@ -144,6 +144,12 @@ void SerialSendRxFail(void);
  * For an asynchronous (DMA) read, call this when the DMA transfer is complete.
  */
 void SerialReadComplete(void);
+
+/**
+ * for power down, don't wait for RxRdy, power down immediately
+ */
+void SerialResetTxStalled(void);
+
 #endif
 
 #ifdef __cplusplus

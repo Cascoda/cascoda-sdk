@@ -174,6 +174,12 @@ u32_t BSP_MicroTimerStop(void);
  */
 u32_t BSP_MicroTimerGet(void);
 
+/**
+ * \brief check if comms interface is connected
+ * @return true if comms are enabled
+ */
+bool BSP_IsCommsInterfaceEnabled(void);
+
 #endif // CASCODA_INTERFACE_CORE_H
 
 /**

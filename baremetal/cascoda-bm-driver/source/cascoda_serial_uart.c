@@ -234,6 +234,11 @@ void SerialSendRxFail()
 	BSP_SerialWriteAll(buf, 3);
 }
 
+void SerialResetTxStalled(void)
+{
+	SerialTxStalled = false;
+}
+
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Receive RX_RDY Handshake Packet
@@ -336,6 +341,10 @@ static void SerialCheckRxTimeout(void)
 
 void EVBME_Message_UART(char *pBuffer, size_t Count)
 {
+	/* check if interface is enabled */
+	if (!BSP_IsCommsInterfaceEnabled())
+		return;
+
 	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
@@ -349,6 +358,10 @@ void EVBME_Message_UART(char *pBuffer, size_t Count)
 
 void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
 {
+	/* check if interface is enabled */
+	if (!BSP_IsCommsInterfaceEnabled())
+		return;
+
 	SerialGetCommand();
 	SerialCheckTxTimeout();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;

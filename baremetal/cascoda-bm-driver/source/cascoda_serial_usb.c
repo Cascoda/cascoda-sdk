@@ -152,11 +152,19 @@ u8_t SerialGetCommand(void)
 
 void EVBME_Message_USB(char *pBuffer, size_t Count)
 {
+	/* check if interface is enabled */
+	if (!BSP_IsCommsInterfaceEnabled())
+		return;
+
 	SerialUSBSend(Serial_Stdout, (u8_t *)pBuffer, Count);
 } // End of EVBME_Message()
 
 void MAC_Message_USB(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
 {
+	/* check if interface is enabled */
+	if (!BSP_IsCommsInterfaceEnabled())
+		return;
+
 	SerialUSBSend(CommandId, pBuffer, Count);
 
 } // End of MAC_Message()

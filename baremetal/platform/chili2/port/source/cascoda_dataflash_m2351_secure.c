@@ -48,7 +48,7 @@
 /****** Configuration Defines                                            ******/
 /******************************************************************************/
 #ifndef CASCODA_CHILI_FLASH_PAGES
-#define CASCODA_CHILI_FLASH_PAGES 2
+#define CASCODA_CHILI_FLASH_PAGES 8
 #endif
 
 /* Dataflash: on top of APROM */
@@ -223,6 +223,18 @@ __NONSECURE_ENTRY void CHILI_SetAPROMBoot(void)
 	FMC_Open();
 	FMC_SetVectorPageAddr(FMC_APROM_BASE);
 	FMC->ISPCTL |= FMC_ISPCTL_BS_Msk; //We set to LDROM boot mode so vector mapping takes effect.
+	FMC_Close();
+	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void BSP_FlashLock(void)
+{
+	SYS_UnlockReg();
+	FMC_Open();
+
+	uint32_t arlock_val = FMC_Read(FMC_ARLOCK_BASE);
+	FMC_Write(FMC_ARLOCK_BASE, arlock_val &= 0xffffff00);
+
 	FMC_Close();
 	SYS_LockReg();
 }

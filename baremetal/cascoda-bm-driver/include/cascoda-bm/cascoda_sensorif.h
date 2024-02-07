@@ -145,9 +145,12 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 /******************************************************************************/
 /***************************************************************************/ /**
  * \brief Initialises and enables SPI interface
+ * \param is_eink_display_present whether the SPI interface is used for communicating
+ * with a eink display. This configures it to half-duplex mode (MOSI only) and frees
+ * up PB5, which is usually used as an interrupt pin for the display.
  *******************************************************************************
  ******************************************************************************/
-void SENSORIF_SPI_Init(void);
+void SENSORIF_SPI_Init(bool is_eink_display_present);
 
 /******************************************************************************/
 /***************************************************************************/ /**

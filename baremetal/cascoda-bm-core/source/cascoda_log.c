@@ -46,6 +46,9 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 	if (BSP_IsInsideInterrupt())
 		return;
 
+	if (!BSP_IsCommsInterfaceEnabled())
+		return;
+
 	switch (loglevel)
 	{
 	case CA_LOGLEVEL_CRIT:
