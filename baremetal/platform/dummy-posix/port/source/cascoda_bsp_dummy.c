@@ -191,7 +191,7 @@ void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_
 	SPI_ExchangeComplete();
 }
 
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, dpd_flag dpd)
 {
 	BSP_WaitTicks(sleeptime_ms);
 }

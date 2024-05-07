@@ -45,21 +45,33 @@
 // Tasklet for turning off PWM when specified duration is up
 static ca_tasklet g_stop_note_tasklet;
 
-// Tasklet callback functions
 static ca_error BUZZ2_stop_note(void *context)
 {
-	(void)context;
-
 	SENSORIF_PWM_Deinit();
+
+	if (context)
+	{
+		NoteFinishedCallback note_finished_cb = (NoteFinishedCallback)context;
+		note_finished_cb(NULL);
+	}
+
+	return CA_ERROR_SUCCESS;
 }
 
 /* Buzz2 function to play note with specified frequency, volume and duration */
 /* Volume[%] = 0-100 */
 /* Duration[ms] = 0-65536 */
 /* Mode[BLOCKING/NON_BLOCKING] = 
-/* Blocking: Uses delay, can call this function successively, not recommended for KNX applications
+/* Blocking: Uses delay, can call this function successively, not recommended for KNX applications.
 /* Non-blocking: Uses tasklet, can only call this function once within the specified duration */
-uint8_t MIKROSDK_BUZZ2_play_note(uint32_t freq, uint32_t volume, uint16_t duration, uint8_t mode)
+/* Nfc Optional callback to be called after the note stops playing, if mode == NON-BLOCKING.
+              Set to NULL if using BLOCKING mode. If using NON-BLOCKING mode, you can also set it to NULL
+			  if you don't need any callback to be called once the note stops playing. */
+uint8_t MIKROSDK_BUZZ2_play_note(uint32_t             freq,
+                                 uint32_t             volume,
+                                 uint16_t             duration,
+                                 uint8_t              mode,
+                                 NoteFinishedCallback nfc)
 {
 	if (SENSORIF_PWM_Init(BUZZ2_PWM_PIN, freq, volume))
 		return BUZZ2_ST_FAIL;
@@ -75,7 +87,7 @@ uint8_t MIKROSDK_BUZZ2_play_note(uint32_t freq, uint32_t volume, uint16_t durati
 	}
 	else if (mode == NON_BLOCKING)
 	{
-		if (TASKLET_ScheduleDelta(&g_stop_note_tasklet, duration, NULL))
+		if (TASKLET_ScheduleDelta(&g_stop_note_tasklet, duration, nfc))
 			return BUZZ2_ST_FAIL;
 	}
 

@@ -152,6 +152,8 @@ enum play_note_mode
 	NON_BLOCKING = 1,
 };
 
+typedef void (*NoteFinishedCallback)(void *context);
+
 /* new functions */
 /**
  * @brief Function that plays a note
@@ -160,12 +162,19 @@ enum play_note_mode
  * @param volume Volume[%] of buzz2 (0 = off, 100 = max)
  * @param duration Duration[ms] of the note to be played (min = 0, max = 65535)
  * @param mode Mode of the function (BLOCKING/NON-BLOCKING)
- * Blocking: Uses delay, can call this function successively, not recommended for KNX applications
- * Non-blocking: Schedules tasklet, can only call this function once within the specified duration
+ * Blocking: Uses delay, can call this function successively, not recommended for KNX applications.
+             If using BLOCKING mode, set nfc to NULL.
+ * Non-blocking: Schedules tasklet, can only call this function once within the specified duration.
+ * @param nfc Optional callback to be called after the note stops playing, if mode == NON-BLOCKING.
+              Set to NULL if using BLOCKING mode. If using NON-BLOCKING mode, you can also set it to NULL
+			  if you don't need any callback to be called once the note stops playing.
  * @return uint8_t (buzz2 status)
  */
-uint8_t MIKROSDK_BUZZ2_play_note(uint32_t freq, uint32_t volume, uint16_t duration, uint8_t mode);
-
+uint8_t MIKROSDK_BUZZ2_play_note(uint32_t             freq,
+                                 uint32_t             volume,
+                                 uint16_t             duration,
+                                 uint8_t              mode,
+                                 NoteFinishedCallback nfc);
 /**
  * @brief Buzz2 Initialisation function
  * 

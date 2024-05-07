@@ -258,6 +258,47 @@ otError PlatformTryJoinWithPskd(struct ca821x_dev *pDeviceRef, otInstance *aInst
 	return join_status.error;
 }
 
+otError PlatformTryJoinWithPskdWithCustomPoll(struct ca821x_dev *pDeviceRef,
+                                              otInstance        *aInstance,
+                                              const char        *aPskd,
+                                              void (*poll_func)(void))
+{
+	struct join_status join_status = {0, 0};
+
+	otIp6SetEnabled(OT_INSTANCE, true);
+
+	if (PlatformInjectCreds(aInstance) == OT_ERROR_NONE)
+	{
+		return OT_ERROR_ALREADY;
+	}
+
+	if (otDatasetIsCommissioned(aInstance))
+	{
+		return OT_ERROR_ALREADY;
+	}
+
+	//Attempt to join
+	otJoinerStart(
+	    aInstance, aPskd, NULL, "Cascoda", NULL, ca821x_get_version(), NULL, &HandleJoinerCallback, &join_status);
+
+	//Wait for completion
+	while (!join_status.complete)
+	{
+		cascoda_io_handler(pDeviceRef);
+		otTaskletsProcess(OT_INSTANCE);
+		if (poll_func)
+			poll_func();
+	}
+
+	if (join_status.error)
+		otIp6SetEnabled(OT_INSTANCE, false);
+
+	//Report status
+	ca_log_info("Join complete with error %s", otThreadErrorToString(join_status.error));
+
+	return join_status.error;
+}
+
 otError PlatformPrintJoinerCredentialsWithPskd(struct ca821x_dev *pDeviceRef,
                                                otInstance        *aInstance,
                                                uint32_t           aMaxWaitMs,
@@ -287,6 +328,12 @@ otError PlatformPrintJoinerCredentialsWithPskd(struct ca821x_dev *pDeviceRef,
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance)
 {
 	return PlatformTryJoinWithPskd(pDeviceRef, aInstance, PlatformGetJoinerCredential(aInstance));
+}
+
+otError PlatformTryJoinWithCustomPoll(struct ca821x_dev *pDeviceRef, otInstance *aInstance, void (*poll_func)(void))
+{
+	return PlatformTryJoinWithPskdWithCustomPoll(
+	    pDeviceRef, aInstance, PlatformGetJoinerCredential(aInstance), poll_func);
 }
 
 otError PlatformPrintJoinerCredentials(struct ca821x_dev *pDeviceRef, otInstance *aInstance, uint32_t aMaxWaitMs)
@@ -375,6 +422,13 @@ otError PlatformGetQRString(char *aBufOut, size_t bufferSize, otInstance *aInsta
 	strcat(aBufOut, PlatformGetJoinerCredential(OT_INSTANCE));
 
 	return error;
+}
+
+void HardFault_Handler();
+
+void otPlatAssertFail(const char *aFilename, int aLineNumber)
+{
+	HardFault_Handler();
 }
 
 #ifdef __MINGW32__

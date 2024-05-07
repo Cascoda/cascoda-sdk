@@ -90,6 +90,14 @@ typedef enum wakeup_reason
 	WAKEUP_RTCALARM       = 5, ///< RTC Alarm
 } wakeup_reason;
 
+/****** Enum for deep powerdown mode flag ******/
+typedef enum dpd_flag
+{
+	DPD_FLAG_NO_DPD          = 0,
+	DPD_FLAG_WAKEUP_ENABLED  = 1,
+	DPD_FLAG_WAKEUP_DISABLED = 2,
+} dpd_flag;
+
 /****** Enum for system reset mode ******/
 typedef enum sysreset_mode
 {
@@ -296,10 +304,10 @@ void BSP_SerialWaitWhileBusy(void);
  *
  * \param sleeptime_ms - sleep time [milliseconds]
  * \param use_timer0 - if set to 1, system wake-up by mcu (timer0 or gpio); if set to 0, system wake-up by radio sleep timer.
- * \param dpd - flag if to enter deep-power-down without data retention
+ * \param dpd - flag if to enter deep-power-down without data retention, and whether wakeup pin is enabled
  *
  */
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, dpd_flag dpd);
 
 /**
  * \brief Set flag that system has started power-down sequence

@@ -1,5 +1,8 @@
 name: BuildAndDeploy
 
+env: 
+  KNX_IOT_STACK_SECRET: ${{secrets.KNX_IOT_STACK_SECRET}}
+
 on: [push]
 
 jobs:
@@ -15,7 +18,7 @@ jobs:
 
     - name: configure windows sdk
       run: |
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles" -D CASCODA_BUILD_OT=OFF -D CASCODA_BUILD_KNX=ON
+        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles" -D CASCODA_BUILD_OT=OFF
 
     - name: build windows-sdk
       run: |
@@ -112,14 +115,14 @@ jobs:
         New-Item -Type dir ${{ github.workspace }}\build-knx-chili2-win\lib
         Copy-Item -Path ${{ github.workspace }}\build-ocf-chili2-win\lib\libkis-port.a -Destination ${{ github.workspace }}\build-knx-chili2-win\lib
 
-    - name: configure KNX chili build on windows
-      run: |
-        cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
-      continue-on-error: true
+    # - name: configure KNX chili build on windows
+    #   run: |
+    #     cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
+    #   continue-on-error: true
 
-    - name: build KNX chili binaries on windows
-      run: |
-        mingw32-make.exe -C ${{ github.workspace }}\build-knx-chili2-win -j4
+    # - name: build KNX chili binaries on windows
+    #   run: |
+    #     mingw32-make.exe -C ${{ github.workspace }}\build-knx-chili2-win -j4
 
   # Build artifacts for posix 
   posix:
@@ -276,16 +279,16 @@ jobs:
 
     # For continuous integration only. Will not yet create an artifact for release.
 
-    - name: build Chili2D-USB-KNX
-      run: |
-        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
-        make -C ${{ github.workspace }}/build-chili2 -j4
+    # - name: build Chili2D-USB-KNX
+    #   run: |
+    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
+    #     make -C ${{ github.workspace }}/build-chili2 -j4
         
         # copy knx port library
-        if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
-        then
-          cp ${{ github.workspace }}/build-chili2/lib/libkis-port.a ${{ github.workspace }}/upload-lib
-        fi
+    #     if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
+    #     then
+    #       cp ${{ github.workspace }}/build-chili2/lib/libkis-port.a ${{ github.workspace }}/upload-lib
+    #     fi
 
     # - name: build Chili2D-USB-OCF
     #   run: |

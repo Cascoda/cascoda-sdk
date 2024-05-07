@@ -154,15 +154,21 @@ static void SIF_IL3820_SetCursor(u16_t Xstart, u16_t Ystart)
  * \brief Wait until BUSY pin is LOW
  *******************************************************************************
  ******************************************************************************/
-static void SIF_IL3820_WaitUntilIdle(void)
+static ca_error SIF_IL3820_WaitUntilIdle(void)
 {
-	u8_t BUSY_value = 0;
+	u32_t t_tstart   = TIME_ReadAbsoluteTime();
+	u8_t  BUSY_value = 0;
+
 	BSP_ModuleSenseGPIOPin(SIF_IL3820_BUSY_PIN, &BUSY_value);
 	while (BUSY_value == 1)
 	{
+		if ((TIME_ReadAbsoluteTime() - t_tstart) > SIF_IL3820_BUSY_TIMEOUT)
+			return CA_ERROR_TIMEOUT;
 		WAIT_ms(2);
 		BSP_ModuleSenseGPIOPin(SIF_IL3820_BUSY_PIN, &BUSY_value);
 	}
+
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -234,8 +240,6 @@ static void SIF_IL3820_embed_qr(const uint8_t *qrcode, uint8_t *image, uint8_t s
  ******************************************************************************/
 static ca_error SIF_IL3820_SetLut(SIF_IL3820_Update_Mode mode)
 {
-	ca_error err = CA_ERROR_SUCCESS;
-
 	SIF_IL3820_SendCommand(WRITE_LUT_REGISTER);
 	if (mode == FULL_UPDATE)
 	{
@@ -253,13 +257,11 @@ static ca_error SIF_IL3820_SetLut(SIF_IL3820_Update_Mode mode)
 	}
 	else
 	{
-		err = CA_ERROR_INVALID_ARGS;
 		ca_log_debg("Error, invalid display update mode");
+		return CA_ERROR_INVALID_ARGS;
 	}
 
-	SIF_IL3820_WaitUntilIdle();
-
-	return err;
+	return SIF_IL3820_WaitUntilIdle();
 }
 
 /******************************************************************************/

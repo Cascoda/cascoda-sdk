@@ -1,6 +1,6 @@
 # cascoda-bm-devboard
 
-The cascoda-bm-devboard module contains the functionality for using the [Cascoda Development Board](../../docs/how-to/howto-devboard.md). This includes interacting with the devboard LEDs and buttons, as well as interacting with externally connected peripherals, sensors and actuators.
+The cascoda-bm-devboard module contains the functionality for using the [Cascoda Development Board](../../docs/product/howto-devboard.md). This includes interacting with the devboard LEDs and buttons, as well as interacting with externally connected peripherals, sensors and actuators.
 
 ## Examples
 

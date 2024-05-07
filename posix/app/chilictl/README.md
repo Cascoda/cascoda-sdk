@@ -13,7 +13,7 @@ It can run on Windows or Posix and can be used for:
 
 Prebuilt Windows binaries of chilictl can be found in the [Windows release of the Cascoda SDK.](https://github.com/Cascoda/cascoda-sdk/releases/)
 
-Please make sure that you have set up the USB or UART exchange [as detailed in the development setup guide.](../../../docs/guides/development-setup.md)
+Please make sure that you have set up the USB or UART exchange [as detailed in the development setup guide.](../../../docs/dev/development-setup.md)
 
 Run ./chilictl with the ``--help`` argument to print the help page. This option is also available on the sub-commands.
 

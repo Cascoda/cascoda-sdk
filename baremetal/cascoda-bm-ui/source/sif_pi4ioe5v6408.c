@@ -92,6 +92,14 @@ static uint8_t SIF_PI4IOE5V6408_EnableInterrupt(void)
 	return (SIF_PI4IOE5V6408_ST_OK);
 }
 
+/* disable interrupt function */
+static uint8_t SIF_PI4IOE5V6408_DisableInterrupt(void)
+{
+	uint8_t status;
+	status = BSP_ModuleDeregisterGPIOPin(SIF_PI4IOE5V6408_INT_PIN);
+	return (status);
+}
+
 /* generic i2c write; reg is register address, data length fixed to 1 */
 static uint8_t SIF_PI4IOE5V6408_GenericWrite(uint8_t reg, uint8_t txdat, uint8_t init)
 {

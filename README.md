@@ -25,10 +25,10 @@ devices soldered onto a PCB.
 
 A reference of all documentation and guides is located [here](docs/reference/full-reference.md), but to get started, here is a list of things you might be looking to do...
 
-- [Getting started with the Cascoda KNX IoT Dev Kit](docs/how-to/howto-knxiot-devkit.md)
-- [Getting Started with the Cascoda Packet Sniffer](docs/how-to/howto-sniffer.md)
-- [Build, configure and set up a Thread network](docs/how-to/howto-thread.md)
-- [Build embedded applications to communicate with various sensors and actuator](docs/how-to/howto-devboard.md)
+- [Getting started with the Cascoda KNX IoT Dev Kit](docs/product/howto-knxiot-devkit.md)
+- [Getting Started with the Cascoda Packet Sniffer](docs/product/howto-sniffer.md)
+- [Build, configure and set up a Thread network](docs/product/howto-thread.md)
+- [Build embedded applications to communicate with various sensors and actuator](docs/product/howto-devboard.md)
 - [Learn how to build the Cascoda SDK](docs/reference/full-reference.md#building)
 
 If you're a developer or simply want to delve deeper into the Cascoda SDK, read on.

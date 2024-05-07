@@ -63,6 +63,9 @@ static volatile uint8_t isReadPending         = 0;
 static bool             isCacheFlushFixActive = false;
 static bool             isScanInProgress      = false;
 
+static uint8_t currentChannel = 18;
+static int8_t  currentTxPower = 9;
+
 static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef);
 
 /** Get the confirm command id from the cache type */
@@ -303,7 +306,15 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct MAC_Message *respons
 	// MLME set / get phyTransmitPower
 	if ((msg->CommandId == SPI_MLME_SET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyTransmitPower))
 	{
-		status = TDME_SetTxPower(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
+		/* extend from 6 to 8 bit */
+		val = 0x3F & msg->PData.SetReq.PIBAttributeValue[0];
+		if (val & 0x20)
+			val += 0xC0;
+		currentTxPower = (int8_t)val;
+		/* channel 26 Tx power limitation */
+		if ((currentChannel == 26) && (currentTxPower > MAX_TXPOWER_CH26))
+			val = MAX_TXPOWER_CH26;
+		status = TDME_SetTxPower(val, pDeviceRef);
 		if (response)
 		{
 			response->CommandId                      = SPI_MLME_SET_CONFIRM;
@@ -329,6 +340,23 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct MAC_Message *respons
 		}
 		return CA_ERROR_ALREADY;
 	}
+	// HWME/TDME set
+	else if ((msg->CommandId == SPI_HWME_SET_REQUEST) && (msg->PData.HWMESetReq.HWAttribute == HWME_TXPOWER))
+	{
+		val            = msg->PData.HWMESetReq.HWAttributeValue[0];
+		currentTxPower = TDME_tx_paib_to_dbm(val);
+		/* channel 26 Tx power limitation */
+		if ((currentChannel == 26) && (currentTxPower > MAX_TXPOWER_CH26))
+			msg->PData.HWMESetReq.HWAttributeValue[0] = TDME_tx_dbm_to_paib(MAX_TXPOWER_CH26);
+	}
+	else if ((msg->CommandId == SPI_TDME_SET_REQUEST) && (msg->PData.TDMESetReq.TDAttribute == TDME_TX_CONFIG))
+	{
+		val            = msg->PData.TDMESetReq.TDAttributeValue[0];
+		currentTxPower = TDME_tx_paib_to_dbm(val);
+		/* channel 26 Tx power limitation */
+		if ((currentChannel == 26) && (currentTxPower > MAX_TXPOWER_CH26))
+			msg->PData.TDMESetReq.TDAttributeValue[0] = TDME_tx_dbm_to_paib(MAX_TXPOWER_CH26);
+	}
 
 	return CA_ERROR_SUCCESS;
 }
@@ -340,14 +368,27 @@ static ca_error CheckSetGet(struct MAC_Message *msg, struct MAC_Message *respons
  */
 static inline void CheckChannel(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
 {
+	uint8_t channel = 0;
+
 	if (msg->CommandId == SPI_MLME_ASSOCIATE_REQUEST)
-		TDME_ChannelInit(msg->PData.AssocReq.LogicalChannel, pDeviceRef);
+		channel = msg->PData.AssocReq.LogicalChannel;
 	else if (msg->CommandId == SPI_MLME_START_REQUEST)
-		TDME_ChannelInit(msg->PData.StartReq.LogicalChannel, pDeviceRef);
+		channel = msg->PData.StartReq.LogicalChannel;
 	else if ((msg->CommandId == SPI_MLME_SET_REQUEST) && (msg->PData.SetReq.PIBAttribute == phyCurrentChannel))
-		TDME_ChannelInit(msg->PData.SetReq.PIBAttributeValue[0], pDeviceRef);
+		channel = msg->PData.SetReq.PIBAttributeValue[0];
 	else if ((msg->CommandId == SPI_TDME_SET_REQUEST) && (msg->PData.TDMESetReq.TDAttribute == TDME_CHANNEL))
-		TDME_ChannelInit(msg->PData.TDMESetReq.TDAttributeValue[0], pDeviceRef);
+		channel = msg->PData.TDMESetReq.TDAttributeValue[0];
+
+	if (channel)
+	{
+		TDME_ChannelInit(channel, pDeviceRef);
+		/* channel 26 Tx power limitation */
+		if ((channel == 26) && (currentTxPower > MAX_TXPOWER_CH26))
+			TDME_SETSFR_request_sync(0, 0xFE, TDME_tx_dbm_to_paib(MAX_TXPOWER_CH26), pDeviceRef);
+		else if ((currentChannel == 26) & (currentTxPower > MAX_TXPOWER_CH26))
+			TDME_SETSFR_request_sync(0, 0xFE, TDME_tx_dbm_to_paib(currentTxPower), pDeviceRef);
+		currentChannel = channel;
+	}
 }
 
 /** Checks to run before sending a message to the CA821x */

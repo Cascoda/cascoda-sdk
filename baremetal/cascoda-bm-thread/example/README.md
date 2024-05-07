@@ -17,5 +17,5 @@ In addition to this, the ot-cli application has some extra commands implemented 
 | ------- | -----------
 | sensordemo [sensor/server/stop] | Start or stop the simple sensordemo, as a sensor, transmitting sensor readings, or a server, which receives them. Simple example coap & cbor example.
 | autostart [enable/disable]      | Enable or disable the autostart feature, which will cause the device to automatically boot up and attach to a thread network when powered - useful for using without the CLI.
-| join [info]                     | Get the joining credentials (if info is specified). Otherwise, start the autojoining procedure, as specified [in the commissioning document.](../../../docs/guides/thread-commissioning.md)
+| join [info]                     | Get the joining credentials (if info is specified). Otherwise, start the autojoining procedure, as specified [in the commissioning document.](../../../docs/dev/thread-commissioning.md)
 | dnsutil <host.to.resolve>       | Test DNS resolution of a hostname.

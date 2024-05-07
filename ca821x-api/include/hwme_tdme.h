@@ -49,6 +49,8 @@ extern "C" {
 #define MAX_HWME_ATTRIBUTE_SIZE 16
 #define MAX_TDME_ATTRIBUTE_SIZE 2
 
+#define MAX_TXPOWER_CH26 4 //!< Channel 26 Transmit Power limited to +4 dBm
+
 /** HWME Status Codes */
 enum hwme_status
 {

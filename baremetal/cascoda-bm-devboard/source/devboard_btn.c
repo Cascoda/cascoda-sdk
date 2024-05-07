@@ -72,6 +72,8 @@ ca_error DVBD_RegisterButtonIRQInput(dvbd_led_btn ledBtn, dvbd_led_btn_jumper_po
 	/* map the pin */
 	DVBD_mapLEDBtnToPin(ledBtn, jumperPos);
 
+	Btn_IncrementGPIOWakeup();
+
 	return Btn_RegisterButtonIRQInput(ledBtn);
 }
 
@@ -89,6 +91,8 @@ ca_error DVBD_RegisterSharedIRQButtonLED(dvbd_led_btn ledBtn, dvbd_led_btn_jumpe
 {
 	/* map the pin */
 	DVBD_mapLEDBtnToPin(ledBtn, jumperPos);
+
+	Btn_IncrementGPIOWakeup();
 
 	return Btn_RegisterSharedIRQButtonLED(ledBtn);
 }

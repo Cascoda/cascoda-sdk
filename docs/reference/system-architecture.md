@@ -22,7 +22,7 @@ This architecture has every important part of the stack running on the Chili2 pl
 only for user-level interactions and control, such as by [serial-adapter](../../posix/app/serial-adapter) or
 [ocfctl](../../posix/app/ocfctl) depending on the firmware used. Some firmwares may not even support serial communications.
 
-Note that for communications between the Chili2 and a host system, the host system must be [correctly configured](../../docs/guides/development-setup.md).
+Note that for communications between the Chili2 and a host system, the host system must be [correctly configured](../../docs/dev/development-setup.md).
 
 Some examples of fully on-module examples are:
 - [ot-cli](../../baremetal/cascoda-bm-thread/example)
@@ -38,7 +38,7 @@ For standalone end-products that are capable of being run on a single microcontr
 This architecture has the network layer and above running on a host platform, such as an embedded linux system. A Chili2
 module running [mac-dongle](../../baremetal/app/mac-dongle) is used for radio operations.
 
-Note that for communications between the Chili2 and a host system, the host system must be [correctly configured](../../docs/guides/development-setup.md).
+Note that for communications between the Chili2 and a host system, the host system must be [correctly configured](../../docs/dev/development-setup.md).
 
 Some examples of radio co-processor examples are:
 - [ot-cli-posix-ftd](../../posix/ca821x-posix-thread/Readme.md#ot-cli-posix-ftd-mtd)

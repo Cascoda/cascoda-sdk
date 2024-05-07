@@ -88,3 +88,18 @@ target_compile_definitions(cascoda-bm
 target_compile_definitions(cascoda-bm PUBLIC CASCODA_OTA_UPGRADE_ENABLED=$<BOOL:${CASCODA_OTA_UPGRADE_ENABLED}>)
 
 cascoda_use_warnings(cascoda-bm)
+
+# separate library for aerial-adapter
+add_library(cascoda-aerial-adapter
+	${PROJECT_SOURCE_DIR}/source/cascoda_aerial_adapter.c
+)
+
+target_include_directories(cascoda-aerial-adapter
+	PUBLIC
+		${PROJECT_SOURCE_DIR}/include
+	)
+
+target_link_libraries(cascoda-aerial-adapter
+	PUBLIC
+		cascoda-bm
+	)

@@ -83,7 +83,7 @@ void CHILI_ReInitSetTimerPriority();
 void CHILI_PowerDownSelectClock(u8_t use_timer0);
 
 /** Process all of the secure-only power down routines */
-u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd);
+u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, dpd_flag dpd);
 
 /** Enable internal temperature sensor */
 void CHILI_EnableTemperatureSensor();

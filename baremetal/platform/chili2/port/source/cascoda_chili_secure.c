@@ -983,7 +983,7 @@ __NONSECURE_ENTRY void CHILI_PowerDownSelectClock(u8_t use_timer0)
 	}
 }
 
-__NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+__NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer0, dpd_flag dpd)
 {
 	u32_t wakeuptime;
 
@@ -1036,7 +1036,7 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 	/* disable peripheral memory (fmc, pdma0/1, usbd, can) */
 	SYS->SRAMPPCT = 0x000002AA;
 
-	if (dpd)
+	if (dpd > DPD_FLAG_NO_DPD)
 	{
 		CLK->PWRCTL &= ~(CLK_PWRCTL_HXTEN_Msk); /* turn off all clocks */
 		CLK->PWRCTL &= ~(CLK_PWRCTL_LXTEN_Msk);
@@ -1047,14 +1047,18 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 		if ((CASCODA_CHILI2_CONFIG == 1 || CASCODA_CHILI2_CONFIG == 2) && (VBUS_CONNECTED_PVAL == 1))
 		{
 			/* Enable SPD wakeup from pin */
-			CLK_EnableSPDWKPin(2, 0, CLK_SPDWKPIN_FALLING, CLK_SPDWKPIN_DEBOUNCEDIS);
+			if (dpd == DPD_FLAG_WAKEUP_ENABLED)
+				CLK_EnableSPDWKPin(2, 0, CLK_SPDWKPIN_FALLING, CLK_SPDWKPIN_DEBOUNCEDIS);
+
 			/* SPD, no data retention, from reset on wake-up */
 			CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_SPD);
 		}
 		else
 		{
 			/* Enable DPD wakeup from pin */
-			CLK_EnableDPDWKPin(CLK_DPDWKPIN_FALLING);
+			if (dpd == DPD_FLAG_WAKEUP_ENABLED)
+				CLK_EnableDPDWKPin(CLK_DPDWKPIN_FALLING);
+
 			/* DPD, no data retention, from reset on wake-up */
 			CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_DPD);
 		}
@@ -1090,7 +1094,7 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 
 	SYS_LockReg();
 
-	if (USE_WATCHDOG_POWEROFF)
+	if ((USE_WATCHDOG_POWEROFF) && (dpd != DPD_FLAG_WAKEUP_DISABLED))
 		BSP_RTCDisableAlarm();
 
 	/* determine wakeup time */

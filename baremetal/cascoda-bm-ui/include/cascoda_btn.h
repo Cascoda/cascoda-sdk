@@ -73,6 +73,13 @@ enum btn_pin_type
 	PINTYPE_SHARED = 3,
 };
 
+/* Whether an interrupt is registered for the pin or not */
+enum btn_pin_int
+{
+	PIN_NO_INTERRUPT = 0,
+	PIN_INTERRUPT    = 1,
+};
+
 /* dvbd callback type definition */
 typedef void (*btn_callback)(void* context);
 
@@ -225,10 +232,23 @@ ca_error Btn_PollButtons(void);
 ca_error Btn_HandleButtonCallbacks(btn_callback_info* callback, uint8_t pressed);
 
 /**
- * \brief Register that GPIOs are used for wakeup
+ * \brief One additional GPIO is now being used for wakeup
  *
  */
-void Btn_SetGPIOWakeup(void);
+void Btn_IncrementGPIOWakeup(void);
+
+/**
+ * \brief One fewer GPIO is now being used for wakeup
+ * \return status
+ *
+ */
+ca_error Btn_DecrementGPIOWakeup(void);
+
+/**
+ * \brief Register that the device will be put to sleep permanently
+ *
+ */
+void Btn_SetSleepPermanently(void);
 
 /**
  * \brief Check if all buttons have been handled

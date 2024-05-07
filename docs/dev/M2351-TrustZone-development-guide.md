@@ -179,7 +179,7 @@ The macro is used immediately before the function definition:
 __NONSECURE_ENTRY void BSP_PowerDown(
     u32_t sleeptime_ms,
     u8_t use_timer0,
-    u8_t dpd,
+    dpd_flag dpd,
     struct ca821x_dev *pDeviceRef
     )
 {

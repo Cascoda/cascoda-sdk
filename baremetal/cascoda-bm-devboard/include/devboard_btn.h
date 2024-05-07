@@ -52,7 +52,8 @@ typedef enum dvbd_led_btn
 
 /* re-mapping for functions that have 1-to-1 functionality */
 #define DVBD_SetLED Btn_SetLED
-#define DVBD_SetGPIOWakeup Btn_SetGPIOWakeup
+#define DVBD_SetGPIOWakeup Btn_IncrementGPIOWakeup
+#define DVBD_SetSleepPermanently Btn_SetSleepPermanently
 #define DVBD_Sense Btn_Sense
 #define DVBD_SenseOutput Btn_SenseOutput
 #define DVBD_SetButtonShortPressCallback Btn_SetButtonShortPressCallback

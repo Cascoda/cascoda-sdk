@@ -137,7 +137,11 @@ ca_error TASKLET_Cancel(ca_tasklet *aTasklet);
 
 /**
  * Query whether a tasklet is currently scheduled.
- * @param aTasklet A pointer to an initialised ca_tasklet struct to query
+ * 
+ * This function can only be called on ca_tasklet structs initialized with TASKLET_Init,
+ * or those which were zero-initialized previously (e.g. memset the entire struct to zero)
+ * 
+ * @param aTasklet A pointer to a ca_tasklet struct to query
  * @return True if the tasklet is scheduled, false if not
  */
 bool TASKLET_IsQueued(ca_tasklet *aTasklet);

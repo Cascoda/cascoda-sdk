@@ -46,7 +46,7 @@ On headless computers it may also useful to start a sniffer on channel 21 & save
 
 ### Thread Configuration
 
-Before Wireshark can decode secured Thread traffic, the master key of the Thread network must be entered. If your network was created using [Cascoda's KNX IoT Hub](https://www.cascoda.com/products/knx-iot-hub/), [click here for an explanation of how to obtain the key](/docs/guides/border-router-setup.md#Thread-Administration). 
+Before Wireshark can decode secured Thread traffic, the master key of the Thread network must be entered. If your network was created using [Cascoda's KNX IoT Hub](https://www.cascoda.com/products/knx-iot-hub/), [click here for an explanation of how to obtain the key](/docs/dev/border-router-setup.md#Thread-Administration). 
 
 Once the key is obtained, navigate to Edit -> Preferences, expand the Protocol tab in the left-hand side of the pop-up window and scroll down to the "IEEE 802.15.4" protocol. Hit the Edit button next to Decryption Keys, and then hit the plus button to add a new key. After pasting in your key, ensure that the "Key hash" value of the key entry is set to "Thread hash", so that the newly made key entry is used for Thread networks. Hit "Ok" on all windows to save your work.
 

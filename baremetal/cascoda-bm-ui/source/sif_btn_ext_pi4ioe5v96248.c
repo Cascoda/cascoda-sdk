@@ -57,7 +57,7 @@ ca_error SIF_RegisterOutputExt(uint8_t ledBtn)
 /* Set the functionality of a button to be an input */
 ca_error SIF_RegisterButtonInputExt(uint8_t ledBtn)
 {
-	Btn_SetGPIOWakeup();
+	Btn_IncrementGPIOWakeup();
 	return Btn_RegisterButtonInputExt(ledBtn);
 }
 

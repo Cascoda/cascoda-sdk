@@ -5,7 +5,7 @@ layer work on top of Thread, using our embedded Chili platform.
 
 This document describes the existing OCF applications. If you would like to
 create a custom application,
-[there is a separate guide](../docs/guides/create-custom-ocf-applications.md#) for this.
+[there is a separate guide](../docs/dev/create-custom-ocf-applications.md#) for this.
 
 The applications in this directory are compiled only if the `CASCODA_BUILD_OCF`
 CMake cache variable is set to `ON`. Note that this will disable several other

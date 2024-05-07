@@ -235,8 +235,12 @@ void CHILI_ModulePowerUpGPIOs(u8_t useGPIOforWakeup)
 			if (ModulePinStatus[i].isled == MODULE_PIN_TYPE_LED)
 			{
 				GPIO_SetPullCtl(port, BITMASK(ModulePinList[i].portbit), GPIO_PUSEL_DISABLE);
+				GPIO_SetMode(port, BITMASK(ModulePinList[i].portbit), GPIO_MODE_OPEN_DRAIN);
 			}
-			GPIO_SetMode(port, BITMASK(ModulePinList[i].portbit), GPIO_MODE_OUTPUT);
+			else
+			{
+				GPIO_SetMode(port, BITMASK(ModulePinList[i].portbit), GPIO_MODE_OUTPUT);
+			}
 		}
 		else if ((ModulePinStatus[i].io == MODULE_PIN_DIR_IN) && (!useGPIOforWakeup))
 		{

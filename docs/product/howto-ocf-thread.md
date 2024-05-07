@@ -44,7 +44,7 @@ On the other hand, if you only intend to run pre-existing OCF applications, then
 - Note: In case OCF Device Spy cannot discover the OCF server anymore, try stopping it (Ctrl + C), running the `./reset.sh` script, and then running the server again. This deletes all the device builder credentials on the server side, which should fix this problem.
 
 ## Step 3 - Creating OCF Applications over Thread
-- Read through [this guide](../guides/create-custom-ocf-applications.md) in the Cascoda SDK, which explains how to create custom OCF applications, import them into the Cascoda SDK, and make the necessary changes to interface with hardware, such as sensors.
+- Read through [this guide](../dev/create-custom-ocf-applications.md) in the Cascoda SDK, which explains how to create custom OCF applications, import them into the Cascoda SDK, and make the necessary changes to interface with hardware, such as sensors.
 - Have a look at this README file [here](../../ocf/README.md) for a list of all the existing OCF applications currently available in the Cascoda SDK, which have been generated in the exact same way as was described in the previous bullet point.
 
 ## Step 4 - Thread Network Set-Up and Configuration
@@ -53,13 +53,13 @@ The OCF applications mentioned in [Step 3](#step-3---creating-ocf-applications-o
 - First, gather the necessary hardware, as pictured below (ignore the USB to Ethernet dongle, it isn't needed for the purposes of this guide):
     - A Cascoda Chili 2D module - This is where the OCF application/server will run.
     - A micro USB to USB cable - This makes it possible to connect the module to a PC.
-    - A Cascoda Border Router - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server. [Here](../guides/border-router-setup.md) is a guide on how to set up a Border Router and form a Thread network.
+    - A Cascoda Border Router - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server. [Here](../dev/border-router-setup.md) is a guide on how to set up a Border Router and form a Thread network.
     
 <p align="center"><img src="imgs/hardware-min.jpg" width="600"></p>
 
-- Flash the Chili 2D module (guide [here](../guides/flashing.md)) with the OCF application that you want to run.
+- Flash the Chili 2D module (guide [here](../dev/flashing.md)) with the OCF application that you want to run.
 - Power the module, which you can do by simply connecting it to your Windows PC using the USB cable.
-- Commission the Chili 2D module onto the Thread network formed by the border router. A guide on how to do this is found [here](../guides/thread-commissioning.md).
+- Commission the Chili 2D module onto the Thread network formed by the border router. A guide on how to do this is found [here](../dev/thread-commissioning.md).
 - Check that the module has successfully joined the Thread network by running [ocfctl](../../posix/app/ocfctl/README.md) while the module is connected to the PC with the USB cable. To download `ocfctl` for Windows, go to the [latest release](https://github.com/Cascoda/cascoda-sdk/releases/latest) of the Cascoda SDK, and download the `Windows-SDK.zip` file, which contains `ocfctl`.
 - After running `ocfctl`, you should get something that looks similar to the picture below:
 

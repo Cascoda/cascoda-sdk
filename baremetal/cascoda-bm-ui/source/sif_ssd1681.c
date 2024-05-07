@@ -153,15 +153,21 @@ static void SIF_SSD1681_SetWindow(u16_t Xstart, u16_t Xend, u16_t Ystart, u16_t 
  * \brief Wait until BUSY pin is LOW
  *******************************************************************************
  ******************************************************************************/
-static void SIF_SSD1681_WaitUntilIdle(void)
+static ca_error SIF_SSD1681_WaitUntilIdle(void)
 {
-	u8_t BUSY_value = 0;
+	u32_t t_tstart   = TIME_ReadAbsoluteTime();
+	u8_t  BUSY_value = 0;
+
 	BSP_ModuleSenseGPIOPin(SIF_SSD1681_BUSY_PIN, &BUSY_value);
 	while (BUSY_value == 1)
 	{
+		if ((TIME_ReadAbsoluteTime() - t_tstart) > SIF_SSD1681_BUSY_TIMEOUT)
+			return CA_ERROR_TIMEOUT;
 		WAIT_ms(2);
 		BSP_ModuleSenseGPIOPin(SIF_SSD1681_BUSY_PIN, &BUSY_value);
 	}
+
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -262,7 +268,9 @@ static ca_error SIF_SSD1681_SetLut(SIF_SSD1681_Update_Mode mode)
 		{
 			SIF_SSD1681_SendData(SIF_SSD1681_lut_full_update[i]);
 		}
-		SIF_SSD1681_WaitUntilIdle();
+		err = SIF_SSD1681_WaitUntilIdle();
+		if (err)
+			return err;
 		SIF_SSD1681_SendCommand(0x3f);
 		SIF_SSD1681_SendData(SIF_SSD1681_lut_full_update[153]);
 
@@ -283,7 +291,9 @@ static ca_error SIF_SSD1681_SetLut(SIF_SSD1681_Update_Mode mode)
 		{
 			SIF_SSD1681_SendData(SIF_SSD1681_lut_partial_update[i]);
 		}
-		SIF_SSD1681_WaitUntilIdle();
+		err = SIF_SSD1681_WaitUntilIdle();
+		if (err)
+			return err;
 		SIF_SSD1681_SendCommand(0x3f);
 		SIF_SSD1681_SendData(SIF_SSD1681_lut_partial_update[153]);
 
@@ -310,7 +320,7 @@ static ca_error SIF_SSD1681_SetLut(SIF_SSD1681_Update_Mode mode)
 #ifndef EPAPER_FULL_RESOLUTION
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief This function will transform an input byte into an output buffer 
+ * \brief This function will transform an input byte into an output buffer
  * containing two bytes, in the following manner:
  * Every bit of the input byte is doubled, e.g.
  * (0xC3) 1  1  0  0  0  0  1  1
@@ -363,7 +373,7 @@ static void SIF_SSD1681_Transform(uint8_t input_byte, uint8_t output_buf[2])
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief Actually copies the image into the eink's RAM. 
+ * \brief Actually copies the image into the eink's RAM.
  * Half resolution.
  *******************************************************************************
  * \param[in] image - The image that is to be copied.
@@ -523,6 +533,8 @@ static void SIF_SSD1681_DisplayFullRes(const uint8_t *image)
 
 static ca_error SIF_SSD1681_WakeUpAndSetConfig(void)
 {
+	ca_error status;
+
 	/*****************************************/
 	/*** Panel Reset                       ***/
 	/*****************************************/
@@ -530,9 +542,13 @@ static ca_error SIF_SSD1681_WakeUpAndSetConfig(void)
 
 	//BSP_ModuleSetGPIOPin(SIF_SSD1681_CS_PIN, 0);
 
-	SIF_SSD1681_WaitUntilIdle();
+	status = SIF_SSD1681_WaitUntilIdle();
+	if (status)
+		return status;
 	SIF_SSD1681_SendCommand(SW_RESET);
-	SIF_SSD1681_WaitUntilIdle();
+	status = SIF_SSD1681_WaitUntilIdle();
+	if (status)
+		return status;
 
 	SIF_SSD1681_SendCommand(DRIVER_OUTPUT_CONTROL);
 	SIF_SSD1681_SendData(0xC7);
@@ -559,14 +575,13 @@ static ca_error SIF_SSD1681_WakeUpAndSetConfig(void)
 	SIF_SSD1681_SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
 	SIF_SSD1681_SendData(0xc7);
 	SIF_SSD1681_SendData(0x00);
-	SIF_SSD1681_WaitUntilIdle();
-
-	//Set the LUT register
-	SIF_SSD1681_SetLut(FULL_UPDATE);
+	status = SIF_SSD1681_WaitUntilIdle();
+	if (status)
+		return status;
 
 	//BSP_ModuleSetGPIOPin(SIF_SSD1681_CS_PIN, 1);
 
-	return CA_ERROR_SUCCESS;
+	return SIF_SSD1681_SetLut(FULL_UPDATE);
 }
 
 bool SIF_SSD1681_IsAsleep(void)
@@ -574,7 +589,7 @@ bool SIF_SSD1681_IsAsleep(void)
 	return g_is_asleep;
 }
 
-void SIF_SSD1681_Initialise(void)
+ca_error SIF_SSD1681_Initialise(void)
 {
 	g_is_asleep = false;
 	/*****************************************/
@@ -607,7 +622,7 @@ void SIF_SSD1681_Initialise(void)
 	/* CS - Pin 34 - High */
 	//BSP_ModuleSetGPIOPin(SIF_SSD1681_CS_PIN, 1);
 
-	SIF_SSD1681_WakeUpAndSetConfig();
+	return SIF_SSD1681_WakeUpAndSetConfig();
 }
 
 void SIF_SSD1681_Deinitialise(void)

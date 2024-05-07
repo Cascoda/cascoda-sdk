@@ -71,6 +71,9 @@ extern "C" {
 #define SIF_SSD1608_DC_PIN 34
 //#define SIF_SSD1608_CS_PIN 34
 
+/* BUSY Timeout in [ms] */
+#define SIF_SSD1608_BUSY_TIMEOUT 4000
+
 /* Actual physical display resolution (in pixels) */
 #define SIF_SSD1608_WIDTH_PHYSICAL 200
 #define SIF_SSD1608_HEIGHT_PHYSICAL 200
@@ -113,6 +116,16 @@ typedef enum
 	WITH_CLEAR = 0,
 	WITHOUT_CLEAR
 } SIF_SSD1608_Clear_Mode;
+
+/* update times in [ms] for scheduling when not waiting for busy signal */
+#define SIF_SSD1608_TUPDATE_PARTIAL 350
+
+/* CAUTION: Don't increase this number. We have observed that this results 
+in the display often getting corrupted after a full update!! */
+#define SIF_SSD1608_TUPDATE_FULL 1050
+
+/* flag to avoid re-entry into display update functions when not waiting for busy */
+extern bool sif_ssd1608_display_is_busy;
 
 /* functions */
 
@@ -181,6 +194,32 @@ ca_error SIF_SSD1608_overlay_qr_code(const char *text, uint8_t *image, uint8_t s
  *******************************************************************************
  ******************************************************************************/
 void SIF_SSD1608_DisplayImage(const uint8_t *image, SIF_SSD1608_Clear_Mode mode, bool full_resolution);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Same as SIF_SSD1608_DisplayImage() but does not wait for busy.
+ *        Requires callback for power-down and deinitialisation.
+ *******************************************************************************
+ * \param image - The image to be overlaid on the eink screen.
+ * \param mode - Whether or not the display will be cleared before the image
+ * is displayed
+ * \param full_resolution - Whether the image provided should be displayed
+ * in full resolution or half resolution. This is is ignored when
+ * EPAPER_FULL_RESOLUTION is defined, and therefore only applies to binaries
+ * built with half resolution in mind. This allows the option to display an
+ * image (typically stored in flash) using full resolution, as an exception.
+ *******************************************************************************
+ ******************************************************************************/
+void SIF_SSD1608_DisplayImageNoWait(const uint8_t *image, SIF_SSD1608_Clear_Mode mode, bool full_resolution);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief callback function for power-down when not waiting for busy signal
+ *******************************************************************************
+ * \param aContext - Callback context (not used in function).
+ *******************************************************************************
+ ******************************************************************************/
+ca_error SIF_SSD1608_PowerDown(void *aContext);
 
 #ifdef __cplusplus
 }

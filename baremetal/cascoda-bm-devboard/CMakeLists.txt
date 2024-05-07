@@ -88,3 +88,19 @@ add_executable(devboard-click-batt
 target_link_libraries(devboard-click-batt cascoda-bm cascoda-bm-devboard mikrosdk-click)
 cascoda_make_binary(devboard-click-batt CASCODA_BUILD_BINARIES)
 cascoda_put_subdir(devboard devboard-click-batt)
+
+add_executable(devboard-aerial-adapter-sed
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_aerial_adapter_sed.c
+)
+
+target_link_libraries(devboard-aerial-adapter-sed cascoda-bm-devboard cascoda-aerial-adapter cascoda-bm cascoda-bm-devboard)
+cascoda_make_binary(devboard-aerial-adapter-sed CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-aerial-adapter-sed)
+
+add_executable(devboard-aerial-adapter-router
+    ${PROJECT_SOURCE_DIR}/examples/devboard_app_aerial_adapter_router.c
+)
+
+target_link_libraries(devboard-aerial-adapter-router cascoda-bm-devboard cascoda-aerial-adapter cascoda-bm cascoda-bm-devboard)
+cascoda_make_binary(devboard-aerial-adapter-router CASCODA_BUILD_BINARIES)
+cascoda_put_subdir(devboard devboard-aerial-adapter-router)

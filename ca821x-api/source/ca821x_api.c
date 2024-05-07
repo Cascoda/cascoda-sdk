@@ -1329,6 +1329,67 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 	return (ca_mac_status)status;
 }
 
+uint8_t TDME_tx_dbm_to_paib(int8_t txpdbm)
+{
+	uint8_t paib;
+
+	/* Look-Up Table for Setting Current values (0-63) for desired Output Power (in dBm) */
+	if (txpdbm > 8)
+		paib = 0x3F;
+	else if (txpdbm == 8)
+		paib = 0x32;
+	else if (txpdbm == 7)
+		paib = 0x22;
+	else if (txpdbm == 6)
+		paib = 0x18;
+	else if (txpdbm == 5)
+		paib = 0x10;
+	else if (txpdbm == 4)
+		paib = 0x0C;
+	else if (txpdbm == 3)
+		paib = 0x08;
+	else if (txpdbm == 2)
+		paib = 0x05;
+	else if (txpdbm == 1)
+		paib = 0x03;
+	else if (txpdbm == 0)
+		paib = 0x01;
+	else /*  <  0 */
+		paib = 0x00;
+
+	return paib;
+}
+
+int8_t TDME_tx_paib_to_dbm(uint8_t paib)
+{
+	int8_t txpdbm;
+
+	if (paib >= 0x3F)
+		txpdbm = 9;
+	else if (paib >= 0x32)
+		txpdbm = 8;
+	else if (paib >= 0x22)
+		txpdbm = 7;
+	else if (paib >= 0x18)
+		txpdbm = 6;
+	else if (paib >= 0x10)
+		txpdbm = 5;
+	else if (paib >= 0x0C)
+		txpdbm = 4;
+	else if (paib >= 0x08)
+		txpdbm = 3;
+	else if (paib >= 0x05)
+		txpdbm = 2;
+	else if (paib >= 0x03)
+		txpdbm = 1;
+	else if (paib > 0x00)
+		txpdbm = 0;
+	else
+		txpdbm = -1;
+
+	return txpdbm;
+}
+
 ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t status;
@@ -1357,51 +1418,7 @@ ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef)
 	}
 	else
 	{
-		/* Look-Up Table for Setting Current and Frequency Trim values for desired Output Power */
-		if (txp_val > 8)
-		{
-			paib = 0x3F;
-		}
-		else if (txp_val == 8)
-		{
-			paib = 0x32;
-		}
-		else if (txp_val == 7)
-		{
-			paib = 0x22;
-		}
-		else if (txp_val == 6)
-		{
-			paib = 0x18;
-		}
-		else if (txp_val == 5)
-		{
-			paib = 0x10;
-		}
-		else if (txp_val == 4)
-		{
-			paib = 0x0C;
-		}
-		else if (txp_val == 3)
-		{
-			paib = 0x08;
-		}
-		else if (txp_val == 2)
-		{
-			paib = 0x05;
-		}
-		else if (txp_val == 1)
-		{
-			paib = 0x03;
-		}
-		else if (txp_val == 0)
-		{
-			paib = 0x01;
-		}
-		else /*  <  0 */
-		{
-			paib = 0x00;
-		}
+		paib = TDME_tx_dbm_to_paib(txp_val);
 		/* write PACFGIB */
 		status = TDME_SETSFR_request_sync(0, 0xFE, paib, pDeviceRef);
 	}
@@ -1436,26 +1453,7 @@ ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef)
 	{
 		status = TDME_GETSFR_request_sync(0, 0xFE, &paib, pDeviceRef); // read PACFGIB
 
-		if (paib >= 0x32)
-			txp_val = 8;
-		else if (paib >= 0x22)
-			txp_val = 7;
-		else if (paib >= 0x18)
-			txp_val = 6;
-		else if (paib >= 0x10)
-			txp_val = 5;
-		else if (paib >= 0x0C)
-			txp_val = 4;
-		else if (paib >= 0x08)
-			txp_val = 3;
-		else if (paib >= 0x05)
-			txp_val = 2;
-		else if (paib >= 0x03)
-			txp_val = 1;
-		else if (paib > 0x00)
-			txp_val = 0;
-		else
-			txp_val = -1;
+		txp_val = TDME_tx_paib_to_dbm(paib);
 
 		/* limit to 6 bit */
 		*txp = (uint8_t)(txp_val)&0x3F;

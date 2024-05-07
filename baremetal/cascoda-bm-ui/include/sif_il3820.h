@@ -76,6 +76,9 @@ extern "C" {
 #define SIF_IL3820_DC_PIN 34
 //#define SIF_IL3820_CS_PIN 34
 
+/* BUSY Timeout in [ms] */
+#define SIF_IL3820_BUSY_TIMEOUT 5000
+
 /* Display resolution */
 #define SIF_IL3820_WIDTH 128
 #define SIF_IL3820_HEIGHT 296

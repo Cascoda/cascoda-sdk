@@ -119,6 +119,11 @@ ca_error Btn_DeRegisterExt(uint8_t ledBtn)
 	else if (ledBtn > NUM_LEDBTN_EXT)
 		return CA_ERROR_FAIL;
 
+	/* check if GPIO Wakeup for that pin needs to be reset */
+	if (IS_BTN(ledBtn))
+		if (Btn_DecrementGPIOWakeup())
+			return CA_ERROR_FAIL;
+
 	/* de-register */
 	CLR_INP(ledBtn);
 	CLR_BTN(ledBtn);

@@ -15,7 +15,9 @@ extern "C" {
 /**
  * \brief draw line
  *
- * draws a line
+ * draws a line. NOTE: Under some circumstances, the line drawn
+ * will exceed the bounds of the provided coordinates by 1 pixel. So some trial-error and manual
+ * adjustments may be needed when using this function. 
  *
  * \param x0 the lower x coordinate
  * \param y0 the lower y coordinate
@@ -98,20 +100,38 @@ void display_setTextColor(uint16_t c, uint16_t b);
 /**
     \brief  Print one byte/character of data
     \param  c  The 8-bit ascii character to write
-    
+
     note use snprintf to format text
 */
 void display_putc(uint8_t c);
 
 /**
     \brief  Print a string to the display
-    \param  c  The 8-bit ascii character to write
-    
+    \param  s  The string to write
+
     note use snprintf to format text
     snprintf does not display floating numbers
     use display_double() to display floating numbers
 */
 void display_puts(const uint8_t *s);
+
+/**
+    \brief  Print a maximum of (n - 1) characters from the input string to the display
+            and put "..." as the nth character afterwards to indicate that the string was truncated.
+    \param  s  The input string to write (will be truncated if longer than n characters)
+    \param  n  The maximum number of characters (minus 1 to leave space for "...") to display from the input string
+               NOTE: This is only the number of VISIBLE characters, so excludes NULL terminator.
+
+    note use snprintf to format text
+    snprintf does not display floating numbers
+    use display_double() to display floating numbers
+
+    EXAMPLE: 
+    const char *str = "Hello, World!";
+    display_puts_max_n(s, 30); // Result is: Hello, World!
+    display_puts_max_n(s, 9); // Result is: Hello, W...
+*/
+void display_puts_max_n(const uint8_t *s, uint8_t n);
 
 /**
     \brief  convert a float to a string
@@ -159,20 +179,37 @@ uint16_t display_getHeight();
 */
 void display_clear(void);
 
-/* GENERAL NOTES ON USAGE, and differences between using the 2.9inch (and MIKROE 1.54inch) vs 
+/* GENERAL NOTES ON USAGE, and differences between using the 2.9inch (and MIKROE 1.54inch) vs
 1.54inch (waveshare) functions:
 - It is simple to do any kind of displaying with the 2.9inch eink display. Simply call the
 `display_render()` function, with the arguments of your choice. E.g.
-  . To display the frame buffer using full update, with a clear happening before displaying, 
+  . To display the frame buffer using full update, with a clear happening before displaying,
   call `display_render(FULL_UPDATE, WITH_CLEAR)`.
   . For partial update, without clear, call `display_render(PARTIAL_UPDATE, WITHOUT_CLEAR)`.
   That is all that is required.
-- However, if using the 1.54inch display: 
+- However, if using the 1.54inch display:
   . To do a full update (always preceded with a clear), simply call the function `display_render_full()`.
   . To do a partial update, call the function `display_render_partial()`, with `true` or `false` as the argument depending
     on whether you want the eink display to be put in Deep Sleep mode after the update is done.
 */
 #if (defined EPAPER_2_9_INCH || defined EPAPER_MIKROE_1_54_INCH)
+
+#ifdef EPAPER_MIKROE_1_54_INCH
+/**
+    \brief Initialises display on startup
+    \returns    error status
+*/
+ca_error display_initialise(void);
+
+/**
+    \brief Deinitialises the display
+    NOTE: Only call this function as part of a full and permanent deinitialisation
+          of the system, e.g. before entering deep powerdown mode,
+          which would require a device RESTART to get back to normal operation.
+    \returns    error status
+*/
+ca_error display_deinitialise(void);
+#endif
 
 /**
     \brief Displays the frame buffer onto the eink display, in 4 possible different ways,
@@ -192,6 +229,16 @@ void display_render(
     SIF_SSD1608_Clear_Mode  clr_mode);
 #endif
 
+#ifdef EPAPER_MIKROE_1_54_INCH
+
+/**
+    \brief Same as display_render, but does not wait for display to be updated.
+    \param image The image to be displayed.
+*/
+void display_render_nowait(SIF_SSD1608_Update_Mode updt_mode, SIF_SSD1608_Clear_Mode clr_mode);
+
+#endif
+
 #elif defined EPAPER_WAVESHARE_1_54_INCH
 
 /**
@@ -200,7 +247,7 @@ void display_render(
 void display_render_full(void);
 
 /**
-    \brief Displays the frame buffer onto the eink display using partial update (fast). 
+    \brief Displays the frame buffer onto the eink display using partial update (fast).
     \param sleep_when_done If true, will set the eink display into Deep Sleep
     mode after the partial update is done.
 */
@@ -213,6 +260,16 @@ void display_render_partial(bool sleep_when_done);
     \param image The image to be displayed.
 */
 void display_fixed_image(const uint8_t *image);
+
+#ifdef EPAPER_MIKROE_1_54_INCH
+
+/**
+    \brief Same as display_fixed_image, but does not wait for display to be updated.
+    \param image The image to be displayed.
+*/
+void display_fixed_image_nowait(const uint8_t *image);
+
+#endif
 
 // not documented
 //void display_setTextWrap(bool w);

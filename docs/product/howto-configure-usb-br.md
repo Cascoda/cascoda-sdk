@@ -2,7 +2,7 @@
 
 By default, the border router is configured to use the UART exchange for its Thread communications. This is accomplished through the `CASCODA_UART` environment variable, which is set within `/etc/init.d/otbr-agent`.
 
-If the `CASCODA_UART` variable is not set, the exchange will look for a Chili connected via USB, which [must be flashed](../guides/flashing.md) with the `mac-dongle` binary configured with an USB exchange - [the one within the Chili2D-USB release will do](https://github.com/Cascoda/cascoda-sdk/release).
+If the `CASCODA_UART` variable is not set, the exchange will look for a Chili connected via USB, which [must be flashed](../dev/flashing.md) with the `mac-dongle` binary configured with an USB exchange - [the one within the Chili2D-USB release will do](https://github.com/Cascoda/cascoda-sdk/release).
 
 ## Steps
 

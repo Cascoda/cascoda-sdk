@@ -60,5 +60,5 @@ build directory.
 
 Once the devices are all ready, plug the server Chili into a Linux machine
 and run the `ot-eink-server` executable. Then, power the end device
-Chili and [commission it](../../../docs/guides/thread-commissioning.md). After 10 to 20 seconds, the server will receive discover requests, as
+Chili and [commission it](../../../docs/dev/thread-commissioning.md). After 10 to 20 seconds, the server will receive discover requests, as
 well as image requests from the end device.

@@ -35,6 +35,8 @@
 #include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
 
+#include <stdint.h>
+
 /* Map from Button declaration to actual module pin number */
 uint8_t registeredPinMappings[NUM_LEDBTN];
 
@@ -42,12 +44,19 @@ uint8_t registeredPinMappings[NUM_LEDBTN];
 static btn_callback_info buttonCallbacks[NUM_LEDBTN];
 
 /* Store LED/Button type */
-static uint8_t registeredPinTypes[NUM_LEDBTN];
+static uint8_t registeredPinTypes[NUM_LEDBTN] = {PINTYPE_NONE};
+
+/* Store Whether or not an interrupt is registered for that pin */
+static uint8_t registeredPinInterrupts[NUM_LEDBTN] = {PIN_NO_INTERRUPT};
 
 // Powerdown/sleep mode selection:
 // PDM_POWERDOWN if any GPIO interrupt wakeups declared
 // PDM_POWEROFF  if timer only
 static uint8_t UseGPIOWakeup = 0;
+
+// Will be set to 1 if the intention is to sleep permanently
+// As a consequence of this, the device will be put into PDM_DPD_MCU_ONLY
+static uint8_t SleepPermanently = 0;
 
 // button interrupt occured
 static uint8_t BtnHasInterrupt = 0;
@@ -64,18 +73,22 @@ static int btn_isr(void)
 /* register LED output (open drain) */
 ca_error Btn_RegisterLEDOutput(uint8_t ledBtn)
 {
+	ca_error status;
+
+	/* Register the pin */
+	if ((status = BSP_ModuleRegisterGPIOOutputOD(registeredPinMappings[ledBtn], MODULE_PIN_TYPE_LED)))
+		return status;
+
 	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
 	registeredPinTypes[ledBtn]        = PINTYPE_LED;
 
-	/* Register the pin */
-	return BSP_ModuleRegisterGPIOOutputOD(registeredPinMappings[ledBtn], MODULE_PIN_TYPE_LED);
+	return status;
 }
 
 /* register button input */
 ca_error Btn_RegisterButtonInput(uint8_t ledBtn)
 {
-	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
-	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
+	ca_error status;
 
 	/* define the GPIO arguments */
 	struct gpio_input_args args;
@@ -85,14 +98,19 @@ ca_error Btn_RegisterButtonInput(uint8_t ledBtn)
 	args.irq      = MODULE_PIN_IRQ_OFF;
 
 	/* Register the pin */
-	return BSP_ModuleRegisterGPIOInput(&args);
+	if ((status = BSP_ModuleRegisterGPIOInput(&args)))
+		return status;
+
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
+
+	return status;
 }
 
 /* register button input with interrupt (for sleepy devices) */
 ca_error Btn_RegisterButtonIRQInput(uint8_t ledBtn)
 {
-	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
-	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
+	ca_error status;
 
 	/* define the GPIO arguments */
 	struct gpio_input_args args;
@@ -101,17 +119,22 @@ ca_error Btn_RegisterButtonIRQInput(uint8_t ledBtn)
 	args.debounce = MODULE_PIN_DEBOUNCE_ON;
 	args.irq      = MODULE_PIN_IRQ_FALL;
 	args.callback = btn_isr;
-	Btn_SetGPIOWakeup();
 
 	/* Register the pin */
-	return BSP_ModuleRegisterGPIOInput(&args);
+	if ((status = BSP_ModuleRegisterGPIOInput(&args)))
+		return status;
+
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_BTN;
+	registeredPinInterrupts[ledBtn]   = PIN_INTERRUPT;
+
+	return status;
 }
 
 /* register button as shared input/output */
 ca_error Btn_RegisterSharedButtonLED(uint8_t ledBtn)
 {
-	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
-	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+	ca_error status;
 
 	/* define the GPIO arguments */
 	struct gpio_input_args args;
@@ -121,14 +144,19 @@ ca_error Btn_RegisterSharedButtonLED(uint8_t ledBtn)
 	args.irq      = MODULE_PIN_IRQ_OFF;
 
 	/* Register the pin */
-	return BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED);
+	if ((status = BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED)))
+		return status;
+
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+
+	return status;
 }
 
 /* register pin to be shared LED and button with interrupt (for sleepy devices) */
 ca_error Btn_RegisterSharedIRQButtonLED(uint8_t ledBtn)
 {
-	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
-	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+	ca_error status;
 
 	/* define the GPIO arguments */
 	struct gpio_input_args args;
@@ -137,18 +165,36 @@ ca_error Btn_RegisterSharedIRQButtonLED(uint8_t ledBtn)
 	args.debounce = MODULE_PIN_DEBOUNCE_ON;
 	args.irq      = MODULE_PIN_IRQ_FALL;
 	args.callback = btn_isr;
-	Btn_SetGPIOWakeup();
 
 	/* Register the pin */
-	return BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED);
+	if ((status = BSP_ModuleRegisterGPIOSharedInputOutputOD(&args, MODULE_PIN_TYPE_LED)))
+		return status;
+
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_SHARED;
+	registeredPinInterrupts[ledBtn]   = PIN_INTERRUPT;
+
+	return status;
 }
 
 /* De-Register an LED or Button Pin */
 ca_error Btn_DeRegister(uint8_t ledBtn)
 {
-	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	ca_error status;
 
-	return BSP_ModuleDeregisterGPIOPin(registeredPinMappings[ledBtn]);
+	if ((status = BSP_ModuleDeregisterGPIOPin(registeredPinMappings[ledBtn])))
+		return status;
+
+	buttonCallbacks[ledBtn].lastState = BTN_RELEASED;
+	registeredPinTypes[ledBtn]        = PINTYPE_NONE;
+
+	if (registeredPinInterrupts[ledBtn] == PIN_INTERRUPT)
+		if ((status = Btn_DecrementGPIOWakeup()))
+			return status;
+
+	registeredPinInterrupts[ledBtn] = PIN_NO_INTERRUPT;
+
+	return status;
 }
 
 /* Set a callback function to a button when it is short pressed */
@@ -198,19 +244,22 @@ ca_error Btn_Sense(uint8_t ledBtn, uint8_t *val)
 		ret = Btn_SenseOutput(ledBtn, &save);
 		if (ret != CA_ERROR_SUCCESS)
 			return ret;
-		// Set the output to high briefly
-		// only works since we use open drain outputs.
-		Btn_SetLED(ledBtn, 1);
+		if (save == LED_ON)
+		{
+			// Set the output to high briefly
+			// only works since we use open drain outputs.
+			Btn_SetLED(ledBtn, LED_OFF);
 
-		// We need a very small delay here to allow for
-		// RC time constant of pullup resistor
-		WAIT_ms(BTN_SHARED_SENSE_DELAY);
+			// We need a very small delay here to allow for
+			// RC time constant of pullup resistor
+			WAIT_ms(BTN_SHARED_SENSE_DELAY);
+		}
 	}
 
 	// Detect the state of the button
 	ret = BSP_ModuleSenseGPIOPin(registeredPinMappings[ledBtn], val);
 
-	if (type == PINTYPE_SHARED && ret == CA_ERROR_SUCCESS)
+	if (type == PINTYPE_SHARED && ret == CA_ERROR_SUCCESS && save == LED_ON)
 	{
 		// Restore the output latch value
 		// Ensure we set-back the saved value
@@ -248,6 +297,21 @@ ca_error Btn_PollButtons(void)
 		else
 		{
 			buttonCallbacks[ledBtn].lastState = BTN_RELEASED; /* not registererd as button */
+		}
+	}
+
+	/* Add a delay to not affect brightness of shared LEDs too much */
+	for (uint8_t ledBtn = 0; ledBtn < NUM_LEDBTN; ledBtn++)
+	{
+		if (registeredPinTypes[ledBtn] == PINTYPE_SHARED)
+		{
+			Btn_SenseOutput(ledBtn, &pressed);
+			if (pressed == LED_ON)
+			{
+				WAIT_ms(BTN_SHARED_SENSE_DELAY);
+				/* only once */
+				break;
+			}
 		}
 	}
 
@@ -314,10 +378,33 @@ ca_error Btn_HandleButtonCallbacks(btn_callback_info *callback, uint8_t pressed)
 	}
 }
 
-/* Register that GPIOs are used for wakeup */
-void Btn_SetGPIOWakeup(void)
+/* One additional GPIO is now being used for wakeup */
+void Btn_IncrementGPIOWakeup(void)
 {
-	UseGPIOWakeup = 1;
+	++UseGPIOWakeup;
+	ca_log_debg("An additional pin is now used for GPIO Wakeup, total: %d", UseGPIOWakeup);
+}
+
+/* One fewer GPIO is now being used for wakeup */
+ca_error Btn_DecrementGPIOWakeup(void)
+{
+	if (UseGPIOWakeup == 0)
+	{
+		return CA_ERROR_FAIL;
+		ca_log_crit("Error: Button registrations/deregistrations out of sync");
+		ca_log_crit("Check the registration/deregistrations of irq pins!");
+	}
+
+	--UseGPIOWakeup;
+	ca_log_debg("A pin is no longer used for GPIO Wakeup, total: %d", UseGPIOWakeup);
+
+	return CA_ERROR_SUCCESS;
+}
+
+/* Flag that the device will be put to sleep permanently */
+void Btn_SetSleepPermanently(void)
+{
+	SleepPermanently = 1;
 }
 
 /* Check if all buttons have been handled */
@@ -341,7 +428,9 @@ ca_error Btn_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t pdmode;
 
-	if (UseGPIOWakeup)
+	if (SleepPermanently)
+		pdmode = PDM_DPD_MCU_ONLY;
+	else if (UseGPIOWakeup)
 		pdmode = PDM_POWERDOWN;
 	else
 		pdmode = PDM_POWEROFF;

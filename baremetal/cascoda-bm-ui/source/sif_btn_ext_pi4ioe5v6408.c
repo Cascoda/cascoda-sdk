@@ -81,7 +81,7 @@ ca_error SIF_RegisterButtonInputExt(uint8_t ledBtn)
 		return CA_ERROR_FAIL;
 	}
 
-	Btn_SetGPIOWakeup();
+	Btn_IncrementGPIOWakeup();
 
 	return CA_ERROR_SUCCESS;
 }

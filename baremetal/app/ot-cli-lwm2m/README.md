@@ -10,8 +10,8 @@ This example includes support for the CoAP over UDP and CoAP over DTLS transport
 In order to run this demonstration, a Thread border router, such as the Cascoda evaluation border router is required. 
 The border router should be upgraded to the latest version using the scripts available [here](https://github.com/Cascoda/install-script).
 
-Please see the [evaluation guide](../../../docs/guides/lwm2m-over-thread.md) for more information on how to use this binary.
-The guide also includes some [considerations](../../../docs/guides/lwm2m-over-thread.md#considerations) for use in practice.
+Please see the [evaluation guide](../../../docs/dev/lwm2m-over-thread.md) for more information on how to use this binary.
+The guide also includes some [considerations](../../../docs/dev/lwm2m-over-thread.md#considerations) for use in practice.
 
 **Note that if secure LWM2M is required (using DTLS), the ``CASCODA_BUILD_SECURE_LWM2M`` must be enabled in the CMake config.**
 

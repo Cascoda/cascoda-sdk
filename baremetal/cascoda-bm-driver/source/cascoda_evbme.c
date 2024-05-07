@@ -746,7 +746,7 @@ static ca_error EVBME_CAX_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms
 
 	if ((mode == PDM_POWEROFF) || (mode == PDM_DPD))
 		pdparam[0] = 0x1C; // power-off mode 1, wake-up by sleep timer
-	else if (mode == PDM_POWERDOWN)
+	else if ((mode == PDM_POWERDOWN) || (mode == PDM_DPD_MCU_ONLY))
 		pdparam[0] = 0x2A; // power-off mode 0, wake-up by gpio (ssb)
 	else if (mode == PDM_STANDBY)
 		pdparam[0] = 0x24; // standby mode,     wake-up by gpio (ssb)
@@ -988,18 +988,26 @@ void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x
 	// power down
 	if (mode == PDM_DPD) // mode has to use CAX sleep timer
 	{
-		BSP_PowerDown(sleeptime_ms, 0, 1);
+		BSP_PowerDown(sleeptime_ms, 0, DPD_FLAG_WAKEUP_ENABLED);
 		DISPATCH_ReadCA821x(pDeviceRef); /* read downstream message that has woken up device */
 	}
 	else if (mode == PDM_POWEROFF) // mode has to use CAX sleep timer
 	{
-		BSP_PowerDown(sleeptime_ms, 0, 0);
+		BSP_PowerDown(sleeptime_ms, 0, DPD_FLAG_NO_DPD);
 		DISPATCH_ReadCA821x(pDeviceRef); /* read downstream message that has woken up device */
 	}
+	else if (mode == PDM_DPD_MCU_ONLY)
+	{
+		BSP_PowerDown(sleeptime_ms, 1, DPD_FLAG_WAKEUP_DISABLED);
+	}
 	else if (mode == PDM_ALLON)
+	{
 		WAIT_ms(sleeptime_ms);
+	}
 	else
-		BSP_PowerDown(sleeptime_ms, 1, 0);
+	{
+		BSP_PowerDown(sleeptime_ms, 1, DPD_FLAG_NO_DPD);
+	}
 
 	// wake up CAX
 	if ((mode == PDM_POWEROFF) && BSP_IsWatchdogTriggered())

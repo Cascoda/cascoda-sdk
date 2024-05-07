@@ -51,8 +51,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-util/cascoda_tasklet.h"
 #include "gfx_driver.h"
 #include "gfx_library.h"
 
@@ -126,6 +129,14 @@ uint16_t display_width  = SIF_SSD1608_WIDTH;
 uint16_t display_height = SIF_SSD1608_HEIGHT;
 #endif
 
+#if defined EPAPER_MIKROE_1_54_INCH
+
+/* scheduling tasklet for power-down and deinitialisation
+   if not waiting for display to be updated */
+static ca_tasklet sif_ssd1608_nowait_tasklet;
+
+#endif
+
 // generic draw pixel
 // only touches the frame buffer
 void display_drawPixel(int16_t x, int16_t y, uint16_t color)
@@ -157,18 +168,69 @@ void display_fixed_image(const uint8_t *image)
 
 #elif defined EPAPER_MIKROE_1_54_INCH
 
+ca_error display_initialise(void)
+{
+	ca_error status;
+
+	status = SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_Deinitialise();
+	sif_ssd1608_display_is_busy = false;
+	TASKLET_Init(&sif_ssd1608_nowait_tasklet, &SIF_SSD1608_PowerDown);
+
+	return status;
+}
+
+// IMPORTANT: Read the note in the comment for this function in the header file
+// to make sure that you are not misusing this function.
+ca_error display_deinitialise(void)
+{
+	ca_error status;
+	status = SIF_SSD1608_PowerDown(NULL);
+	return status;
+}
+
 void display_render(SIF_SSD1608_Update_Mode updt_mode, SIF_SSD1608_Clear_Mode clr_mode)
 {
+	if (sif_ssd1608_display_is_busy)
+		return;
 	SIF_SSD1608_Initialise(updt_mode);
 	SIF_SSD1608_DisplayImage(get_framebuffer(), clr_mode, false);
 	SIF_SSD1608_Deinitialise();
 }
 
+void display_render_nowait(SIF_SSD1608_Update_Mode updt_mode, SIF_SSD1608_Clear_Mode clr_mode)
+{
+	uint32_t tupdate;
+
+	if (sif_ssd1608_display_is_busy)
+		return;
+	sif_ssd1608_display_is_busy = true;
+	SIF_SSD1608_Initialise(updt_mode);
+	SIF_SSD1608_DisplayImageNoWait(get_framebuffer(), clr_mode, false);
+	if (updt_mode == FULL_UPDATE)
+		tupdate = SIF_SSD1608_TUPDATE_FULL;
+	else
+		tupdate = SIF_SSD1608_TUPDATE_PARTIAL;
+	TASKLET_ScheduleDelta(&sif_ssd1608_nowait_tasklet, tupdate, NULL);
+}
+
 void display_fixed_image(const uint8_t *image)
 {
+	if (sif_ssd1608_display_is_busy)
+		return;
 	SIF_SSD1608_Initialise(FULL_UPDATE);
 	SIF_SSD1608_DisplayImage(image, WITH_CLEAR, true);
 	SIF_SSD1608_Deinitialise();
+}
+
+void display_fixed_image_nowait(const uint8_t *image)
+{
+	if (sif_ssd1608_display_is_busy)
+		return;
+	sif_ssd1608_display_is_busy = true;
+	SIF_SSD1608_Initialise(FULL_UPDATE);
+	SIF_SSD1608_DisplayImageNoWait(image, WITH_CLEAR, true);
+	TASKLET_ScheduleDelta(&sif_ssd1608_nowait_tasklet, SIF_SSD1608_TUPDATE_FULL, NULL);
 }
 
 #elif defined EPAPER_WAVESHARE_1_54_INCH
@@ -860,6 +922,39 @@ void display_putc(uint8_t c)
 void display_puts(const uint8_t *s)
 {
 	while (*s) display_putc(*s++);
+}
+
+// print first n characters of string, then put "..."
+void display_puts_max_n(const uint8_t *s, uint8_t n)
+{
+	// If string doesn't need truncating, then display as normal
+	if (strlen(s) <= n)
+	{
+		display_puts(s);
+		return;
+	}
+
+	enum max_allowed
+	{
+		MAX_ALLOWED_CHARS = 20
+	};
+
+	char str_truncated[MAX_ALLOWED_CHARS];
+
+	// To avoid problems related to n being too high
+	if (n >= MAX_ALLOWED_CHARS)
+		n = MAX_ALLOWED_CHARS;
+
+	// Displaye the string
+	strncpy(str_truncated, s, n - 1);
+	str_truncated[n - 1] = '\0';
+
+	display_puts(str_truncated);
+
+	// Draw the ellipsis (condensed into 1 character-width)
+	display_drawPixel(cursor_x, cursor_y + 5, textcolor);
+	display_drawPixel(cursor_x + 2, cursor_y + 5, textcolor);
+	display_drawPixel(cursor_x + 4, cursor_y + 5, textcolor);
 }
 
 // print custom char (dimension: 7x5 or 8x5 pixel)

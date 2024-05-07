@@ -33,7 +33,7 @@ The Cascoda SDK provides [two example applications](../../baremetal/cascoda-bm-d
 
 1. [Set up the environment and build system](../reference/full-reference.md#building).
 2. Follow the [devboard-specific build instructions](../../baremetal/cascoda-bm-devboard/README.md#building-instructions) to generate the example binaries.
-3. [Flash the devboard](../guides/flashing.md) with the either of the example binaries which were built in the previous steps (`devboard-blinky` or `devboard-click`), located in the `bin/devboard` folder of the build directory.
+3. [Flash the devboard](../dev/flashing.md) with the either of the example binaries which were built in the previous steps (`devboard-blinky` or `devboard-click`), located in the `bin/devboard` folder of the build directory.
 
 If you are running the `devboard-click` application, then you need to connect one or two MikroElektronika Click boards, and do the following:
 

@@ -76,6 +76,9 @@ extern "C" {
 #define SIF_SSD1681_DC_PIN 34
 //#define SIF_SSD1681_CS_PIN 34
 
+/* BUSY Timeout in [ms] */
+#define SIF_SSD1681_BUSY_TIMEOUT 5000
+
 /* Actual physical display resolution (in pixels) */
 #define SIF_SSD1681_WIDTH_PHYSICAL 200
 #define SIF_SSD1681_HEIGHT_PHYSICAL 200
@@ -128,7 +131,7 @@ bool SIF_SSD1681_IsAsleep(void);
  * \brief EINK Initialisation
  *******************************************************************************
  ******************************************************************************/
-void SIF_SSD1681_Initialise(void);
+ca_error SIF_SSD1681_Initialise(void);
 
 /******************************************************************************/
 /***************************************************************************/ /**

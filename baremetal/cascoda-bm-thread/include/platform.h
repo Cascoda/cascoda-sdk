@@ -188,6 +188,21 @@ otError PlatformUartReceive(const uint8_t *aBuf, uint16_t aBufLength);
 otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
 
 /**
+ * Identical to PlatformTryJoin(), except that an additional poll function
+ * can be provided, which will be called while the joining process is in progress.
+ *
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param aInstance The openthread instance
+ * @param poll_func The function that will be called while the joining process is in progress.
+ *
+ * @return Status of the join
+ * @retval OT_ERROR_NONE Successfully joined Thread Network (Thread IPv6 interface is left up)
+ * @retval OT_ERROR_ALREADY Device was already joined to Thread network (can leave with otInstanceFactoryReset) (Thread IPv6 interface is left up)
+ * @retval (other) Failed to join a Thread Network for the given reason. (Thread IPv6 interface is brought down)
+ */
+otError PlatformTryJoinWithCustomPoll(struct ca821x_dev *pDeviceRef, otInstance *aInstance, void (*poll_func)(void));
+
+/**
  * Helper function to attempt the Thread joining process, with an explicit
  * passcode. The state of the Thread IPv6 interface (otIp6SetEnabled) upon
  * returning from this function depends on the return code. Upon a success
@@ -205,6 +220,25 @@ otError PlatformTryJoin(struct ca821x_dev *pDeviceRef, otInstance *aInstance);
  * @retval (other) Failed to join a Thread Network for the given reason. (Thread IPv6 interface is brought down)
  */
 otError PlatformTryJoinWithPskd(struct ca821x_dev *pDeviceRef, otInstance *aInstance, const char *aPskd);
+
+/**
+ * Identiacl to PlatformTryJoinWithPsdk(), except that an additional poll function
+ * can be provided, which will be called while the joining process is in progress.
+ * 
+ * @param pDeviceRef Pointer to initialised ca821x_device_ref struct
+ * @param aInstance The openthread instance
+ * @param aPskd Pre-shared Key to use during the join
+ * @param poll_func The function that will be called while the joining process is in progress.
+ *
+ * @return Status of the join
+ * @retval OT_ERROR_NONE Successfully joined Thread Network (Thread IPv6 interface is left up)
+ * @retval OT_ERROR_ALREADY Device was already joined to Thread network (can leave with otInstanceFactoryReset) (Thread IPv6 interface is left up)
+ * @retval (other) Failed to join a Thread Network for the given reason. (Thread IPv6 interface is brought down)
+ */
+otError PlatformTryJoinWithPskdWithCustomPoll(struct ca821x_dev *pDeviceRef,
+                                              otInstance        *aInstance,
+                                              const char        *aPskd,
+                                              void (*poll_func)(void));
 
 /**
  * Helper function to print the Thread Joiner credentials (for instance, upon boot).

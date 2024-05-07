@@ -55,12 +55,13 @@ extern "C" {
 /** Definitions for Powerdown Modes */
 enum powerdown_mode
 {
-	PDM_ALLON     = 0, //!< Mainly for Testing
-	PDM_ACTIVE    = 1, //!< CAX Full Data Retention, MAC Running
-	PDM_STANDBY   = 2, //!< CAX Full Data Retention
-	PDM_POWERDOWN = 3, //!< No CAX Retention, PIB has to be re-initialised
-	PDM_POWEROFF  = 4, //!< No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
-	PDM_DPD       = 5  //!< No CAX Retention or MCU Retention (Data saved in NVM)
+	PDM_ALLON        = 0, //!< Mainly for Testing
+	PDM_ACTIVE       = 1, //!< CAX Full Data Retention, MAC Running
+	PDM_STANDBY      = 2, //!< CAX Full Data Retention
+	PDM_POWERDOWN    = 3, //!< No CAX Retention, PIB has to be re-initialised
+	PDM_POWEROFF     = 4, //!< No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
+	PDM_DPD          = 5, //!< No CAX Retention or MCU Retention (Data saved in NVM)
+	PDM_DPD_MCU_ONLY = 6, //!< No CAX Retention or MCU Retention (Data saved in NVM)
 };
 
 /******************************************************************************/
@@ -145,6 +146,7 @@ extern int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
 * PDM_POWERDOWN     | Power-Down      | Power-Down 0     | No CAX Retention, PIB has to be re-initialised
 * PDM_POWEROFF      | Power-Down      | Power-Down 1     | No CAX Retention, PIB has to be re-initialised. Timer-Wakeup only
 * PDM_DPD           | Deep-Power-Down | Power-Down 1     | No CAX Retention or MCU Retention (Data saved in NVM)
+* PDM_DPD_MCU_ONLY  | Deep-Power-Down | Power-Down 0     | No CAX Retention or MCU Retention (Data saved in NVM). MCU-Wakeup only
 *******************************************************************************
 ******************************************************************************/
 void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);

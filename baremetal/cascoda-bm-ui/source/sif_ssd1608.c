@@ -64,6 +64,9 @@
 #define SET_RAM_Y_ADDRESS_COUNTER 0X4F
 #define TERMINATE_FRAME_READ_WRITE 0xFF
 
+/* flag to avoid re-entry into display update functions when not waiting for busy */
+bool sif_ssd1608_display_is_busy = false;
+
 /***************************************************************************/
 /* Look Up Table values copied from the example code provided by WaveShare */
 /***************************************************************************/
@@ -160,13 +163,17 @@ static void SIF_SSD1608_SetCursor(u16_t Xstart, u16_t Ystart)
  * \brief Wait until BUSY pin is LOW
  *******************************************************************************
  ******************************************************************************/
-static void SIF_SSD1608_WaitUntilIdle(void)
+static ca_error SIF_SSD1608_WaitUntilIdle(void)
 {
+	u32_t t_tstart = TIME_ReadAbsoluteTime();
+
 #if USE_BSP_SENSE == 1
 	u8_t BUSY_value = 0;
 	BSP_ModuleSenseGPIOPin(SIF_SSD1608_BUSY_PIN, &BUSY_value);
 	while (BUSY_value == 1)
 	{
+		if ((TIME_ReadAbsoluteTime() - t_tstart) > SIF_SSD1608_BUSY_TIMEOUT)
+			return CA_ERROR_TIMEOUT;
 		WAIT_ms(2);
 		BSP_ModuleSenseGPIOPin(SIF_SSD1608_BUSY_PIN, &BUSY_value);
 	}
@@ -176,11 +183,15 @@ static void SIF_SSD1608_WaitUntilIdle(void)
 	SIF_SenseExt(EP_BUSY_PIN_EXT, &co2dev_BUSY_val);
 	while (co2dev_BUSY_val == 1)
 	{
+		if ((TIME_ReadAbsoluteTime() - t_tstart) > SIF_SSD1608_BUSY_TIMEOUT)
+			return CA_ERROR_TIMEOUT;
 		WAIT_ms(2);
 		SIF_SenseExt(EP_BUSY_PIN_EXT, &co2dev_BUSY_val);
 	}
 
 #endif
+
+	return CA_ERROR_SUCCESS;
 }
 
 /******************************************************************************/
@@ -188,12 +199,15 @@ static void SIF_SSD1608_WaitUntilIdle(void)
  * \brief Turns on the display
  *******************************************************************************
  ******************************************************************************/
-static void SIF_SSD1608_TurnOnDisplay(void)
+static void SIF_SSD1608_TurnOnDisplay(bool no_wait)
 {
 	SIF_SSD1608_SendCommand(DISPLAY_UPDATE_CONTROL_2);
 	SIF_SSD1608_SendData(0xC4);
 	SIF_SSD1608_SendCommand(MASTER_ACTIVATION);
 	SIF_SSD1608_SendCommand(TERMINATE_FRAME_READ_WRITE);
+
+	if (no_wait)
+		return;
 
 	SIF_SSD1608_WaitUntilIdle();
 }
@@ -252,8 +266,6 @@ static void SIF_SSD1608_embed_qr(const uint8_t *qrcode, uint8_t *image, uint8_t 
  ******************************************************************************/
 static ca_error SIF_SSD1608_SetLut(SIF_SSD1608_Update_Mode mode)
 {
-	ca_error err = CA_ERROR_SUCCESS;
-
 	SIF_SSD1608_SendCommand(WRITE_LUT_REGISTER);
 	if (mode == FULL_UPDATE)
 	{
@@ -271,13 +283,11 @@ static ca_error SIF_SSD1608_SetLut(SIF_SSD1608_Update_Mode mode)
 	}
 	else
 	{
-		err = CA_ERROR_INVALID_ARGS;
 		ca_log_debg("Error, invalid display update mode");
+		return CA_ERROR_INVALID_ARGS;
 	}
 
-	SIF_SSD1608_WaitUntilIdle();
-
-	return err;
+	return SIF_SSD1608_WaitUntilIdle();
 }
 
 /******************************************************************************/
@@ -510,7 +520,7 @@ static void SIF_SSD1608_ClearBottomEdge(void)
  * \param[in] image - The image that is to be copied.
  *******************************************************************************
  ******************************************************************************/
-static void SIF_SSD1608_DisplayHalfRes(const uint8_t *image)
+static void SIF_SSD1608_DisplayHalfRes(const uint8_t *image, bool no_wait)
 {
 	u16_t width  = (SIF_SSD1608_WIDTH % 8 == 0) ? (SIF_SSD1608_WIDTH / 8) : (SIF_SSD1608_WIDTH / 8 + 1);
 	u16_t height = SIF_SSD1608_HEIGHT;
@@ -554,7 +564,7 @@ static void SIF_SSD1608_DisplayHalfRes(const uint8_t *image)
 	SIF_SSD1608_ClearRightEdge();
 	SIF_SSD1608_ClearBottomEdge();
 
-	SIF_SSD1608_TurnOnDisplay();
+	SIF_SSD1608_TurnOnDisplay(no_wait);
 }
 
 #endif // EPAPER_FULL_RESOLUTION
@@ -566,7 +576,7 @@ static void SIF_SSD1608_DisplayHalfRes(const uint8_t *image)
  * \param[in] image - The image that is to be copied.
  *******************************************************************************
  ******************************************************************************/
-static void SIF_SSD1608_DisplayFullRes(const uint8_t *image)
+static void SIF_SSD1608_DisplayFullRes(const uint8_t *image, bool no_wait)
 {
 	u16_t width, height;
 	width =
@@ -589,7 +599,7 @@ static void SIF_SSD1608_DisplayFullRes(const uint8_t *image)
 		}
 	}
 
-	SIF_SSD1608_TurnOnDisplay();
+	SIF_SSD1608_TurnOnDisplay(no_wait);
 
 	//BSP_ModuleSetGPIOPin(SIF_SSD1608_CS_PIN, 1);
 }
@@ -613,7 +623,7 @@ void SIF_SSD1608_ClearDisplay(void)
 			SIF_SSD1608_SendData(0xFF);
 		}
 	}
-	SIF_SSD1608_TurnOnDisplay();
+	SIF_SSD1608_TurnOnDisplay(false);
 
 	//BSP_ModuleSetGPIOPin(SIF_SSD1608_CS_PIN, 0);
 }
@@ -661,10 +671,47 @@ void SIF_SSD1608_DisplayImage(const uint8_t *image, SIF_SSD1608_Clear_Mode mode,
 
 #ifndef EPAPER_FULL_RESOLUTION
 	if (!full_resolution)
-		SIF_SSD1608_DisplayHalfRes(image);
+		SIF_SSD1608_DisplayHalfRes(image, false);
 	else
 #endif
-		SIF_SSD1608_DisplayFullRes(image);
+		SIF_SSD1608_DisplayFullRes(image, false);
 
 	SIF_SSD1608_DeepSleep();
+}
+
+void SIF_SSD1608_DisplayImageNoWait(const uint8_t *image, SIF_SSD1608_Clear_Mode mode, bool full_resolution)
+{
+#ifdef EPAPER_FULL_RESOLUTION
+	(void)full_resolution;
+#endif
+
+	if (mode == WITH_CLEAR)
+		SIF_SSD1608_ClearDisplay();
+
+#ifndef EPAPER_FULL_RESOLUTION
+	if (!full_resolution)
+		SIF_SSD1608_DisplayHalfRes(image, true);
+	else
+#endif
+		SIF_SSD1608_DisplayFullRes(image, true);
+}
+
+/* scheduled power-down when not waiting for busy signal */
+ca_error SIF_SSD1608_PowerDown(void *aContext)
+{
+	ca_error status;
+
+	/* unprotect entry */
+	sif_ssd1608_display_is_busy = false;
+
+	/* check that display update is actually done and wait if not */
+	status = SIF_SSD1608_WaitUntilIdle();
+	if (status)
+		return status;
+
+	/* deep sleep and de-initialisation */
+	SIF_SSD1608_DeepSleep();
+	SIF_SSD1608_Deinitialise();
+
+	return CA_ERROR_SUCCESS;
 }

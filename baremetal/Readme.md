@@ -29,7 +29,7 @@ Port layer for the OpenThread stack. This enables using OpenThread on baremetal 
 
 ### cascoda-bm-devboard
 
-Functions and examples specifically targeted for the [Cascoda Development Board](../docs/how-to/howto-devboard.md).
+Functions and examples specifically targeted for the [Cascoda Development Board](../docs/product/howto-devboard.md).
 
 ### mikrosdk-click
 

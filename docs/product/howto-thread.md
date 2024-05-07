@@ -53,7 +53,7 @@ built from scratch by following the [build instructions.](../../README.md#buildi
 
 The Chili2D USB devices should be flashed with [ot-cli](../../baremetal/cascoda-bm-thread/example).
 
-To flash the firmware over USB (or other), consult the [flashing guide.](../../docs/guides/flashing.md)
+To flash the firmware over USB (or other), consult the [flashing guide.](../../docs/dev/flashing.md)
 
 ## Step 2 - Access the Border Router
 
@@ -61,15 +61,15 @@ The Border Router Web GUI is accessible via Ethernet or WiFi, though by default 
 
 Note that the Web GUI is only accessible via the Ethernet port marked "PoE LAN1". If you need to access it from "WAN / LAN2", you must create a rule in the firewall that allows access to the router from that port - this is outside the scope of this guide. 
 
-For more information about the border router, see the [Setup Guide.](../guides/border-router-setup.md)
+For more information about the border router, see the [Setup Guide.](../dev/border-router-setup.md)
 
 ## Step 3 - Form the Network
 
-Form a network by following the [network formation guide.](../guides/thread-network-formation.md)
+Form a network by following the [network formation guide.](../dev/thread-network-formation.md)
 
 ## Step 4 - Join the other devices to the network
 
-After forming a network, add the Chili2D devices by following [the commissioning process.](../guides/thread-commissioning.md)
+After forming a network, add the Chili2D devices by following [the commissioning process.](../dev/thread-commissioning.md)
 
 ## Step 5 - Demonstrate communication
 

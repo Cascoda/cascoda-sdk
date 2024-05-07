@@ -5,63 +5,63 @@
 <!-- TOC -->
 
 - [Cascoda SDK Reference Document](#cascoda-sdk-reference-document)
-    - [Contents](#contents)
-    - [Guides](#guides)
-        - [How-To Guides](#how-to-guides)
-        - [Other Guides](#other-guides)
-        - [Complete API Reference](#complete-api-reference)
-        - [Reference Documents](#reference-documents)
-    - [Building](#building)
-        - [Instructions](#instructions)
-            - [Linux/MacOS](#linuxmacos)
-            - [Windows](#windows)
-    - [Example Applications](#example-applications)
-        - [Embedded Applications](#embedded-applications)
-            - [OpenThread CLI Applications](#openthread-cli-applications)
-            - [OpenThread Standalone Applications](#openthread-standalone-applications)
-            - [OCF Applications](#ocf-applications)
-            - [Development Board Applications](#development-board-applications)
-            - [Miscellaneous Applications](#miscellaneous-applications)
-        - [Hosted Applications](#hosted-applications)
-    - [Debugging](#debugging)
-    - [Directory layout](#directory-layout)
-        - [ca821x-api](#ca821x-api)
-        - [baremetal](#baremetal)
-        - [docs](#docs)
-        - [toolchain](#toolchain)
-        - [posix](#posix)
-        - [cascoda-utils](#cascoda-utils)
-        - [openthread](#openthread)
-        - [etc](#etc)
-    - [CMake Library Targets](#cmake-library-targets)
+  - [Contents](#contents)
+  - [Guides](#guides)
+    - [Product Guides](#product-guides)
+    - [Developer Guides](#developer-guides)
+    - [Complete API Reference](#complete-api-reference)
+    - [Reference Documents](#reference-documents)
+  - [Building](#building)
+    - [Instructions](#instructions)
+      - [Linux/MacOS](#linuxmacos)
+      - [Windows](#windows)
+  - [Example Applications](#example-applications)
+    - [Embedded Applications](#embedded-applications)
+      - [OpenThread CLI Applications](#openthread-cli-applications)
+      - [OpenThread Standalone Applications](#openthread-standalone-applications)
+      - [OCF Applications](#ocf-applications)
+      - [Development Board Applications](#development-board-applications)
+      - [Miscellaneous Applications](#miscellaneous-applications)
+    - [Hosted Applications](#hosted-applications)
+  - [Debugging](#debugging)
+  - [Directory layout](#directory-layout)
+    - [ca821x-api](#ca821x-api)
+    - [baremetal](#baremetal)
+    - [docs](#docs)
+    - [toolchain](#toolchain)
+    - [posix](#posix)
+    - [cascoda-utils](#cascoda-utils)
+    - [openthread](#openthread)
+    - [etc](#etc)
+  - [CMake Library Targets](#cmake-library-targets)
 
 <!-- /TOC -->
 
 ## Guides
 
-### How-To Guides
+### Product Guides
 
 <!-- TODO add description -->
-- [Getting started with the Cascoda KNX IoT Dev Kit](docs/how-to/howto-knxiot-devkit.md): Use the Development Kit running KNX-IoT, using the Linker or ETS
-- [Getting Started with the Cascoda Packet Sniffer](docs/how-to/howto-sniffer.md): capture and analyze IEEE 802.15.4, Thread, CoAP, OSCORE
-- [Getting Started with the Cascoda Thread Evaluation Kit](../how-to/howto-thread.md): Set up a Thread network and test simple communications. 
-- [Getting Started with the Cascoda Thread Development Board](../how-to/howto-devboard.md): Learn about the features of the development board, and run two example applications.
-- [Getting Started with OCF and Thread](../how-to/howto-ocf-thread.md): Run pre-existing OCF applications or create your own.
+- [Getting started with the Cascoda KNX IoT Dev Kit](docs/product/howto-knxiot-devkit.md): Use the Development Kit running KNX-IoT, using the Linker or ETS
+- [Getting Started with the Cascoda Packet Sniffer](docs/product/howto-sniffer.md): capture and analyze IEEE 802.15.4, Thread, CoAP, OSCORE
+- [Getting Started with the Cascoda Thread Evaluation Kit](../product/howto-thread.md): Set up a Thread network and test simple communications. 
+- [Getting Started with the Cascoda Thread Development Board](../product/howto-devboard.md): Learn about the features of the development board, and run two example applications.
+- [Getting Started with OCF and Thread](../product/howto-ocf-thread.md): Run pre-existing OCF applications or create your own.
 
-### Other Guides
+### Developer Guides
 
-- [Development Environment Setup](../guides/development-setup.md)
-- [Arm GNU Toolchain Installation for Linux](../guides/arm-gnu-toolchain-installation.md)
-- [Thread Network Formation](../guides/thread-network-formation.md)
-- [Thread Commissioning](../guides/thread-commissioning.md)
-- [Flashing binaries to hardware](../guides/flashing.md)
-- [Debugging with a SEGGER J-Link](../guides/debug-with-segger-jlink.md)
-- [Debugging with a NuLink Pro](../guides/debug-with-a-nu-link-pro.md)
-- [OCF New Application guide](../guides/create-custom-ocf-applications.md)
-- [Cross-compiling for the Raspberry Pi](../guides/cross-compile-for-the-raspberry-pi.md)
-- [M2351 TrustZone Development Guide](../guides/M2351-TrustZone-development-guide.md)
-- [Border Router Setup Guide](../guides/border-router-setup.md)
-- [LWM2M over Thread](../guides/lwm2m-over-thread.md)
+- [Development Environment Setup](../dev/development-setup.md)
+- [Arm GNU Toolchain Installation for Linux](../dev/arm-gnu-toolchain-installation.md)
+- [Thread Network Formation](../dev/thread-network-formation.md)
+- [Thread Commissioning](../dev/thread-commissioning.md)
+- [Flashing binaries to hardware](../dev/flashing.md)
+- [Debugging with a SEGGER J-Link](../dev/debug-with-segger-jlink.md)
+- [Debugging with a NuLink Pro](../dev/debug-with-a-nu-link-pro.md)
+- [OCF New Application guide](../dev/create-custom-ocf-applications.md)
+- [Cross-compiling for the Raspberry Pi](../dev/cross-compile-for-the-raspberry-pi.md)
+- [M2351 TrustZone Development Guide](../dev/M2351-TrustZone-development-guide.md)
+- [Border Router Setup Guide](../dev/border-router-setup.md)
+- [LWM2M over Thread](../dev/lwm2m-over-thread.md)
 
 ### Complete API Reference
 
@@ -81,7 +81,7 @@ The Cascoda SDK takes advantage of open source tools, such as Git, GCC, CMake an
 
 ### Instructions
 
-To build the Cascoda SDK, first configure your environment as detailed [here](../guides/development-setup.md), then follow the instructions below:
+To build the Cascoda SDK, first configure your environment as detailed [here](../dev/development-setup.md), then follow the instructions below:
 
 #### Linux/MacOS
 
@@ -127,7 +127,7 @@ cascoda #Working directory
 
 Either type, or copy and paste the following into a git bash terminal:
 
-(Make sure that the path is set up correctly, as explained in [the development setup guide.](../guides/development-setup.md))
+(Make sure that the path is set up correctly, as explained in [the development setup guide.](../dev/development-setup.md))
 
 ```bash
 # Make a working directory (this can be anywhere, named anything)
@@ -167,7 +167,7 @@ cascoda #Working directory
 ```
 
 Libraries will be built into the ``lib/`` directory, while application binaries will be built into the ``bin/`` directory. For the Chili platforms, both elf format and binary .bin format files will be created.
-These can then be flashed to the device by following the [flashing guide.](../guides/flashing.md)
+These can then be flashed to the device by following the [flashing guide.](../dev/flashing.md)
 
 For a description of the different built binaries & executables, see [the embedded applications section](#embedded-applications) for chili platforms, and [the hosted applications](#hosted-applications) for Windows/Linux/macOS.
 
@@ -258,7 +258,7 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 
 The Chilis support flashing and debugging via the [Segger J-Link](https://www.segger.com/products/debug-probes/j-link/) using [JTAG SWD](https://en.wikipedia.org/wiki/JTAG#Serial_Wire_Debug). When using the GCC toolchain, the SEGGER GDB Server and arm-none-eabi-gdb can be used to flash and debug the Chili. Simply setup the JLink GDB server for the NANO120 (Chili 1) or M2351 (Chili 2) with SWD, then `target remote 127.0.0.1:2331` in arm-none-eabi-gdb to connect to it. If debugging is not required, then the Segger J-Flash lite tool can flash plain binary files.
 
-The Chilis can also be [debugged with a NuLink Pro](../guides/debug-with-a-nu-link-pro.md). This is a cheaper alternative, but the developer experience is inferior - you cannot flash the Chili from within GDB, and setting & getting to breakpoints is slower.
+The Chilis can also be [debugged with a NuLink Pro](../dev/debug-with-a-nu-link-pro.md). This is a cheaper alternative, but the developer experience is inferior - you cannot flash the Chili from within GDB, and setting & getting to breakpoints is slower.
 
 ## Directory layout
 
@@ -279,7 +279,7 @@ While you _could_ use the BSP functions (declared in `cascoda_interface.h`) to c
 
 ### toolchain
 
-`toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#instructions). There is extra info on how to compile for different platforms in docs, such as [cross compiling for the raspberry pi.](../guides/cross-compile-for-the-raspberry-pi.md)
+`toolchain` contains the platform configuration files to enable cross compilation for different systems and compilers. These are used to first set up the CMake toolchain for a specific platform, as seen in [the Instructions settings](#instructions). There is extra info on how to compile for different platforms in docs, such as [cross compiling for the raspberry pi.](../dev/cross-compile-for-the-raspberry-pi.md)
 
 ### posix
 

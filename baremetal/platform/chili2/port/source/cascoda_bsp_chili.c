@@ -83,7 +83,7 @@ struct device_link device_list[NUM_DEVICES];
  */
 CRPT_T *CRPT_dyn = CRPT;
 
-void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
+void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, dpd_flag dpd)
 {
 	u32_t timeout_sec;
 
@@ -93,7 +93,7 @@ void BSP_PowerDown(u32_t sleeptime_ms, u8_t use_timer0, u8_t dpd)
 	/* - Timeout Timer (Timer0 or CAX Sleep Timer) (if set) */
 	/* - GPIO Interrupts (not disabled here) */
 
-	if (USE_WATCHDOG_POWEROFF)
+	if ((USE_WATCHDOG_POWEROFF) && (dpd != DPD_FLAG_WAKEUP_DISABLED))
 	{
 		/* set RTC timeout alarm as watchdog */
 		if (sleeptime_ms > 10000)

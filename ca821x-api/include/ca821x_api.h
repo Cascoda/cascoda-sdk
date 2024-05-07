@@ -484,8 +484,8 @@ ca_mac_status MLME_START_request_sync(uint16_t           PANId,
  * \brief MLME_POLL_request/confirm according to  CA8212 API Spec (Asynchronous)
  *******************************************************************************
  * \param CoordAddress - Coordinator Address
- * \param FrameVersion - Determines if the Data request frame to be sent is a 2015 
- *                       frame (FrameVersion set to 1) 
+ * \param FrameVersion - Determines if the Data request frame to be sent is a 2015
+ *                       frame (FrameVersion set to 1)
  * \param pSecurity - Pointer to Security Structure or NULLP
  * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
  *******************************************************************************
@@ -759,6 +759,26 @@ ca_mac_status TDME_SetTxPower(uint8_t txp, struct ca821x_dev *pDeviceRef);
  *******************************************************************************
  ******************************************************************************/
 ca_mac_status TDME_GetTxPower(uint8_t *txp, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Function to convert transmit power in dBm to PA current setting
+ *******************************************************************************
+ * \param txdbm - Transmit power in dBm
+ *******************************************************************************
+ * \retval  PA current register setting (0-63)
+ ******************************************************************************/
+uint8_t TDME_tx_dbm_to_paib(int8_t txpdbm);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Function to convert PA current setting to transmit power in dBm
+ *******************************************************************************
+ * \param paib - PA current register setting (0-63)
+ *******************************************************************************
+ * \retval  Transmit power in dBm
+ ******************************************************************************/
+int8_t TDME_tx_paib_to_dbm(uint8_t paib);
 
 /******************************************************************************/
 /****** API meta functions                                           ******/
