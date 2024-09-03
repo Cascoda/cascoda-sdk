@@ -362,19 +362,19 @@ jobs:
         body: ${{ steps.releaseinfo.outputs.msg }}
 
     # Download all of the previously uploaded artifacts
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: CascodaWindowsTools
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Windows-SDK
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2D-USB
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2S-UART4-115200baud
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Posix-SDK
 
