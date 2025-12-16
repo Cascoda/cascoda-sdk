@@ -344,6 +344,7 @@ jobs:
 
   makerelease:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: [windows, posix, chili2]
 
     # Checkout the code, and fetch all tags (for version)

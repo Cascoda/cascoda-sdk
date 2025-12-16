@@ -5,6 +5,9 @@ env:
   OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
 
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
