@@ -68,7 +68,7 @@ jobs:
 
     - name: cache arm compiler
       id: cache-compiler
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       env:
         cache-name: cache-gcc-arm-win
       with:
@@ -191,7 +191,7 @@ jobs:
 
     - name: cache compiler
       id: cache-compiler
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       env:
         cache-name: cache-gcc-arm
       with:
