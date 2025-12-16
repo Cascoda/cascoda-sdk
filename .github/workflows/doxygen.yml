@@ -5,9 +5,6 @@ env:
   OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
 
 on:
-  push:
-    branches:
-      - ci-fix
   workflow_dispatch:
 
 jobs:

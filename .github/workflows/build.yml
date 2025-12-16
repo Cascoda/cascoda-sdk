@@ -4,8 +4,7 @@ env:
   KNX_IOT_STACK_SECRET: ${{secrets.KNX_IOT_STACK_SECRET}}
   OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
 
-on: 
-  workflow_dispatch:
+on: [push]
 
 jobs:
   # Build artifacts for windows
@@ -345,7 +344,6 @@ jobs:
 
   makerelease:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     needs: [windows, posix, chili2]
 
     # Checkout the code, and fetch all tags (for version)
@@ -388,18 +386,23 @@ jobs:
     - uses: actions/download-artifact@v4.1.7
       with:
         name: CascodaWindowsTools
+        path: ./CascodaWindowsTools
     - uses: actions/download-artifact@v4.1.7
       with:
         name: Windows-SDK
+        path: ./Windows-SDK
     - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2D-USB
+        path: ./Chili2D-USB
     - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2S-UART4-115200baud
+        path: ./Chili2S-UART4-115200baud
     - uses: actions/download-artifact@v4.1.7
       with:
         name: Posix-SDK
+        path: ./Posix-SDK
 
     - uses: dawidd6/action-download-artifact@v6
       with:
