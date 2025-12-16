@@ -149,11 +149,10 @@ jobs:
 
   # Build artifacts for posix 
   posix:
-    # NOTE: Not building with ubuntu-latest on purpose, because that results
-    # in binaries that can only be run on linux machines with newest version,
+    # binaries that can only be run on linux machines with newest version,
     # that have glibc 2.34.
     # Using ubuntu-20.04 drops that requirement to glibc 2.31.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
