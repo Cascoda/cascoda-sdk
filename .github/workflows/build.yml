@@ -55,13 +55,13 @@ jobs:
       run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
 
     - name: Upload windows-sdk
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-SDK
         path: ${{ github.workspace }}\release
 
     - name: Upload installer
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: CascodaWindowsTools
         path: ${{ github.workspace }}\cascoda-sdk\etc\CascodaWinTools.exe
@@ -152,7 +152,7 @@ jobs:
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/release/readme.txt
 
     - name: Upload posix-sdk
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Posix-SDK
         path: ${{ github.workspace }}/release
@@ -303,19 +303,19 @@ jobs:
 
 
     - name: Upload Chili2S-UART4-115200baud
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2S-UART4-115200baud
         path: ${{ github.workspace }}/upload-uart
 
     - name: Upload Chili2D-USB
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2D-USB
         path: ${{ github.workspace }}/upload-usb
 
     - name: Upload Chili2-Lib
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2-Lib
         path: ${{ github.workspace }}/upload-lib
