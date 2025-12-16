@@ -13,7 +13,7 @@ The Wakaama stack is located in ``third-party/``. The port and example code are 
 
 This evaluation guide demonstrates the process of connecting a LWM2M Client, running on a Thread Node on a Thread
 network, to a LWM2M Server. The LWM2M Server can be running on the adjacent local network, or the Internet. A Thread
-Border Router facilitates the communication between the Thread Network and the local network/Internet.
+Router facilitates the communication between the Thread Network and the local network/Internet.
 
 ## Setup
 
@@ -36,7 +36,7 @@ to flash. The CLI of the flashed firmware can be accessed using the 'serial-adap
 
 ### Form network
 
-Set up a [border router](border-router-setup.md), and form a Thread network. 
+Set up a [router](router-setup.md), and form a Thread network. 
 
 ### Commission client
 
@@ -60,10 +60,6 @@ resolution or NAT64 automatically, so ping the IPv6 of your local server directl
 
 To test Wakaama without setting up a local server, the publicly hosted [Leshan](https://github.com/eclipse/leshan)
 server and bootstrap server can be used. Leshan is an open-source LWM2M stack, written in Java.
-
-The publicly hosted Leshan server is IPv4 only, but the Thread Border Router runs a [NAT64](https://en.wikipedia.org/wiki/NAT64)
-service to facilitate communication from the IPv6-only Thread network to the IPv4-only server. The Thread node carries
-out [DNS64](https://tools.ietf.org/html/rfc6147) locally in order to obtain the suitable NAT64 IPv6 address of the server.
 
 The URL of the example Leshan LWM2M server is ``coaps://leshan.eclipseprojects.io:5684``, and the web interface is hosted
 at https://leshan.eclipseprojects.io/. The URL of the example Leshan bootstrap server is 

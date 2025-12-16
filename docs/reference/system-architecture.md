@@ -47,7 +47,7 @@ Some examples of radio co-processor examples are:
 
 <p align="center"><img src="puml/system-architecture/png/radio-coprocessor.png" width="50%" align="center"></p>
 
-This architecture is suitable for products such as Border Routers, which are connected to linux systems, or for initial
+This architecture is suitable for products such as Routers, which are connected to linux systems, or for initial
 development of applications running over Thread, without the constraints of an embedded platform.
 
 ## Network Co-Processor

@@ -8,7 +8,7 @@ Here is the network topology that will be created as a result of the guide:
 
 ![](./puml/getting-started/png/wired-network-topology.png)
 
-The KNX IoT Hub firmware is based on OpenWRT. Its purpose is to provide a link between your computer and the Thread mesh network. At the same time, if connected to the Internet it forwards said internet connection to your computer, just like a residential WiFi router would.
+The KNX IoT Hub™ firmware is based on OpenWRT. Its purpose is to provide a link between your computer and the Thread mesh network. At the same time, if connected to the Internet it forwards said internet connection to your computer, just like a residential WiFi router would.
 
 ## Step 0: Requirements
 
@@ -43,7 +43,7 @@ NOTE: This part of the guide will make use of the Cascoda Windows Tools that you
 
 ### Updating the KNX IoT Hub
 
-[Download the latest KNX IoT Hub image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
+[Download the latest KNX IoT Hub™ image](https://github.com/Cascoda/OpenWrt/releases) and update the firmware on the hub using `System -> Backup/Flash Firmware`, by following [the guide on the OpenWRT wiki](https://openwrt.org/docs/guide-quick-start/sysupgrade.luci#verify_firmware_file_and_flash_the_firmware).
 
 ### Updating the two devboards
 
@@ -150,7 +150,6 @@ To ensure that the devboards are running the latest firmware, you will have to d
 10. From the serial-adapter output, copy the `Thread Joining Credential` (in this case YR5XH9X3) and paste it into the `New Joiner Credential` field, replacing the default text there. Likewise, copy the `EUI64` (in this case 6a56a702870d8382) from the serial-adapter output and paste it into the `Restrict to a Specific Joiner` field.
 11. Click on `Add`.
 12. Monitor the running serial-adapter output, until the KNX QR code (such as the one shown below) is printed. This means that the device has successfully joined the network.
-    - **If the device does not join after two minutes, you may need to restart the Border Agent**. [See the Troubleshooting section of this guide for more information.](#troubleshooting)
 13. Make a record of the enrollment data, displayed in the KNX QR code string format - you will need it for enrolling the devices using either the Linker or ETS6. The message you need will look something like this:
     ```
     Rx:  === QR Code: KNX:S:00FA10010710;P:4N6AFK6T83YWDUTW23U2 ===
@@ -170,9 +169,6 @@ To ensure that the devboards are running the latest firmware, you will have to d
 As stated in the intro, this can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).
 
 ## Troubleshooting
-
-### Devboards do not join the Thread network
-If the device does not join after two minutes, you may need to restart the Border Agent. On the KNX IoT Hub UI, Please navigate to `System -> Startup`, scroll down until you find `otbr-agent`, then press Restart on the `otbr-agent` row. Afterwards, add the devices to the Thread network once more, according to steps 7 through 12 of 
 
 ### Cannot flash devboard / Cannot access devboard logs using serial-adapter
 A devboard can only be controlled by one Cascoda tool at any given time. This means that you will not be able to flash a device if you have serial-adapter communicating to the same device - you must close serial-adapter first. Likewise, only one serial-adapter instance can be used per device, and serial-adapter cannot be opened on a device while it is being flashed.

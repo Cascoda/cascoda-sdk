@@ -10,7 +10,7 @@ In Thread, the Commissioner is the user-controlled admin interface to the Thread
 
 A Commissioner can take many forms, such as:
 - An application on a smartphone connected to the same WiFi network.
-- A web GUI hosted on a Border Router.
+- A web GUI hosted on a Thread Router.
 - A UI on a Thread Device itself.
 - A cloud service.
 
@@ -28,7 +28,9 @@ The network credentials are stored in non-volatile storage of the device, so Com
 
 ## How to Commission with the Cascoda SDK
 
-In the Cascoda-SDK, there are many ways to perform the joining/commissioning procedure, based on the capabilities of the device. These can be used together in any combination - select one commissioning method and one joining method. It should be noted that a network must be formed either via the [OpenThread CLI](https://github.com/Cascoda/openthread/blob/master/src/cli/README_DATASET.md#form-network) or the [OpenThread Web GUI](border-router-setup.md), before commissioning can take place. A guide on how to do both is available [here](thread-network-formation.md).
+In the Cascoda-SDK, there are many ways to perform the joining/commissioning procedure, based on the capabilities of the device.
+These can be used together in any combination - select one commissioning method and one joining method. It should be noted that a network must be formed either via the [OpenThread CLI](https://github.com/Cascoda/openthread/blob/master/src/cli/README_DATASET.md#form-network) or the [OpenThread Web GUI](router-setup.md), before commissioning can take place.
+A guide on how to do both is available [here](thread-network-formation.md).
 
 Note that the commissioning and joining procedures happen in parallel, with the commissioner being provided with the joiner credentials just before the joiner starts discovering the network.
 
@@ -36,12 +38,10 @@ Select one commissioning method and one joining method:
 
 <!-- no toc -->
 - [Commissioning](#commissioning)
+    - [OT-BR Web GUI Commissioning](#cascoda-router-web-gui-commissioning)
+      - This can be used when you have a Hub and can access its web interface using a web browser.
     - [CLI Commissioning](#cli-commissioning)
       - This can be used when you are using an openthread CLI on a device that is already connected to the network (or has formed it).
-    - [App Commissioning](#app-commissioning)
-      - This can be used when you have a border router, and an android smartphone that you can connect to it over WiFi.
-    - [OT-BR Web GUI Commissioning](#cascoda-border-router-web-gui-commissioning)
-      - This can be used when you have a border router and can access its web interface using a web browser.
 - [Joining](#joining)
     - [CLI Joining](#cli-joining)
       - This is used when the joining device has an openthread CLI interface.
@@ -50,11 +50,43 @@ Select one commissioning method and one joining method:
 
 ### Commissioning
 
+#### Cascoda Router Web GUI Commissioning
+
+The Cascoda BR Commissioning process uses the Cascoda KNX IoT HUb web portal to add a new device to the network.
+
+
+- Connect to the KNX IoT Hub GUI, per [the instructions in the setup guide](router-setup.md#initial-setup).
+- Using the menu bar at the top of the page, navigate to `Thread - Add Device`
+  - You must create a Thread network before adding devices. If there is no Thread network, you will be redirected to the Thread network formation page.
+
+There are two ways of entering your joiner credentials: either through QR Code Entry or Manual Entry.
+
+##### QR Code Entry
+
+- Obtain the QR Code of your device. For e-paper products, it will be available in the "QR Code" menu. For other products, please check the casing or packaging.
+- Use a QR Code scanner to scan the QR Code into the text box, or alternatively use your computer's Webcam to scan the QR Code.
+  - Using the webcam requires secure access, so you will have to connect to the KNX IoT Hub via the `https://` endpoint.
+- Press Submit to start the commissioning procedure and wait for the commissioning to complete.
+
+<p align="center"><img src="img/thread-comm/qr-code-comm.png" width="80%" align="center"></p>
+
+##### Manual Entry
+
+- Use one of the joining procedures below to obtain the joiner credentials.
+- Navigate to the Manual Entry tab and enter the Network Passphrase/Admin Password and the Joiner Credential
+- Click  _Add_ , and the commissioning process should begin.
+- At this point, turn on the new device (or start the joining process using the CLI).
+
+<p align="center"><img src="img/thread-comm/webgui-comm.png" width="80%" align="center"></p>
+
+- Device has been commissioned onto the network!
+
+
 #### CLI Commissioning
 
 CLI Commissioning uses the OpenThread CLI of a device already on the network in order to commission another device. It is useful for development purposes and testing.
 
-- Connect to the CLI of the device. Run ``serial-adapter`` if using the [on module architecture](../reference/system-architecture.md). Alternatively, you can access the CLI on the Border Router via SSH using the `ot-ctl` command.
+- Connect to the CLI of the device. Run ``serial-adapter`` if using the [on module architecture](../reference/system-architecture.md). Alternatively, you can access the CLI on the Hub via SSH using the `ot-ctl` command.
 - The Commissioner device must be already connected to the desired network.
     - The ``state`` command can be used to test this - output should be ``child``, ``router`` or ``leader``.
 - Run the ``commissioner start`` command.
@@ -68,35 +100,6 @@ CLI Commissioning uses the OpenThread CLI of a device already on the network in 
 <p align="center"><img src="img/thread-comm/cli-comm.png" width="50%" align="center"></p>
 
 - Device has been commissioned onto the network!
-
-#### App Commissioning
-
-The App Commissioning process uses the [OpenThread Commissioner Android App](https://github.com/openthread/ot-commissioner/tree/main/android) to provide the most user-friendly commissioning method.
-
-If you want to use app commissioning process, please follow [the Openthread guide](https://openthread.io/guides/border-router/external-commissioning/android) on using the OT Commissioner app. However, there still are some things you need to take into account:
-
-- The OT commissioner will prompt you for a Passphrase (Commissioner Credential). This is decided when you start the Thread network using the Border Router's web GUI, through the Network Password field. You can [access the `pskc` tool](./border-router-setup.md#generate-the-pre-shared-key-pskc) within `System - Custom Commands`, and you can find [the documentation for using it on Openthread's website](https://openthread.io/guides/border-router/tools#pskc_generator).
-- The EUI64 and Joiner Credentials are usually printed on the USB console of Cascoda devices. You should be able to view it by connecting a USB device and then running `serial-adapter`, which can be obtained from [our latest Windows release.](https://github.com/Cascoda/cascoda-sdk/releases)
-- Note that a joiner is already running on Cascoda demos that do not include the Openthread CLI - you will not need to bring up the interface or start the joiner.
-
-#### Cascoda Border Router Web GUI Commissioning
-
-The Cascoda BR Commissioning process uses the Cascoda Border Router web portal to add a new device to the network.
-
-
-- Connect to the Border Router Web GUI, per [the instructions in the setup guide](border-router-setup.md#initial-setup).
-- Using the menu bar at the top of the page, navigate to `Network - Thread`.
-- Once a Thread network has been created, press the `View` button besides it, and then `Add` at the bottom left of the screen.
-- Use one of the joining procedures below to obtain the joiner credentials.
-- Enter the Network Passphrase/Admin Password and the Joiner Credential
-- Click  _Add_ , and the commissioning process should begin.
-- At this point, turn on the new device (or start the joining process using the CLI).
-
-<p align="center"><img src="img/thread-comm/webgui-comm.png" width="80%" align="center"></p>
-
-- Device has been commissioned onto the network!
-
-- If the device does not join after two minutes, you may need to restart the Border Agent. Please navigate to `System -> Startup`, scroll down until you find `otbr-agent`, then press Restart on the `otbr-agent` row. Then, repeat the commissioning process.
 
 ### Joining
 

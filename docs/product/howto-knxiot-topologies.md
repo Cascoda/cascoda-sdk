@@ -12,4 +12,4 @@ If you cannot connect your computer to the Hub via Ethernet, you can use the Hub
 
 ![](puml/getting-started/png/wireless-network-topology.png)
 
-If you do not have wired Internet access, you may set up the KNX IoT Hub to join a pre-existing WiFi hotspot. Please connect your computer to the hub's LAN1 ethernet port, and [follow OpenWRT's guide on connecting to a Client WiFi network](https://openwrt.org/docs/guide-user/network/wifi/connect_client_wifi).
+If you do not have wired Internet access, you may set up the KNX IoT Hub™ to join a pre-existing WiFi hotspot. Please connect your computer to the hub's LAN1 ethernet port, and [follow OpenWRT's guide on connecting to a Client WiFi network](https://openwrt.org/docs/guide-user/network/wifi/connect_client_wifi).
