@@ -53,13 +53,13 @@ jobs:
         cp ${{ github.workspace }}\windows-sdk-priv\knx-gen-data.exe ${{ github.workspace }}\release
     
     - name: cache NSIS
-        id: cache-nsis
-        uses: actions/cache@v4
-        env:
-            cache-name: cache-nsis-win
-        with:
-            path: ${{ github.workspace }}/nsis-2.51
-            key: nsis-2.51
+      id: cache-nsis
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-nsis-win
+      with:
+        path: ${{ github.workspace }}/nsis-2.51
+        key: nsis-2.51
 
     - name: download NSIS
       if: steps.cache-nsis.outputs.cache-hit != 'true'
