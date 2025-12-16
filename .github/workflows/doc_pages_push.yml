@@ -1,9 +1,12 @@
 name: GenerateAndPublishPages
 
+env: 
+  OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
+
 on:
   push:
     branches:
-      - master
+      - ci-fix
   workflow_dispatch:
 
 jobs:
