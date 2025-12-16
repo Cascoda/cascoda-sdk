@@ -51,7 +51,29 @@ jobs:
       if: github.repository == 'Cascoda/cascoda-sdk'
       run: |
         cp ${{ github.workspace }}\windows-sdk-priv\knx-gen-data.exe ${{ github.workspace }}\release
-  
+    
+    - name: cache NSIS
+        id: cache-nsis
+        uses: actions/cache@v4
+        env:
+            cache-name: cache-nsis-win
+        with:
+            path: ${{ github.workspace }}/nsis-2.51
+            key: nsis-2.51
+
+    - name: download NSIS
+      if: steps.cache-nsis.outputs.cache-hit != 'true'
+      run: |
+        $uri =  "https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/nsis-2.51.zip/download"
+        $zipfile = "nsis-2.51.zip"
+        $wc = New-Object System.Net.Webclient
+        $wc.Headers.Add("User-Agent: Other")
+        $wc.DownloadFile($uri, $zipfile)
+        Expand-Archive -Path nsis-2.51.zip -DestinationPath nsis-2.51
+
+    - name: enable NSIS
+      run: |
+        echo "${{ github.workspace }}\nsis-2.51\nsis-2.51" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: create installer for windows executables
       run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
 
