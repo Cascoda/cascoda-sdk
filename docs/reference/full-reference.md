@@ -60,8 +60,8 @@
 - [OCF New Application guide](../dev/create-custom-ocf-applications.md)
 - [Cross-compiling for the Raspberry Pi](../dev/cross-compile-for-the-raspberry-pi.md)
 - [M2351 TrustZone Development Guide](../dev/M2351-TrustZone-development-guide.md)
-- [Border Router Setup Guide](../dev/border-router-setup.md)
 - [LWM2M over Thread](../dev/lwm2m-over-thread.md)
+- [Building binaries for production](../dev/building-for-production.md)
 
 ### Complete API Reference
 
@@ -232,6 +232,8 @@ If you are looking to test existing functionality of the Cascoda SDK, start here
 | ot-barebone-mtd| Barebones OpenThread demo, designed for the Chili 1. [More information.](../../baremetal/app/ot-barebone/README.md)
 | ot-barebone-ftd | The FTD version of ot-barebone-mtd. [More information.](../../baremetal/app/ot-barebone/README.md)
 | chili2-default-secure | The basic secure FreeRTOS & TrustZone binary, containing FreeRTOS secure code and the secure parts of the BSP. [More information.](../../baremetal/platform/chili2/chili2-default-secure/README.md)
+| knx-storage-benchmark | Measure the performance of the persistent storage API. Useful for optimizing the read & write speed of persistent KNX data. Use serial-adapter to access the output of the test. |
+| knx-storage-check | Verify the correctness of the persistent storage API. Reads & writes data and makes sure that the data on flash exactly matches what was written. Use serial-adapter to access the result of the test |
 
 ### Hosted Applications
 
@@ -245,7 +247,7 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 | sniffer |  Captures raw 802.15.4 traffic. Compatible with WireShark. Requires a mac-dongle Chili to be connected to the host. [More information.](../../posix/app/sniffer/README.md)
 | ot-cli-posix-ftd | The OpenThread command line application, running on a host. Requires a mac-dongle Chili to be connected to the host.
 | ot-cli-posix-mtd | Same as above, but acts as a Minimal Thread Device. Requires a mac-dongle Chili to be connected to the host.
-| ot-ncp-posix | Enable a computer to act as a Thread Border Router. Requires a mac-dongle Chili to be connected to the host.
+| ot-ncp-posix | Enable a computer to act as a Thread Router. Requires a mac-dongle Chili to be connected to the host.
 | ot-eink-server | Server that transmits image files, to be used with the ot-sed-eink-freertos embedded application. Requires a mac-dongle Chili to be connected to the host. [More information.](../../posix/app/ot-eink-server/README.md)
 | ot-sensordemo-server | Interfaces with the Cascoda sensordemo application layer. It prints the sensor readings it receives from the network. Requires a mac-dongle Chili to be connected to the host. [More information.](../../posix/app/ot-sensordemo-server/README.md)
 | ocfctl | Control application for OCF devices, useful mainly for certification. [More information.](../../posix/app/ocfctl/README.md) |
@@ -253,6 +255,7 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 | security-test | Tests the advanced security mode of the CA-8211.
 | stress-test | Requires several mac-dongle Chilis to be connected to the host. Creates heavy 802.15.4 traffic. [More information.](../../posix/app/tests/README.md)
 | serial-test | Stress test of the serial connection between the host and the connected Chili. Requires a Chili to be connected to the host. [More information.](../../posix/app/tests/README.md)
+| zigbee-nwk-test | Tests the currently implemented functionality of the ZigBee network layer. Requires several mac-dongle Chilis to be connected to the host.
 
 ## Debugging
 

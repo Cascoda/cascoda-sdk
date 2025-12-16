@@ -50,7 +50,7 @@ endif()
 
 # Only set the openthread repo if it is not already set (user can point to mirror)
 if(NOT CASCODA_OPENTHREAD_REPO)
-	set(CASCODA_OPENTHREAD_REPO "https://github.com/Cascoda/openthread.git")
+    set(CASCODA_OPENTHREAD_REPO "https://$ENV{OPENTHREAD_PRIVATE}@github.com/Cascoda/openthread.git")
 endif()
 
 FetchContent_Declare(

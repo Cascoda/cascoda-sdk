@@ -11,20 +11,22 @@ The form procedure only needs to be followed once for any given network. After t
 
 ## How to form a network with the Cascoda SDK
 
-In the Cascoda SDK, there are two possible mechanisms to form a network, depending on if the forming device is a Border Router or not.
+In the Cascoda SDK, there are two possible mechanisms to form a network, depending on if the forming device is a KNX IoT Hub or not.
 
-1. If the forming device is a Border Router, then the network can be formed using the [Web UI.](#forming-a-network-using-the-or-br-web-ui)
+1. If the forming device is a KNX IoT Hub, then the network can be formed using the [Web UI.](#forming-a-network-using-the-or-br-web-ui)
 2. If the forming device has an OpenThread CLI, then the network can be formed using the [Command Line.](#forming-a-network-using-the-openthread-cli)
 
 After forming a network, new devices can be added to it by following [the commissioning process.](thread-commissioning.md)
 
 
-### Forming a network using the OR-BR Web UI
+### Forming a network using the KNX IoT Hub Web UI
 
-1. Browse to the Border Router Web GUI, which is hosted http://openwrt.local. (Note: If you have renamed your border router, replace "openwrt" with that name.)
-1. Navigate to the "Thread" section, found under "Network" under the navigation tab, and press the "Create" button.
-2. Fill in the fields, choosing random values for Extended PAN ID, PAN ID and Network Key. The "Network Password" field must contain the Pre-Shared Key for the Commissioner (PSKc). This is generated using the `pskc` tool included on the Border Router, under `System - Custom Commands`. [The documentation for using this tool lives on the OpenThread website.](https://openthread.io/guides/border-router/tools#pskc_generator)
-1. Click "Save and Apply"
+1. Browse to the KNX IoT Hub Web GUI, which is hosted http://openwrt.local. (Note: If you have renamed your Hub, replace "openwrt" with that name.)
+2. Navigate to the "Thread" section, found under "Network" under the navigation tab, and press the "Create" button.
+3. Click on the "Advanced Settings" tab.
+4. Fill in the fields, choosing random values for Extended PAN ID, PAN ID and Network Key. The "Network Password" field must contain the Pre-Shared Key for the Commissioner (PSKc). 
+   This is generated using the `pskc` tool included on the Hub, under `System - Custom Commands`.
+5. Click "Save and Apply"
 <p align="center"><img src="img/thread-form/form-web-gui.png" width="80%" align="center"></p>
 
 ### Forming a network using the OpenThread CLI

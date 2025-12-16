@@ -1,9 +1,11 @@
 # Getting Started with the Cascoda Thread Development Board
 
 ## Overview
-Cascoda's [Thread development board](https://www.cascoda.com/products/thread-development-kit/) provides everything you need to develop your Thread application with the Cascoda Chili module. It features Cascoda's SMARTRange™ technology to provide long-range Thread connectivity for whole-house coverage. In addition, Cascoda provides easy integration with Cascoda's dashboard and our [Border Router](https://www.cascoda.com/products/border-router/) for backhaul connectivity. 
+Cascoda's [Thread development board](https://www.cascoda.com/products/thread-development-kit/) provides everything you need to develop your Thread application with the Cascoda Chili module. 
+It features Cascoda's SMARTRange™ technology to provide long-range Thread connectivity for whole-house coverage. In addition, Cascoda provides easy integration with Cascoda's dashboard and the KNX IoT Hub for backhaul connectivity. 
 
-The Thread development provides four programmable buttons and LEDs, and two MikroElektronika Click™ slots that allow easy plug-in of sensors and actuators. The Cascoda SDK has example applications designed specifically to demonstrate the features of the development board.
+The Thread development provides four programmable buttons and LEDs, and two MikroElektronika Click™ slots that allow easy plug-in of sensors and actuators.
+The Cascoda SDK has example applications designed specifically to demonstrate the features of the development board.
 
 <br><br>
 
@@ -11,7 +13,7 @@ The Thread development provides four programmable buttons and LEDs, and two Mikr
 
 ### Features
 - Certified Thread-based radio supporting meshed networking, with long range
-- Easy integration with Cascoda's Border Router for IPv4/IPv6 backhaul connectivity
+- Easy integration with Cascoda's KNX IoT Hub for IPv4/IPv6 backhaul connectivity
 - Ultra-low-power battery operation & battery charging
 - Four programmable buttons & LEDs
 - E-Paper display integration ([click here](./howto-devboard-epaper.md) for help connecting the display)

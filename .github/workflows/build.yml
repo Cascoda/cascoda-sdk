@@ -2,6 +2,7 @@ name: BuildAndDeploy
 
 env: 
   KNX_IOT_STACK_SECRET: ${{secrets.KNX_IOT_STACK_SECRET}}
+  OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
 
 on: [push]
 
@@ -36,7 +37,7 @@ jobs:
         mingw32-make.exe -C ${{ github.workspace }}\build-win -j4
 
     - name: download priv
-      uses: dawidd6/action-download-artifact@v2.24.0
+      uses: dawidd6/action-download-artifact@v6
       if: github.repository == 'Cascoda/cascoda-sdk'
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
@@ -50,25 +51,47 @@ jobs:
       if: github.repository == 'Cascoda/cascoda-sdk'
       run: |
         cp ${{ github.workspace }}\windows-sdk-priv\knx-gen-data.exe ${{ github.workspace }}\release
-  
+    
+    - name: cache NSIS
+      id: cache-nsis
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-nsis-win
+      with:
+        path: ${{ github.workspace }}/nsis-2.51
+        key: nsis-2.51
+
+    - name: download NSIS
+      if: steps.cache-nsis.outputs.cache-hit != 'true'
+      run: |
+        $uri =  "https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/nsis-2.51.zip/download"
+        $zipfile = "nsis-2.51.zip"
+        $wc = New-Object System.Net.Webclient
+        $wc.Headers.Add("User-Agent: Other")
+        $wc.DownloadFile($uri, $zipfile)
+        Expand-Archive -Path nsis-2.51.zip -DestinationPath nsis-2.51
+
+    - name: enable NSIS
+      run: |
+        echo "${{ github.workspace }}\nsis-2.51\nsis-2.51" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: create installer for windows executables
       run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
 
     - name: Upload windows-sdk
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-SDK
         path: ${{ github.workspace }}\release
 
     - name: Upload installer
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: CascodaWindowsTools
         path: ${{ github.workspace }}\cascoda-sdk\etc\CascodaWinTools.exe
 
     - name: cache arm compiler
       id: cache-compiler
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       env:
         cache-name: cache-gcc-arm-win
       with:
@@ -88,7 +111,7 @@ jobs:
         echo "${{ github.workspace }}\gcc-arm-none-eabi-9-2020-q2-update-win32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: download static libs from private repo
-      uses: dawidd6/action-download-artifact@v2.24.0
+      uses: dawidd6/action-download-artifact@v6
       if: github.repository == 'Cascoda/cascoda-sdk'
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
@@ -126,11 +149,10 @@ jobs:
 
   # Build artifacts for posix 
   posix:
-    # NOTE: Not building with ubuntu-latest on purpose, because that results
-    # in binaries that can only be run on linux machines with newest version,
+    # binaries that can only be run on linux machines with newest version,
     # that have glibc 2.34.
     # Using ubuntu-20.04 drops that requirement to glibc 2.31.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -152,7 +174,7 @@ jobs:
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/release/readme.txt
 
     - name: Upload posix-sdk
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Posix-SDK
         path: ${{ github.workspace }}/release
@@ -191,7 +213,7 @@ jobs:
 
     - name: cache compiler
       id: cache-compiler
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       env:
         cache-name: cache-gcc-arm
       with:
@@ -227,7 +249,7 @@ jobs:
         echo "For application details, see https://github.com/${{ github.repository }}/tree/${{ github.sha }}#example-applications" > ${{ github.workspace }}/upload-uart/readme.txt
 
     - name: download static lib from private repo
-      uses: dawidd6/action-download-artifact@v2.24.0
+      uses: dawidd6/action-download-artifact@v6
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
         branch: master
@@ -247,7 +269,7 @@ jobs:
         rm -rf ${{ github.workspace }}/build-chili2
 
     - name: download static libs after cleanup
-      uses: dawidd6/action-download-artifact@v2.24.0
+      uses: dawidd6/action-download-artifact@v6
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
         branch: master
@@ -303,19 +325,19 @@ jobs:
 
 
     - name: Upload Chili2S-UART4-115200baud
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2S-UART4-115200baud
         path: ${{ github.workspace }}/upload-uart
 
     - name: Upload Chili2D-USB
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2D-USB
         path: ${{ github.workspace }}/upload-usb
 
     - name: Upload Chili2-Lib
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: Chili2-Lib
         path: ${{ github.workspace }}/upload-lib
@@ -362,23 +384,23 @@ jobs:
         body: ${{ steps.releaseinfo.outputs.msg }}
 
     # Download all of the previously uploaded artifacts
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: CascodaWindowsTools
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Windows-SDK
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2D-USB
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Chili2S-UART4-115200baud
-    - uses: actions/download-artifact@v1
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Posix-SDK
 
-    - uses: dawidd6/action-download-artifact@v2.24.0
+    - uses: dawidd6/action-download-artifact@v6
       with:
         github_token: ${{secrets.CASCODA_PRIVATE}}
         branch: master

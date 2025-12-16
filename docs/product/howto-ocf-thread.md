@@ -53,20 +53,20 @@ The OCF applications mentioned in [Step 3](#step-3---creating-ocf-applications-o
 - First, gather the necessary hardware, as pictured below (ignore the USB to Ethernet dongle, it isn't needed for the purposes of this guide):
     - A Cascoda Chili 2D module - This is where the OCF application/server will run.
     - A micro USB to USB cable - This makes it possible to connect the module to a PC.
-    - A Cascoda Border Router - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server. [Here](../dev/border-router-setup.md) is a guide on how to set up a Border Router and form a Thread network.
+    - A Cascoda Hub - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server. [Here](../dev/hub-router-setup.md) is a guide on how to set up a Router and form a Thread network.
     
 <p align="center"><img src="imgs/hardware-min.jpg" width="600"></p>
 
 - Flash the Chili 2D module (guide [here](../dev/flashing.md)) with the OCF application that you want to run.
 - Power the module, which you can do by simply connecting it to your Windows PC using the USB cable.
-- Commission the Chili 2D module onto the Thread network formed by the border router. A guide on how to do this is found [here](../dev/thread-commissioning.md).
+- Commission the Chili 2D module onto the Thread network formed by the Hub. A guide on how to do this is found [here](../dev/thread-commissioning.md).
 - Check that the module has successfully joined the Thread network by running [ocfctl](../../posix/app/ocfctl/README.md) while the module is connected to the PC with the USB cable. To download `ocfctl` for Windows, go to the [latest release](https://github.com/Cascoda/cascoda-sdk/releases/latest) of the Cascoda SDK, and download the `Windows-SDK.zip` file, which contains `ocfctl`.
 - After running `ocfctl`, you should get something that looks similar to the picture below:
 
 <p align="center"><img src="imgs/successful-commissioning.png" width="600"></p>
 
 - The important parts of that message are:
-    - "Role Detached --> Router" - This means that the device has successfully connected to the Thread network owned by the border router. Sometimes it transitions to the Child role, which is also good.
+    - "Role Detached --> Router" - This means that the device has successfully connected to the Thread network owned by the Hub. Sometimes it transitions to the Child role, which is also good.
     - "SNTP query successful, the time is XX:XX!" - This indicates that the Chili has joined the Thread network and is able to contact the Internet. If you see this message, it is almost certain all communications on the Chili are working fine.
 
 
@@ -79,9 +79,10 @@ The OCF applications mentioned in [Step 3](#step-3---creating-ocf-applications-o
 - Once you've verified that the Chili module has successfully joined the Thread network, you can move on to the next step.
 
 ## Step 5 - OCF Device Spy Configuration
-A few more configurations need to be made on OCF Device Spy before it can discover your OCF server. This is because unlike in [Step 2](#step-2---getting-started) where OCF Device Spy was communicating with the OCF server over Ethernet, here it is communicating with the server indirectly via the border router. The messages that OCF Device Spy sends out are received by the border router over Wi-Fi, and then are routed to the OCF server over Thread. To achieve that, do the following.
+A few more configurations need to be made on OCF Device Spy before it can discover your OCF server. This is because unlike in [Step 2](#step-2---getting-started) where OCF Device Spy was communicating with the OCF server over Ethernet, here it is communicating with the server indirectly via the router.
+The messages that OCF Device Spy sends out are received by the router over Wi-Fi, and then are routed to the OCF server over Thread. To achieve that, do the following.
 
-- Connect your Windows PC running OCF Device Spy to the Border Router's Wi-Fi. This should give you access to the Internet.
+- Connect your Windows PC running OCF Device Spy to the Hub Router's Wi-Fi. This should give you access to the Internet.
 - Open OCF Device Spy, and select Wi-Fi as the network interface, as shown in the picture below.
 
 <p align="center"><img src="imgs/nwk-interface.PNG" width="600"></p>

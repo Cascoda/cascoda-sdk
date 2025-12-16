@@ -721,3 +721,55 @@ otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aTh
 
 	return OT_ERROR_NOT_IMPLEMENTED;
 }
+
+// SOF Cascoda low level cli access
+
+otError otPlatGetSFR(otInstance *aInstance, uint8_t aPage, uint8_t aAddr, uint8_t *aVal)
+{
+	(void)aInstance;
+	uint8_t error;
+	otError otErr;
+
+	error = TDME_GETSFR_request_sync(aPage, aAddr, aVal, pDeviceRef);
+	otErr = ConvertErrorMacToOt(error);
+
+	return otErr;
+}
+
+otError otPlatSetSFR(otInstance *aInstance, uint8_t aPage, uint8_t aAddr, uint8_t aVal)
+{
+	(void)aInstance;
+	uint8_t error;
+	otError otErr;
+
+	error = TDME_SETSFR_request_sync(aPage, aAddr, aVal, pDeviceRef);
+	otErr = ConvertErrorMacToOt(error);
+
+	return otErr;
+}
+
+otError otPlatHwmeGet(otInstance *aInstance, uint8_t aAttr, uint8_t *aLen, uint8_t *aBuf)
+{
+	(void)aInstance;
+	uint8_t error;
+	otError otErr;
+
+	error = HWME_GET_request_sync(aAttr, aLen, aBuf, pDeviceRef);
+	otErr = ConvertErrorMacToOt(error);
+
+	return otErr;
+}
+
+otError otPlatHwmeSet(otInstance *aInstance, uint8_t aAttr, uint8_t aLen, uint8_t *aBuf)
+{
+	(void)aInstance;
+	uint8_t error;
+	otError otErr;
+
+	error = HWME_SET_request_sync(aAttr, aLen, aBuf, pDeviceRef);
+	otErr = ConvertErrorMacToOt(error);
+
+	return otErr;
+}
+
+// EOF Cascoda low level cli access
