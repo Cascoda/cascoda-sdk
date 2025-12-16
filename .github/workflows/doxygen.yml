@@ -3,7 +3,7 @@ name: BuildAndPublishDoxygen
 on:
   push:
     branches:
-      - master
+      - ci-fix
   workflow_dispatch:
 
 jobs:
