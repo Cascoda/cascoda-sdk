@@ -2,6 +2,7 @@ name: BuildAndDeploy
 
 env: 
   KNX_IOT_STACK_SECRET: ${{secrets.KNX_IOT_STACK_SECRET}}
+  OPENTHREAD_PRIVATE: ${{secrets.OPENTHREAD_PRIVATE}}
 
 on: [push]
 
