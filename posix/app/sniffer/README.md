@@ -14,7 +14,6 @@ Prebuilt Windows binaries of the sniffer can be found in the [Windows release of
     - [Thread Configuration](#thread-configuration)
     - [CoAP Configuration](#coap-configuration)
     - [OSCORE Configuration](#oscore-configuration)
-      - [Getting keys from the Linker](#getting-keys-from-the-linker)
       - [Getting keys from ETS](#getting-keys-from-ets)
   - [Wireshark Tips](#wireshark-tips)
     - [Filtering Packets](#filtering-packets)
@@ -25,7 +24,7 @@ Prebuilt Windows binaries of the sniffer can be found in the [Windows release of
 
 ## Quick Start
 
-Connect a Chili2D running the USB `mac-dongle` binary to your computer. Alternatively, [purchase a Packet Sniffer dongle from one of our distributors](https://www.cascoda.com/wheretobuy/).
+Connect a Chili2D running the USB `mac-dongle` binary to your computer. Alternatively, [purchase a Packet Sniffer dongle from one of our distributors](https://www.cascoda.com/wheretobuy/). NOTE: For the best reliability, connect the device directly to your PC instead of to a USB hub.
 
 Once you [download and install the Cascoda Windows Tools](https://github.com/Cascoda/cascoda-sdk/releases/latest), use the following terminal command to start a sniffer on channel 21, and open a Wireshark window to view the sniffed packets. This is the most common usecase and it works on Windows & Linux desktops.
 ```bash
@@ -65,29 +64,7 @@ Once the CoAP headers are configured, you should be able to see KNX-IoT discover
 
 Right-click an OSCORE packet you want to decode, and navigate to Protocol Preferences -> Object Security for Constrained RESTful Environments -> Security Contexts. In this window, you may press the Plus button to add a new security context. You must populate the Sender ID and Master Secret fields with details from the Access Token, encoded as hexdecimal strings. If the Recipient ID and/or ID Context are set in the Access Token, you will also have to populate these fields, or decryption will fail.
 
-#### Getting keys from the Linker
 
-Here is an example Access Token created by our Linker. The information Wireshark needs lives under the keys 8 -> 4. Within this map, the value under CBOR integer key 2 corresponds to the Master Secret, 7 is the Sender ID and 0 is the Recipient ID. The ID Context would be found at key 6 of this map.
-
-```
-{
-	38: 2,
-	0: "00fa10010400",
-	9: [
-		"if.i",
-		"if.o",
-		"if.g.s",
-		"if.c"
-	],
-	8: {
-		4: {
-			2: h'F8F869F29870BF050C5EBABB374EB6AF',
-			7: h'00FA10010400',
-			0: h'726370696473'
-		}
-	}
-}
-```
 
 Within Wireshark, this Access Token corresponds to the first Security Context in the screenshot below.
 
