@@ -42,8 +42,8 @@
 ### Product Guides
 
 <!-- TODO add description -->
-- [Getting started with the Cascoda KNX IoT Dev Kit](docs/product/howto-knxiot-devkit.md): Use the Development Kit running KNX-IoT, using the Linker or ETS
-- [Getting Started with the Cascoda Packet Sniffer](docs/product/howto-sniffer.md): capture and analyze IEEE 802.15.4, Thread, CoAP, OSCORE
+- [Getting started with the Cascoda KNX IoT Dev Kit](../product/howto-knxiot-devkit.md): Use the Development Kit running KNX-IoT, using the Linker or ETS
+- [Getting Started with the Cascoda Packet Sniffer](../product/howto-sniffer.md): capture and analyze IEEE 802.15.4, Thread, CoAP, OSCORE
 - [Getting Started with the Cascoda Thread Evaluation Kit](../product/howto-thread.md): Set up a Thread network and test simple communications. 
 - [Getting Started with the Cascoda Thread Development Board](../product/howto-devboard.md): Learn about the features of the development board, and run two example applications.
 - [Getting Started with OCF and Thread](../product/howto-ocf-thread.md): Run pre-existing OCF applications or create your own.
