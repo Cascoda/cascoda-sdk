@@ -2,7 +2,7 @@
 
 This guide will get you up and running with your first KNX IoT application! Little to no prior knowledge is needed, all that is required is to have the correct hardware, and to follow the steps of the guide exactly as described.
 
-This guide showcases KNX IoT over Thread by enabling the two devboards to talk to each other. At the end of the guide, and following configuration with ETS or the Linker, you will be able to toggle an LED on one devboard with a button press on the other.
+This guide showcases KNX IoT over Thread by enabling the two devboards to talk to each other. At the end of the guide, and following configuration with ETS, you will be able to toggle an LED on one devboard with a button press on the other.
 
 Here is the network topology that will be created as a result of the guide:
 
@@ -150,7 +150,7 @@ To ensure that the devboards are running the latest firmware, you will have to d
 10. From the serial-adapter output, copy the `Thread Joining Credential` (in this case YR5XH9X3) and paste it into the `New Joiner Credential` field, replacing the default text there. Likewise, copy the `EUI64` (in this case 6a56a702870d8382) from the serial-adapter output and paste it into the `Restrict to a Specific Joiner` field.
 11. Click on `Add`.
 12. Monitor the running serial-adapter output, until the KNX QR code (such as the one shown below) is printed. This means that the device has successfully joined the network.
-13. Make a record of the enrollment data, displayed in the KNX QR code string format - you will need it for enrolling the devices using either the Linker or ETS6. The message you need will look something like this:
+13. Make a record of the enrollment data, displayed in the KNX QR code string format - you will need it for enrolling the devices using ETS6. The message you need will look something like this:
     ```
     Rx:  === QR Code: KNX:S:00FA10010710;P:4N6AFK6T83YWDUTW23U2 ===
     ```
@@ -166,7 +166,7 @@ To ensure that the devboards are running the latest firmware, you will have to d
 
 ## Step 4: Configuring KNX devices
 
-As stated in the intro, this can be done via [ETS](howto-knxiot-devkit_knx_tools.md) or via's [Cascoda's Linker](howto-knxiot-devkit_linker.md).
+As stated in the intro, this can be done via [ETS](howto-knxiot-devkit_knx_tools.md).
 
 ## Troubleshooting
 
