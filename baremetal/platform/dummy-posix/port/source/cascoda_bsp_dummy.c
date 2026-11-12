@@ -276,7 +276,16 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 	return CA_ERROR_NOT_HANDLED;
 }
 
+ca_error BSP_ModuleSetPBDebounceFilterTime(module_debounce_filter_time time, bool keep_permanent)
+{
+	return CA_ERROR_NOT_HANDLED;
+}
+
 void BSP_SystemReset(sysreset_mode resetMode)
+{
+}
+
+void BSP_ResetOnLoopStuck(uint32_t start_time)
 {
 }
 
@@ -414,6 +423,16 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	(void)slaveaddr;
 	(void)pdata;
 	(void)plen;
+	return SENSORIF_I2C_ST_NOT_IMPLEMENTED;
+}
+
+enum sensorif_i2c_status SENSORIF_I2C_WriteThenRead(u8_t slaveaddr, u8_t *pwrdata, u32_t *pwrlen, u8_t *prddata, u32_t *prdlen)
+{
+	(void)slaveaddr;
+	(void)pwrdata;
+	(void)pwrlen;
+	(void)prddata;
+	(void)prdlen;
 	return SENSORIF_I2C_ST_NOT_IMPLEMENTED;
 }
 

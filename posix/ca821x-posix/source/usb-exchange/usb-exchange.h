@@ -64,6 +64,7 @@ enum usb_exchange_errors
  * @param[in]  path        String representing an exchange & system specific path to a device (can be NULL)
  * @param[in]  pDeviceRef  Pointer to initialised ca821x_device_ref struct
  * @param[in]  serial_num  Serial number of the target device (can be NULL)
+ * @param[in]  exit_on_drop Whether to attempt reloading when device dropped connection
  *
  * @retval CA_ERROR_SUCCESS  success
  * @retval CA_ERROR_NOT_FOUND No available devices found (or device at path not found)
@@ -74,7 +75,8 @@ enum usb_exchange_errors
 ca_error usb_exchange_init(ca821x_errorhandler callback,
                            const char         *path,
                            struct ca821x_dev  *pDeviceRef,
-                           char               *serial_num);
+                           char               *serial_num,
+                           bool exit_on_drop);
 
 /**
  * Deinitialise the usb exchange, so that it can be reinitialised by another

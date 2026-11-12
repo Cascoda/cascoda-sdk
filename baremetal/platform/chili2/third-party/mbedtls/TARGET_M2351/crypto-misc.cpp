@@ -213,7 +213,7 @@ bool crypto_dma_buff_compat(const void *buff, size_t buff_size, size_t size_alig
 
 	return (((buff_ & 0x03) == 0) &&                      /* Word-aligned buffer base address */
 	        ((buff_size & (size_aligned_to - 1)) == 0) && /* Crypto submodule dependent buffer size alignment */
-#if defined(NVIC_INIT_ITNS2_VAL) && (NVIC_INIT_ITNS2_VAL & (1 << 7))
+#if defined(SCU_INIT_PNSSET1_VAL) && (SCU_INIT_PNSSET1_VAL & (1<<18))
 	        //Crypto nonsecure
 	        (((buff_ >> 28) == 0x3) && (buff_size <= (0x40000000 - buff_)))); /* 0x30000000-0x3FFFFFFF */
 #else
@@ -296,18 +296,19 @@ static bool crypto_submodule_wait(volatile uint16_t *submodule_done)
  * cryptography IRQ handler could be CRPT_IRQHandler or CRYPTO_IRQHandler. To override
  * default cryptography IRQ handler, see device/startup_{CHIP}.c for its correct name
  * or call NVIC_SetVector() in crypto_init() regardless of its name. */
+
 extern "C" void CRPT_IRQHandler()
 {
 	uint32_t intsts;
 
-	if ((intsts = AES_GET_INT_FLAG(CRYPTO_MODBASE())) != 0)
+	if ((intsts = AES_GET_INT_FLAG(CRPT)) != 0)
 	{
 		/* Done with OK */
 		crypto_aes_done |= CRYPTO_DONE_OK;
 		/* Clear interrupt flag */
-		AES_CLR_INT_FLAG(CRYPTO_MODBASE());
+		AES_CLR_INT_FLAG(CRPT);
 	}
-	else if ((intsts = ECC_GET_INT_FLAG(CRYPTO_MODBASE())) != 0)
+	else if ((intsts = ECC_GET_INT_FLAG(CRPT)) != 0)
 	{
 		/* Check interrupt flags */
 		if (intsts & CRPT_INTSTS_ECCIF_Msk)
@@ -320,8 +321,9 @@ extern "C" void CRPT_IRQHandler()
 			/* Done with error */
 			crypto_ecc_done |= CRYPTO_DONE_ERR;
 		}
+
 		/* Clear interrupt flag */
-		ECC_CLR_INT_FLAG(CRYPTO_MODBASE());
+		ECC_CLR_INT_FLAG(CRPT);
 	}
 }
 

@@ -34,6 +34,17 @@
 #include "ca821x_error.h"
 #include "evbme_messages.h"
 
+/* Nuvoton BSP update from v3.00.003 to v3.00.007:                         */
+/* New macros switching between secure and non-secure peripheral pointers. */
+/* This causes ldrom_hid size to rise above limit of 4k.                   */
+/* All used macros re-named to USBD_NOTZ_*                                 */
+#define USBD_NOTZ_GET_EP_BUF_ADDR(ep)        ((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4))))
+#define USBD_NOTZ_SET_PAYLOAD_LEN(ep, size)  (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].MXPLD + (uint32_t)((ep) << 4))) = (size))
+#define USBD_NOTZ_CONFIG_EP(ep, config)      (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) = (config))
+#define USBD_NOTZ_SET_EP_BUF_ADDR(ep, offset)    (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4))) = (offset))
+#define USBD_NOTZ_GET_INT_FLAG()         ((uint32_t)(USBD->INTSTS))
+#define USBD_NOTZ_CLR_INT_FLAG(flag)     (USBD->INTSTS = (flag))
+
 /**
  * Write command to write words of data - aligned for codespace and speed
  */

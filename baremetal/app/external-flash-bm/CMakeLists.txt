@@ -11,7 +11,9 @@ add_executable(external-flash-test
 	${PROJECT_SOURCE_DIR}/flash_test_main.c
 	)
 
-target_link_libraries(external-flash-test test15-4-api cascoda-bm)
+target_link_libraries(external-flash-test cascoda-aerial-adapter test15-4-api cascoda-bm)
+
+cascoda_configure_spi_bufs(external-flash-test 32 20)
 
 # convert to bin file format
 cascoda_make_binary(external-flash-test CASCODA_BUILD_BINARIES)

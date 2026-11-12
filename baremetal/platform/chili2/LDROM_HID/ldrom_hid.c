@@ -40,6 +40,8 @@ volatile BL_USBD_INFO_T g_USBDInfo = {0};
 
 #define TRIM_INIT (SYS_BASE + 0x10C)
 
+void ProcessHardFault(void) __attribute__((weak));
+
 void ProcessHardFault(void)
 {
 }
@@ -290,6 +292,36 @@ void ParseEvbmeGet(void)
 	TxReady();
 }
 
+// Dummy implementations to avoid a GCC 10 warning
+
+int __attribute__((weak)) _write(int file, char *ptr, int len)
+{
+	(void)file;
+	(void)ptr;
+	(void)len;
+
+	return len;
+}
+
+int __attribute__((weak)) _read(int file, char *ptr, int len)
+{
+	(void)file;
+	(void)ptr;
+	(void)len;
+
+	return 0;
+}
+
+int __attribute__((weak)) _close(int fildes __attribute__((unused)))
+{
+	return -1;
+}
+
+int __attribute__((weak)) _lseek(int fd, int ptr, int dir)
+{
+	return -1;
+}
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Main Function                                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -365,19 +397,19 @@ int32_t main(void)
 
 void USBD_IRQHandler(void)
 {
-	uint32_t u32INTSTS = USBD_GET_INT_FLAG();
+	uint32_t u32INTSTS = USBD_NOTZ_GET_INT_FLAG();
 
 	//Process our endpoints first
 	if ((u32INTSTS & USBD_INTSTS_USB))
 	{
 		if (u32INTSTS & USBD_INTSTS_EP3)
 		{
-			USBD_CLR_INT_FLAG(USBD_INTSTS_EP3);
+			USBD_NOTZ_CLR_INT_FLAG(USBD_INTSTS_EP3);
 			EP3_Handler();
 		}
 		if (u32INTSTS & USBD_INTSTS_EP2)
 		{
-			USBD_CLR_INT_FLAG(USBD_INTSTS_EP2);
+			USBD_NOTZ_CLR_INT_FLAG(USBD_INTSTS_EP2);
 			EP2_Handler();
 		}
 	}

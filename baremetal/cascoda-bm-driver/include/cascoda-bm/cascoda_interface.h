@@ -57,6 +57,8 @@ extern "C" {
 #error CASCODA_CHILI2_CONFIG has to be defined! Please include the file "cascoda_chili_config.h"
 #endif
 
+#define WHILE_LOOP_STUCK_TIMEOUT 300000 // In Milliseconds
+
 /****** Enum system core clock frequency [MHz] ******/
 typedef enum fsys_mhz
 {
@@ -143,10 +145,42 @@ typedef enum module_pin_irq
 	MODULE_PIN_IRQ_BOTH = 3  //!< irq both edges
 } module_pin_irq;
 
+/****** Enum for debounce filter time in sleep mode */
+typedef enum module_debounce_filter_time
+{
+	MODULE_T_FILTER_100U  =  0, ///<    0.1 ms
+	MODULE_T_FILTER_200U  =  1, ///<    0.2 ms
+	MODULE_T_FILTER_400U  =  2, ///<    0.4 ms
+	MODULE_T_FILTER_800U  =  3, ///<    0.8 ms
+	MODULE_T_FILTER_1P6M  =  4, ///<    1.6 ms
+	MODULE_T_FILTER_3P2M  =  5, ///<    3.2 ms
+	MODULE_T_FILTER_6P4M  =  6, ///<    6.4 ms
+	MODULE_T_FILTER_13M   =  7, ///<   12.8 ms
+	MODULE_T_FILTER_26M   =  8, ///<   25.6 ms
+	MODULE_T_FILTER_51M   =  9, ///<   51.2 ms
+	MODULE_T_FILTER_100M  = 10, ///<  102.4 ms
+	MODULE_T_FILTER_200M  = 11, ///<  204.8 ms
+	MODULE_T_FILTER_400M  = 12, ///<  409.6 ms
+	MODULE_T_FILTER_800M  = 13, ///<  819.2 ms
+	MODULE_T_FILTER_1P6S  = 14, ///< 1638.4 ms
+	MODULE_T_FILTER_3P2S  = 15, ///< 3276.8 ms
+} module_debounce_filter_time;
+
 enum module_pin_not_available
 {
 	P_NA = 255 //!< Pin/Port functionality not available
 };
+
+/* BOD trigger voltage level */
+typedef enum bod_voltage_level
+{
+	BOD_VLEVEL_3_0V  = 0,  ///<    3.0 V
+	BOD_VLEVEL_2_8V  = 1,  ///<    2.8 V
+	BOD_VLEVEL_2_6V  = 2,  ///<    2.6 V
+	BOD_VLEVEL_2_4V  = 3,  ///<    2.4 V
+	BOD_VLEVEL_2_2V  = 4,  ///<    2.2 V
+	BOD_VLEVEL_2_0V  = 5,  ///<    2.0 V
+} bod_voltage_level;
 
 /**
  * @brief Arguments for the BSP_ModuleRegisterGPIOInput function.
@@ -425,7 +459,7 @@ ca_error BSP_ModuleSenseGPIOPinOutput(u8_t mpin, u8_t *val);
 /**
  * \brief Sets Module Pin GPIO Output as permanently driven (don't tristate in Power-Down)
  *
- * Input pins must be registered before they can be used. See BSP_ModuleRegisterGPIOOutput().
+ * Output pins must be registered before they can be used. See BSP_ModuleRegisterGPIOOutput().
  *
  * \param mpin  - module pin
  * \return status
@@ -445,6 +479,18 @@ ca_error BSP_ModuleSetGPIOOutputPermanent(u8_t mpin);
  */
 ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val);
 
+/**
+ * \brief Sets Debounce Filter Time in Sleep Mode for Port PB
+ * \param time  - debounce filter time constant
+ * \param keep_permanent - keep filter time constant also during wakeup
+ * \return status
+ *
+ * Note: Setting keep_permanent to false for sensing inputs which are continuously
+ *       sensed could result in missed interrupts due to he re-programming of the filter.
+ *
+ */
+ca_error BSP_ModuleSetPBDebounceFilterTime(module_debounce_filter_time time, bool keep_permanent);
+
 /*******************************************************************************/
 /** **OPTIONAL Function Declarations for cascoda_bsp_*.c                       */
 /** (make stubs & return 0 if unused)                                          */
@@ -455,6 +501,18 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val);
  * \param resetMode The mode of reset to use
  */
 void BSP_SystemReset(sysreset_mode resetMode);
+
+/**
+ * \brief Reset the whole chip.
+ */
+void BSP_ChipReset();
+
+/**
+ * Call BSP_SystemReset() if stuck in a while loop for too long
+ *
+ * @param start_time Start time of the while loop
+ */
+void BSP_ResetOnLoopStuck(uint32_t start_time);
 
 /**
  * \brief Set the default boot mode for the device
@@ -610,26 +668,29 @@ ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u32_t datasize);
 ca_error BSP_FlashErase(u32_t startaddr);
 
 /**
- * \brief Reads Dataflash Memory
+ * \brief Reads Flash Memory
  *
- * startaddr is absolute, see the dataFlashBaseAddr of the FlashInfo struct for correct offset.
+ * In the Chili2 BSP, there is no input validation of the start address, as this is a very hot function.
+ * Reading addresses that lie beyond the APROM Flash region is not recommended.
+ *
+ * If using alongside the caUtilSettings* persistent storage, keep in mind that startaddr is absolute.
+ * See the dataFlashBaseAddr of the FlashInfo struct for correct offset .
  *
  * \param startaddr - byte address (divisible by 4 (word))
  * \param data -      pointer to data (words)
  * \param datasize -  size of data (in words)
  * @retval CA_ERROR_SUCCESS       Flash read into buffer successfully
- * @retval CA_ERROR_INVALID_ARGS  Invalid arguments/flash range
  */
 ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize);
 
 /**
  * @brief Prevent ICP access to Flash
- * 
+ *
  * After calling this function & resetting the microcontroller, reads to APROM & LDROM region
  * using the ICP programming interface will fail.
- * 
+ *
  * The lock can only be undone by performing a mass erase of the microcontroller.
- * 
+ *
  */
 void BSP_FlashLock(void);
 
@@ -704,6 +765,40 @@ i64_t BSP_RTCConvertDateAndTimeToSeconds(const struct RTCDateAndTime *dateandtim
  *
  */
 void BSP_RTCRegisterCallback(int (*callback)(void));
+
+/**
+ * \brief Enable BOD
+ *
+ */
+void BSP_BODEnable(void);
+
+/**
+ * \brief Disable BOD
+ *
+ */
+void BSP_BODDisable(void);
+
+/**
+ * \brief Register BOD interrupt function callback
+ * \param callback - pointer to ISR
+ *
+ */
+void BSP_BODRegisterCallback(int (*callback)(void));
+
+/**
+ * \brief Enable/disable BOD low power mode (lpm)
+ * \param enable - lpm enabled when true
+ *
+ */
+void BSP_BODEnableLPM(bool enable);
+
+/**
+ * \brief Set BOD trigger voltage level
+ * \param vlevel - voltage level
+ * \return status
+ *
+ */
+ca_error BSP_BODSetVoltageLevel(bod_voltage_level vlevel);
 
 #if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
 /**

@@ -54,7 +54,7 @@ static void restore_stdout_termios(void)
 	tcsetattr(s_out_fd, TCSAFLUSH, &original_stdout_termios);
 }
 
-ca_error configure_io(void)
+ca_error configure_io(bool input_disable)
 {
 	ca_error       error = CA_ERROR_SUCCESS;
 	struct termios termios;
@@ -70,7 +70,10 @@ ca_error configure_io(void)
 	prctl(PR_SET_PDEATHSIG, SIGHUP);
 #endif
 
-	s_in_fd  = dup(STDIN_FILENO);
+	if (!input_disable)
+	{
+		s_in_fd  = dup(STDIN_FILENO);
+	}
 	s_out_fd = dup(STDOUT_FILENO);
 	//dup2(STDERR_FILENO, STDOUT_FILENO);
 
@@ -78,7 +81,7 @@ ca_error configure_io(void)
 	// process terminates properly.
 	signal(SIGPIPE, SIG_DFL);
 
-	if (isatty(s_in_fd))
+	if (!input_disable && isatty(s_in_fd))
 	{
 		tcgetattr(s_in_fd, &original_stdin_termios);
 		atexit(&restore_stdin_termios);
@@ -90,7 +93,7 @@ ca_error configure_io(void)
 		atexit(&restore_stdout_termios);
 	}
 
-	if (isatty(s_in_fd))
+	if (!input_disable && isatty(s_in_fd))
 	{
 		// get current configuration
 		if (tcgetattr(s_in_fd, &termios))
@@ -178,7 +181,10 @@ ca_error configure_io(void)
 	return error;
 
 exit:
-	close(s_in_fd);
+	if (!input_disable)
+	{
+		close(s_in_fd);
+	}
 	close(s_out_fd);
 	if (error == CA_ERROR_SUCCESS)
 		s_enabled = true;
@@ -213,7 +219,7 @@ static ca_error handle_user_command(const uint8_t *buf, size_t len, struct ca821
 	return error;
 }
 
-void process_io(void)
+void process_io(bool input_disable)
 {
 	ssize_t   rval;
 	uint8_t   junkBuf;
@@ -221,13 +227,39 @@ void process_io(void)
 	pthread_mutex_lock(&s_write_mutex);
 	const int out_flag = (s_write_length > 0) ? POLLOUT : 0;
 	pthread_mutex_unlock(&s_write_mutex);
-	struct pollfd pollfd[] = {
+	struct pollfd pollfd_inout[] = {
 	    {s_in_fd, POLLIN | error_flags, 0},
 	    {s_out_fd, out_flag | error_flags, 0},
 	    {selfpipe[0], POLLIN | error_flags, 0},
 	};
+	size_t pollfd_inout_size = sizeof(pollfd_inout) / sizeof(*pollfd_inout);
 
+	struct pollfd pollfd_out[] = {
+	    {s_out_fd, out_flag | error_flags, 0},
+	    {selfpipe[0], POLLIN | error_flags, 0},
+	};
+	size_t pollfd_out_size = sizeof(pollfd_out) / sizeof(*pollfd_out);
+	
 	errno = 0;
+
+	struct pollfd *pollfd;
+	size_t pollfd_size, in_idx, out_idx, pipe_idx;
+
+	if (input_disable)
+	{
+		pollfd = pollfd_out;
+		pollfd_size = pollfd_out_size;
+		out_idx = 0;
+		pipe_idx = 1;
+	}
+	else
+	{
+		pollfd = pollfd_inout;
+		pollfd_size = pollfd_inout_size;
+		in_idx = 0;
+		out_idx = 1;
+		pipe_idx = 2;
+	}
 
 	rval = poll(pollfd, sizeof(pollfd) / sizeof(*pollfd), -1);
 	read(selfpipe[0], &junkBuf, 1);
@@ -240,19 +272,19 @@ void process_io(void)
 
 	if (rval > 0)
 	{
-		if ((pollfd[0].revents & error_flags) != 0)
+		if ((!input_disable && pollfd[in_idx].revents & error_flags) != 0)
 		{
 			perror("s_in_fd");
 			exit(EXIT_FAILURE);
 		}
 
-		if ((pollfd[1].revents & error_flags) != 0)
+		if ((pollfd[out_idx].revents & error_flags) != 0)
 		{
 			perror("s_out_fd");
 			exit(EXIT_FAILURE);
 		}
 
-		if (pollfd[0].revents & POLLIN)
+		if (!input_disable && pollfd[in_idx].revents & POLLIN)
 		{
 			rval = read(s_in_fd, s_receive_buffer, sizeof(s_receive_buffer));
 			assert(sizeof(s_receive_buffer) < 255);
@@ -268,7 +300,7 @@ void process_io(void)
 		}
 
 		pthread_mutex_lock(&s_write_mutex);
-		if ((s_write_length > 0) && (pollfd[1].revents & POLLOUT))
+		if ((s_write_length > 0) && (pollfd[out_idx].revents & POLLOUT))
 		{
 			rval = write(s_out_fd, s_write_buffer + s_write_offset, s_write_length);
 
@@ -291,20 +323,61 @@ void process_io(void)
 	}
 }
 
+/**
+ * Helper function to print the help information to stderr.
+ */
+static void displayHelp()
+{
+	fprintf(stderr, "\n===== How to use the command =====\n");
+
+#if defined(_WIN32)
+	fprintf(stderr, "serial-adapter.exe ");
+#else  //posix
+    fprintf(stderr, "serial-adapter ");
+#endif // _WIN32
+	fprintf(stderr, "\tSerial-adapter program for interacting with an application running on baremetal.\n\n");
+	fprintf(stderr, "\t-s [SERIALNO]       This application will try find the device with the serial number specified.\n");
+	fprintf(stderr, "\t                    If not specified, the first device detected will be used.\n");
+	fprintf(stderr, "\t                    For UART, it is also possible to specify a COM port number using this argument\n\n");
+	fprintf(stderr, "\t-e, --exit-on-drop  (USB only) When device drops connection, exit the program immediately, without attempting to reload.\n\n");
+	fprintf(stderr, "\t-i, --input-disable Disable keyboard input, providing only output EVBME messages.\n\n");
+}
+
 int main(int argc, char *argv[])
 {
-	union ca821x_util_init_extra_arg arg = {.generic = NULL};
-	if (argc > 1)
+	union ca821x_util_init_extra_arg serial_adapter_arg = {.generic = NULL};
+	bool exit_on_drop = false;
+	bool input_disable = false;
+
+	//Argument processing
+	for (int i = 1; i < argc; i++)
 	{
-		arg.serial_num = argv[1];
+		if (strcmp(argv[i], "-s") == 0)
+		{
+			serial_adapter_arg.serial_num = argv[++i];
+		}
+		else if ((strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--exit-on-drop") == 0))
+		{
+			exit_on_drop = true;
+		}
+		else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0))
+		{
+			displayHelp();
+			exit(EXIT_FAILURE);
+		}
+		else if ((strcmp(argv[i], "-i") == 0) || (strcmp(argv[i], "--input-disable") == 0))
+		{
+			input_disable = true;
+		}
+		
 	}
 
 	pDeviceRef = &sDeviceRef;
-	while (ca821x_util_init(pDeviceRef, NULL, arg))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_adapter_arg, exit_on_drop))
 	{
 		return -1;
 	}
-	configure_io();
+	configure_io(input_disable);
 
 	if (EVBME_CheckVersion(NULL, pDeviceRef) != CA_ERROR_SUCCESS)
 		exit(1);
@@ -315,6 +388,6 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		process_io();
+		process_io(input_disable);
 	}
 }

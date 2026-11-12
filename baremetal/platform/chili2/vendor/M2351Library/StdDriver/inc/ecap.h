@@ -5,7 +5,8 @@
  * @brief    EnHanced Input Capture Timer(ECAP) driver header file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __ECAP_H__
 #define __ECAP_H__
@@ -258,8 +259,8 @@ extern "C"
     (ecap)->CTL0 |= ECAP_CTL0_CMPCLREN_Msk; \
   else \
     (ecap)->CTL0 &= ~ECAP_CTL0_CMPCLREN_Msk; \
-  (ecap)->CTL1 = ((ecap)->CTL1 &~0xF00) | ((u32Event) & 0xF00); \
-  }while(0);
+  (ecap)->CTL1 = ((ecap)->CTL1 &~0xF00ul) | ((u32Event) & 0xF00); \
+  }while(0)
 
 /**
   * @brief This macro is used to enable compare function
@@ -457,4 +458,4 @@ void ECAP_DisableINT(ECAP_T* ecap, uint32_t u32Mask);
 
 #endif /*__ECAP_H__*/
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

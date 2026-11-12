@@ -1083,7 +1083,7 @@ struct MAC_Message
 		/* Common */
 		uint8_t u8Param;
 		uint8_t Status;
-		uint8_t Payload[254];
+		uint8_t Payload[255];
 	} PData;
 };
 

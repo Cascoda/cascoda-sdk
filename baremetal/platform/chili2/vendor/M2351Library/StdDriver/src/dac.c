@@ -4,7 +4,8 @@
  * @brief    M2351 series DAC driver source file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -47,6 +48,7 @@ void DAC_Open(DAC_T *dac,
               uint32_t u32Ch,
               uint32_t u32TrgSrc)
 {
+    (void)u32Ch;
     dac->CTL &= ~(DAC_CTL_ETRGSEL_Msk | DAC_CTL_TRGSEL_Msk | DAC_CTL_TRGEN_Msk);
 
     dac->CTL |= (u32TrgSrc | DAC_CTL_DACEN_Msk);
@@ -61,6 +63,7 @@ void DAC_Open(DAC_T *dac,
   */
 void DAC_Close(DAC_T *dac, uint32_t u32Ch)
 {
+    (void)u32Ch;
     dac->CTL &= (~DAC_CTL_DACEN_Msk);
 }
 
@@ -88,4 +91,4 @@ uint32_t DAC_SetDelayTime(DAC_T *dac, uint32_t u32Delay)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

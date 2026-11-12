@@ -3,8 +3,9 @@
  * @version  V1.00
  * @brief    M2351 Series CAN Driver Header File
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __CAN_H__
 #define __CAN_H__
@@ -45,6 +46,11 @@ extern "C"
 #define    CAN_REMOTE_FRAME    0    /*!< CAN frame select remote frame */
 #define    CAN_DATA_FRAME    1      /*!< CAN frame select data frame */
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* CAN Time-out Handler Constant Definitions                                                               */
+/*---------------------------------------------------------------------------------------------------------*/
+#define    CAN_TIMEOUT         SystemCoreClock    /*!< CAN time-out counter (1 second time-out) */
+
 /*@}*/ /* end of group CAN_EXPORTED_CONSTANTS */
 
 
@@ -54,6 +60,8 @@ extern "C"
 /**
   * @details    CAN message structure
   */
+#pragma pack(push)
+#pragma pack(1)
 typedef struct
 {
     uint32_t  IdType;       /*!< ID type */
@@ -62,10 +70,13 @@ typedef struct
     uint8_t   DLC;          /*!< Data length */
     uint8_t   Data[8];      /*!< Data */
 } STR_CANMSG_T;
+#pragma pack(pop)
 
 /**
   * @details    CAN mask message structure
   */
+#pragma pack(push)
+#pragma pack(1)
 typedef struct
 {
     uint8_t   u8Xtd;      /*!< Extended ID */
@@ -73,6 +84,7 @@ typedef struct
     uint32_t  u32Id;      /*!< Message ID */
     uint8_t   u8IdType;   /*!< ID type*/
 } STR_CANMASK_T;
+#pragma pack(pop)
 
 /*@}*/ /* end of group CAN_EXPORTED_STRUCTS */
 
@@ -186,4 +198,4 @@ int32_t CAN_ReadMsgObj(CAN_T *tCAN, uint8_t u8MsgObj, uint8_t u8Release, STR_CAN
 
 #endif /* __CAN_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

@@ -4,7 +4,8 @@
  * @brief    M2351 series EADC driver source file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -26,18 +27,25 @@
   * @param[in] u32InputMode Decides the input mode.
   *                       - \ref EADC_CTL_DIFFEN_SINGLE_END      :Single end input mode.
   *                       - \ref EADC_CTL_DIFFEN_DIFFERENTIAL    :Differential input type.
-  * @return None
+  * @retval EADC_OK          EADC operation OK.
+  * @retval EADC_ERR_TIMEOUT EADC operation abort due to timeout error.
   * @details This function is used to set analog input mode and enable A/D Converter.
   *         Before starting A/D conversion function, ADCEN bit (EADC_CTL[0]) should be set to 1.
-  * @note
   */
-void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
+int32_t EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
 {
+    uint32_t u32TimeOutCnt = EADC_TIMEOUT;
+
     eadc->CTL &= (~(EADC_CTL_DIFFEN_Msk));
 
     eadc->CTL |= (u32InputMode | EADC_CTL_ADCEN_Msk);
 
-    while(!(eadc->PWRM & EADC_PWRM_PWUPRDY_Msk)) {}
+    while(!(eadc->PWRM & EADC_PWRM_PWUPRDY_Msk))
+    {
+        if(--u32TimeOutCnt == 0) return EADC_ERR_TIMEOUT;
+    }
+
+    return EADC_OK;
 }
 
 /**
@@ -141,4 +149,4 @@ void EADC_SetExtendSampleTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32E
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

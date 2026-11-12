@@ -6,8 +6,9 @@
  * @brief    M2351 series I2C Serial Interface Controller(I2C) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __I2C_H__
 #define __I2C_H__
@@ -57,7 +58,17 @@ extern "C"
 #define I2C_PECTX_ENABLE            (1U)    /*!< Enable  SMBus Packet Error Check Transmit function                          */
 #define I2C_PECTX_DISABLE           (0U)    /*!< Disable SMBus Packet Error Check Transmit function                          */
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* I2C Define Error Code                                                                                   */
+/*---------------------------------------------------------------------------------------------------------*/
+#define I2C_TIMEOUT                 SystemCoreClock /*!< I2C time-out counter (1 second time-out)                            */
+#define I2C_OK                      ( 0L)           /*!< I2C operation OK                                                    */
+#define I2C_ERR_FAIL                (-1L)           /*!< I2C operation failed                                                */
+#define I2C_ERR_TIMEOUT             (-2L)           /*!< I2C operation abort due to timeout error                            */
+
 /*@}*/ /* end of group I2C_EXPORTED_CONSTANTS */
+
+extern int32_t g_I2C_i32ErrCode;
 
 /** @addtogroup I2C_EXPORTED_FUNCTIONS I2C Exported Functions
   @{
@@ -464,10 +475,13 @@ static __INLINE void I2C_STOP(I2C_T *i2c);
  */
 static __INLINE void I2C_STOP(I2C_T *i2c)
 {
+    uint32_t u32TimeOutCount = I2C_TIMEOUT;
 
     (i2c)->CTL0 |= (I2C_CTL0_SI_Msk | I2C_CTL0_STO_Msk);
-    CLK_SysTickDelay(10000);
-    while(i2c->CTL0 & I2C_CTL0_STO_Msk) {}
+    while(i2c->CTL0 & I2C_CTL0_STO_Msk)
+    {
+        if(--u32TimeOutCount == 0) break;
+    }
 }
 
 
@@ -524,4 +538,4 @@ void I2C_SMBusClockLoTimeout(I2C_T *i2c, uint32_t ms, uint32_t u32Pclk);
 
 #endif
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

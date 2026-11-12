@@ -34,6 +34,10 @@
 
 #include "ca821x_log.h"
 
+#ifdef CASCODA_SYSLOG
+#include <syslog.h>
+#endif
+
 void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 {
 	char           *lev_str;
@@ -66,8 +70,33 @@ void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
 		lev_str = "UNKN: ";
 		break;
 	}
-
+#ifdef CASCODA_SYSLOG
+	int log_level;
+	switch (loglevel)
+	{
+	case CA_LOGLEVEL_CRIT:
+		log_level = LOG_CRIT;
+		break;
+	case CA_LOGLEVEL_WARN:
+		log_level = LOG_WARNING;
+		break;
+	case CA_LOGLEVEL_NOTE:
+		log_level = LOG_NOTICE;
+		break;
+	case CA_LOGLEVEL_INFO:
+		log_level = LOG_INFO;
+		break;
+	case CA_LOGLEVEL_DEBG:
+		log_level = LOG_DEBUG;
+		break;
+	default:
+		log_level = LOG_WARNING;
+		break;
+	}
+	vsyslog(log_level, format, argp);
+#else
 	fprintf(stderr, "%s.%03d %s ", timeString, ts.tv_nsec / 1000000, lev_str);
 	vfprintf(stderr, format, argp);
 	fprintf(stderr, "\r\n");
+#endif
 }

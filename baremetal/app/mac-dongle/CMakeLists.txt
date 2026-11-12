@@ -14,5 +14,6 @@ target_include_directories( mac-dongle
 		${PROJECT_SOURCE_DIR}/include
 	)
 
+cascoda_configure_spi_bufs(mac-dongle 32 20)
 # convert to bin file format
 cascoda_make_binary(mac-dongle CASCODA_BUILD_BINARIES)

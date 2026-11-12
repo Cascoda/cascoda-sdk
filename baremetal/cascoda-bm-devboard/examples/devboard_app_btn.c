@@ -176,7 +176,7 @@ void hardware_sleep(struct ca821x_dev *pDeviceRef)
 	if (taskletTimeLeft > 100)
 	{
 		/* and sleep */
-		DVBD_DevboardSleep(taskletTimeLeft, pDeviceRef);
+		DVBD_Sleep(WUP_WAKEUP_ALL, taskletTimeLeft, pDeviceRef);
 	}
 }
 

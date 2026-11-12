@@ -87,6 +87,7 @@ static struct ca821x_dev **s_devs        = NULL;
 static int                 s_maxdevcount = 0;
 static int                 s_devcount    = 0;
 static int                 s_initialised = 0;
+static bool s_exit_on_drop = false;
 
 //Dynamic hid-api library
 #ifndef _WIN32
@@ -239,7 +240,7 @@ void usb_apply_raspi_workaround(struct ca821x_dev *pDeviceRef)
 	struct usb_exchange_priv *priv = pDeviceRef->exchange_context;
 	struct timespec           curTime;
 
-	if (clock_gettime(CLOCK_REALTIME, &curTime))
+	if (clock_gettime(CLOCK_MONOTONIC, &curTime))
 		return;
 
 	curTime = time_sub(&curTime, &priv->prev_send);
@@ -252,7 +253,7 @@ void usb_apply_raspi_workaround(struct ca821x_dev *pDeviceRef)
 	uint8_t comm_check[] = {0xA1, 3, 0, 0, 0};
 	add_to_queue(&(priv->base.out_buffer_queue), comm_check, sizeof(comm_check), pDeviceRef);
 
-	clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+	clock_gettime(CLOCK_MONOTONIC, &(priv->prev_send));
 #else
 	(void)pDeviceRef;
 #endif
@@ -344,7 +345,7 @@ ca_error usb_try_write(const uint8_t *buffer, size_t len, struct ca821x_dev *pDe
 #if CASCODA_RASPI_USB_WORKAROUND
 	else
 	{
-		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+		clock_gettime(CLOCK_MONOTONIC, &(priv->prev_send));
 	}
 #endif
 	return caerror;
@@ -543,29 +544,38 @@ static ca_error reload_hid_device(struct ca821x_dev *pDeviceRef)
 	assert_usb_exchange(pDeviceRef);
 	pthread_mutex_lock(&devs_mutex);
 
-	ca_log_warn("Hid device dropped... attempting reload");
-
-	dhid_close(priv->hid_dev);
-	priv->hid_dev = NULL;
-
-	sleep(1);
-
-	//Iterate through compatible HIDs until matching serial number is found
-	hid_ll  = dhid_enumerate(USB_VID, USB_PID);
-	hid_cur = hid_ll;
-	while (priv->hid_dev == NULL && hid_cur != NULL)
+	if (!s_exit_on_drop)
 	{
-		//Find matching serial number
-		if (wcscmp(priv->serial_number, hid_cur->serial_number) == 0)
-			priv->hid_dev = dhid_open_path(hid_cur->path);
+		ca_log_warn("Hid device dropped... attempting reload");
 
-		if (priv->hid_dev == NULL)
+		dhid_close(priv->hid_dev);
+		priv->hid_dev = NULL;
+
+		sleep(1);
+
+		//Iterate through compatible HIDs until matching serial number is found
+		hid_ll  = dhid_enumerate(USB_VID, USB_PID);
+		hid_cur = hid_ll;
+		while (priv->hid_dev == NULL && hid_cur != NULL)
 		{
-			hid_cur = hid_cur->next;
+			//Find matching serial number
+			if (wcscmp(priv->serial_number, hid_cur->serial_number) == 0)
+				priv->hid_dev = dhid_open_path(hid_cur->path);
+
+			if (priv->hid_dev == NULL)
+			{
+				hid_cur = hid_cur->next;
+			}
+		}
+		if (hid_cur == NULL)
+		{ //Device not found
+			error = CA_ERROR_NOT_FOUND;
+			goto exit;
 		}
 	}
-	if (hid_cur == NULL)
-	{ //Device not found
+	else
+	{
+		ca_log_warn("Hid device dropped... Not attempting reload due to command line configuration");
 		error = CA_ERROR_NOT_FOUND;
 		goto exit;
 	}
@@ -574,7 +584,12 @@ exit:
 	if (hid_ll)
 		dhid_free_enumeration(hid_ll);
 	if (error)
-		ca_log_crit("Failed to reload HID device");
+	{
+		if (!s_exit_on_drop)
+		{
+			ca_log_crit("Failed to reload HID device");
+		}
+	}
 	else
 		ca_log_info("Successfully reloaded HID device");
 	pthread_mutex_unlock(&devs_mutex);
@@ -646,7 +661,8 @@ static ca_error unlock_device(struct ca821x_dev *pDeviceRef)
 ca_error usb_exchange_init(ca821x_errorhandler callback,
                            const char         *path,
                            struct ca821x_dev  *pDeviceRef,
-                           char               *serial_num)
+                           char               *serial_num,
+						   bool exit_on_drop)
 {
 	struct hid_device_info   *hid_ll = NULL, *hid_cur = NULL;
 	hid_device	           *dev        = NULL;
@@ -654,6 +670,7 @@ ca_error usb_exchange_init(ca821x_errorhandler callback,
 	ca_error                  error      = CA_ERROR_SUCCESS;
 	size_t                    len        = 0;
 	bool                      path_found = false;
+	s_exit_on_drop = exit_on_drop;
 
 	ca_log_debg("Trying USB Exchange");
 

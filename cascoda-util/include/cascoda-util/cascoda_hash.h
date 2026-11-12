@@ -93,7 +93,7 @@ void HASH_fnv1a_64_stream(const void *data_in, size_t num_bytes, uint64_t *hash)
  *
  * @return 32-bit CRC hash
  */
-uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen);
+uint32_t HASH_CRC32(const uint8_t *data, uint32_t dataLen);
 
 /**
  * Streaming version of HASH_CRC32.
@@ -108,7 +108,7 @@ uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen);
  * @param dataLen The sizeof the data to be hashed (in bytes)
  * @param crc     Output variable into which the (partial) crc computation is stored
  */
-void HASH_CRC32_stream(uint8_t *data, uint32_t dataLen, uint32_t *crc);
+void HASH_CRC32_stream(const uint8_t *data, uint32_t dataLen, uint32_t *crc);
 
 #ifdef __cplusplus
 }

@@ -32,6 +32,7 @@
  * Interrupt Service Routines (ISRs)
 */
 /* System */
+#include <assert.h>
 #include <stdio.h>
 /* Platform */
 #include "M2351.h"

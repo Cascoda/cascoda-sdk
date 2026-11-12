@@ -71,7 +71,8 @@ static void initStatic(void)
 
 ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
                           ca821x_errorhandler              errorHandler,
-                          union ca821x_util_init_extra_arg arg)
+                          union ca821x_util_init_extra_arg arg,
+						  bool exit_on_drop)
 {
 	ca_error error = CA_ERROR_SUCCESS;
 
@@ -80,7 +81,7 @@ ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
 	if (error)
 		goto exit;
 #ifdef _WIN32
-	error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
+	error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num, exit_on_drop);
 	if (error)
 	{
 		error = uart_exchange_init(errorHandler, pDeviceRef, arg);
@@ -90,7 +91,7 @@ ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
 
 	if (error)
 	{
-		error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num);
+		error = usb_exchange_init(errorHandler, NULL, pDeviceRef, arg.serial_num, exit_on_drop);
 	}
 
 	if (error)
@@ -118,7 +119,7 @@ ca_error ca821x_util_init_path(struct ca821x_dev        *pDeviceRef,
 	switch (exchangeType)
 	{
 	case ca821x_exchange_usb:
-		error = usb_exchange_init(errorHandler, path, pDeviceRef, NULL);
+		error = usb_exchange_init(errorHandler, path, pDeviceRef, NULL, false);
 		break;
 	case ca821x_exchange_uart:;
 #ifdef _WIN32

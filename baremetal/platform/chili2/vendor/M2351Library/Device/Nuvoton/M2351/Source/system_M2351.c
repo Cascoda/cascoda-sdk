@@ -4,8 +4,9 @@
  * @brief    System Setting Source File
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)       /* ARM Compiler 6 */
 #include <arm_cmse.h>
@@ -15,7 +16,14 @@
 #include <stdint.h>
 #include "NuMicro.h"
 
-#include "partition_M2351.h"
+#include "partition_M2351.h" // CASCODA, 25/08/29; (tiniuclx, Aug 15,2019)
+#if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
+// #include "partition_M2351.h" // CASCODA, 25/08/29; (tiniuclx, Aug 15,2019)
+extern void SCU_IRQHandler(void);
+void TZ_SAU_Setup(void);
+#else
+extern void SCU_IRQHandler(void)__attribute__((noreturn));
+#endif
 
 extern void *__Vectors;                   /* see startup file */
 
@@ -26,10 +34,14 @@ extern void *__Vectors;                   /* see startup file */
 uint32_t SystemCoreClock  = __HSI;              /*!< System Clock Frequency (Core Clock) */
 uint32_t CyclesPerUs      = (__HSI / 1000000UL);/*!< Cycles per micro second             */
 uint32_t PllClock         = __HSI;              /*!< PLL Output Clock Frequency          */
-const uint32_t gau32ClkSrcTbl[] = {__HXT, __LXT, 0UL, __LIRC, 0UL, __HIRC48, 0UL, __HIRC};
+//const uint32_t gau32ClkSrcTbl[] = {__HXT, __LXT, 0UL, __LIRC, 0UL, __HIRC48, 0UL, __HIRC};
 
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+
+void FMC_NSBA_Setup(void);
+void SCU_Setup(void);
+void NSC_Init(void);
 
 /**
  * @brief    Setup Non-secure boundary
@@ -65,24 +77,25 @@ void FMC_NSBA_Setup(void)
         while(FMC->ISPTRG);
 
         /* Setting NSBA when it is empty */
-        if(FMC->ISPDAT != 0xfffffffful)
+        if(FMC->ISPDAT == 0xfffffffful)
         {
-            /* Erase old setting */
-            FMC->ISPCMD = FMC_ISPCMD_PAGE_ERASE;
+            /* Set new base */
+            FMC->ISPDAT = FMC_SECURE_ROM_SIZE;
+            FMC->ISPCMD = FMC_ISPCMD_PROGRAM;
             FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
             while(FMC->ISPTRG);
+
+            /* Verify new base */
+            FMC->ISPDAT = 0;
+            FMC->ISPCMD = FMC_ISPCMD_READ;
+            FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
+            while(FMC->ISPTRG);
+            if(FMC->ISPDAT == FMC_SECURE_ROM_SIZE)
+            {
+                /* Force Chip Reset to valid new setting */
+                SYS->IPRST0 = SYS_IPRST0_CHIPRST_Msk;
+            }
         }
-
-        /* Set new base */
-        FMC->ISPDAT = FMC_SECURE_ROM_SIZE;
-        FMC->ISPCMD = FMC_ISPCMD_PROGRAM;
-        FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
-        while(FMC->ISPTRG);
-
-        /* Force Chip Reset to valid new setting */
-        SYS->IPRST0 = SYS_IPRST0_CHIPRST_Msk;
-
-
     }
 
 }
@@ -98,7 +111,14 @@ void SCU_Setup(void)
     int32_t i;
 
     SCU->PNSSET[0] = SCU_INIT_PNSSET0_VAL;
-    SCU->PNSSET[1] = SCU_INIT_PNSSET1_VAL;
+    // CASCODA, 25/08/29; (tiniuclx, Oct 23,2024)
+    // SCU->PNSSET[1] = SCU_INIT_PNSSET1_VAL;
+    // A bit of a bodge - the CRPT peripheral must be secure while it is being used for
+    // Trusted Boot, but non-secure for mbedTLS hardware acceleration in the application.
+    // The solution is to delay configuring CRPT as non-secure until after all Trusted Boot
+    // checks are completed.
+    SCU->PNSSET[1] = SCU_INIT_PNSSET1_VAL & ~BIT18;
+    // CASCODA
     SCU->PNSSET[2] = SCU_INIT_PNSSET2_VAL;
     SCU->PNSSET[3] = SCU_INIT_PNSSET3_VAL;
     SCU->PNSSET[4] = SCU_INIT_PNSSET4_VAL;
@@ -118,7 +138,7 @@ void SCU_Setup(void)
     if(SCU_INIT_PNSSET0_VAL & BIT9 ) NVIC->ITNS[1] |= BIT22; /* Int of USBH_INT     */
     if(SCU_INIT_PNSSET0_VAL & BIT13) NVIC->ITNS[2] |= BIT0 ; /* Int of SDHOST0_INT  */
     if(SCU_INIT_PNSSET0_VAL & BIT24) NVIC->ITNS[3] |= BIT2 ; /* Int of PDMA1_INT    */
-    if(SCU_INIT_PNSSET1_VAL & BIT18) NVIC->ITNS[2] |= BIT7 ; /* Int of CRYPTO       */
+    // if(SCU_INIT_PNSSET1_VAL & BIT18) NVIC->ITNS[2] |= BIT7 ; /* Int of CRYPTO       */     // CASCODA, 25/08/29; (tiniuclx, Oct 23,2024)
     if(SCU_INIT_PNSSET2_VAL & BIT2 ) NVIC->ITNS[3] |= BIT15; /* Int of EWDT_INT     */
     if(SCU_INIT_PNSSET2_VAL & BIT2 ) NVIC->ITNS[3] |= BIT16; /* Int of EWWDT_INT    */
     if(SCU_INIT_PNSSET2_VAL & BIT3 ) NVIC->ITNS[1] |= BIT10; /* Int of EADC0_INT    */
@@ -178,7 +198,7 @@ void SCU_Setup(void)
 
 
     /* Enable SCU Int status */
-    SCU->SVIOIEN = -1;
+    SCU->SVIOIEN = (uint32_t)-1;
     NVIC_EnableIRQ(SCU_IRQn);
 
 }
@@ -197,7 +217,7 @@ void SCU_IRQHandler(void)
     const uint8_t info[] = {0x34,0x3C,0,0, 0x44,0x4C,0x54,0x5C,0x64,0,0x74,0x7C,0x84,0x8C,0x94,0x9C,0xA4,0xAC,0xB4};
 
     uint32_t u32Reg, u32Addr;
-    int32_t i;
+    uint32_t i;
 
     /* TrustZone access policy */
     u32Reg = SCU->SVINTSTS;
@@ -228,7 +248,7 @@ void SCU_IRQHandler(void)
  */
 void NSC_Init(void)
 {
-    int32_t i32Region;
+    uint32_t u32Region;
     uint32_t u32Base, u32Limit;
 
 #if defined (__ICCARM__)
@@ -236,10 +256,13 @@ void NSC_Init(void)
     u32Base = (uint32_t)__section_begin("NSC");
     u32Limit = (uint32_t)__section_end("NSC");
 #elif defined(__ARMCC_VERSION)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"
     extern uint32_t Image$$NSC_ROM$$XO$$Base[];
     extern uint32_t Image$$NSC_ROM$$XO$$Limit[];
     u32Base = (uint32_t)Image$$NSC_ROM$$XO$$Base;
     u32Limit = (uint32_t)Image$$NSC_ROM$$XO$$Limit;
+#pragma clang diagnostic pop
 #else
     extern uint32_t __start_NSC[];
     extern uint32_t __end_NSC[];
@@ -248,11 +271,11 @@ void NSC_Init(void)
 #endif
 
     /* SAU region 3 is dedicated for NSC */
-    i32Region = 3;
-    SAU->RNR  =  (i32Region & SAU_RNR_REGION_Msk);
+    u32Region = 3;
+    SAU->RNR  =  (u32Region & SAU_RNR_REGION_Msk);
     SAU->RBAR =  (u32Base & SAU_RBAR_BADDR_Msk);
-    SAU->RLAR =  (u32Limit & SAU_RLAR_LADDR_Msk) |
-                ((1ul << SAU_RLAR_NSC_Pos)  & SAU_RLAR_NSC_Msk) | 1ul;
+    SAU->RLAR =  ((u32Limit-1) & SAU_RLAR_LADDR_Msk) |
+                ((1ul << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk) | 1ul;
 
 }
 
@@ -330,8 +353,8 @@ void TZ_SAU_Setup(void)
     /* repeat this for all possible ITNS elements */
 
     /* Initial Nonsecure callable region */
-    //NSC_Init();
 
+    // NSC_Init(); // CASCODA, 25/08/29; (tiniuclx, Aug 15,2019)
 
 }
 #else
@@ -504,3 +527,6 @@ void __TZ_set_PRIMASK_NS(uint32_t priMask)
 
 
 #endif
+
+
+

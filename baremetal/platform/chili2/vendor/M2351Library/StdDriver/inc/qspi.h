@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series QSPI driver header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __QSPI_H__
 #define __QSPI_H__
@@ -173,12 +174,20 @@ extern "C"
 #define QSPI_TRIGGER_TX_PDMA(qspi)   ( (qspi)->PDMACTL |= QSPI_PDMACTL_TXPDMAEN_Msk )
 
 /**
+  * @brief      Trigger TX and RX PDMA function.
+  * @param[in]  qspi The pointer of the specified QSPI module.
+  * @return     None.
+  * @details    Set TXPDMAEN bit and RXPDMAEN bit of QSPI_PDMACTL register to enable TX and RX PDMA transfer function.
+  */
+#define QSPI_TRIGGER_TX_RX_PDMA(qspi)   ( (qspi)->PDMACTL |= (QSPI_PDMACTL_TXPDMAEN_Msk | QSPI_PDMACTL_RXPDMAEN_Msk) )
+
+/**
   * @brief      Disable RX PDMA transfer.
   * @param[in]  qspi The pointer of the specified QSPI module.
   * @return     None.
   * @details    Clear RXPDMAEN bit of QSPI_PDMACTL register to disable RX PDMA transfer function.
   */
-#define QSPI_DISABLE_RX_PDMA(qspi) ( (qspi)->PDMACTL &= ~QSPI_PDMACTL_RXPDMAEN_Msk )
+#define QSPI_DISABLE_RX_PDMA(qspi)   ( (qspi)->PDMACTL &= ~QSPI_PDMACTL_RXPDMAEN_Msk )
 
 /**
   * @brief      Disable TX PDMA transfer.
@@ -186,7 +195,15 @@ extern "C"
   * @return     None.
   * @details    Clear TXPDMAEN bit of QSPI_PDMACTL register to disable TX PDMA transfer function.
   */
-#define QSPI_DISABLE_TX_PDMA(qspi) ( (qspi)->PDMACTL &= ~QSPI_PDMACTL_TXPDMAEN_Msk )
+#define QSPI_DISABLE_TX_PDMA(qspi)   ( (qspi)->PDMACTL &= ~QSPI_PDMACTL_TXPDMAEN_Msk )
+
+/**
+  * @brief      Disable TX and RX PDMA transfer.
+  * @param[in]  qspi The pointer of the specified QSPI module.
+  * @return     None.
+  * @details    Clear TXPDMAEN bit and RXPDMAEN bit of QSPI_PDMACTL register to disable TX and RX PDMA transfer function.
+  */
+#define QSPI_DISABLE_TX_RX_PDMA(qspi)   ( (qspi)->PDMACTL &= ~(QSPI_PDMACTL_TXPDMAEN_Msk | QSPI_PDMACTL_RXPDMAEN_Msk) )
 
 /**
   * @brief      Get the count of available data in RX FIFO.
@@ -332,8 +349,6 @@ extern "C"
   */
 #define QSPI_DISABLE(qspi)   ( (qspi)->CTL &= ~QSPI_CTL_SPIEN_Msk )
 
-
-
 /* Function prototype declaration */
 uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock);
 void QSPI_Close(QSPI_T *qspi);
@@ -363,4 +378,4 @@ uint32_t QSPI_GetStatus(QSPI_T *qspi, uint32_t u32Mask);
 
 #endif /* __QSPI_H__ */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

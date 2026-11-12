@@ -30,7 +30,6 @@
 */
 
 #include "cascoda_btn.h"
-#include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_time.h"
@@ -94,7 +93,7 @@ ca_error Btn_RegisterButtonInput(uint8_t ledBtn)
 	struct gpio_input_args args;
 	args.mpin     = registeredPinMappings[ledBtn];
 	args.pullup   = MODULE_PIN_PULLUP_OFF;
-	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_OFF;
 	args.irq      = MODULE_PIN_IRQ_OFF;
 
 	/* Register the pin */
@@ -116,7 +115,7 @@ ca_error Btn_RegisterButtonIRQInput(uint8_t ledBtn)
 	struct gpio_input_args args;
 	args.mpin     = registeredPinMappings[ledBtn];
 	args.pullup   = MODULE_PIN_PULLUP_OFF;
-	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_OFF;
 	args.irq      = MODULE_PIN_IRQ_FALL;
 	args.callback = btn_isr;
 
@@ -140,7 +139,7 @@ ca_error Btn_RegisterSharedButtonLED(uint8_t ledBtn)
 	struct gpio_input_args args;
 	args.mpin     = registeredPinMappings[ledBtn];
 	args.pullup   = MODULE_PIN_PULLUP_OFF;
-	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_OFF;
 	args.irq      = MODULE_PIN_IRQ_OFF;
 
 	/* Register the pin */
@@ -162,7 +161,7 @@ ca_error Btn_RegisterSharedIRQButtonLED(uint8_t ledBtn)
 	struct gpio_input_args args;
 	args.mpin     = registeredPinMappings[ledBtn];
 	args.pullup   = MODULE_PIN_PULLUP_OFF;
-	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_OFF;
 	args.irq      = MODULE_PIN_IRQ_FALL;
 	args.callback = btn_isr;
 
@@ -424,9 +423,10 @@ bool Btn_CanSleep(void)
 }
 
 /* Sleep / Powerdown */
-ca_error Btn_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev *pDeviceRef)
+ca_error Btn_Sleep(enum wakeup_mode keep_radio_off_on_wakeup, uint32_t aSleepTime, struct ca821x_dev *pDeviceRef)
 {
 	uint8_t pdmode;
+	uint8_t status = CA_ERROR_SUCCESS;
 
 	if (SleepPermanently)
 		pdmode = PDM_DPD_MCU_ONLY;
@@ -435,7 +435,7 @@ ca_error Btn_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev *pDeviceRef)
 	else
 		pdmode = PDM_POWEROFF;
 
-	EVBME_PowerDown(pdmode, aSleepTime, pDeviceRef);
+	status = EVBME_PowerDown(pdmode, keep_radio_off_on_wakeup, aSleepTime, pDeviceRef);
 
-	return CA_ERROR_SUCCESS;
+	return status;
 }

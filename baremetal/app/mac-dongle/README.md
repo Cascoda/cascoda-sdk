@@ -3,7 +3,7 @@
 mac-dongle is a simple binary that allows a Cascoda Chili platform to be used as an IEEE 802.15.4 MAC dongle. The Chili simply passes through the cascoda API commands to the CA-821x transceiver.
 
 The application uses USB HID or UART for host communications. This is compatible with many of the 'posix' example applications
-and Cascoda's Wing Commander GUI.
+and Cascoda's Wing Commander GUI. NOTE: For the best reliability, connect the device directly to your PC instead of to a USB hub.
 
 The 'MAC' acronym has several relevant meanings in the Cascoda SDK, so to clarify - 'MAC' in this case stands for the IEEE 802.15.4 'Message Access Control' layer.
 

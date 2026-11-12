@@ -6,6 +6,8 @@ if (MSVC)
 	message(FATAL_ERROR "Building with the Microsoft Visual C/C++ compiler is not supported. Please set up MinGW as shown here: https://github.com/Cascoda/cascoda-sdk/blob/master/docs/dev/development-setup.md#windows")
 endif()
 
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5" OFF CACHE STRING "")
+
 # Include helper functions
 include(etc/cascoda.cmake)
 include(etc/options.cmake)

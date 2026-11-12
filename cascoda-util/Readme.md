@@ -6,3 +6,4 @@ This folder contains various utilities that are not directly related to the CA-8
 - crypto random number generation
 - tasklets, for scheduling simple events into the future
 - simple time interface, for getting the time since application start
+- persistent storage API

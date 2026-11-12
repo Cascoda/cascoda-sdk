@@ -99,7 +99,9 @@ static void ACTUATOR_UARTInit(void)
 	CLK_EnableModuleClock(UART1_MODULE);
 
 	/* Initialise UART */
+	SYS_UnlockReg();
 	SYS_ResetModule(UART1_RST);
+	SYS_LockReg();
 	UART_SetLineConfig(UART1, ACTUATOR_UART_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
 	UART_Open(UART1, ACTUATOR_UART_BAUDRATE);
 

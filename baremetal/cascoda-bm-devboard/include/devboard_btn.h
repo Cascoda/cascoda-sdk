@@ -61,7 +61,7 @@ typedef enum dvbd_led_btn
 #define DVBD_SetButtonHoldCallback Btn_SetButtonHoldCallback
 #define DVBD_PollButtons Btn_PollButtons
 #define DVBD_CanSleep Btn_CanSleep
-#define DVBD_DevboardSleep Btn_DevboardSleep
+#define DVBD_Sleep Btn_Sleep
 
 /**
  * \brief Register LED output (open drain)

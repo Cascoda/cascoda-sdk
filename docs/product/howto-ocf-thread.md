@@ -53,7 +53,7 @@ The OCF applications mentioned in [Step 3](#step-3---creating-ocf-applications-o
 - First, gather the necessary hardware, as pictured below (ignore the USB to Ethernet dongle, it isn't needed for the purposes of this guide):
     - A Cascoda Chili 2D module - This is where the OCF application/server will run.
     - A micro USB to USB cable - This makes it possible to connect the module to a PC.
-    - A Cascoda Hub - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server. [Here](../dev/hub-router-setup.md) is a guide on how to set up a Router and form a Thread network.
+    - A Cascoda Hub - This will form a Thread network, and provide a way for OCF Device Spy to communicate to the OCF server.
     
 <p align="center"><img src="imgs/hardware-min.jpg" width="600"></p>
 

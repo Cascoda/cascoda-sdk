@@ -853,8 +853,8 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		 * then it is likely a SOM has been missed and a packet has been lost.
 		 */
 		ca_log_warn("No SOM, got 0x%02x", info->rx_buf[0]);
-		memmove(info->rx_buf, info->rx_buf + 1, info->offset);
 		info->offset -= 1;
+		memmove(info->rx_buf, info->rx_buf + 1, info->offset);
 	}
 
 	// If an incomplete packet has been received, hold off returning it up until the full
@@ -867,8 +867,8 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		len = framelen - 1;
 		memcpy(buf, cmdid, len);
 		// If extra data has been received, shuffle about
-		memmove(info->rx_buf, info->rx_buf + framelen, (info->offset - framelen));
 		info->offset -= framelen;
+		memmove(info->rx_buf, info->rx_buf + framelen, info->offset);
 
 		//Send ACK
 		if (buf[0] != EVBME_RXRDY && send_uart_ack(pDeviceRef, true) != CA_ERROR_SUCCESS)

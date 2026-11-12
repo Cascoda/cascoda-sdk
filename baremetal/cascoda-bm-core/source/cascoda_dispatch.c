@@ -64,7 +64,7 @@ static bool             isCacheFlushFixActive = false;
 static bool             isScanInProgress      = false;
 
 static uint8_t currentChannel = 18;
-static int8_t  currentTxPower = 9;
+static int8_t  currentTxPower = MAX_TXPOWER;
 
 static void DispatchFromCa821x(struct MAC_Message *aMessage, struct ca821x_dev *pDeviceRef);
 
@@ -205,9 +205,10 @@ static void ApplyCacheFlushFix(struct ca821x_dev *pDeviceRef)
 	isCacheFlushFixActive = true;
 	MLME_GET_request_sync(macRxOnWhenIdle, 0, &len, &rxOnOld, pDeviceRef);
 	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxOnNew, pDeviceRef);
-	WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 15, NULL, pDeviceRef);
+	WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 15, pDeviceRef);
 	CachePurge(true, pDeviceRef);
 	MLME_RESET_request_sync(0, pDeviceRef);
+	TDME_ReconfigurePIB(0, pDeviceRef);
 	MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxOnOld, pDeviceRef);
 	isCacheFlushFixActive = false;
 
@@ -233,7 +234,7 @@ static inline void ApplyPCPSHotFix(struct PCPS_DATA_request_pset *aPset, struct 
 		//TODO: Disabling receiver is not necessary in PCPS-only receive mode
 		MLME_GET_request_sync(macRxOnWhenIdle, 0, &len, &isPCPSRxOn, pDeviceRef);
 		MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxOnNew, pDeviceRef);
-		WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 5, NULL, pDeviceRef);
+		WAIT_Callback(SPI_HWME_WAKEUP_INDICATION, 5, pDeviceRef);
 		//Disable txSM by forcing state to 0xFF
 		HWME_SET_request_sync(0x88, 3, data1, pDeviceRef);
 		HWME_SET_request_sync(0x8A, 3, data2, pDeviceRef);
@@ -588,4 +589,17 @@ ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef)
 		DISPATCH_ReadCA821x(pDeviceRef);
 
 	return CA_ERROR_SUCCESS;
+}
+
+ca_mac_status DISPATCH_SetCurrentTxPower(struct ca821x_dev *pDeviceRef)
+{
+	uint8_t val;
+
+	/* channel 26 Tx power limitation */
+	if ((currentChannel == 26) && (currentTxPower > MAX_TXPOWER_CH26))
+		val = MAX_TXPOWER_CH26;
+	else
+		val = (uint8_t)currentTxPower;
+
+	return TDME_SetTxPower(val, pDeviceRef);
 }

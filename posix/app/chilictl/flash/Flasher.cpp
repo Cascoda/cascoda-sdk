@@ -798,10 +798,10 @@ void Flasher::configure_size_and_addresses()
 		{
 			if (mOtaBootFilePresent)
 			{
-				mAppMaxFileSize = 0x70000; //448KiB
-				mAppStartAddr   = 0x10000;
+				mAppMaxFileSize = 0x78000; //480KiB
+				mAppStartAddr   = 0x8000;
 
-				mOtaBootMaxFileSize = 0x10000; //64kiB
+				mOtaBootMaxFileSize = 0x8000; //32kiB
 				mOtaBootStartAddr   = 0;
 			}
 			else

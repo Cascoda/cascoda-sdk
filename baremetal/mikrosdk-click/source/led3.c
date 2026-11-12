@@ -96,18 +96,24 @@ uint8_t MIKROSDK_LED3_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
 	uint8_t tx_buf[3];
 
-	if ((red < RED_MIN) || (red > RED_MAX))
+	if (red < RED_MIN)
 		tx_buf[TX_BUF_RED] = RED_MIN;
+	else if (red > RED_MAX)
+		tx_buf[TX_BUF_RED] = RED_MAX;
 	else
 		tx_buf[TX_BUF_RED] = red;
 
-	if ((green < GREEN_MIN) || (green > GREEN_MAX))
+	if (green < GREEN_MIN)
 		tx_buf[TX_BUF_GREEN] = GREEN_MIN;
+	else if (green > GREEN_MAX)
+		tx_buf[TX_BUF_GREEN] = GREEN_MAX;
 	else
 		tx_buf[TX_BUF_GREEN] = green;
 
-	if ((blue < BLUE_MIN) || (blue > BLUE_MAX))
+	if (blue < BLUE_MIN)
 		tx_buf[TX_BUF_BLUE] = BLUE_MIN;
+	else if (blue > BLUE_MAX)
+		tx_buf[TX_BUF_BLUE] = BLUE_MAX;
 	else
 		tx_buf[TX_BUF_BLUE] = blue;
 

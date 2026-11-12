@@ -28,8 +28,11 @@
 /*
  * Cascoda Interface to Vendor BSP/Library Support Package.
  * MCU:    Nuvoton M2351
- * MODULE: Chili 2.0 (and NuMaker-PFM-M2351 Development Board)
- * External Flash Functions for Winbond W25Q80DLSNIG, see cascoda-bm/cascoda_interface.h for descriptions
+ * External Flash Functions for the follwing devices:
+ * - Winbond  W25Q80DVSNIG
+ * - Macronix MX25R8035FM1IL0
+ * The device type is checked and selected during startup.
+ * see cascoda-bm/cascoda_interface.h for descriptions.
 */
 
 /* System */
@@ -52,21 +55,26 @@
 /* External flash chip base address (corresponds to address 0x000000 on the flash chip) */
 #define EXTERNAL_FLASH_BASE 0xB0000000
 
+/* Device type / id */
+#define DEV_W25Q80DVSNIG    0x13
+#define DEV_MX25R8035FM1IL0 0x14
+
 /* SPI Instructions */
-#define WRITE_ENABLE 0x06
-#define WRITE_DISABLE 0x04
+#define WRITE_ENABLE           0x06
+#define WRITE_DISABLE          0x04
 #define READ_STATUS_REGISTER_1 0x05
-#define PAGE_PROGRAM 0x02
-#define SECTOR_ERASE_4KB 0x20
-#define BLOCK_ERASE_32KB 0x52
-#define BLOCK_ERASE_64KB 0xD8
-#define CHIP_ERASE 0xC7
-#define POWER_DOWN 0xB9
-#define READ_DATA 0x03
-#define RELEASE_POWERDOWN_ID 0xAB
+#define PAGE_PROGRAM           0x02
+#define SECTOR_ERASE_4KB       0x20
+#define BLOCK_ERASE_32KB       0x52
+#define BLOCK_ERASE_64KB       0xD8
+#define CHIP_ERASE             0xC7
+#define POWER_DOWN             0xB9
+#define READ_DATA              0x03
+#define RELEASE_POWERDOWN_ID   0xAB
+
 /* Dummy/Don't care bytes */
-#define DUMMY_BYTE 0xFF     //Transmit this byte wherever it says to transmit a dummy byte in the datasheet
-#define DONT_CARE_BYTE 0x00 //Transmit this byte while expecting to receive something from the external flash
+#define DUMMY_BYTE     0xFF // Transmit this byte wherever it says to transmit a dummy byte in the datasheet
+#define DONT_CARE_BYTE 0x00 // Transmit this byte while expecting to receive something from the external flash
 
 /* Length of an instruction in bytes */
 #define INSTRUCTION_BYTE_LENGTH 1
@@ -89,19 +97,31 @@
 /* Read Data maximum receive buffer length */
 #define READ_DATA_MAX_RX_LEN PAGE_PROGRAM_MAX_TX_LEN
 
-/* Timing requirements in milliseconds (see W25Q80DLSNIG datasheet for more detail) */
-#define T_PP 4     // Page Program Time, in milliseconds
-#define T_SE 300   // Sector Erase Time (4KB), in milliseconds
-#define T_CE 6000  // Chip Erase Time, in milliseconds
-#define T_BE1 800  // Block Erase Time (32KB), in milliseconds
-#define T_BE2 1000 // Block Erase Time (64KB), in milliseconds
-#define T_DP 4     // /CS High to Power-down Mode, in microseconds
-#define T_RES1 4   // /CS High to Standby Mode without ID Read, in microseconds
+/* Timing requirements in milliseconds (see datasheets for more detail) */
+/* timings for W25Q80DVSNIG */
+#define T_PP_W25Q80DVSNIG          4 // Page Program Time, in milliseconds
+#define T_SE_W25Q80DVSNIG        300 // Sector Erase Time (4KB), in milliseconds
+#define T_CE_W25Q80DVSNIG       6000 // Chip Erase Time, in milliseconds
+#define T_BE1_W25Q80DVSNIG       800 // Block Erase Time (32KB), in milliseconds
+#define T_BE2_W25Q80DVSNIG      1000 // Block Erase Time (64KB), in milliseconds
+#define T_DP_W25Q80DVSNIG          4 // /CS High to Power-down Mode, in microseconds
+#define T_RES1_W25Q80DVSNIG        4 // /CS High to Standby Mode without ID Read, in microseconds - Windbond only
+/* timings for MX25R8035FM1IL0 */
+#define T_PP_MX25R8035FM1IL0      10 // Page Program Time, in milliseconds
+#define T_SE_MX25R8035FM1IL0     240 // Sector Erase Time (4KB), in milliseconds
+#define T_CE_MX25R8035FM1IL0   30000 // Chip Erase Time, in milliseconds
+#define T_BE1_MX25R8035FM1IL0   1750 // Block Erase Time (32KB), in milliseconds
+#define T_BE2_MX25R8035FM1IL0   3500 // Block Erase Time (64KB), in milliseconds
+#define T_DP_MX25R8035FM1IL0      10 // /CS High to Power-down Mode, in microseconds
+#define T_RDP_MX25R8035FM1IL0     35 // /CS High to Standby Mode in microseconds - Macronix only
 
 /* Info about this external flash chip */
 const struct ExternalFlashInfo BSP_ExternalFlashInfo = {EXTERNAL_FLASH_BASE,
                                                         PAGE_PROGRAM_MAX_BYTES_ACTUAL,
                                                         NUM_OF_BYTES_IN_A_PAGE};
+
+/* device type */
+static uint8_t DeviceType = DEV_W25Q80DVSNIG;
 
 /* SPI receive buffer */
 static uint8_t rxbuf[READ_DATA_MAX_RX_LEN];
@@ -210,7 +230,7 @@ static ca_error external_flash_schedule(void *_notused)
  * Callback function that is used to call the "ExternalFlashCallback" "nextCallbackToRun",
  * which is set in BSP_ExternalFlashScheduleCallback().
  *
- * This function is scheduled within the driver functions (W25Q80DLSNIG_*()) which
+ * This function is scheduled within the driver functions (FLASHDEV_*()) which
  * cause the external flash chip to enter an internal cycle, for example during a page program
  * or chip erase. This is to ensure that the next instruction from the higher layer
  * doesn't happen while the external chip is in the middle of a cycle.
@@ -248,7 +268,7 @@ static ca_error handlePostInstructionWaiting(void *_notused)
 /**
  * Set the /CS high, which deselects the external flash chip.
 */
-static void W25Q80DLSNIG_CSHigh()
+static void FLASHDEV_CSHigh()
 {
 	// Chip not selected
 	EXTERNAL_SPI_FLASH_CS_PVAL = 1;
@@ -259,10 +279,10 @@ static void W25Q80DLSNIG_CSHigh()
  * This function deselects the external flash chip and sets up the SPI to be used
  * for communication with the RF chip.
 */
-static void W25Q80DLSNIG_SPIComplete()
+static void FLASHDEV_SPIComplete()
 {
 	// End access to the external flash
-	W25Q80DLSNIG_CSHigh();
+	FLASHDEV_CSHigh();
 
 	// Change the SPI mode to 2
 	SPI_Close(SPI1);
@@ -281,9 +301,9 @@ static void W25Q80DLSNIG_SPIComplete()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    Aborted early, SPI is currently being used to communicate with the RF chip.
 */
-static ca_error W25Q80DLSNIG_CSLow()
+static ca_error FLASHDEV_CSLow()
 {
-	if (SPI_SetExternallyInUseStatus(true, &W25Q80DLSNIG_SPIComplete))
+	if (SPI_SetExternallyInUseStatus(true, &FLASHDEV_SPIComplete))
 		return CA_ERROR_BUSY;
 
 	spiInProgress = true;
@@ -310,10 +330,10 @@ static ca_error W25Q80DLSNIG_CSLow()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    Aborted early, SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_SendSPIInstruction(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
+static ca_error FLASHDEV_SendSPIInstruction(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
 {
 	//Select the chip
-	if (W25Q80DLSNIG_CSLow())
+	if (FLASHDEV_CSLow())
 		return CA_ERROR_BUSY;
 
 	BSP_SetSPIMOSIOutput();
@@ -340,13 +360,13 @@ static ca_error W25Q80DLSNIG_SendSPIInstruction(uint8_t *RxBuf, const uint8_t *T
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-ca_error W25Q80DLSNIG_WriteEnable()
+ca_error FLASHDEV_WriteEnable()
 {
 	uint8_t txbuf[1] = {WRITE_ENABLE};
 	uint8_t txbufLen = sizeof(txbuf);
 
 	//Send instruction
-	return W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	return FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 }
 
 /**
@@ -357,13 +377,13 @@ ca_error W25Q80DLSNIG_WriteEnable()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-ca_error W25Q80DLSNIG_WriteDisable()
+ca_error FLASHDEV_WriteDisable()
 {
 	uint8_t txbuf[1] = {WRITE_DISABLE};
 	uint8_t txbufLen = sizeof(txbuf);
 
 	//Send instruction
-	return W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	return FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 }
 
 /**
@@ -375,14 +395,14 @@ ca_error W25Q80DLSNIG_WriteDisable()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-ca_error W25Q80DLSNIG_ReadStatusRegister1(uint8_t *statusRegister1)
+ca_error FLASHDEV_ReadStatusRegister1(uint8_t *statusRegister1)
 {
 	uint8_t txbuf[2] = {READ_STATUS_REGISTER_1, DONT_CARE_BYTE};
 	uint8_t txbufLen = sizeof(txbuf);
 	uint8_t rxbufLen = txbufLen;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
 
 	*statusRegister1 = rxbuf[1];
 
@@ -401,7 +421,7 @@ ca_error W25Q80DLSNIG_ReadStatusRegister1(uint8_t *statusRegister1)
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_ReadData(uint32_t startAddress, uint8_t numOfBytes, uint8_t *rxData)
+static ca_error FLASHDEV_ReadData(uint32_t startAddress, uint8_t numOfBytes, uint8_t *rxData)
 {
 	uint8_t txbuf[READ_DATA_MAX_RX_LEN] = {DONT_CARE_BYTE};
 
@@ -419,7 +439,7 @@ static ca_error W25Q80DLSNIG_ReadData(uint32_t startAddress, uint8_t numOfBytes,
 	uint8_t rxbufLen = txbufLen;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
 
 	memcpy(rxData, &rxbuf[4], numOfBytes);
 
@@ -444,9 +464,10 @@ static ca_error W25Q80DLSNIG_ReadData(uint32_t startAddress, uint8_t numOfBytes,
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_PageProgram(uint32_t startAddress, uint8_t numOfBytes, uint8_t *programData)
+static ca_error FLASHDEV_PageProgram(uint32_t startAddress, uint8_t numOfBytes, uint8_t *programData)
 {
 	uint8_t txbuf[PAGE_PROGRAM_MAX_TX_LEN];
+	uint32_t t_pp;
 
 	uint8_t addressByte1 = startAddress >> 16;
 	uint8_t addressByte2 = (startAddress >> 8) & 0xFF;
@@ -461,11 +482,16 @@ static ca_error W25Q80DLSNIG_PageProgram(uint32_t startAddress, uint8_t numOfByt
 	uint8_t txbufLen = numOfBytes + INSTRUCTION_BYTE_LENGTH + ADDRESS_BYTE_LENGTH;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
 	cycleInProgress = true;
 
-	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, T_PP, NULL);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_pp = T_PP_MX25R8035FM1IL0;
+	else
+		t_pp = T_PP_W25Q80DVSNIG;
+
+	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, t_pp, NULL);
 
 	return status;
 }
@@ -477,17 +503,23 @@ static ca_error W25Q80DLSNIG_PageProgram(uint32_t startAddress, uint8_t numOfByt
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_ChipErase()
+static ca_error FLASHDEV_ChipErase()
 {
 	uint8_t txbuf[1] = {CHIP_ERASE};
 	uint8_t txbufLen = sizeof(txbuf);
+	uint32_t t_ce;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
 	cycleInProgress = true;
 
-	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, T_CE, NULL);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_ce = T_CE_MX25R8035FM1IL0;
+	else
+		t_ce = T_CE_W25Q80DVSNIG;
+
+	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, t_ce, NULL);
 
 	return status;
 }
@@ -501,9 +533,10 @@ static ca_error W25Q80DLSNIG_ChipErase()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_SectorErase(uint32_t sectorAddress)
+static ca_error FLASHDEV_SectorErase(uint32_t sectorAddress)
 {
 	uint8_t txbuf[4];
+	uint32_t t_se;
 
 	uint8_t addressByte1 = sectorAddress >> 16;
 	uint8_t addressByte2 = (sectorAddress >> 8) & 0xFF;
@@ -516,11 +549,16 @@ static ca_error W25Q80DLSNIG_SectorErase(uint32_t sectorAddress)
 	uint8_t txbufLen = sizeof(txbuf);
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_se = T_SE_MX25R8035FM1IL0;
+	else
+		t_se = T_SE_W25Q80DVSNIG;
 
 	cycleInProgress = true;
 
-	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, T_SE, NULL);
+	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, t_se, NULL);
 
 	return status;
 }
@@ -534,9 +572,10 @@ static ca_error W25Q80DLSNIG_SectorErase(uint32_t sectorAddress)
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_BlockErase32KB(uint32_t blockAddress)
+static ca_error FLASHDEV_BlockErase32KB(uint32_t blockAddress)
 {
 	uint8_t txbuf[4];
+	uint32_t t_be1;
 
 	uint8_t addressByte1 = blockAddress >> 16;
 	uint8_t addressByte2 = (blockAddress >> 8) & 0xFF;
@@ -549,11 +588,16 @@ static ca_error W25Q80DLSNIG_BlockErase32KB(uint32_t blockAddress)
 	uint8_t txbufLen = sizeof(txbuf);
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
 	cycleInProgress = true;
 
-	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, T_BE1, NULL);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_be1 = T_BE1_MX25R8035FM1IL0;
+	else
+		t_be1 = T_BE1_W25Q80DVSNIG;
+
+	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, t_be1, NULL);
 
 	return status;
 }
@@ -567,9 +611,10 @@ static ca_error W25Q80DLSNIG_BlockErase32KB(uint32_t blockAddress)
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_BlockErase64KB(uint32_t blockAddress)
+static ca_error FLASHDEV_BlockErase64KB(uint32_t blockAddress)
 {
 	uint8_t txbuf[4];
+	uint32_t t_be2;
 
 	uint8_t addressByte1 = blockAddress >> 16;
 	uint8_t addressByte2 = (blockAddress >> 8) & 0xFF;
@@ -582,11 +627,16 @@ static ca_error W25Q80DLSNIG_BlockErase64KB(uint32_t blockAddress)
 	uint8_t txbufLen = sizeof(txbuf);
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
 	cycleInProgress = true;
 
-	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, T_BE2, NULL);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_be2 = T_BE2_MX25R8035FM1IL0;
+	else
+		t_be2 = T_BE2_W25Q80DVSNIG;
+
+	TASKLET_ScheduleDelta(&postInstructionWaitTasklet, t_be2, NULL);
 
 	return status;
 }
@@ -600,15 +650,21 @@ static ca_error W25Q80DLSNIG_BlockErase64KB(uint32_t blockAddress)
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-ca_error W25Q80DLSNIG_PowerDown()
+ca_error FLASHDEV_PowerDown()
 {
 	uint8_t txbuf[1] = {POWER_DOWN};
 	uint8_t txbufLen = sizeof(txbuf);
+	uint32_t t_dp;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
-	BSP_WaitUs(T_DP);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+		t_dp = T_DP_MX25R8035FM1IL0;
+	else
+		t_dp = T_DP_W25Q80DVSNIG;
+
+	BSP_WaitUs(t_dp);
 
 	return status;
 }
@@ -622,14 +678,14 @@ ca_error W25Q80DLSNIG_PowerDown()
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-static ca_error W25Q80DLSNIG_GetDeviceId(uint8_t *id)
+static ca_error FLASHDEV_GetDeviceId(uint8_t *id)
 {
 	uint8_t txbuf[5] = {RELEASE_POWERDOWN_ID, DUMMY_BYTE, DUMMY_BYTE, DUMMY_BYTE, DONT_CARE_BYTE};
 	uint8_t txbufLen = sizeof(txbuf);
 	uint8_t rxbufLen = txbufLen;
 
 	//Send instruction
-	ca_error status = W25Q80DLSNIG_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
+	ca_error status = FLASHDEV_SendSPIInstruction(rxbuf, txbuf, rxbufLen, txbufLen);
 
 	*id = rxbuf[4];
 
@@ -645,17 +701,29 @@ static ca_error W25Q80DLSNIG_GetDeviceId(uint8_t *id)
  * @retval CA_ERROR_SUCCESS Success.
  * @retval CA_ERROR_BUSY    SPI is currently being used to communicate with the RF chip.
  */
-ca_error W25Q80DLSNIG_ReleasePowerDown(void)
+ca_error FLASHDEV_ReleasePowerDown(void)
 {
-	ca_error status;
+	ca_error status = CA_ERROR_SUCCESS;
 
-	uint8_t txbuf[1] = {RELEASE_POWERDOWN_ID};
-	uint8_t txbufLen = sizeof(txbuf);
+	if(DeviceType == DEV_MX25R8035FM1IL0)
+	{
+		/* wakeup for Macronix MX25R8035FM1IL0 */
+		EXTERNAL_SPI_FLASH_CS_PVAL = 0;
+		BSP_WaitUs(2); /* minimum time */
+		EXTERNAL_SPI_FLASH_CS_PVAL = 1;
+		BSP_WaitUs(T_RDP_MX25R8035FM1IL0);
+	}
+	else
+	{
+		/* wakeup for Winbond W25Q80DVSNIG */
+		uint8_t txbuf[1] = {RELEASE_POWERDOWN_ID};
+		uint8_t txbufLen = sizeof(txbuf);
 
-	//Send instruction
-	status = W25Q80DLSNIG_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
+		/* Send instruction */
+		status = FLASHDEV_SendSPIInstruction(NULL, txbuf, 0, txbufLen);
 
-	BSP_WaitUs(T_RES1);
+		BSP_WaitUs(T_RES1_W25Q80DVSNIG);
+	}
 
 	return status;
 }
@@ -665,14 +733,44 @@ ca_error W25Q80DLSNIG_ReleasePowerDown(void)
  *---------------------------------------------------------------------------*/
 void BSP_ExternalFlashInit(void)
 {
-	ca_log_note("External Flash initialised.");
+	ca_error status;
+	uint8_t dev_id = 0;
+
 	TASKLET_Init(&postInstructionWaitTasklet, &handlePostInstructionWaiting);
 	TASKLET_Init(&callbackSchedulingTasklet, &external_flash_schedule);
 
-	W25Q80DLSNIG_CSHigh();
+	/* note that wakeup for both device types has to be executed */
+	/* as after system reset device could be in power-down mode */
+
+	/* wakeup for Macronix MX25R8035FM1IL0 */
+	EXTERNAL_SPI_FLASH_CS_PVAL = 0;
+	BSP_WaitUs(2); /* minimum time */
+	EXTERNAL_SPI_FLASH_CS_PVAL = 1;
+	BSP_WaitUs(T_RDP_MX25R8035FM1IL0);
+
+	status = FLASHDEV_GetDeviceId(&dev_id);
+	BSP_WaitUs(T_RES1_W25Q80DVSNIG);
+
+	if(status)
+		ca_log_crit("Failed to read External Flash ID");
+
+	if(dev_id == DEV_W25Q80DVSNIG)
+		DeviceType = DEV_W25Q80DVSNIG;
+	else if(dev_id == DEV_MX25R8035FM1IL0)
+		DeviceType = DEV_MX25R8035FM1IL0;
+	else
+	{
+		ca_log_crit("Invalid External Flash Device ID (0x%02X).", dev_id);
+		status = CA_ERROR_FAIL;
+	}
+
+	if(!status)
+		ca_log_note("External Flash (%s) initialised.",
+			((DeviceType == DEV_MX25R8035FM1IL0)? "MX25R8035FM1IL0" : "W25Q80DVSNIG"));
+
 	memset(rxbuf, 0xFF, sizeof(rxbuf));
 
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 }
 
@@ -688,13 +786,13 @@ ca_error BSP_ExternalFlashProgram(uint32_t aStartAddress, uint8_t aNumOfBytes, u
 	    pageOverflow(aStartAddress, aNumOfBytes))
 		return CA_ERROR_INVALID_ARGS;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_WriteEnable() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_WriteEnable() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PageProgram(aStartAddress, aNumOfBytes, aTxData) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PageProgram(aStartAddress, aNumOfBytes, aTxData) != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	isCalledWithinCallback = false;
@@ -713,11 +811,11 @@ ca_error BSP_ExternalFlashReadData(uint32_t aStartAddress, uint8_t aNumOfBytes, 
 	if ((int)aStartAddress > (0x100000 - aNumOfBytes) || aNumOfBytes == 0 || aNumOfBytes > READ_DATA_MAX_BYTES_ACTUAL)
 		return CA_ERROR_INVALID_ARGS;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_ReadData(aStartAddress, aNumOfBytes, aRxData) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReadData(aStartAddress, aNumOfBytes, aRxData) != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	isCalledWithinCallback = false;
@@ -736,23 +834,23 @@ ca_error BSP_ExternalFlashPartialErase(ExternalFlashPartialEraseType aEraseType,
 	if (aAddress > 0xFFFFF)
 		return CA_ERROR_INVALID_ARGS;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
 
-	while (W25Q80DLSNIG_WriteEnable() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_WriteEnable() != CA_ERROR_SUCCESS)
 		;
 
 	if (aEraseType == SECTOR_4KB)
-		while (W25Q80DLSNIG_SectorErase(aAddress) != CA_ERROR_SUCCESS)
+		while (FLASHDEV_SectorErase(aAddress) != CA_ERROR_SUCCESS)
 			;
 	else if (aEraseType == BLOCK_32KB)
-		while (W25Q80DLSNIG_BlockErase32KB(aAddress) != CA_ERROR_SUCCESS)
+		while (FLASHDEV_BlockErase32KB(aAddress) != CA_ERROR_SUCCESS)
 			;
 	else if (aEraseType == BLOCK_64KB)
-		while (W25Q80DLSNIG_BlockErase64KB(aAddress) != CA_ERROR_SUCCESS)
+		while (FLASHDEV_BlockErase64KB(aAddress) != CA_ERROR_SUCCESS)
 			;
 
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	isCalledWithinCallback = false;
@@ -768,13 +866,13 @@ ca_error BSP_ExternalFlashChipErase(void)
 	if (!isCalledWithinCallback)
 		return CA_ERROR_NO_ACCESS;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_WriteEnable() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_WriteEnable() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_ChipErase() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ChipErase() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	isCalledWithinCallback = false;
@@ -790,9 +888,11 @@ ca_error BSP_ExternalFlashGetDeviceId(uint8_t *aId)
 	if (!isCalledWithinCallback)
 		return CA_ERROR_NO_ACCESS;
 
-	while (W25Q80DLSNIG_GetDeviceId(aId) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_GetDeviceId(aId) != CA_ERROR_SUCCESS)
+		;
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 	isCalledWithinCallback = false;
 
@@ -809,11 +909,11 @@ ca_error BSP_ExternalFlashGetStatus(struct ExternalFlashStatus *status)
 
 	uint8_t statusRegister;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_ReadStatusRegister1(&statusRegister) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReadStatusRegister1(&statusRegister) != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	status->writeEnabled = (statusRegister & WEL_mask) >> WEL_pos;
@@ -841,7 +941,7 @@ ca_error BSP_ExternalFlashScheduleCallback(ExternalFlashCallback aCallback, void
 	callbackContext   = aContext;
 
 	if (!cycleInProgress)
-		return TASKLET_ScheduleDelta(&callbackSchedulingTasklet, 0, NULL);
+		return TASKLET_ScheduleDelta(&callbackSchedulingTasklet, 1, NULL);
 	else
 		return CA_ERROR_BUSY;
 

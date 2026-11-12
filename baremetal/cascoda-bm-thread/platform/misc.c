@@ -32,6 +32,7 @@
 #include "openthread/dataset.h"
 #include "openthread/joiner.h"
 #include "openthread/link.h"
+#include "openthread/logging.h"
 #include "openthread/platform/misc.h"
 #include "openthread/platform/radio.h"
 #include "openthread/platform/settings.h"
@@ -79,7 +80,7 @@ void otPlatWakeHost(void)
 otError PlatformSleep(uint32_t aSleepTime)
 {
 	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
-	EVBME_PowerDown(PDM_POWEROFF, aSleepTime, pDeviceRef);
+	EVBME_PowerDown(PDM_POWEROFF, WUP_WAKEUP_ALL, aSleepTime, pDeviceRef);
 	return OT_ERROR_NONE;
 }
 
@@ -99,6 +100,14 @@ bool PlatformCanSleep(otInstance *aInstance)
 	if (!(deviceRole == OT_DEVICE_ROLE_CHILD || deviceRole == OT_DEVICE_ROLE_DETACHED))
 		return false;
 	if (PlatformIsExpectingIndication())
+		return false;
+
+	// Additional check to get the actual RxOnWhenIdle status from the mac
+	uint8_t mac_RxOnWhenIdle;
+	uint8_t attlen;
+	struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
+	MLME_GET_request_sync(macRxOnWhenIdle, 0, &attlen, &mac_RxOnWhenIdle, pDeviceRef);
+	if (mac_RxOnWhenIdle != 0)
 		return false;
 
 	return true;
@@ -428,6 +437,7 @@ void HardFault_Handler();
 
 void otPlatAssertFail(const char *aFilename, int aLineNumber)
 {
+	otLogCritPlat("Assert failed at %s:%d", aFilename, aLineNumber);
 	HardFault_Handler();
 }
 

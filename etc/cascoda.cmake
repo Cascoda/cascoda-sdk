@@ -12,7 +12,7 @@ macro(cascoda_print_sizes a_target)
 endmacro()
 
 # Helper function to generate a binary file for baremetal targets
-macro(cascoda_make_binary a_target a_include_condition)
+macro(cascoda_make_binary_tz a_target a_include_condition)
 	set(cascoda_made_binary $<TARGET_FILE_DIR:${a_target}>/${a_target}.bin)
 	if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc AND CMAKE_OBJCOPY)
 		add_custom_command(TARGET ${a_target} POST_BUILD
@@ -28,6 +28,11 @@ macro(cascoda_make_binary a_target a_include_condition)
 		set_target_properties(${a_target} PROPERTIES EXCLUDE_FROM_ALL ON)
 	endif()
 	unset(cascoda_made_binary)
+endmacro()
+
+
+macro(cascoda_make_binary a_target a_include_condition)
+	cascoda_make_binary_tz(${a_target} ${a_include_condition})
 endmacro()
 
 # Helper function to enable compiler warnings and linting for a certain library
@@ -117,10 +122,11 @@ macro(cascoda_tz_secure target_in secure_linkerarg nonsecure_linkerarg)
 			-Wl,--cmse-implib,--out-implib,${IMPORT_LIB}
 			-Wl,${secure_linkerarg}
 	)
+
 	# We add a custom NOP command as POST_BUILD so that Ninja doesn't complain about not knowing about the implib
 	add_custom_command(TARGET ${target_in} POST_BUILD
-		COMMAND ":"
-		BYPRODUCTS ${IMPORT_LIB}
+			COMMAND ${CMAKE_COMMAND} -E true
+			BYPRODUCTS ${IMPORT_LIB}
 	)
 
 	# Create a new target for the import library. You must link this library with the nonsecure
@@ -134,13 +140,14 @@ macro(cascoda_tz_secure target_in secure_linkerarg nonsecure_linkerarg)
 	unset(IMPORT_LIB)
 endmacro()
 
+
+
 # Helper macro to build with csme args
 # This doesn't create any implibs, so should only be used for sub-libs
 # which are included in the main libs. If any entry functions are included
 # then OBJECT libraries should be used, or else they won't be exported.
 macro(cascoda_tz_build target_in)
-	# O2 is enabled here as Os has fatal errors in code generation for csme entry functions (priv issue #259)
-	target_compile_options(${target_in} PUBLIC -mcmse -O2)
+	target_compile_options(${target_in} PUBLIC -mcmse)
 	target_link_options(${target_in} PUBLIC -mcmse)
 endmacro()
 
@@ -159,6 +166,14 @@ function(cascoda_configure_memory target_in stack_size heap_size)
 	target_sources(${target_in} PRIVATE ${CASCODA_STARTUP_ASM})
 	target_compile_definitions(${target_in} PRIVATE ${CASCODA_STACK_SIZE}=${stack_size})
 	target_compile_definitions(${target_in} PRIVATE ${CASCODA_HEAP_SIZE}=${heap_size})
+endfunction()
+
+# Helper function to change the SPI buffer RX FIFO configuration for a given application.
+# This allows individual applications to have tweaked SPI Rx Fifo buffers
+function(cascoda_configure_spi_bufs target_in spi_rx_fifo_size spi_rx_fifo_resv)
+    target_sources(${target_in} PRIVATE ${CASCODA_CORE_SPI})
+	target_compile_definitions(${target_in} PRIVATE SPI_RX_FIFO_SIZE=${spi_rx_fifo_size})
+	target_compile_definitions(${target_in} PRIVATE SPI_RX_FIFO_RESV=${spi_rx_fifo_resv})
 endfunction()
 
 file(WRITE "${CMAKE_BINARY_DIR}/longtests.csv.in" "")

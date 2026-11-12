@@ -196,14 +196,18 @@ enum sensorif_i2c_status SENSORIF_I2C_Write(u8_t slaveaddr, u8_t *pdata, u32_t *
 	u32_t                    inlen;
 	u8_t                     control0  = I2C_CTL_STO_SI;
 	u32_t                    starttime = 0;
+	u32_t                    starttime1 = 0;
 
 	inlen = *plen;
 	*plen = 0;
 	BSP_WaitUs(10);
 	I2C_START(SENSORIF_I2CIF); /* send START bit */
 
+	starttime1 = BSP_ReadAbsoluteTime();
 	while (transferring)
 	{
+		BSP_ResetOnLoopStuck(starttime1);
+
 		/* wait until bus is ready */
 		starttime = BSP_ReadAbsoluteTime();
 		while (!(SENSORIF_I2CIF->CTL0 & I2C_CTL0_SI_Msk))
@@ -260,14 +264,18 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	u32_t                    inlen;
 	u8_t                     control0;
 	u32_t                    starttime = 0;
+	u32_t                    starttime1 = 0;
 
 	inlen = *plen;
 	*plen = 0;
 	BSP_WaitUs(10);
 	I2C_START(SENSORIF_I2CIF); /* send START bit */
 
+	starttime1 = BSP_ReadAbsoluteTime();
 	while (transferring)
 	{
+		BSP_ResetOnLoopStuck(starttime1);
+
 		/* wait until bus is ready */
 		starttime = BSP_ReadAbsoluteTime();
 		while (!(SENSORIF_I2CIF->CTL0 & I2C_CTL0_SI_Msk))
@@ -330,8 +338,121 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	return status;
 }
 
+enum sensorif_i2c_status SENSORIF_I2C_WriteThenRead(u8_t slaveaddr, u8_t *pwrdata, u32_t *pwrlen, u8_t *prddata, u32_t *prdlen)
+{
+	u8_t                     transferring = 1;
+	enum sensorif_i2c_status status;
+	u32_t                    inlen;
+	u32_t                    outlen;
+	u8_t                     control0  = I2C_CTL_STO_SI;
+	u32_t                    starttime = 0;
+	u32_t                    starttime1 = 0;
+
+	/* Note: Function is using repeat start (without stop) condition between write and read  */
+	/*       This is required for some (register-based) slaves but does not work for others */
+
+	outlen = *pwrlen;
+	*pwrlen = 0;
+	inlen = *prdlen;
+	*prdlen = 0;
+	BSP_WaitUs(10);
+	I2C_START(SENSORIF_I2CIF); /* send START bit */
+
+	starttime1 = BSP_ReadAbsoluteTime();
+	while (transferring)
+	{
+		BSP_ResetOnLoopStuck(starttime1);
+
+		/* wait until bus is ready */
+		starttime = BSP_ReadAbsoluteTime();
+		while (!(SENSORIF_I2CIF->CTL0 & I2C_CTL0_SI_Msk))
+		{
+			if ((BSP_ReadAbsoluteTime() - starttime) > SENSORIF_I2C_TIMEOUT)
+				return (SENSORIF_I2C_ST_TIMEOUT);
+		}
+
+		status = (enum sensorif_i2c_status)I2C_GET_STATUS(SENSORIF_I2CIF);
+
+		switch (status)
+		{
+		case SENSORIF_I2C_ST_START: /* start: write SLA+W */
+			I2C_SET_DATA(SENSORIF_I2CIF, (u8_t)(0x00 + (slaveaddr << 1)));
+			control0 = I2C_CTL_SI;
+			break;
+		case SENSORIF_I2C_ST_TX_AD_ACK: /* slave has ACKed */
+		case SENSORIF_I2C_ST_TX_DT_ACK:
+			if (*pwrlen < outlen) /* write data */
+			{
+				I2C_SET_DATA(SENSORIF_I2CIF, pwrdata[(*pwrlen)++]);
+			}
+			else /* EOF write transfer: send repeat START */
+			{
+				control0     = I2C_CTL_STA_SI;
+			}
+			break;
+
+		case SENSORIF_I2C_ST_RSTART: /* start: write SLA+RD */
+			I2C_SET_DATA(SENSORIF_I2CIF, (u8_t)(0x01 + (slaveaddr << 1)));
+			control0 = I2C_CTL_SI;
+			break;
+		case SENSORIF_I2C_ST_RX_AD_ACK: /* slave has ACKed SLA+RD */
+			if (inlen > 1)
+			{
+				control0 = I2C_CTL_SI_AA; /* set ACK */
+			}
+			else
+			{
+				control0 = I2C_CTL_SI; /* clear ACK as only one byte will be read */
+			}
+			break;
+		case SENSORIF_I2C_ST_RX_AD_NACK:   /* slave has NACKed SLA+RD */
+			control0     = I2C_CTL_STO_SI; /* send STOP */
+			transferring = 0;
+			break;
+		case SENSORIF_I2C_ST_RX_DT_ACK: /* read data */
+			prddata[(*prdlen)++] = (u8_t)I2C_GET_DATA(SENSORIF_I2CIF);
+			if (*prdlen < (inlen - 1))
+			{
+				control0 = I2C_CTL_SI_AA; /* set ACK */
+			}
+			else
+			{
+				control0 = I2C_CTL_SI; /* clear ACK */
+			}
+			break;
+
+		case SENSORIF_I2C_ST_RX_DT_NACK: /* read last data */
+			prddata[(*prdlen)++] = (u8_t)I2C_GET_DATA(SENSORIF_I2CIF);
+			control0         = I2C_CTL_STO_SI; /* send STOP */
+			transferring     = 0;
+			status           = SENSORIF_I2C_ST_SUCCESS;
+			break;
+		case SENSORIF_I2C_ST_TX_AD_NACK: /* slave has NACKed */
+		case SENSORIF_I2C_ST_TX_DT_NACK:
+			control0     = I2C_CTL_STO_SI; /* send STOP */
+			transferring = 0;
+			break;
+		case SENSORIF_I2C_ST_BUS_ERROR_RAW:
+			status = SENSORIF_I2C_ST_BUS_ERROR; /* re-map bus error status */
+			                                    // Fall through
+		case SENSORIF_I2C_ST_ARB_LOST:          /* error or unknown status */
+		default:
+			control0     = I2C_CTL_STO_SI; /* send STOP */
+			transferring = 0;
+			break;
+		}
+		I2C_SET_CONTROL_REG(SENSORIF_I2CIF, control0);
+	}
+
+	return status;
+}
+
 ca_error SENSORIF_SPI_Write(u8_t out_data)
 {
+    if (!SENSORIF_SPIIF) {
+        return CA_ERROR_INVALID_STATE;
+    }
+
 	if (!SPI_GET_TX_FIFO_FULL_FLAG(SENSORIF_SPIIF))
 	{
 		SPI_WRITE_TX(SENSORIF_SPIIF, out_data);

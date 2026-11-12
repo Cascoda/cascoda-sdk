@@ -893,6 +893,16 @@ ca_mac_status HWME_GET_request_sync(uint8_t            HWAttribute,
 
 	if (Response.PData.HWMEGetCnf.Status == MAC_SUCCESS)
 	{
+#if CASCODA_CA_VER == 8211
+		/* 8211 MAC: length not set correctly */
+		if((HWAttribute == HWME_MAXDIRECTS) ||
+		   (HWAttribute == HWME_MAXINDIRECTS) ||
+		   (HWAttribute == HWME_IMAGINARYINDIRECT))
+		{
+			Response.PData.HWMEGetCnf.HWAttributeLength = 1;
+		}
+#endif // CASCODA_CA_VER == 8211
+
 		*HWAttributeLength = Response.PData.HWMEGetCnf.HWAttributeLength;
 		memcpy(pHWAttributeValue, Response.PData.HWMEGetCnf.HWAttributeValue, *HWAttributeLength);
 	}
@@ -1140,30 +1150,6 @@ ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 		return (ca_mac_status)(status);
 	if ((status = TDME_SETSFR_request_sync(1, 0xD1, 0x5A, pDeviceRef))) // Preamble Threshold High
 		return (ca_mac_status)(status);
-	if ((status = TDME_SETSFR_request_sync(0, 0xFE, 0x3F, pDeviceRef))) // Tx Output Power 8 dBm
-		return (ca_mac_status)(status);
-
-	// Set the Clear Channel Assessment mode to OR - CCA fails if either the
-	// channel Carrier Sense or Energy Detect levels are too high
-	uint8_t mlme_attribute = 0x00;
-	if ((status = MLME_SET_request_sync(phyCCAMode, 0, 1, &mlme_attribute, pDeviceRef)))
-		return (ca_mac_status)(status);
-
-#if CASCODA_CA_VER <= 8211
-	// Set the maximum number of retries to the largest possible value - seven under the CA8210 & CA8211
-	mlme_attribute = 7;
-	if ((status = MLME_SET_request_sync(macMaxFrameRetries, 0, 1, &mlme_attribute, pDeviceRef)))
-		return (ca_mac_status)(status);
-#else
-		//TODO: Set macMaxFrameRetries to 15 once support for that is implemented in the MAC
-#endif
-
-#if CASCODA_CA_VER == 8210
-	/* Set hardware lqi limit to 0 to disable lqi-based frame filtering */
-	uint8_t lqi_limit = 0;
-	if ((status = HWME_SET_request_sync(HWME_LQILIMIT, 1, &lqi_limit, pDeviceRef)))
-		return (ca_mac_status)(status);
-#endif // CASCODA_CA_VER == 8210
 
 #if CASCODA_CA_VER >= 8212
 	/* Set the LO TX calibration values for the ca8212 */
@@ -1183,6 +1169,24 @@ ca_mac_status TDME_ChipInit(struct ca821x_dev *pDeviceRef)
 
 ca_mac_status TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef)
 {
+#if CASCODA_CA_VER >= 8212
+	uint8_t lotxcal_overwrite_mode;
+	uint8_t len;
+    uint8_t status;
+
+	if ((status = HWME_GET_request_sync(HWME_LOTXCALOVERWRITEMODE, &len, &lotxcal_overwrite_mode, pDeviceRef)))
+    {
+        return (ca_mac_status)(status);
+    }
+
+    // If LOTXCAL is not in overwrite mode, we do NOT want to change the calibration
+    // value when changing channels.
+    if (lotxcal_overwrite_mode == 0)
+    {
+        return MAC_SUCCESS;
+    }
+#endif // CASCODA_CA_VER >= 8212
+
 	uint8_t txcalval;
 
 	if (channel >= 25)
@@ -1329,6 +1333,99 @@ ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeL
 	return (ca_mac_status)status;
 }
 
+ca_mac_status TDME_ReconfigurePIB(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef)
+{
+	uint8_t status = MAC_SUCCESS;
+	uint8_t attribute;
+
+#if(PIB_NEW_PHY_CCAMODE != PIB_DEF_PHY_CCAMODE)
+	attribute = PIB_NEW_PHY_CCAMODE;
+	if ((status = MLME_SET_request_sync(phyCCAMode, 0, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+	if(SetDefaultPIB)
+	{
+
+#if(PIB_NEW_MAC_MAXFRAMERETRIES != PIB_DEF_MAC_MAXFRAMERETRIES)
+	attribute = PIB_NEW_MAC_MAXFRAMERETRIES;
+	if ((status = MLME_SET_request_sync(macMaxFrameRetries, 0, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_MAC_MAXCSMABACKOFFS != PIB_DEF_MAC_MAXCSMABACKOFFS)
+	attribute = PIB_NEW_MAC_MAXCSMABACKOFFS;
+	if ((status = MLME_SET_request_sync(macMaxCSMABackoffs, 0, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_MAC_MINBE != PIB_DEF_MAC_MINBE)
+	attribute = PIB_NEW_MAC_MINBE;
+	if ((status = MLME_SET_request_sync(macMinBE, 0, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_MAC_MAXBE != PIB_DEF_MAC_MAXBE)
+	attribute = PIB_NEW_MAC_MAXBE;
+	if ((status = MLME_SET_request_sync(macMaxBE, 0, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_HWME_LQILIMIT != PIB_DEF_HWME_LQILIMIT)
+	attribute = PIB_NEW_HWME_LQILIMIT;
+	if ((status = HWME_SET_request_sync(HWME_LQILIMIT, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_HWME_LQIMODE != PIB_DEF_HWME_LQIMODE)
+	attribute = PIB_NEW_HWME_LQIMODE;
+	if ((status = HWME_SET_request_sync(HWME_LQIMODE, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_HWME_EDTHRESHOLD != PIB_DEF_HWME_EDTHRESHOLD)
+	attribute = PIB_NEW_HWME_EDTHRESHOLD;
+	if ((status = HWME_SET_request_sync(HWME_EDTHRESHOLD, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_HWME_CSTHRESHOLD != PIB_DEF_HWME_CSTHRESHOLD)
+	attribute = PIB_NEW_HWME_CSTHRESHOLD;
+	if ((status = HWME_SET_request_sync(HWME_CSTHRESHOLD, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if CASCODA_CA_VER >= 8211
+
+#if(PIB_NEW_HWME_MAXINDIRECTS != PIB_DEF_HWME_MAXINDIRECTS)
+	attribute = PIB_NEW_HWME_MAXINDIRECTS;
+	if ((status = HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#if(PIB_NEW_HWME_POLLINDMODE != PIB_DEF_HWME_POLLINDMODE)
+	attribute = PIB_NEW_HWME_POLLINDMODE;
+	if ((status = HWME_SET_request_sync(HWME_POLLINDMODE, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#endif // CASCODA_CA_VER >= 8211
+
+#if CASCODA_CA_VER >= 8212
+
+#if(PIB_NEW_HWME_LOTXCALOVERWRITEMODE != PIB_DEF_HWME_LOTXCALOVERWRITEMODE)
+	attribute = PIB_NEW_HWME_LOTXCALOVERWRITEMODE;
+	if ((status = HWME_SET_request_sync(HWME_LOTXCALOVERWRITEMODE, 1, &attribute, pDeviceRef)))
+		return (ca_mac_status)(status);
+#endif
+
+#endif // CASCODA_CA_VER >= 8212
+
+	}
+
+	return (ca_mac_status)status;
+}
+
 uint8_t TDME_tx_dbm_to_paib(int8_t txpdbm)
 {
 	uint8_t paib;
@@ -1337,7 +1434,7 @@ uint8_t TDME_tx_dbm_to_paib(int8_t txpdbm)
 	if (txpdbm > 8)
 		paib = 0x3F;
 	else if (txpdbm == 8)
-		paib = 0x32;
+		paib = 0x35;
 	else if (txpdbm == 7)
 		paib = 0x22;
 	else if (txpdbm == 6)
@@ -1366,7 +1463,7 @@ int8_t TDME_tx_paib_to_dbm(uint8_t paib)
 
 	if (paib >= 0x3F)
 		txpdbm = 9;
-	else if (paib >= 0x32)
+	else if (paib >= 0x35)
 		txpdbm = 8;
 	else if (paib >= 0x22)
 		txpdbm = 7;
@@ -1653,173 +1750,4 @@ union ca821x_api_callback *ca821x_get_callback(uint8_t cmdid, struct ca821x_dev 
 	}
 
 	return rval;
-}
-
-#if CASCODA_MAC_BLACKLIST != 0
-
-static uint8_t blacklist_must_filter(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
-{
-	struct FullAddr src;
-	size_t          address_len;
-	src.AddressMode = MAC_MODE_NO_ADDR;
-
-	switch (msg->CommandId)
-	{
-	case SPI_MCPS_DATA_INDICATION:
-		src = msg->PData.DataInd.Src;
-		break;
-	case SPI_MLME_ASSOCIATE_INDICATION:
-		src.AddressMode = MAC_MODE_LONG_ADDR;
-		memcpy(src.Address, msg->PData.AssocInd.DeviceAddress, sizeof(src.Address));
-		break;
-	case SPI_MLME_BEACON_NOTIFY_INDICATION:
-		src = msg->PData.BeaconInd.PanDescriptor.Coord;
-		break;
-	case SPI_MLME_COMM_STATUS_INDICATION:
-		src.AddressMode = msg->PData.CommStatusInd.SrcAddrMode;
-		memcpy(src.Address, msg->PData.CommStatusInd.SrcAddr, sizeof(src.Address));
-		break;
-	case SPI_MLME_DISASSOCIATE_INDICATION:
-		src.AddressMode = MAC_MODE_LONG_ADDR;
-		memcpy(src.Address, msg->PData.DisassocInd.DevAddr, sizeof(src.Address));
-		break;
-	case SPI_MLME_ORPHAN_INDICATION:
-		src.AddressMode = MAC_MODE_LONG_ADDR;
-		memcpy(src.Address, msg->PData.OrphanInd.OrphanAddr, sizeof(src.Address));
-		break;
-#if CASCODA_CA_VER >= 8211
-	case SPI_MLME_POLL_INDICATION:
-		src = msg->PData.PollInd.Src;
-		break;
-#endif // CASCODA_CA_VER >= 8211
-#if CASCODA_CA_VER >= 8212
-	case SPI_MLME_IE_NOTIFY_INDICATION:
-		src = msg->Pdata.NotifyInd.Src;
-		break;
-#endif // CASCODA_CA_VER >= 8212
-	}
-
-	if (src.AddressMode == MAC_MODE_SHORT_ADDR)
-		address_len = 2;
-	else if (src.AddressMode == MAC_MODE_LONG_ADDR)
-		address_len = 8;
-	else
-		address_len = 0;
-
-	if (address_len)
-	{
-		for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
-		{
-			if ((pDeviceRef->blacklist[i].AddressMode == src.AddressMode &&
-			     (memcmp(src.Address, pDeviceRef->blacklist[i].Address, address_len) == 0)))
-			{
-				return 1;
-			}
-		}
-	}
-	return 0;
-}
-#endif
-
-ca_error ca821x_upstream_dispatch(struct MAC_Message *msg, struct ca821x_dev *pDeviceRef)
-{
-	ca_error ret = CA_ERROR_NOT_HANDLED;
-
-	union ca821x_api_callback *rval = ca821x_get_callback(msg->CommandId, pDeviceRef);
-
-	if (!rval) //Unrecognised command ID
-	{
-		ret = CA_ERROR_INVALID_ARGS;
-#if CASCODA_CA_VER >= 8212
-		//TODO: Temporary for CA-8212 development
-		if (pDeviceRef->callbacks.generic_dispatch)
-			ret = pDeviceRef->callbacks.generic_dispatch(msg, pDeviceRef);
-#endif // CASCODA_CA_VER >= 8212
-		goto exit;
-	}
-
-	/* call appropriate checks/updates/workarounds */
-#if CASCODA_CA_VER == 8210
-	switch (msg->CommandId)
-	{
-	case SPI_MCPS_DATA_INDICATION:
-		ret = check_data_ind_destaddr(&msg->PData.DataInd, pDeviceRef);
-		if (ret)
-		{
-			goto exit;
-		}
-		break;
-	case SPI_MLME_SCAN_CONFIRM:
-		verify_scancnf_results(msg, pDeviceRef);
-		break;
-	case SPI_MLME_ASSOCIATE_CONFIRM:
-		get_assoccnf_shortaddr(&msg->PData.AssocCnf, pDeviceRef);
-		break;
-	}
-#endif // CASCODA_CA_VER == 8210
-
-#if CASCODA_MAC_BLACKLIST != 0
-	if (blacklist_must_filter(msg, pDeviceRef))
-	{
-		ret = CA_ERROR_SUCCESS;
-		goto exit;
-	}
-#endif // CASCODA_MAC_BLACKLIST
-
-	//If there is a callback registered, call it. Otherwise (or if not handled), call the generic dispatch.
-	ret = CA_ERROR_NOT_HANDLED;
-	if (rval->generic_callback)
-	{
-		ret = rval->generic_callback(msg->PData.Payload, pDeviceRef);
-	}
-	if (ret == CA_ERROR_NOT_HANDLED && pDeviceRef->callbacks.generic_dispatch)
-	{
-		ret = pDeviceRef->callbacks.generic_dispatch(msg, pDeviceRef);
-	}
-
-exit:
-	return ret;
-}
-
-ca_error BLACKLIST_Add(struct MacAddr *pAddress, struct ca821x_dev *pDeviceRef)
-{
-#if CASCODA_MAC_BLACKLIST != 0
-	ca_error ret;
-	if (pAddress->AddressMode != MAC_MODE_LONG_ADDR && pAddress->AddressMode != MAC_MODE_SHORT_ADDR)
-	{
-		ret = CA_ERROR_INVALID_ARGS;
-		goto exit;
-	}
-
-	ret = CA_ERROR_NO_BUFFER;
-	for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
-	{
-		if (pDeviceRef->blacklist[i].AddressMode == MAC_MODE_NO_ADDR)
-		{
-			pDeviceRef->blacklist[i].AddressMode = pAddress->AddressMode;
-			memcpy(pDeviceRef->blacklist[i].Address, pAddress->Address, 8);
-			ret = CA_ERROR_SUCCESS;
-			goto exit;
-		}
-	}
-
-exit:
-	return ret;
-#else
-	(void)pAddress;
-	(void)pDeviceRef;
-	return CA_ERROR_FAIL;
-#endif
-}
-
-void BLACKLIST_Clear(struct ca821x_dev *pDeviceRef)
-{
-#if CASCODA_MAC_BLACKLIST != 0
-	for (uint8_t i = 0; i < CASCODA_MAC_BLACKLIST; ++i)
-	{
-		pDeviceRef->blacklist[i].AddressMode = MAC_MODE_NO_ADDR;
-	}
-#else
-	(void)pDeviceRef;
-#endif
 }

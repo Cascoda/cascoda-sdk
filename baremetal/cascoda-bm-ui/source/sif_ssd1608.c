@@ -65,7 +65,7 @@
 #define TERMINATE_FRAME_READ_WRITE 0xFF
 
 /* flag to avoid re-entry into display update functions when not waiting for busy */
-bool sif_ssd1608_display_is_busy = false;
+volatile bool sif_ssd1608_display_is_busy = false;
 
 /***************************************************************************/
 /* Look Up Table values copied from the example code provided by WaveShare */
@@ -93,7 +93,13 @@ static void SIF_SSD1608_SendCommand(uint8_t command_byte)
 	BSP_ModuleSetGPIOPin(SIF_SSD1608_DC_PIN, 0);
 	do
 	{
-		error = SENSORIF_SPI_Write(command_byte);
+        if ((error = SENSORIF_SPI_Write(command_byte)) == CA_ERROR_INVALID_STATE) 
+        {
+            // If we are in an invalid state, do a system reset, otherwise
+            // risk of being stuck in an infinite loop.
+            BSP_SystemReset(SYSRESET_APROM);
+            break; // Shouldn't get here
+        }
 	} while (error != CA_ERROR_SUCCESS);
 }
 
@@ -109,7 +115,13 @@ static void SIF_SSD1608_SendData(uint8_t data_byte)
 	BSP_ModuleSetGPIOPin(SIF_SSD1608_DC_PIN, 1);
 	do
 	{
-		error = SENSORIF_SPI_Write(data_byte);
+		if ((error = SENSORIF_SPI_Write(data_byte)) == CA_ERROR_INVALID_STATE) 
+        {
+            // If we are in an invalid state, do a system reset, otherwise
+            // risk of being stuck in an infinite loop.
+            BSP_SystemReset(SYSRESET_APROM);
+            break; // Shouldn't get here
+        }
 	} while (error != CA_ERROR_SUCCESS);
 }
 
@@ -701,17 +713,15 @@ ca_error SIF_SSD1608_PowerDown(void *aContext)
 {
 	ca_error status;
 
-	/* unprotect entry */
-	sif_ssd1608_display_is_busy = false;
-
 	/* check that display update is actually done and wait if not */
 	status = SIF_SSD1608_WaitUntilIdle();
-	if (status)
-		return status;
 
 	/* deep sleep and de-initialisation */
 	SIF_SSD1608_DeepSleep();
 	SIF_SSD1608_Deinitialise();
+
+	/* unprotect entry */
+	sif_ssd1608_display_is_busy = false;
 
 	return CA_ERROR_SUCCESS;
 }

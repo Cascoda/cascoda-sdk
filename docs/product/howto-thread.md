@@ -59,8 +59,6 @@ The KNX IoT Hub Web GUI is accessible via Ethernet or WiFi, though by default th
 
 Note that the Web GUI is only accessible via the Ethernet port marked "PoE LAN1". If you need to access it from "WAN / LAN2", you must create a rule in the firewall that allows access to the router from that port - this is outside the scope of this guide. 
 
-For more information about the Hub router, see the [Setup Guide.](../dev/hub-router-setup.md)
-
 ## Step 3 - Form the Network
 
 Form a network by following the [network formation guide.](../dev/thread-network-formation.md)

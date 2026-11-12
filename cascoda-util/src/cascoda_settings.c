@@ -97,17 +97,27 @@
 		goto exit;          \
 	} while (0)
 
+// Used in this file for some speed optimizations
+static const uint16_t OC_SETTINGS_KEY = 0xe107;
+
+// All flags here are "active low" - bits are unset when the flag is set
 enum
 {
-	kBlockAddBeginFlag    = 0x1,
+	// A write has started in this block. Block is not valid until kBlockAddCompleteFlag
+	// is also set, to avoid flash corruption on power loss.
+	kBlockAddBeginFlag = 0x1,
+	// A write has finished in this block, and the data in the block is valid
 	kBlockAddCompleteFlag = 0x02,
-	kBlockDeleteFlag      = 0x04,
-	kBlockIndex0Flag      = 0x08,
+	// The block has been deleted. It is ignored on read & will be garbage collected.
+	kBlockDeleteFlag = 0x04,
+	// All blocks _before_ a block with this flag are invalid, and should be treated
+	// as if they were deleted. Ignored for OC_SETTINGS_KEY, to allow constant-time write
+	// and faster (but still quadratic time) garbage collection.
+	kBlockIndex0Flag = 0x08,
 };
 
 enum
 {
-	// Should this not be sizeof(settingsBlock)?
 	kSettingsFlagSize      = 4,
 	kSettingsBlockDataSize = 511,
 
@@ -135,6 +145,27 @@ struct settingsBlock
 #endif // SETTINGS_CONFIG_BASE_ADDRESS
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+// cache of the address of the most recently used item
+// drastically speeds up iterating through all indices
+// for SettingsRead actions ( O(n^2) becomes O(n) for
+// in order iteration )
+static bool     cache_valid = false;
+static uint16_t cache_key;
+static int      cache_index;
+static uint32_t cache_address;
+
+static uint16_t last_write_address = 0;
+
+uint16_t caUtilSettingsGetLastWriteAddress(void)
+{
+	return last_write_address;
+}
+
+uint32_t caUtilSettingsGetLastReadAddress(void)
+{
+	return cache_address;
+}
 
 void BSP_GetFlashInfo(struct ca_flash_info *aFlashInfoOut);
 
@@ -166,7 +197,14 @@ static void initSettings(struct ca821x_dev *aInstance, uint32_t aBase, uint32_t 
 	setSettingsFlag(aInstance, aBase, aFlag);
 }
 
-static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
+static setting_moved_cb_t setting_moved_cb = NULL;
+
+void caUtilSettingsSetSettingMovedCb(setting_moved_cb_t aCb)
+{
+	setting_moved_cb = aCb;
+}
+
+uint32_t caUtilSettingsSwapSettingsBlock(struct ca821x_dev *aInstance)
 {
 	uint32_t             oldBase     = utilsFlashGetBaseAddress(aInstance);
 	uint32_t             swapAddress = oldBase;
@@ -186,6 +224,8 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 	utilsFlashSetUsedSize(aInstance, kSettingsFlagSize);
 	swapAddress += kSettingsFlagSize;
 
+	cache_valid = false;
+
 	while (swapAddress < (oldBase + usedSize))
 	{
 		struct settingsBlock new_block;
@@ -201,24 +241,33 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 			// Address points to the end of the current file
 			uint32_t address = swapAddress + getAlignLength(new_block.length);
 
-			while (address < (oldBase + usedSize))
+			// OC_SETTINGS_KEY blocks ignore the Index0 flag, as it is difficult to keep track
+			// of in constant time
+			if (new_block.key != OC_SETTINGS_KEY)
 			{
-				struct settingsBlock block;
-
-				// Read the settings at address
-				utilsFlashRead(aInstance, address, (uint8_t *)(&block), sizeof(block));
-
-				// Block is complete and not set to be deleted and is index0 and the correct key
-				if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag) &&
-				    !(block.flag & kBlockIndex0Flag) && (block.key == new_block.key))
+				while (address < (oldBase + usedSize))
 				{
-					// The block is invalid - go to the next one
-					valid = false;
-					break;
-				}
+					struct settingsBlock block;
 
-				// The block is valid - continue
-				address += (getAlignLength(block.length) + sizeof(struct settingsBlock));
+					// Read the settings at address
+					utilsFlashRead(aInstance, address, (uint8_t *)(&block), sizeof(block));
+
+					// Block is complete and not set to be deleted and is index0 and the correct key
+					if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag) &&
+					    !(block.flag & kBlockIndex0Flag) && (block.key == new_block.key))
+					{
+						// The block is invalid - go to the next one
+						valid = false;
+						break;
+					}
+
+					// The block is valid - continue
+					address += (getAlignLength(block.length) + sizeof(struct settingsBlock));
+				}
+			}
+			else
+			{
+				valid = true;
 			}
 
 			if (valid)
@@ -258,8 +307,8 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 
 					bytes_copied_so_far += amount_to_copy;
 				}
-				// Finished writing - update the settings used size
 
+				// Finished writing - update the settings used size
 				uint32_t used = utilsFlashGetUsedSize(aInstance);
 				used += (sizeof(struct settingsBlock) + getAlignLength(new_block.length));
 				utilsFlashSetUsedSize(aInstance, used);
@@ -277,6 +326,12 @@ static uint32_t swapSettingsBlock(struct ca821x_dev *aInstance)
 
 	setSettingsFlag(aInstance, utilsFlashGetBaseAddress(aInstance), (uint32_t)(kSettingsInUse));
 	setSettingsFlag(aInstance, oldBase, (uint32_t)(kSettingsNotUse));
+
+	// callback for when all settings have moved
+	if (setting_moved_cb)
+	{
+		setting_moved_cb();
+	}
 
 exit:
 	// Returns the amount of space left
@@ -318,7 +373,8 @@ static ca_error addSettingVector(struct ca821x_dev    *aInstance,
 	    settingsSize)
 	{
 		// There is no room - get a new block free of deleted entries.
-		otEXPECT_ACTION(swapSettingsBlock(aInstance) >= (getAlignLength(block.length) + sizeof(struct settingsBlock)),
+		otEXPECT_ACTION(caUtilSettingsSwapSettingsBlock(aInstance) >=
+		                    (getAlignLength(block.length) + sizeof(struct settingsBlock)),
 		                error = CA_ERROR_NO_BUFFER);
 	}
 
@@ -329,6 +385,7 @@ static ca_error addSettingVector(struct ca821x_dev    *aInstance,
 
 	uint32_t write_address =
 	    utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance) + sizeof(struct settingsBlock);
+	last_write_address = write_address - sizeof(struct settingsBlock);
 	for (size_t i = 0; i < aSettingCnt; ++i)
 	{
 		// buffers for holding padding bytes
@@ -380,6 +437,8 @@ void caUtilSettingsInit(struct ca821x_dev *aInstance, const char *aApplicationNa
 	utilsFlashSetBaseAddress(aInstance, SETTINGS_CONFIG_BASE_ADDRESS);
 
 	utilsFlashInit(aInstance, aApplicationName, aNodeId);
+
+	cache_valid = false;
 
 	for (index = 0; index < 2; index++)
 	{
@@ -455,9 +514,20 @@ static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
                                    uint32_t          *aAddress,
                                    uint16_t          *aValueLength)
 {
-	ca_error error   = CA_ERROR_NOT_FOUND;
-	uint32_t address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
-	int      index   = 0;
+	ca_error error = CA_ERROR_NOT_FOUND;
+	uint32_t address;
+	int      index;
+
+	if (cache_valid && aKey == cache_key && aIndex >= cache_index)
+	{
+		address = cache_address;
+		index   = cache_index;
+	}
+	else
+	{
+		address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
+		index   = 0;
+	}
 
 	while (address < (utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance)))
 	{
@@ -467,7 +537,7 @@ static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
 
 		if (block.key == aKey)
 		{
-			if (!(block.flag & kBlockIndex0Flag))
+			if (!(block.flag & kBlockIndex0Flag) && aKey != OC_SETTINGS_KEY)
 			{
 				index = 0;
 				error = CA_ERROR_NOT_FOUND;
@@ -477,9 +547,18 @@ static ca_error getRelativeAddress(struct ca821x_dev *aInstance,
 			{
 				if (index == aIndex)
 				{
+					cache_valid   = true;
+					cache_key     = aKey;
+					cache_address = address;
+					cache_index   = index;
+
 					*aAddress     = address + sizeof(struct settingsBlock);
 					*aValueLength = block.length;
 					error         = CA_ERROR_SUCCESS;
+
+					// Return early for OC_SETTINGS_KEY, no need to check index0 flag
+					if (aKey == OC_SETTINGS_KEY)
+						return error;
 				}
 
 				index++;
@@ -525,6 +604,59 @@ exit:
 	return error;
 }
 
+ca_error caUtilSettingsGetFromAddress(struct ca821x_dev *aInstance,
+                                      uint16_t           aKey,
+                                      uint16_t           aRelativeAddress,
+                                      uint8_t          **aValue,
+                                      uint16_t          *aValueLength)
+
+{
+	ca_error             error = CA_ERROR_NOT_FOUND;
+	struct settingsBlock block;
+	struct ca_flash_info flash_info;
+
+	utilsFlashRead(aInstance, aRelativeAddress, (uint8_t *)&block, sizeof(block));
+	BSP_GetFlashInfo(&flash_info);
+
+	if (block.key == aKey)
+	{
+		if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag))
+		{
+			*aValueLength = block.length;
+			*aValue =
+			    (void *)(intptr_t)(aRelativeAddress + sizeof(struct settingsBlock) + flash_info.dataFlashBaseAddr);
+			error = CA_ERROR_SUCCESS;
+		}
+	}
+
+	return error;
+}
+
+ca_error caUtilSettingsDeleteAtAddress(struct ca821x_dev *aInstance, uint16_t aKey, uint16_t aRelativeAddress)
+{
+	struct settingsBlock block;
+	struct ca_flash_info flash_info;
+
+	utilsFlashRead(aInstance, aRelativeAddress, (uint8_t *)&block, sizeof(block));
+	BSP_GetFlashInfo(&flash_info);
+
+	if (block.key == aKey)
+	{
+		if (!(block.flag & kBlockAddCompleteFlag) && (block.flag & kBlockDeleteFlag))
+		{
+			block.flag &= (~kBlockDeleteFlag);
+			utilsFlashWrite(aInstance, aRelativeAddress, (uint8_t *)&block, sizeof(block));
+			return CA_ERROR_SUCCESS;
+		}
+		else if (!(block.flag & kBlockDeleteFlag))
+		{
+			return CA_ERROR_ALREADY;
+		}
+	}
+
+	return CA_ERROR_NOT_FOUND;
+}
+
 ca_error caUtilSettingsGetAddress(struct ca821x_dev *aInstance,
                                   uint16_t           aKey,
                                   int                aIndex,
@@ -560,7 +692,15 @@ ca_error caUtilSettingsAdd(struct ca821x_dev *aInstance, uint16_t aKey, const ui
 	struct settingBuffer setting;
 
 	//Set index0 flag if we don't have any other elements with same key
-	index0         = (caUtilSettingsGet(aInstance, aKey, 0, NULL, &length) == CA_ERROR_NOT_FOUND ? true : false);
+	if (aKey == OC_SETTINGS_KEY)
+	{
+		ca_log_warn("Index0 flag is ignored for OC_SETTINGS_KEY! caUtilSettingsAdd will not erase previous entries.\n");
+		index0 = false;
+	}
+	else
+	{
+		index0 = (caUtilSettingsGet(aInstance, aKey, 0, NULL, &length) == CA_ERROR_NOT_FOUND ? true : false);
+	}
 	setting.value  = aValue;
 	setting.length = aValueLength;
 	return addSettingVector(aInstance, aKey, index0, &setting, 1);
@@ -574,15 +714,31 @@ ca_error caUtilSettingsAddVector(struct ca821x_dev    *aInstance,
 	uint16_t length;
 	bool     index0;
 
-	index0 = (caUtilSettingsGet(aInstance, aKey, 0, NULL, &length) == CA_ERROR_NOT_FOUND ? true : false);
+	// OC_SETTINGS_KEY entries do not use this, so insertion can be done in linear time
+	if (aKey == OC_SETTINGS_KEY)
+		index0 = false;
+	else
+		index0 = (caUtilSettingsGet(aInstance, aKey, 0, NULL, &length) == CA_ERROR_NOT_FOUND ? true : false);
+
 	return addSettingVector(aInstance, aKey, index0, aVector, aCount);
 }
 
 ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int aIndex)
 {
-	ca_error error   = CA_ERROR_NOT_FOUND;
-	uint32_t address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
-	int      index   = 0;
+	ca_error error = CA_ERROR_NOT_FOUND;
+	uint32_t address;
+	int      index;
+
+	if (cache_valid && aKey == cache_key && aIndex >= cache_index)
+	{
+		address = cache_address;
+		index   = cache_index;
+	}
+	else
+	{
+		address = utilsFlashGetBaseAddress(aInstance) + kSettingsFlagSize;
+		index   = 0;
+	}
 
 	while (address < (utilsFlashGetBaseAddress(aInstance) + utilsFlashGetUsedSize(aInstance)))
 	{
@@ -594,7 +750,7 @@ ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int a
 		if (block.key == aKey)
 		{
 			//If this block is marked as 0, set the index tracker to 0
-			if (!(block.flag & kBlockIndex0Flag))
+			if (!(block.flag & kBlockIndex0Flag) && aKey != OC_SETTINGS_KEY)
 			{
 				index = 0;
 				error = CA_ERROR_NOT_FOUND;
@@ -609,13 +765,17 @@ ca_error caUtilSettingsDelete(struct ca821x_dev *aInstance, uint16_t aKey, int a
 					error = CA_ERROR_SUCCESS;
 					block.flag &= (~kBlockDeleteFlag);
 					utilsFlashWrite(aInstance, address, (uint8_t *)(&block), sizeof(block));
+
+					if (index <= cache_index)
+						cache_valid = false;
 				}
 
 				//If the index is 1, and we wanted to delete 0, set the old 1 to the new 0 with the zero flag!
-				if (index == 1 && aIndex == 0)
+				if (index == 1 && aIndex == 0 && aKey != OC_SETTINGS_KEY)
 				{
 					block.flag &= (~kBlockIndex0Flag);
 					utilsFlashWrite(aInstance, address, (uint8_t *)(&block), sizeof(block));
+					cache_valid = false;
 				}
 
 				index++;

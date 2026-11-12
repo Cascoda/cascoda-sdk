@@ -188,7 +188,7 @@ static void get_next_frag(uint8_t *frag_out)
 void EP2_Handler(void) /* Interrupt IN handler */
 {
 	uint8_t *ptr;
-	ptr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP2));
+	ptr = (uint8_t *)(USBD_BUF_BASE + USBD_NOTZ_GET_EP_BUF_ADDR(EP2));
 
 	//If the buffer is waiting to be loaded, there is nothing to send.
 	if (gTxBuffer.isReady)
@@ -196,23 +196,23 @@ void EP2_Handler(void) /* Interrupt IN handler */
 
 	//We have not sent complete packet, load next fragment
 	get_next_frag(ptr);
-	USBD_SET_PAYLOAD_LEN(EP2, EP2_MAX_PKT_SIZE);
+	USBD_NOTZ_SET_PAYLOAD_LEN(EP2, EP2_MAX_PKT_SIZE);
 }
 
 void EP3_Handler(void) /* Interrupt OUT handler */
 {
 	uint8_t *ptr;
-	ptr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP3));
+	ptr = (uint8_t *)(USBD_BUF_BASE + USBD_NOTZ_GET_EP_BUF_ADDR(EP3));
 
 	//Unstall receive if we have not got complete packet
 	if (!assemble_frags(ptr))
-		USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
+		USBD_NOTZ_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 }
 
 void RxHandled(void)
 {
 	gRxBuffer.isReady = false;
-	USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
+	USBD_NOTZ_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 }
 
 void TxReady(void)
@@ -276,24 +276,24 @@ void HID_Init(void)
 	USBD->STBUFSEG = SETUP_BUF_BASE;
 	/*****************************************************/
 	/* EP0 ==> control IN endpoint, address 0 */
-	USBD_CONFIG_EP(EP0, USBD_CFG_CSTALL | USBD_CFG_EPMODE_IN | 0);
+	USBD_NOTZ_CONFIG_EP(EP0, USBD_CFG_CSTALL | USBD_CFG_EPMODE_IN | 0);
 	/* Buffer range for EP0 */
-	USBD_SET_EP_BUF_ADDR(EP0, EP0_BUF_BASE);
+	USBD_NOTZ_SET_EP_BUF_ADDR(EP0, EP0_BUF_BASE);
 	/* EP1 ==> control OUT endpoint, address 0 */
-	USBD_CONFIG_EP(EP1, USBD_CFG_CSTALL | USBD_CFG_EPMODE_OUT | 0);
+	USBD_NOTZ_CONFIG_EP(EP1, USBD_CFG_CSTALL | USBD_CFG_EPMODE_OUT | 0);
 	/* Buffer range for EP1 */
-	USBD_SET_EP_BUF_ADDR(EP1, EP1_BUF_BASE);
+	USBD_NOTZ_SET_EP_BUF_ADDR(EP1, EP1_BUF_BASE);
 	/*****************************************************/
 	/* EP2 ==> Interrupt IN endpoint, address 1 */
-	USBD_CONFIG_EP(EP2, USBD_CFG_EPMODE_IN | INT_IN_EP_NUM);
+	USBD_NOTZ_CONFIG_EP(EP2, USBD_CFG_EPMODE_IN | INT_IN_EP_NUM);
 	/* Buffer range for EP2 */
-	USBD_SET_EP_BUF_ADDR(EP2, EP2_BUF_BASE);
+	USBD_NOTZ_SET_EP_BUF_ADDR(EP2, EP2_BUF_BASE);
 	/* EP3 ==> Interrupt OUT endpoint, address 2 */
-	USBD_CONFIG_EP(EP3, USBD_CFG_EPMODE_OUT | INT_OUT_EP_NUM);
+	USBD_NOTZ_CONFIG_EP(EP3, USBD_CFG_EPMODE_OUT | INT_OUT_EP_NUM);
 	/* Buffer range for EP3 */
-	USBD_SET_EP_BUF_ADDR(EP3, EP3_BUF_BASE);
+	USBD_NOTZ_SET_EP_BUF_ADDR(EP3, EP3_BUF_BASE);
 	/* trigger to receive OUT data */
-	USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
+	USBD_NOTZ_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 
 	gTxBuffer.isReady = true;
 }

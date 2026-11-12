@@ -268,33 +268,8 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 	ca_mac_status error;
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
-
-	// Tx Power to max
-	uint8_t txPow = 8;
-	MLME_SET_request_sync(phyTransmitPower, 0, 1, &txPow, pDeviceRef);
-
-	// Enable poll indications when no data confirm is triggered.
-#if CASCODA_CA_VER >= 8211
-	uint8_t pollIndMode = 2;
-	HWME_SET_request_sync(HWME_POLLINDMODE, 1, &pollIndMode, pDeviceRef);
-#endif // CASCODA_CA_VER >= 8211
-
-	if (setDefaultPib)
-	{
-		//Disable low LQI rejection @ MAC Layer
-		uint8_t disable = 0;
-		HWME_SET_request_sync(0x11, 1, &disable, pDeviceRef);
-
-		//LQI values should be derived from receive energy
-		uint8_t LQImode = HWME_LQIMODE_ED;
-		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
-
-#if CASCODA_CA_VER >= 8211
-		//Increase the max indirect queue length to 8
-		uint8_t maxInd = 8;
-		HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &maxInd, pDeviceRef);
-#endif // CASCODA_CA_VER >= 8211
-	}
+	if(!error)
+		error = TDME_ReconfigurePIB(setDefaultPib, pDeviceRef);
 
 	return ConvertErrorMacToOt(error);
 }
@@ -587,7 +562,7 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 
 int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance)
 {
-	return -105;
+	return -95;
 }
 
 static ca_error driverErrorCallback(ca_error error, struct ca821x_dev *pDeviceRef)
@@ -694,9 +669,23 @@ int PlatformRadioInitWithDev(struct ca821x_dev *apDeviceRef)
 	return 0;
 }
 
+static ca_error handle_evbme_message(struct EVBME_Message *params, struct ca821x_dev *pDeviceRef)
+{
+	otPlatLog(OT_LOG_LEVEL_WARN, OT_LOG_REGION_MAC, "Chili: %.*s\r\n", params->mLen, params->EVBME.MESSAGE_indication.mMessage);
+	return CA_ERROR_SUCCESS;
+}
+
+static ca_error handle_dfu_command(struct EVBME_Message *params, struct ca821x_dev *pDeviceRef)
+{
+	if (params->EVBME.DFU_cmd.mDfuSubCmdId == DFU_REBOOT)
+	{
+		exit(-1);
+	}
+}
+
 int PlatformRadioInit(void)
 {
-	if (ca821x_util_init(&s_pDeviceRef, driverErrorCallback, (union ca821x_util_init_extra_arg){NULL}) ==
+	if (ca821x_util_init(&s_pDeviceRef, driverErrorCallback, (union ca821x_util_init_extra_arg){NULL}, false) ==
 	    CA_ERROR_NOT_FOUND)
 	{
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "No ca821x device found");
@@ -708,6 +697,9 @@ int PlatformRadioInit(void)
 		otPlatLog(OT_LOG_LEVEL_CRIT, OT_LOG_REGION_PLATFORM, "Failed radio initialisation");
 		return -1;
 	}
+
+	EVBME_GetCallbackStruct(&s_pDeviceRef)->EVBME_MESSAGE_indication = &handle_evbme_message;
+	EVBME_GetCallbackStruct(&s_pDeviceRef)->EVBME_DFU_cmd = &handle_dfu_command;
 
 	if (ca821x_util_start_upstream_dispatch_worker())
 	{
@@ -858,6 +850,12 @@ otError otPlatHwmeSet(otInstance *aInstance, uint8_t aAttr, uint8_t aLen, uint8_
 	otErr = ConvertErrorMacToOt(error);
 
 	return otErr;
+}
+
+otError otPlatPowerUpRadio(otInstance *aInstance)
+{
+	OT_UNUSED_VARIABLE(aInstance);
+	return OT_ERROR_NOT_IMPLEMENTED;
 }
 
 // EOF Cascoda low level cli access

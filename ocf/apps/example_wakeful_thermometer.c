@@ -82,11 +82,6 @@
 #include "port/oc_clock.h"
 #include "oc_api.h"
 
-// ~CascodaPrivStart (This is for autoremoval of this section in the release script)
-#if CASCODA_OTA_UPGRADE_ENABLED
-#include "ota_swu.h"
-#endif
-// ~CascodaPrivEnd (This ends the autoremoval section)
 
 #ifdef OC_CLOUD
 #include "oc_cloud.h"
@@ -135,11 +130,7 @@ volatile int quit = 0; /**< stop variable, used by handle_signal */
 
 otInstance *OT_INSTANCE;
 // Pin used by the relay, for the lamp demo
-#if CASCODA_OTA_UPGRADE_ENABLED // For_OTA
-#define RELAY_OUT_PIN 31        // For_OTA
-#else                           // For_OTA
 #define RELAY_OUT_PIN 15
-#endif // For_OTA
 
 /** End of Cascoda Additions */
 

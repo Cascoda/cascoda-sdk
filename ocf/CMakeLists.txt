@@ -242,4 +242,3 @@ endif()
 
 # Build instructions for Iotivity-Lite demo apps can be found here
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps)
-add_subdirectory(${PROJECT_SOURCE_DIR}/test)

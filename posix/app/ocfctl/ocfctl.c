@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	// Connect to the Chili
 	pDeviceRef = &sDeviceRef;
 
-	while (ca821x_util_init(pDeviceRef, NULL, ocfctl_arg))
+	while (ca821x_util_init(pDeviceRef, NULL, ocfctl_arg, false))
 	{
 		return -1;
 	}

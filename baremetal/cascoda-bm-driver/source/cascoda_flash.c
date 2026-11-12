@@ -115,7 +115,9 @@ uint32_t utilsFlashWrite(struct ca821x_dev *instance, uint32_t aAddress, const u
 	BSP_GetFlashInfo(&flash_info);
 	aAddress += flash_info.dataFlashBaseAddr;
 
-	//TODO: Investigate whether this dance is necessary
+	// For large writes (much larger than FLASH_BUFSIZE) this can be optimized by only aligning
+	// the first 4 bytes and the last 4 bytes, and copying the middle bytes without copying first.
+	// This avoids the overhead of calling memcpy and BSP_FlashWrite multiple times.
 	while (sizeLeft)
 	{
 		//Calculate byte count to copy
@@ -144,32 +146,12 @@ uint32_t utilsFlashWrite(struct ca821x_dev *instance, uint32_t aAddress, const u
 uint32_t utilsFlashRead(struct ca821x_dev *instance, uint32_t aAddress, uint8_t *aData, uint32_t aSize)
 {
 	(void)instance;
-	uint32_t             buffer[FLASH_BUFSIZE];
-	uint32_t             sizeLeft = aSize;
 	struct ca_flash_info flash_info;
 
 	BSP_GetFlashInfo(&flash_info);
 	aAddress += flash_info.dataFlashBaseAddr;
 
-	while (sizeLeft)
-	{
-		//Calculate byte count to copy
-		uint32_t byteLen = sizeLeft;
-		if (byteLen > sizeof(buffer))
-			byteLen = sizeof(buffer);
-
-		//Move from flash
-		memset(buffer, 0, sizeof(buffer));
-		BSP_FlashRead(aAddress, buffer, (byteLen + 3) / 4);
-
-		//Copy from buffer
-		memcpy(aData, buffer, byteLen);
-
-		//Increment remainders
-		sizeLeft -= byteLen;
-		aAddress += byteLen;
-		aData += byteLen;
-	}
+	memcpy(aData, (void *)aAddress, aSize);
 
 	return aSize;
 }

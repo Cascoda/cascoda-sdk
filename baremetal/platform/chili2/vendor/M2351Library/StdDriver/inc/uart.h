@@ -4,7 +4,8 @@
  * @brief    M2351 series UART Interface Controller (UART) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __UART_H__
 #define __UART_H__
@@ -288,6 +289,19 @@ extern "C"
  */
 #define UART_GET_RX_FULL(uart)    ((uart)->FIFOSTS & UART_FIFOSTS_RXFULL_Msk)
 
+/**
+ *    @brief        Rx Idle Status register value
+ *
+ *    @param[in]    uart    The pointer of the specified UART module
+ *
+ *    @retval       0 Rx is busy.
+ *    @retval       1 Rx is Idle(Default)
+ *
+ *    @details      This macro get Rx Idle Status register value.
+ *    \hideinitializer
+ */
+#define UART_RX_IDLE(uart) (((uart)->FIFOSTS & UART_FIFOSTS_RXIDLE_Msk )>> UART_FIFOSTS_RXIDLE_Pos)
+
 
 /**
  *    @brief        Enable specified UART interrupt
@@ -330,7 +344,7 @@ extern "C"
  *
  *    @return       None
  *
- *    @details      This macro enable specified UART interrupt.
+ *    @details      This macro disable specified UART interrupt.
  */
 #define UART_DISABLE_INT(uart, u32eIntSel)    ((uart)->INTEN &= ~ (u32eIntSel))
 
@@ -439,6 +453,35 @@ __STATIC_INLINE void UART_SET_RTS(UART_T* uart)
 #define UART_RS485_GET_ADDR_FLAG(uart)    (((uart)->FIFOSTS  & UART_FIFOSTS_ADDRDETF_Msk) >> UART_FIFOSTS_ADDRDETF_Pos)
 
 
+/**
+ *    @brief        Enable specified UART PDMA function
+ *
+ *    @param[in]    uart        The pointer of the specified UART module
+ *    @param[in]    u32FuncSel  Combination of following functions
+ *                             - \ref UART_INTEN_TXPDMAEN_Msk
+ *                             - \ref UART_INTEN_RXPDMAEN_Msk
+ *
+ *    @return       None
+ *
+ *    @details      This macro enable specified UART PDMA function.
+ */
+#define UART_PDMA_ENABLE(uart, u32FuncSel)    ((uart)->INTEN |= (u32FuncSel))
+
+
+/**
+ *    @brief        Disable specified UART PDMA function
+ *
+ *    @param[in]    uart        The pointer of the specified UART module
+ *    @param[in]    u32FuncSel  Combination of following functions
+ *                             - \ref UART_INTEN_TXPDMAEN_Msk
+ *                             - \ref UART_INTEN_RXPDMAEN_Msk
+ *
+ *    @return       None
+ *
+ *    @details      This macro disable specified UART PDMA function.
+ */
+#define UART_PDMA_DISABLE(uart, u32FuncSel)    ((uart)->INTEN &= ~(u32FuncSel))
+
 
 void UART_ClearIntFlag(UART_T* uart, uint32_t u32InterruptFlag);
 void UART_Close(UART_T* uart);
@@ -468,5 +511,5 @@ uint32_t UART_Write(UART_T* uart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes);
 
 #endif /* __UART_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/
 

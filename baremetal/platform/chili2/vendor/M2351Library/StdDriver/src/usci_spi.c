@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series USCI_SPI driver source file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -45,7 +46,7 @@ uint32_t USPI_Open(USPI_T *uspi, uint32_t u32MasterSlave, uint32_t u32SPIMode,  
     uint32_t u32Pclk;
     uint32_t u32RetValue = 0UL;
 
-    if(uspi == USPI0)
+    if((uspi == USPI0) || (uspi == USPI0_NS))
     {
         u32Pclk = CLK_GetPCLK0Freq();
     }
@@ -156,6 +157,7 @@ void USPI_DisableAutoSS(USPI_T *uspi)
   */
 void USPI_EnableAutoSS(USPI_T *uspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel)
 {
+    (void)u32SSPinMask;
     uspi->LINECTL = (uspi->LINECTL & ~USPI_LINECTL_CTLOINV_Msk) | u32ActiveLevel;
     uspi->PROTCTL |= USPI_PROTCTL_AUTOSS_Msk;
 }
@@ -169,9 +171,9 @@ void USPI_EnableAutoSS(USPI_T *uspi, uint32_t u32SSPinMask, uint32_t u32ActiveLe
 uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock)
 {
     uint32_t u32ClkDiv;
-    uint32_t u32Pclk;
+    uint32_t u32Pclk = 0UL;
 
-    if(uspi == USPI0)
+    if((uspi == USPI0) || (uspi == USPI0_NS))
     {
         u32Pclk = CLK_GetPCLK0Freq();
     }
@@ -196,11 +198,11 @@ uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock)
   */
 uint32_t USPI_GetBusClock(USPI_T *uspi)
 {
-    uint32_t u32ClkDiv, u32BusClk;
+    uint32_t u32ClkDiv, u32BusClk = 0UL;
 
     u32ClkDiv = (uspi->BRGEN & USPI_BRGEN_CLKDIV_Msk) >> USPI_BRGEN_CLKDIV_Pos;
 
-    if(uspi == USPI0)
+    if((uspi == USPI0) || (uspi == USPI0_NS))
     {
         u32BusClk = (CLK_GetPCLK0Freq() / ((u32ClkDiv + 1UL) << 1UL));
     }
@@ -631,4 +633,4 @@ void USPI_DisableWakeup(USPI_T *uspi)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

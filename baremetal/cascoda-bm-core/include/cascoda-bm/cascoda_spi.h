@@ -50,17 +50,10 @@ extern "C" {
 
 /****** Definitions for SPI Handling                                     ******/
 
-#define SPI_T_TIMEOUT 500   //!< Timeout for synchronous responses [ms]
+#define SPI_T_TIMEOUT 2000   //!< Timeout for synchronous responses [ms]
 #define SPI_T_BACKOFF 10    //!< Backoff Time when receiving SPI_NACK [us]
 #define SPI_T_HOLD_8210 100 //!< Hold time before transmitting for the CA-8210 [us]
 #define SPI_T_CSHOLD 50     //!< Time to hold the chip select active before re-checking the IRQ [us].
-
-#define SPI_RX_FIFO_SIZE 7 //!< Maximum Size of Rx FIFO \ref SPI_Receive_Buffer
-#define SPI_RX_FIFO_RESV 4 //!< Number of SPI RX FIFOs to be reserved for piggyback messages
-
-#if !(SPI_RX_FIFO_RESV < SPI_RX_FIFO_SIZE)
-#error "SPI_RX_FIFO_RESV must be less than SPI_RX_FIFO_SIZE"
-#endif
 
 /****** Function Declarations for cascoda_spi.c                          ******/
 

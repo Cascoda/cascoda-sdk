@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series SPI driver source file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -52,6 +53,13 @@ uint32_t SPI_Open(SPI_T *spi,
 {
     uint32_t u32ClkSrc = 0UL, u32Div, u32HCLKFreq, u32PCLK0Freq, u32PCLK1Freq, u32RetValue = 0UL;
 
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return 0;
+    }
+    // CASCODA
+
     /* Disable I2S mode */
     spi->I2SCTL &= ~SPI_I2SCTL_I2SEN_Msk;
 
@@ -77,18 +85,18 @@ uint32_t SPI_Open(SPI_T *spi,
 
         if(u32BusClock >= u32HCLKFreq)
         {
-            if(!(__PC() & (1UL << 28UL)))
+            if(!(__PC() & NS_OFFSET))
             {
                 /* Select PCLK as the clock source of SPI */
-                if(spi == SPI0)
+                if((spi == SPI0) || (spi == SPI0_NS))
                 {
                     CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI0SEL_Msk)) | CLK_CLKSEL2_SPI0SEL_PCLK1;
                 }
-                else if(spi == SPI1)
+                else if((spi == SPI1) || (spi == SPI1_NS))
                 {
                     CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI1SEL_Msk)) | CLK_CLKSEL2_SPI1SEL_PCLK0;
                 }
-                else if(spi == SPI2)
+                else if((spi == SPI2) || (spi == SPI2_NS))
                 {
                     CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI2SEL_Msk)) | CLK_CLKSEL2_SPI2SEL_PCLK1;
                 }
@@ -100,7 +108,7 @@ uint32_t SPI_Open(SPI_T *spi,
         }
 
         /* Check clock source of SPI */
-        if(spi == SPI0)
+        if((spi == SPI0) || (spi == SPI0_NS))
         {
             if((CLK_GetModuleClockSource(SPI0_MODULE) << CLK_CLKSEL2_SPI0SEL_Pos) == CLK_CLKSEL2_SPI0SEL_HXT)
             {
@@ -119,7 +127,7 @@ uint32_t SPI_Open(SPI_T *spi,
                 u32ClkSrc = __HIRC; /* Clock source is HIRC */
             }
         }
-        else if(spi == SPI1)
+        else if((spi == SPI1) || (spi == SPI1_NS))
         {
             if((CLK_GetModuleClockSource(SPI1_MODULE) << CLK_CLKSEL2_SPI1SEL_Pos) == CLK_CLKSEL2_SPI1SEL_HXT)
             {
@@ -138,7 +146,7 @@ uint32_t SPI_Open(SPI_T *spi,
                 u32ClkSrc = __HIRC; /* Clock source is HIRC */
             }
         }
-        else if(spi == SPI2)
+        else if((spi == SPI2) || (spi == SPI2_NS))
         {
             if((CLK_GetModuleClockSource(SPI2_MODULE) << CLK_CLKSEL2_SPI2SEL_Pos) == CLK_CLKSEL2_SPI2SEL_HXT)
             {
@@ -227,22 +235,22 @@ uint32_t SPI_Open(SPI_T *spi,
         /* Set DIVIDER = 0 */
         spi->CLKDIV = 0UL;
 
-        if(!(__PC() & (1UL << 28UL)))
+        if(!(__PC() & NS_OFFSET))
         {
             /* Select PCLK as the clock source of SPI */
-            if(spi == SPI0)
+            if((spi == SPI0) || (spi == SPI0_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI0SEL_Msk)) | CLK_CLKSEL2_SPI0SEL_PCLK1;
                 /* Return slave peripheral clock rate */
                 u32RetValue = u32PCLK1Freq;
             }
-            else if(spi == SPI1)
+            else if((spi == SPI1) || (spi == SPI1_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI1SEL_Msk)) | CLK_CLKSEL2_SPI1SEL_PCLK0;
                 /* Return slave peripheral clock rate */
                 u32RetValue = u32PCLK0Freq;
             }
-            else if(spi == SPI2)
+            else if((spi == SPI2) || (spi == SPI2_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI2SEL_Msk)) | CLK_CLKSEL2_SPI2SEL_PCLK1;
                 /* Return slave peripheral clock rate */
@@ -258,7 +266,7 @@ uint32_t SPI_Open(SPI_T *spi,
         else
         {
             /* Check clock source of SPI */
-            if(spi == SPI0)
+            if((spi == SPI0) || (spi == SPI0_NS))
             {
                 if((CLK_GetModuleClockSource(SPI0_MODULE) << CLK_CLKSEL2_SPI0SEL_Pos) == CLK_CLKSEL2_SPI0SEL_HXT)
                 {
@@ -277,7 +285,7 @@ uint32_t SPI_Open(SPI_T *spi,
                     u32RetValue = __HIRC; /* Clock source is HIRC */
                 }
             }
-            else if(spi == SPI1)
+            else if((spi == SPI1) || (spi == SPI1_NS))
             {
                 if((CLK_GetModuleClockSource(SPI1_MODULE) << CLK_CLKSEL2_SPI1SEL_Pos) == CLK_CLKSEL2_SPI1SEL_HXT)
                 {
@@ -296,7 +304,7 @@ uint32_t SPI_Open(SPI_T *spi,
                     u32RetValue = __HIRC; /* Clock source is HIRC */
                 }
             }
-            else if(spi == SPI2)
+            else if((spi == SPI2) || (spi == SPI2_NS))
             {
                 if((CLK_GetModuleClockSource(SPI2_MODULE) << CLK_CLKSEL2_SPI2SEL_Pos) == CLK_CLKSEL2_SPI2SEL_HXT)
                 {
@@ -348,7 +356,13 @@ uint32_t SPI_Open(SPI_T *spi,
   */
 void SPI_Close(SPI_T *spi)
 {
-    spi->CTL &= ~SPI_CTL_SPIEN_Msk;
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    // spi->CTL &= ~SPI_CTL_SPIEN_Msk;
+    if (spi)
+    {
+        spi->CTL &= ~SPI_CTL_SPIEN_Msk;
+    }
+    // CASCODA
 }
 
 /**
@@ -359,7 +373,13 @@ void SPI_Close(SPI_T *spi)
   */
 void SPI_ClearRxFIFO(SPI_T *spi)
 {
-    spi->FIFOCTL |= SPI_FIFOCTL_RXFBCLR_Msk;
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    // spi->FIFOCTL |= SPI_FIFOCTL_RXFBCLR_Msk;
+    if (spi)
+    {
+        spi->FIFOCTL |= SPI_FIFOCTL_RXFBCLR_Msk;
+    }
+    // CASCODA
 }
 
 /**
@@ -371,7 +391,13 @@ void SPI_ClearRxFIFO(SPI_T *spi)
   */
 void SPI_ClearTxFIFO(SPI_T *spi)
 {
-    spi->FIFOCTL |= SPI_FIFOCTL_TXFBCLR_Msk;
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    // spi->FIFOCTL |= SPI_FIFOCTL_TXFBCLR_Msk;
+    if (spi)
+    {
+        spi->FIFOCTL |= SPI_FIFOCTL_TXFBCLR_Msk;
+    }
+    // CASCODA
 }
 
 /**
@@ -382,7 +408,13 @@ void SPI_ClearTxFIFO(SPI_T *spi)
   */
 void SPI_DisableAutoSS(SPI_T *spi)
 {
-    spi->SSCTL &= ~(SPI_SSCTL_AUTOSS_Msk | SPI_SSCTL_SS_Msk);
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    // spi->SSCTL &= ~(SPI_SSCTL_AUTOSS_Msk | SPI_SSCTL_SS_Msk);
+    if (spi)
+    {
+        spi->SSCTL &= ~(SPI_SSCTL_AUTOSS_Msk | SPI_SSCTL_SS_Msk);
+    }
+    // CASCODA
 }
 
 /**
@@ -396,6 +428,13 @@ void SPI_DisableAutoSS(SPI_T *spi)
   */
 void SPI_EnableAutoSS(SPI_T *spi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel)
 {
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return;
+    }
+    // CASCODA
+
     spi->SSCTL = (spi->SSCTL & (~(SPI_SSCTL_AUTOSS_Msk | SPI_SSCTL_SSACTPOL_Msk | SPI_SSCTL_SS_Msk))) | (u32SSPinMask | u32ActiveLevel | SPI_SSCTL_AUTOSS_Msk);
 }
 
@@ -418,23 +457,30 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
     uint32_t u32ClkSrc, u32HCLKFreq;
     uint32_t u32Div, u32RetValue;
 
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return 0;
+    }
+    // CASCODA
+
     /* Get system clock frequency */
     u32HCLKFreq = CLK_GetHCLKFreq();
 
     if(u32BusClock >= u32HCLKFreq)
     {
-        if(!(__PC() & (1UL << 28UL)))
+        if(!(__PC() & NS_OFFSET))
         {
             /* Select PCLK as the clock source of SPI */
-            if(spi == SPI0)
+            if((spi == SPI0) || (spi == SPI0_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI0SEL_Msk)) | CLK_CLKSEL2_SPI0SEL_PCLK1;
             }
-            else if(spi == SPI1)
+            else if((spi == SPI1) || (spi == SPI1_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI1SEL_Msk)) | CLK_CLKSEL2_SPI1SEL_PCLK0;
             }
-            else if(spi == SPI2)
+            else if((spi == SPI2) || (spi == SPI2_NS))
             {
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI2SEL_Msk)) | CLK_CLKSEL2_SPI2SEL_PCLK1;
             }
@@ -446,7 +492,7 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
     }
 
     /* Check clock source of SPI */
-    if(spi == SPI0)
+    if((spi == SPI0) || (spi == SPI0_NS))
     {
         if((CLK_GetModuleClockSource(SPI0_MODULE) << CLK_CLKSEL2_SPI0SEL_Pos) == CLK_CLKSEL2_SPI0SEL_HXT)
         {
@@ -465,7 +511,7 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
             u32ClkSrc = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(spi == SPI1)
+    else if((spi == SPI1) || (spi == SPI1_NS))
     {
         if((CLK_GetModuleClockSource(SPI1_MODULE) << CLK_CLKSEL2_SPI1SEL_Pos) == CLK_CLKSEL2_SPI1SEL_HXT)
         {
@@ -484,7 +530,7 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
             u32ClkSrc = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(spi == SPI2)
+    else if((spi == SPI2) || (spi == SPI2_NS))
     {
         if((CLK_GetModuleClockSource(SPI2_MODULE) << CLK_CLKSEL2_SPI2SEL_Pos) == CLK_CLKSEL2_SPI2SEL_HXT)
         {
@@ -568,13 +614,20 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
 /**
   * @brief  Configure FIFO threshold setting.
   * @param[in]  spi The pointer of the specified SPI module.
-  * @param[in]  u32TxThreshold Decides the TX FIFO threshold. It could be 0 ~ 7.
-  * @param[in]  u32RxThreshold Decides the RX FIFO threshold. It could be 0 ~ 7.
+  * @param[in]  u32TxThreshold Decides the TX FIFO threshold. It could be 0 ~ 3. If data width is 8 ~ 16 bits, it could be 0 ~ 7.
+  * @param[in]  u32RxThreshold Decides the RX FIFO threshold. It could be 0 ~ 3. If data width is 8 ~ 16 bits, it could be 0 ~ 7.
   * @return None
   * @details Set TX FIFO threshold and RX FIFO threshold configurations.
   */
 void SPI_SetFIFO(SPI_T *spi, uint32_t u32TxThreshold, uint32_t u32RxThreshold)
 {
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return;
+    }
+    // CASCODA
+
     spi->FIFOCTL = (spi->FIFOCTL & ~(SPI_FIFOCTL_TXTH_Msk | SPI_FIFOCTL_RXTH_Msk)) |
                    (u32TxThreshold << SPI_FIFOCTL_TXTH_Pos) |
                    (u32RxThreshold << SPI_FIFOCTL_RXTH_Pos);
@@ -591,11 +644,18 @@ uint32_t SPI_GetBusClock(SPI_T *spi)
     uint32_t u32Div;
     uint32_t u32ClkSrc;
 
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return 0;
+    }
+    // CASCODA
+
     /* Get DIVIDER setting */
     u32Div = (spi->CLKDIV & SPI_CLKDIV_DIVIDER_Msk) >> SPI_CLKDIV_DIVIDER_Pos;
 
     /* Check clock source of SPI */
-    if(spi == SPI0)
+    if((spi == SPI0) || (spi == SPI0_NS))
     {
         if((CLK_GetModuleClockSource(SPI0_MODULE) << CLK_CLKSEL2_SPI0SEL_Pos) == CLK_CLKSEL2_SPI0SEL_HXT)
         {
@@ -614,7 +674,7 @@ uint32_t SPI_GetBusClock(SPI_T *spi)
             u32ClkSrc = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(spi == SPI1)
+    else if((spi == SPI1) || (spi == SPI1_NS))
     {
         if((CLK_GetModuleClockSource(SPI1_MODULE) << CLK_CLKSEL2_SPI1SEL_Pos) == CLK_CLKSEL2_SPI1SEL_HXT)
         {
@@ -633,7 +693,7 @@ uint32_t SPI_GetBusClock(SPI_T *spi)
             u32ClkSrc = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(spi == SPI2)
+    else if((spi == SPI2) || (spi == SPI2_NS))
     {
         if((CLK_GetModuleClockSource(SPI2_MODULE) << CLK_CLKSEL2_SPI2SEL_Pos) == CLK_CLKSEL2_SPI2SEL_HXT)
         {
@@ -698,7 +758,15 @@ uint32_t SPI_GetBusClock(SPI_T *spi)
   */
 void SPI_EnableInt(SPI_T *spi, uint32_t u32Mask)
 {
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return;
+    }
+    // CASCODA
+
     /* Enable unit transfer interrupt flag */
+
     if((u32Mask & SPI_UNIT_INT_MASK) == SPI_UNIT_INT_MASK)
     {
         spi->CTL |= SPI_CTL_UNITIEN_Msk;
@@ -781,6 +849,13 @@ void SPI_EnableInt(SPI_T *spi, uint32_t u32Mask)
   */
 void SPI_DisableInt(SPI_T *spi, uint32_t u32Mask)
 {
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return;
+    }
+    // CASCODA
+
     /* Disable unit transfer interrupt flag */
     if((u32Mask & SPI_UNIT_INT_MASK) == SPI_UNIT_INT_MASK)
     {
@@ -867,6 +942,13 @@ uint32_t SPI_GetIntFlag(SPI_T *spi, uint32_t u32Mask)
     uint32_t u32IntStatus;
     uint32_t u32IntFlag = 0UL;
 
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return 0;
+    }
+    // CASCODA
+
     u32IntStatus = spi->STATUS;
 
     /* Check unit transfer interrupt flag */
@@ -952,6 +1034,13 @@ uint32_t SPI_GetIntFlag(SPI_T *spi, uint32_t u32Mask)
   */
 void SPI_ClearIntFlag(SPI_T *spi, uint32_t u32Mask)
 {
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return;
+    }
+    // CASCODA
+
     if(u32Mask & SPI_UNIT_INT_MASK)
     {
         spi->STATUS = SPI_STATUS_UNITIF_Msk; /* Clear unit transfer interrupt flag */
@@ -1015,6 +1104,13 @@ uint32_t SPI_GetStatus(SPI_T *spi, uint32_t u32Mask)
 {
     uint32_t u32TmpStatus;
     uint32_t u32Flag = 0UL;
+
+    // CASCODA, 25/08/29; Added null pointer guards (FrankZRS, Jun 17,2025)
+    if (!spi)
+    {
+        return 0;
+    }
+    // CASCODA
 
     u32TmpStatus = spi->STATUS;
 
@@ -1080,7 +1176,7 @@ static uint32_t SPII2S_GetSourceClockFreq(SPI_T *i2s)
 {
     uint32_t u32Freq;
 
-    if(i2s == SPI0)
+    if((i2s == SPI0) || (i2s == SPI0_NS))
     {
         if((CLK_GetModuleClockSource(SPI0_MODULE) << CLK_CLKSEL2_SPI0SEL_Pos) == CLK_CLKSEL2_SPI0SEL_HXT)
         {
@@ -1099,7 +1195,7 @@ static uint32_t SPII2S_GetSourceClockFreq(SPI_T *i2s)
             u32Freq = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(i2s == SPI1)
+    else if((i2s == SPI1) || (i2s == SPI1_NS))
     {
         if((CLK_GetModuleClockSource(SPI1_MODULE) << CLK_CLKSEL2_SPI1SEL_Pos) == CLK_CLKSEL2_SPI1SEL_HXT)
         {
@@ -1118,7 +1214,7 @@ static uint32_t SPII2S_GetSourceClockFreq(SPI_T *i2s)
             u32Freq = __HIRC; /* Clock source is HIRC */
         }
     }
-    else if(i2s == SPI2)
+    else if((i2s == SPI2) || (i2s == SPI2_NS))
     {
         if((CLK_GetModuleClockSource(SPI2_MODULE) << CLK_CLKSEL2_SPI2SEL_Pos) == CLK_CLKSEL2_SPI2SEL_HXT)
         {
@@ -1193,20 +1289,20 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
     uint32_t u32BitRate, u32SrcClk, u32RetValue;
     uint32_t u32PCLK0Freq, u32PCLK1Freq;
 
-    if(!(__PC() & (1UL << 28UL)))
+    if(!(__PC() & NS_OFFSET))
     {
         /* Reset SPI/I2S */
-        if(i2s == SPI0)
+        if((i2s == SPI0) || (i2s == SPI0_NS))
         {
             SYS->IPRST1 |= SYS_IPRST1_SPI0RST_Msk;
             SYS->IPRST1 &= ~SYS_IPRST1_SPI0RST_Msk;
         }
-        else if(i2s == SPI1)
+        else if((i2s == SPI1) || (i2s == SPI1_NS))
         {
             SYS->IPRST1 |= SYS_IPRST1_SPI1RST_Msk;
             SYS->IPRST1 &= ~SYS_IPRST1_SPI1RST_Msk;
         }
-        else if(i2s == SPI2)
+        else if((i2s == SPI2) || (i2s == SPI2_NS))
         {
             SYS->IPRST1 |= SYS_IPRST1_SPI2RST_Msk;
             SYS->IPRST1 &= ~SYS_IPRST1_SPI2RST_Msk;
@@ -1223,7 +1319,7 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
     /* Set TX FIFO threshold to 2 and RX FIFO threshold to 1 */
     i2s->FIFOCTL = SPII2S_FIFO_TX_LEVEL_WORD_2 | SPII2S_FIFO_RX_LEVEL_WORD_2;
 
-    if(u32MasterSlave == SPI_MASTER)
+    if(u32MasterSlave == SPII2S_MODE_MASTER)
     {
         /* Get the source clock rate */
         u32SrcClk = SPII2S_GetSourceClockFreq(i2s);
@@ -1254,9 +1350,9 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
         /* Get APB1 clock frequency */
         u32PCLK1Freq = CLK_GetPCLK1Freq();
 
-        if(i2s == SPI0)
+        if((i2s == SPI0) || (i2s == SPI0_NS))
         {
-            if(!(__PC() & (1UL << 28UL)))
+            if(!(__PC() & NS_OFFSET))
             {
                 /* Set the peripheral clock rate to equal APB clock rate */
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI0SEL_Msk)) | CLK_CLKSEL2_SPI0SEL_PCLK1;
@@ -1286,9 +1382,9 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
             /* Enable TX function, RX function and I2S mode. */
             i2s->I2SCTL |= (SPI_I2SCTL_RXEN_Msk | SPI_I2SCTL_TXEN_Msk | SPI_I2SCTL_I2SEN_Msk);
         }
-        else if(i2s == SPI1)
+        else if((i2s == SPI1) || (i2s == SPI1_NS))
         {
-            if(!(__PC() & (1UL << 28UL)))
+            if(!(__PC() & NS_OFFSET))
             {
                 /* Set the peripheral clock rate to equal APB clock rate */
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI1SEL_Msk)) | CLK_CLKSEL2_SPI1SEL_PCLK0;
@@ -1318,9 +1414,9 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
             /* Enable TX function, RX function and I2S mode. */
             i2s->I2SCTL |= (SPI_I2SCTL_RXEN_Msk | SPI_I2SCTL_TXEN_Msk | SPI_I2SCTL_I2SEN_Msk);
         }
-        else if(i2s == SPI2)
+        else if((i2s == SPI2) || (i2s == SPI2_NS))
         {
-            if(!(__PC() & (1UL << 28UL)))
+            if(!(__PC() & NS_OFFSET))
             {
                 /* Set the peripheral clock rate to equal APB clock rate */
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI2SEL_Msk)) | CLK_CLKSEL2_SPI2SEL_PCLK1;
@@ -1352,7 +1448,7 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
         }
         else
         {
-            if(!(__PC() & (1UL << 28UL)))
+            if(!(__PC() & NS_OFFSET))
             {
                 /* Set the peripheral clock rate to equal APB clock rate */
                 CLK->CLKSEL2 = (CLK->CLKSEL2 & (~CLK_CLKSEL2_SPI3SEL_Msk)) | CLK_CLKSEL2_SPI3SEL_PCLK0;
@@ -1578,8 +1674,8 @@ void SPII2S_DisableMCLK(SPI_T *i2s)
 /**
   * @brief  Configure FIFO threshold setting.
   * @param[in]  i2s The pointer of the specified I2S module.
-  * @param[in]  u32TxThreshold Decides the TX FIFO threshold. It could be 0 ~ 7.
-  * @param[in]  u32RxThreshold Decides the RX FIFO threshold. It could be 0 ~ 7.
+  * @param[in]  u32TxThreshold Decides the TX FIFO threshold. It could be 0 ~ 3.
+  * @param[in]  u32RxThreshold Decides the RX FIFO threshold. It could be 0 ~ 3.
   * @return None
   * @details Set TX FIFO threshold and RX FIFO threshold configurations.
   */
@@ -1596,4 +1692,4 @@ void SPII2S_SetFIFO(SPI_T *i2s, uint32_t u32TxThreshold, uint32_t u32RxThreshold
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

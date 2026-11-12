@@ -66,7 +66,13 @@ DATA FLASH (CASCODA_CHILI_FLASH_PAGES pages)
 
 */
 #define MANUFACTURER_DATA_FLASH_SIZE (FMC_FLASH_PAGE_SIZE)
+
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
+#define MANUFACTURER_DATA_FLASH_BASE (FMC_APROM_END - MANUFACTURER_DATA_FLASH_SIZE + NS_OFFSET)
+#else
 #define MANUFACTURER_DATA_FLASH_BASE (FMC_APROM_END - MANUFACTURER_DATA_FLASH_SIZE)
+#endif
+
 #define DATA_FLASH_BASE (MANUFACTURER_DATA_FLASH_BASE - (CASCODA_CHILI_FLASH_PAGES * FMC_FLASH_PAGE_SIZE))
 
 const struct ca_flash_info BSP_FlashInfo = {FMC_APROM_BASE,
@@ -87,9 +93,15 @@ static u8_t isValidFlashAddr(u32_t flashaddr)
 	if ((flashaddr % 4))
 		rval = 0;
 
+#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
+	if (flashaddr < DATA_FLASH_BASE || flashaddr >= FMC_APROM_END + NS_OFFSET)
+		if (flashaddr < FMC_LDROM_BASE || flashaddr >= FMC_LDROM_END)
+			rval = 0;
+#else
 	if (flashaddr < DATA_FLASH_BASE || flashaddr >= FMC_APROM_END)
 		if (flashaddr < FMC_LDROM_BASE || flashaddr >= FMC_LDROM_END)
 			rval = 0;
+#endif
 
 	if (!rval)
 	{
@@ -109,6 +121,10 @@ __NONSECURE_ENTRY ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u3
 		return CA_ERROR_INVALID_ARGS;
 	}
 
+	// FMC Peripheral works with the actual addresses - which look like pointers to
+	// secure memory, so we unset the nonsecure bit
+	startaddr &= ~NS_OFFSET;
+
 	SYS_UnlockReg();
 	FMC_Open();
 
@@ -120,7 +136,7 @@ __NONSECURE_ENTRY ca_error BSP_FlashWriteInitial(u32_t startaddr, void *data, u3
 	{
 		uint32_t u32data;
 		memcpy(&u32data, data + i, sizeof(u32data));
-		FMC_Write(startaddr + i, u32data);
+		FMC_Write((startaddr) + i, u32data);
 	}
 
 	FMC_DISABLE_LD_UPDATE();
@@ -140,11 +156,15 @@ __NONSECURE_ENTRY ca_error BSP_FlashErase(u32_t startaddr)
 	int32_t  error;
 	uint32_t page;
 
-	page = startaddr / FMC_FLASH_PAGE_SIZE;
 	if (!isValidFlashAddr(startaddr))
 	{
 		return CA_ERROR_INVALID_ARGS;
 	}
+
+	// FMC Peripheral works with the actual addresses - which look like pointers to
+	// secure memory, so we unset the nonsecure bit
+	startaddr &= ~NS_OFFSET;
+	page = startaddr / FMC_FLASH_PAGE_SIZE;
 
 	SYS_UnlockReg();
 	FMC_Open();
@@ -174,14 +194,7 @@ __NONSECURE_ENTRY ca_error BSP_FlashErase(u32_t startaddr)
  *---------------------------------------------------------------------------*/
 __NONSECURE_ENTRY ca_error BSP_FlashRead(u32_t startaddr, u32_t *data, u32_t datasize)
 {
-	uint32_t *addr = (uint32_t *)(startaddr);
-
-	if (!isValidFlashAddr(startaddr) || !isValidFlashAddr(startaddr + datasize * sizeof(uint32_t)))
-	{
-		return CA_ERROR_INVALID_ARGS;
-	}
-
-	memcpy(data, addr, datasize * sizeof(uint32_t));
+	memcpy(data, (void *)startaddr, datasize * sizeof(uint32_t));
 	return CA_ERROR_SUCCESS;
 }
 

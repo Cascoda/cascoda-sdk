@@ -358,7 +358,7 @@ static void hardware_sleep_if_possible(struct ca821x_dev *pDeviceRef)
 	if (taskletTimeLeft > 100)
 	{
 		/* sleep / power down */
-		DVBD_DevboardSleep(taskletTimeLeft, pDeviceRef);
+		DVBD_Sleep(WUP_WAKEUP_ALL, taskletTimeLeft, pDeviceRef);
 	}
 }
 
@@ -461,7 +461,7 @@ static ca_error AirPollRouter(void *aContext)
 	}
 	else
 	{
-		wcbstatus = WAIT_Callback(SPI_MCPS_DATA_INDICATION, 100, NULL, &g_deviceref);
+		wcbstatus = WAIT_Callback(SPI_MCPS_DATA_INDICATION, 100, &g_deviceref);
 		if (wcbstatus)
 		{
 			xprintf("SLEEPY: WAIT_Callback Rx Fail: %02X\n", wcbstatus);
@@ -523,7 +523,7 @@ static ca_error AirTransmitData(struct ca821x_dev *pDeviceRef)
 	                           &sec_spec,           // pSecurity,
 	                           pDeviceRef);
 
-	wcbstatus = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, NULL, pDeviceRef);
+	wcbstatus = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, pDeviceRef);
 	if (wcbstatus)
 	{
 		xprintf("SLEEPY: WAIT_Callback Tx1 Fail: %02X\n", wcbstatus);
@@ -557,7 +557,7 @@ static ca_error AirTransmitData(struct ca821x_dev *pDeviceRef)
 	                            &sec_spec,           // pSecurity,
 	                            pDeviceRef);
 
-	wcbstatus = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, NULL, pDeviceRef);
+	wcbstatus = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, pDeviceRef);
 	if (wcbstatus)
 	{
 		xprintf("SLEEPY: WAIT_Callback Tx2 Fail: %02X\n", wcbstatus);

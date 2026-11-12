@@ -8,6 +8,9 @@ find_package(Threads REQUIRED)
 # Mark the device as being FTD-capable
 set(CASCODA_OPENTHREAD_FTD ON CACHE INTERNAL "" FORCE)
 
+# option for logging to the system log, as opposed to the command line
+set(CASCODA_SYSLOG_ENABLED OFF CACHE BOOL "Set to ON to send ca_log... messages to syslog. Set to OFF to send ca_log... messages to stderr")
+
 # Option for the Raspberry pi USB workaround, with crude autodetection
 if(UNIX
 	AND CMAKE_HOST_UNIX
@@ -48,6 +51,10 @@ if(UNIX)
 		Threads::Threads
 		${CMAKE_DL_LIBS}
 	)
+
+	if(CASCODA_SYSLOG_ENABLED)
+		target_compile_definitions(ca821x-posix PRIVATE CASCODA_SYSLOG)
+	endif()
 endif()
 
 if(WIN32)

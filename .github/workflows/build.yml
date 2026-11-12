@@ -10,16 +10,17 @@ jobs:
   # Build artifacts for windows
   windows:
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: cascoda-sdk
 
-    - name: configure windows sdk
+    - name: configure windows sdk (public)
+      if: github.repository == 'Cascoda/cascoda-sdk'
       run: |
         cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-win" -D CMAKE_SH=CMAKE_SH-NOTFOUND -G "MinGW Makefiles" -D CASCODA_BUILD_OT=OFF
+
 
     - name: build windows-sdk
       run: |
@@ -51,7 +52,7 @@ jobs:
       if: github.repository == 'Cascoda/cascoda-sdk'
       run: |
         cp ${{ github.workspace }}\windows-sdk-priv\knx-gen-data.exe ${{ github.workspace }}\release
-    
+
     - name: cache NSIS
       id: cache-nsis
       uses: actions/cache@v4
@@ -74,6 +75,7 @@ jobs:
     - name: enable NSIS
       run: |
         echo "${{ github.workspace }}\nsis-2.51\nsis-2.51" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+  
     - name: create installer for windows executables
       run: makensis.exe ${{ github.workspace }}\cascoda-sdk\etc\win_executables_install_script.nsi
 
@@ -138,20 +140,9 @@ jobs:
         New-Item -Type dir ${{ github.workspace }}\build-knx-chili2-win\lib
         Copy-Item -Path ${{ github.workspace }}\build-ocf-chili2-win\lib\libkis-port.a -Destination ${{ github.workspace }}\build-knx-chili2-win\lib
 
-    # - name: configure KNX chili build on windows
-    #   run: |
-    #     cmake.exe -S "${{ github.workspace }}\cascoda-sdk" -B "${{ github.workspace }}\build-knx-chili2-win" -DCMAKE_SH=CMAKE_SH-NOTFOUND -D "CMAKE_TOOLCHAIN_FILE=toolchain\arm_gcc_m2351.cmake" -G "MinGW Makefiles" -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DCASCODA_LOG_LEVEL=CRIT
-    #   continue-on-error: true
-
-    # - name: build KNX chili binaries on windows
-    #   run: |
-    #     mingw32-make.exe -C ${{ github.workspace }}\build-knx-chili2-win -j4
 
   # Build artifacts for posix 
   posix:
-    # binaries that can only be run on linux machines with newest version,
-    # that have glibc 2.34.
-    # Using ubuntu-20.04 drops that requirement to glibc 2.31.
     runs-on: ubuntu-latest
 
     steps:
@@ -301,16 +292,17 @@ jobs:
 
     # For continuous integration only. Will not yet create an artifact for release.
 
-    # - name: build Chili2D-USB-KNX
-    #   run: |
-    #     cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
-    #     make -C ${{ github.workspace }}/build-chili2 -j4
+    - name: build Chili2D-USB-KNX
+      if: github.repository == 'Cascoda/cascoda-sdk-priv'
+      run: |
+        cmake ${{ github.workspace }}/build-chili2 -DCASCODA_CA_VER=8211 -DCASCODA_CHILI2_CONFIG_STRING=DEV_BOARD -DCASCODA_BUILD_KNX=ON -DOC_OSCORE_ENABLED=ON -DOC_DNS_SD_ENABLED=ON -DOC_DEBUG_ENABLED=OFF
+        make -C ${{ github.workspace }}/build-chili2 -j4
         
         # copy knx port library
-    #     if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
-    #     then
-    #       cp ${{ github.workspace }}/build-chili2/lib/libkis-port.a ${{ github.workspace }}/upload-lib
-    #     fi
+        if [ ${{github.repository }} != Cascoda/cascoda-sdk ]
+        then
+          cp ${{ github.workspace }}/build-chili2/lib/libkis-port.a ${{ github.workspace }}/upload-lib
+        fi
 
     # - name: build Chili2D-USB-OCF
     #   run: |
@@ -417,6 +409,7 @@ jobs:
     # Zip them back up
     - name: Zip the release assets
       run: |
+        zip --version
         zip -r CascodaWindowsTools.zip CascodaWindowsTools
         zip -r Windows-SDK.zip Windows-SDK
         zip -r Chili2D-USB.zip Chili2D-USB

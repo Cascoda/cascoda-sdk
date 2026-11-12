@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    Smartcard(SC) driver source file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #include "NuMicro.h"
 
@@ -79,9 +80,10 @@ uint32_t SC_IsCardInserted(SC_T *sc)
   */
 void SC_ClearFIFO(SC_T *sc)
 {
+    uint32_t u32TimeOutCount = SC_TIMEOUT;
     while(sc->ALTCTL & SC_ALTCTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0) break;
     }
     sc->ALTCTL |= (SC_ALTCTL_TXRST_Msk | SC_ALTCTL_RXRST_Msk);
 }
@@ -97,16 +99,21 @@ void SC_ClearFIFO(SC_T *sc)
   */
 void SC_Close(SC_T *sc)
 {
+    uint32_t u32TimeOutCount;
+
     sc->INTEN = 0UL;
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->PINCTL & SC_PINCTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0UL) break;
     }
     sc->PINCTL = 0UL;
     sc->ALTCTL = 0UL;
+
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->CTL & SC_CTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0UL) break;
     }
     sc->CTL = 0UL;
 }
@@ -129,7 +136,7 @@ void SC_Close(SC_T *sc)
   */
 void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
 {
-    uint32_t u32Reg = 0UL, u32Intf;
+    uint32_t u32Reg = 0UL, u32Intf, u32TimeOutCount;
 
     if((sc == SC0) || (sc == SC0_NS))
     {
@@ -154,9 +161,10 @@ void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
         g_u32CardStateIgnore[u32Intf] = 1UL;
     }
     sc->PINCTL = u32PWR ? 0UL : SC_PINCTL_PWRINV_Msk;
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->CTL & SC_CTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0UL) break;
     }
     sc->CTL = SC_CTL_SCEN_Msk | SC_CTL_TMRSEL_Msk | u32Reg;
 }
@@ -172,7 +180,7 @@ void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
   */
 void SC_ResetReader(SC_T *sc)
 {
-    uint32_t u32Intf;
+    uint32_t u32Intf, u32TimeOutCount;
 
     if((sc == SC0) || (sc == SC0_NS))
     {
@@ -190,9 +198,10 @@ void SC_ResetReader(SC_T *sc)
     /* Reset FIFO, enable auto de-activation while card removal */
     sc->ALTCTL |= (SC_ALTCTL_TXRST_Msk | SC_ALTCTL_RXRST_Msk | SC_ALTCTL_ADACEN_Msk);
     /* Set Rx trigger level to 1 character, longest card detect debounce period, disable error retry (EMV ATR does not use error retry) */
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->CTL & SC_CTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0) break;
     }
     sc->CTL &= ~(SC_CTL_RXTRGLV_Msk |
                  SC_CTL_CDDBSEL_Msk |
@@ -200,9 +209,10 @@ void SC_ResetReader(SC_T *sc)
                  SC_CTL_TXRTYEN_Msk |
                  SC_CTL_RXRTY_Msk |
                  SC_CTL_RXRTYEN_Msk);
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->CTL & SC_CTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0) break;
     }
     /* Enable auto convention, and all three smartcard internal timers */
     sc->CTL |= SC_CTL_AUTOCEN_Msk | SC_CTL_TMRSEL_Msk;
@@ -281,9 +291,11 @@ void SC_SetCharGuardTime(SC_T *sc, uint32_t u32CGT)
   */
 void SC_StopAllTimer(SC_T *sc)
 {
+    uint32_t u32TimeOutCount = SC_TIMEOUT;
+
     while(sc->ALTCTL & SC_ALTCTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0) break;
     }
     sc->ALTCTL &= ~(SC_ALTCTL_CNTEN0_Msk | SC_ALTCTL_CNTEN1_Msk | SC_ALTCTL_CNTEN2_Msk);
 }
@@ -315,33 +327,39 @@ void SC_StopAllTimer(SC_T *sc)
 void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u32ETUCount)
 {
     uint32_t u32Reg = u32Mode | (SC_TMRCTL0_CNT_Msk & (u32ETUCount - 1UL));
+    uint32_t u32TimeOutCount = 0UL;
+
+    u32TimeOutCount = SC_TIMEOUT;
     while(sc->ALTCTL & SC_ALTCTL_SYNC_Msk)
     {
-        ;
+        if(--u32TimeOutCount == 0UL) break;
     }
     if(u32TimerNum == 0UL)
     {
+        u32TimeOutCount = SC_TIMEOUT;
         while(sc->TMRCTL0 & SC_TMRCTL0_SYNC_Msk)
         {
-            ;
+            if(--u32TimeOutCount == 0UL) break;
         }
         sc->TMRCTL0 = u32Reg;
         sc->ALTCTL |= SC_ALTCTL_CNTEN0_Msk;
     }
     else if(u32TimerNum == 1UL)
     {
+        u32TimeOutCount = SC_TIMEOUT;
         while(sc->TMRCTL1 & SC_TMRCTL1_SYNC_Msk)
         {
-            ;
+            if(--u32TimeOutCount == 0UL) break;
         }
         sc->TMRCTL1 = u32Reg;
         sc->ALTCTL |= SC_ALTCTL_CNTEN1_Msk;
     }
     else       /* timer 2 */
     {
+        u32TimeOutCount = SC_TIMEOUT;
         while(sc->TMRCTL2 & SC_TMRCTL2_SYNC_Msk)
         {
-            ;
+            if(--u32TimeOutCount == 0UL) break;
         }
         sc->TMRCTL2 = u32Reg;
         sc->ALTCTL |= SC_ALTCTL_CNTEN2_Msk;
@@ -360,7 +378,12 @@ void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u3
   */
 void SC_StopTimer(SC_T *sc, uint32_t u32TimerNum)
 {
-    while(sc->ALTCTL & SC_ALTCTL_SYNC_Msk) {}
+    uint32_t u32TimeOutCount = SC_TIMEOUT;
+
+    while(sc->ALTCTL & SC_ALTCTL_SYNC_Msk)
+    {
+        if(--u32TimeOutCount == 0UL) break;
+    }
 
     if(u32TimerNum == 0UL)      /* timer 0 */
     {
@@ -410,42 +433,35 @@ uint32_t SC_GetInterfaceClock(SC_T *sc)
     }
     else
     {
-        u32Clk = 0UL;
+        return 0UL;
     }
 
-    if(u32Clk == 0UL)
+    /* Get smartcard module clock */
+    if(u32ClkSrc == 0UL)
     {
-        ; /* Invalid sc port */
+        u32Clk = __HXT;
     }
-    else
+    else if(u32ClkSrc == 1UL)
     {
-        /* Get smartcard module clock */
-        if(u32ClkSrc == 0UL)
+        u32Clk = CLK_GetPLLClockFreq();
+    }
+    else if(u32ClkSrc == 2UL)
+    {
+        if(u32Num == 1UL)
         {
-            u32Clk = __HXT;
-        }
-        else if(u32ClkSrc == 1UL)
-        {
-            u32Clk = CLK_GetPLLClockFreq();
-        }
-        else if(u32ClkSrc == 2UL)
-        {
-            if(u32Num == 1UL)
-            {
-                u32Clk = CLK_GetPCLK1Freq();
-            }
-            else
-            {
-                u32Clk = CLK_GetPCLK0Freq();
-            }
+            u32Clk = CLK_GetPCLK1Freq();
         }
         else
         {
-            u32Clk = __HIRC;
+            u32Clk = CLK_GetPCLK0Freq();
         }
-
-        u32Clk /= (u32Div + 1UL) * 1000UL;
     }
+    else
+    {
+        u32Clk = __HIRC;
+    }
+
+    u32Clk /= (u32Div + 1UL) * 1000UL;
 
     return u32Clk;
 }
@@ -456,4 +472,4 @@ uint32_t SC_GetInterfaceClock(SC_T *sc)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

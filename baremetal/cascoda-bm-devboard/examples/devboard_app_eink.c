@@ -100,7 +100,7 @@ void hardware_sleep(struct ca821x_dev *pDeviceRef)
 {
 	/* no scheduled tasks */
 	/* sleep */
-	DVBD_DevboardSleep(SLEEP_LONG_TIME, pDeviceRef);
+	DVBD_Sleep(WUP_WAKEUP_ALL, SLEEP_LONG_TIME, pDeviceRef);
 }
 
 // application reinitialise after wakeup

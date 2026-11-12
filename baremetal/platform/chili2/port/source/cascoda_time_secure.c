@@ -78,7 +78,15 @@ __NONSECURE_ENTRY void BSP_WaitTicks(u32_t ticks)
 __NONSECURE_ENTRY void BSP_MicroTimerStart(void)
 {
 	TIMER_Stop(TIMER1);
-	TIMER_ResetCounter(TIMER1);
+
+	// Reset counter for Timer 1
+	int32_t reset_counter_status = TIMER_ResetCounter(TIMER1);
+
+	// Reset chip if reset counter failed
+	if (reset_counter_status != TIMER_OK) {
+		BSP_ChipReset();
+	}
+
 	MicroSecondMSB = 0;
 	NVIC_EnableIRQ(TMR1_IRQn);
 	TIMER_EnableInt(TIMER1);

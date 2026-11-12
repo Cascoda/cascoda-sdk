@@ -17,7 +17,7 @@ target_link_libraries(chili2-default-secure
 	chili2-secure
 	)
 
-cascoda_make_binary(chili2-default-secure CASCODA_BUILD_BINARIES)
+cascoda_make_binary_tz(chili2-default-secure CASCODA_BUILD_BINARIES)
 
 # Configure chili2-default-secure to build as secure, and produce an implib
 cascoda_tz_secure(chili2-default-secure

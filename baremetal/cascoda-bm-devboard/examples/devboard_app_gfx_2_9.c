@@ -190,7 +190,7 @@ static void sleep_if_possible(struct ca821x_dev *pDeviceRef)
 {
 	if (DVBD_CanSleep())
 	{
-		DVBD_DevboardSleep(SLEEP_LONG_TIME, pDeviceRef);
+		DVBD_Sleep(WUP_WAKEUP_ALL, SLEEP_LONG_TIME, pDeviceRef);
 	}
 }
 

@@ -633,6 +633,14 @@ void BSP_SystemReset(sysreset_mode resetMode)
 	NVIC_SystemReset();
 }
 
+void BSP_ResetOnLoopStuck(uint32_t start_time)
+{
+	if ((BSP_ReadAbsoluteTime() - start_time) > WHILE_LOOP_STUCK_TIMEOUT)
+	{
+		BSP_SystemReset(SYSRESET_APROM);
+	}
+}
+
 ca_error BSP_SetBootMode(sysreset_mode bootMode)
 {
 	return CA_ERROR_NOT_HANDLED;

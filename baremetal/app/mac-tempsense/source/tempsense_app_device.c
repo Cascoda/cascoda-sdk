@@ -557,7 +557,7 @@ void TEMPSENSE_APP_Device_GoPowerDown(struct ca821x_dev *pDeviceRef)
 		TEMPSENSE_APP_Device_SaveStateToFlash();
 	}
 
-	EVBME_PowerDown(APP_DEFAULT_PDN_MODE, twakeup, pDeviceRef);
+	EVBME_PowerDown(APP_DEFAULT_PDN_MODE, WUP_WAKEUP_ALL, twakeup, pDeviceRef);
 
 	/* after wakeup */
 	APP_DevTimeout = TIME_ReadAbsoluteTime();

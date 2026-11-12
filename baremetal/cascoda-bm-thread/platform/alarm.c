@@ -32,8 +32,10 @@
 #include <string.h>
 
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_evbme.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
+#include "platform.h"
 
 #include "openthread/platform/alarm-milli.h"
 
@@ -58,6 +60,13 @@ void otPlatAlarmMilliStop(otInstance *aInstance)
 
 static ca_error handlePlatAlarmMilliFired(void *aContext)
 {
+    // Wake the radio up
+    // NOTE: It's ok to call this function unconditionally, because
+    // it will return early if the radio is already on, or the device
+    // is not in the correct powerdown mode
+    struct ca821x_dev *pDeviceRef = PlatformGetDeviceRef();
+    EVBME_PowerUpRadio(pDeviceRef);
+
 	otPlatAlarmMilliFired(aContext);
 	return CA_ERROR_SUCCESS;
 }

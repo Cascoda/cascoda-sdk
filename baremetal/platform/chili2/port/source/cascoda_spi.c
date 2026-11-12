@@ -52,32 +52,22 @@ static enum SPIDMA_NextState spi_nextstate = SPIDMA_END;
 static uint8_t               spi_nextLen   = 0;
 static uint8_t              *spi_nextptr;
 
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
-static void (*SPI_Internal_Complete_callback)(void);
-
-static void Chili_SpiComplete()
-{
-	if (SPI_Internal_Complete_callback)
-		SPI_Internal_Complete_callback();
-}
-#else
 static void Chili_SpiComplete()
 {
 	SPI_ExchangeComplete();
 }
-#endif
 
 static inline void Chili_SPISetDMASrc(uint8_t channel, uint32_t srcSelect)
 {
 	assert(channel < 8);
 	if (channel < 4)
 	{
-		PDMA0->REQSEL0_3 |= srcSelect << (8 * channel);
+		PDMA1->REQSEL0_3 |= srcSelect << (8 * channel);
 	}
 	else
 	{
 		channel -= 4;
-		PDMA0->REQSEL4_7 |= srcSelect << (8 * channel);
+		PDMA1->REQSEL4_7 |= srcSelect << (8 * channel);
 	}
 }
 
@@ -90,7 +80,7 @@ static void Chili_SPISetDMA(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t Len)
 	assert(Len >= 1);
 
 	//Reset channels
-	PDMA0->CHRST |= (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH);
+	PDMA1->CHRST |= (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH);
 	Chili_SPISetDMASrc(SPI_RX_DMA_CH, PDMA_SPI0_RX + (2 * SPI_NUM));
 	Chili_SPISetDMASrc(SPI_TX_DMA_CH, PDMA_SPI0_TX + (2 * SPI_NUM));
 
@@ -104,10 +94,10 @@ static void Chili_SPISetDMA(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t Len)
 	dsct_rx |= PDMA_SAR_FIX;
 
 	//Addresses
-	PDMA0->DSCT[SPI_RX_DMA_CH].DA = (uint32_t)RxBuf;
-	PDMA0->DSCT[SPI_TX_DMA_CH].SA = (uint32_t)TxBuf;
-	PDMA0->DSCT[SPI_RX_DMA_CH].SA = (uint32_t)&SPI->RX;
-	PDMA0->DSCT[SPI_TX_DMA_CH].DA = (uint32_t)&SPI->TX;
+	PDMA1->DSCT[SPI_RX_DMA_CH].DA = (uint32_t)RxBuf;
+	PDMA1->DSCT[SPI_TX_DMA_CH].SA = (uint32_t)TxBuf;
+	PDMA1->DSCT[SPI_RX_DMA_CH].SA = (uint32_t)&SPI->RX;
+	PDMA1->DSCT[SPI_TX_DMA_CH].DA = (uint32_t)&SPI->TX;
 
 	if (!TxBuf)
 	{
@@ -115,7 +105,7 @@ static void Chili_SPISetDMA(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t Len)
 		//No address increment on the SPI registers or idle byte
 		dsct_tx |= PDMA_SAR_FIX;
 		//Addresses
-		PDMA0->DSCT[SPI_TX_DMA_CH].SA = (uint32_t)&IdleByte;
+		PDMA1->DSCT[SPI_TX_DMA_CH].SA = (uint32_t)&IdleByte;
 	}
 	else if (!RxBuf)
 	{
@@ -123,16 +113,16 @@ static void Chili_SPISetDMA(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t Len)
 		//No address increment on the SPI registers or junk buffer
 		dsct_rx |= PDMA_DAR_FIX;
 		//Addresses
-		PDMA0->DSCT[SPI_RX_DMA_CH].DA = (uint32_t)&JunkByte;
+		PDMA1->DSCT[SPI_RX_DMA_CH].DA = (uint32_t)&JunkByte;
 	}
 
 	//Enable Channels (No tx interrupt on purpose, because RX one comes in after.
-	PDMA0->CHCTL |= (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH);
-	PDMA0->INTEN |= (1 << SPI_RX_DMA_CH) /*| (1 << SPI_TX_DMA_CH)*/;
+	PDMA1->CHCTL |= (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH);
+	PDMA1->INTEN |= (1 << SPI_RX_DMA_CH) /*| (1 << SPI_TX_DMA_CH)*/;
 
 	//CTL Fields
-	PDMA0->DSCT[SPI_RX_DMA_CH].CTL = dsct_rx;
-	PDMA0->DSCT[SPI_TX_DMA_CH].CTL = dsct_tx;
+	PDMA1->DSCT[SPI_RX_DMA_CH].CTL = dsct_rx;
+	PDMA1->DSCT[SPI_TX_DMA_CH].CTL = dsct_tx;
 
 	// Enable PDMA Rx and Tx, and reset PDMA system
 	SPI->PDMACTL = SPI_PDMACTL_PDMARST_Msk;
@@ -159,7 +149,7 @@ static void Chili_SPIDMAContinue()
 
 void CHILI_SPIDMAIRQHandler()
 {
-	PDMA_CLR_TD_FLAG(PDMA0, (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH));
+	PDMA_CLR_TD_FLAG(PDMA1, (1 << SPI_RX_DMA_CH) | (1 << SPI_TX_DMA_CH));
 	SPI->PDMACTL = SPI_PDMACTL_PDMARST_Msk;
 	Chili_SPIDMAContinue();
 }
@@ -193,8 +183,9 @@ static void Chili_SPIDMAExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t R
 	}
 }
 
-__NONSECURE_ENTRY void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
+void __NONSECURE_ENTRY BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
 {
+	/*
 #if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
 	// Check that the pointers are actually nonsecure.
 	if (RxLen && !cmse_check_address_range(RxBuf, RxLen, CMSE_NONSECURE))
@@ -202,15 +193,7 @@ __NONSECURE_ENTRY void BSP_SPIExchange(uint8_t *RxBuf, const uint8_t *TxBuf, uin
 	if (TxLen && !cmse_check_address_range((void *)TxBuf, TxLen, CMSE_NONSECURE))
 		return;
 #endif
+*/
 
 	Chili_SPIDMAExchange(RxBuf, TxBuf, RxLen, TxLen);
-}
-
-__NONSECURE_ENTRY void CHILI_RegisterSPIComplete(void (*callback)(void))
-{
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
-	SPI_Internal_Complete_callback = callback;
-#else
-	(void)callback;
-#endif
 }

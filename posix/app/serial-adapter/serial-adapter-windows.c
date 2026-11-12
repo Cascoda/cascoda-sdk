@@ -182,15 +182,50 @@ static void process_input(struct ca821x_dev *pDeviceRef)
 	}
 }
 
+/**
+ * Helper function to print the help information to stderr.
+ */
+static void displayHelp()
+{
+	fprintf(stderr, "\n===== How to use the command =====\n");
+
+#if defined(_WIN32)
+	fprintf(stderr, "serial-adapter.exe ");
+#else  //posix
+    fprintf(stderr, "serial-adapter ");
+#endif // _WIN32
+	fprintf(stderr, "\tSerial-adapter program for interacting with an application running on baremetal.\n\n");
+	fprintf(stderr, "\t-s [SERIALNO]       This application will try find the device with the serial number specified.\n");
+	fprintf(stderr, "\t                    If not specified, the first device detected will be used.\n\n");
+	fprintf(stderr, "\t                    For UART, it is also possible to specify a COM port number using this argument\n\n");
+	fprintf(stderr, "\t-e, --exit-on-drop  (USB only) When device drops connection, exit the program immediately, without attempting to reload.\n\n");
+}
+
 int main(int argc, char *argv[])
 {
 	union ca821x_util_init_extra_arg serial_adapter_arg = {.generic = NULL};
+	bool exit_on_drop = false;
 
-	if (argc > 1)
-		serial_adapter_arg.generic = argv[1];
+	//Argument processing
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-s") == 0)
+		{
+			serial_adapter_arg.serial_num = argv[++i];
+		}
+		else if ((strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--exit-on-drop") == 0))
+		{
+			exit_on_drop = true;
+		}
+		else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0))
+		{
+			displayHelp();
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	struct ca821x_dev *pDeviceRef = &sDeviceRef;
-	while (ca821x_util_init(pDeviceRef, NULL, serial_adapter_arg))
+	while (ca821x_util_init(pDeviceRef, NULL, serial_adapter_arg, exit_on_drop))
 	{
 		return -1;
 		sleep(1);

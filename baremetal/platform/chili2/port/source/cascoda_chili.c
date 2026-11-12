@@ -114,7 +114,13 @@ void CHILI_SystemReInit()
 	CHILI_CompleteClockInit(CHILI_GetSystemFrequency(), CHILI_GetEnableCommsInterface());
 
 	/* re-initialise SPI clock rate */
-	SPI_SetBusClock(SPI, FCLK_SPI);
+
+	u32_t spi_clk_freq = SPI_SetBusClock(SPI, FCLK_SPI);
+
+	// Reset chip if SPI is NULL or if SPI bus clock frequency is 0
+	if (spi_clk_freq == 0) {
+		BSP_ChipReset();
+	}
 
 	/* set interrupt priorities */
 	/* 0: highest  timers */
@@ -132,7 +138,7 @@ void CHILI_SystemReInit()
 	NVIC_SetPriority(GPF_IRQn, 1);
 	NVIC_SetPriority(GPG_IRQn, 1);
 	NVIC_SetPriority(GPH_IRQn, 1);
-	NVIC_SetPriority(PDMA0_IRQn, 1);
+	NVIC_SetPriority(PDMA1_IRQn, 1);
 #if defined(USE_USB)
 	NVIC_SetPriority(USBD_IRQn, 2);
 #endif
@@ -174,9 +180,12 @@ u32_t CHILI_ADCConversion(u32_t channel, u32_t reference)
 	/* reset the ADC interrupt indicator and trigger sample module to start A/D conversion */
 	EADC_START_CONV(EADC, (1UL << channel));
 
+	u32_t starttime = BSP_ReadAbsoluteTime();
 	/* wait until EADC conversion is done */
 	while (!EADC_GET_INT_FLAG(EADC, EADC_STATUS2_AVALID_Msk))
-		;
+	{
+		BSP_ResetOnLoopStuck(starttime);
+	}
 
 	/* get the conversion result */
 	adcval = EADC_GET_CONV_DATA(EADC, channel);
@@ -360,10 +369,8 @@ void CHILI_GPIOPowerUp(u8_t useGPIOforWakeup)
 	GPIO_SetPullCtl(ZIG_RESET_PORT, BITMASK(ZIG_RESET_PIN), GPIO_PUSEL_DISABLE);
 
 	/* SPI: */
-	CHILI_ModuleSetMFP(SPI_MOSI_PNUM, SPI_MOSI_PIN, PMFP_SPI);
 	CHILI_ModuleSetMFP(SPI_MISO_PNUM, SPI_MISO_PIN, PMFP_SPI);
 	CHILI_ModuleSetMFP(SPI_SCLK_PNUM, SPI_SCLK_PIN, PMFP_SPI);
-	GPIO_SetPullCtl(SPI_MOSI_PORT, BITMASK(SPI_MOSI_PIN), GPIO_PUSEL_DISABLE);
 	GPIO_SetPullCtl(SPI_MISO_PORT, BITMASK(SPI_MISO_PIN), GPIO_PUSEL_DISABLE);
 	GPIO_SetPullCtl(SPI_SCLK_PORT, BITMASK(SPI_SCLK_PIN), GPIO_PUSEL_DISABLE);
 
@@ -371,6 +378,12 @@ void CHILI_GPIOPowerUp(u8_t useGPIOforWakeup)
 	/* input to output */
 	GPIO_SetMode(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_MODE_OUTPUT);
 	GPIO_SetPullCtl(SPI_CS_PORT, BITMASK(SPI_CS_PIN), GPIO_PUSEL_DISABLE);
+
+#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
+	GPIO_SetMode(EXTERNAL_SPI_FLASH_CS_PORT, BITMASK(EXTERNAL_SPI_FLASH_CS_PIN), GPIO_MODE_OUTPUT);
+	GPIO_SetPullCtl(EXTERNAL_SPI_FLASH_CS_PORT, BITMASK(EXTERNAL_SPI_FLASH_CS_PIN), GPIO_PUSEL_DISABLE);
+	EXTERNAL_SPI_FLASH_CS_PVAL = 1;
+#endif
 
 	/* dynamic GPIO handling */
 	CHILI_ModulePowerUpGPIOs(useGPIOforWakeup);

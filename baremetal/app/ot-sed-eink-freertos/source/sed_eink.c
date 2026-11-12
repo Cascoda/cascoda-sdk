@@ -361,7 +361,7 @@ static void handleImageResponse(void *aContext, otMessage *aMessage, const otMes
 
 	// Sleep until you must get a new image
 	int random_delay_ms = random % IMAGE_RANDOM_SLEEP_MS;
-	EVBME_PowerDown(PDM_DPD, IMAGE_OK_SLEEP_MS + random_delay_ms, &sDeviceRef);
+	EVBME_PowerDown(PDM_DPD, WUP_WAKEUP_ALL, IMAGE_OK_SLEEP_MS + random_delay_ms, &sDeviceRef);
 
 exit:
 	if (err)

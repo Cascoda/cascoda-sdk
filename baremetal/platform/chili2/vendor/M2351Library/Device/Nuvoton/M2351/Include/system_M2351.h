@@ -4,8 +4,9 @@
  * @brief    System Setting Header File
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __SYSTEM_M2351_H__
 #define __SYSTEM_M2351_H__
@@ -50,15 +51,22 @@ extern "C" {
 /*----------------------------------------------------------------------------
   Define SYSCLK
  *----------------------------------------------------------------------------*/
+// CASCODA, 25/08/29; Clock Frequencies (Chili2)
+// #define __HXT       (12000000UL)    /*!< External Crystal Clock Frequency     */
 #ifdef USE_CRYSTAL_ON_NUMAKER_BOARD
 #define __HXT       (12000000UL)    /*!< External Crystal Clock Frequency     */
 #else
 #define __HXT       (4000000UL)    /*!< External Crystal Clock Frequency     */
 #endif
+// CASCODA
 #define __LIRC      (10000UL)       /*!< Internal 10K RC Oscillator Frequency */
 #define __HIRC      (12000000UL)    /*!< Internal 12M RC Oscillator Frequency */
 #define __LXT       (32768UL)       /*!< External Crystal Clock Frequency 32.768KHz */
+// CASCODA, 25/08/29; Clock Frequencies (Chili2) (Is this correct?)
+// #define __HSI       (48000000UL)    /*!< PLL Output Clock Frequency */
 #define __HSI       (16000000UL)    /*!< PLL Output Clock Frequency */
+// CASCODA
+
 #define __HIRC48    (48000000UL)    /*!< Internal 48M RC Oscillator Frequency */
 #define __LIRC32    (32000UL)       /*!< Internal 32K RC Oscillator Frequency */
 
@@ -75,7 +83,10 @@ extern "C" {
 # endif
 #else
 # define __NONSECURE_ENTRY
+// CASCODA, 25/08/29 (CiaranWoodward, Nov 26,2020)
+//# define __NONSECURE_ENTRY_WEAK
 # define __NONSECURE_ENTRY_WEAK __attribute__((weak))
+// CASCODA
 # define __NONSECURE_CALL
 #endif
 

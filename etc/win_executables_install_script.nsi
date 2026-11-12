@@ -427,6 +427,7 @@ Section Uninstall
   Delete "$INSTDIR\LICENSE"
   Delete "$INSTDIR\evbme-get.exe"
   Delete "$INSTDIR\chilictl.exe"
+  Delete "$INSTDIR\knx-gen-data.exe"
 
   Delete "$SMPROGRAMS\Cascoda Windows Tools\Uninstall.lnk"
   Delete "$SMPROGRAMS\Cascoda Windows Tools\Website.lnk"

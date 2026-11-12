@@ -4,8 +4,9 @@
  * @brief    Peripheral Access Layer Header File
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
 /**
@@ -24,7 +25,7 @@
   *
   * <b>Copyright Notice</b>
   *
-  * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+  * Copyright (C) 2019-2023 Nuvoton Technology Corp. All rights reserved.
   */
 
 
@@ -268,6 +269,9 @@ typedef enum IRQn
 
 #include "core_armv8mbl.h"                  /* Processor and core peripherals */
 #include "system_M2351.h"                   /* System Header */
+// CASCODA, 25/08/29; Changes for TZ (tiniuclx, Aug 6,2019)
+// #include "partition_M2351.h"
+// CASCODA
 
 /**
  * Initialize the system clock
@@ -516,7 +520,6 @@ extern void SystemInit(void);
 
 #define UI2C0_S             ((UI2C_T *) USCI0_BASE)                     /*!< UI2C0 Pointer                       */
 #define UI2C1_S             ((UI2C_T *) USCI1_BASE)                     /*!< UI2C1 Pointer                       */
-#define UI2C2_S             ((UI2C_T *) USCI2_BASE)                     /*!< UI2C2 Pointer                       */
 
 #define USPI0_S             ((USPI_T *) USCI0_BASE)                     /*!< USPI0 Pointer                       */
 #define USPI1_S             ((USPI_T *) USCI1_BASE)                     /*!< USPI1 Pointer                       */
@@ -591,7 +594,6 @@ extern void SystemInit(void);
 #define PDMA1_NS               ((PDMA_T *)  (PDMA1_BASE +NS_OFFSET))                     /*!< PDMA1 Pointer                      */
 #define UI2C0_NS               ((UI2C_T *)  (USCI0_BASE +NS_OFFSET))                     /*!< UI2C0 Pointer                      */
 #define UI2C1_NS               ((UI2C_T *)  (USCI1_BASE +NS_OFFSET))                     /*!< UI2C1 Pointer                      */
-#define UI2C2_NS               ((UI2C_T *)  (USCI2_BASE +NS_OFFSET))                     /*!< UI2C2 Pointer                      */
 #define USPI0_NS               ((USPI_T *)  (USCI0_BASE +NS_OFFSET))                     /*!< USPI0 Pointer                      */
 #define USPI1_NS               ((USPI_T *)  (USCI1_BASE +NS_OFFSET))                     /*!< USPI1 Pointer                      */
 #define UUART0_NS              ((UUART_T *) (USCI0_BASE+NS_OFFSET))                      /*!< UUART0 Pointer                     */
@@ -614,9 +616,11 @@ extern void SystemInit(void);
 #define WWDT WWDT_S
 #define TIMER0 TIMER0_S
 #define TIMER1 TIMER1_S
-#define RTC RTC_S
+// CASCODA, 25/08/29; Changes for TZ (tiniuclx, Aug 6,2019)
+// #define RTC RTC_S
 
 #include "partition_M2351.h"
+// CASCODA
 
 #if defined (SCU_INIT_PNSSET0_VAL) && (SCU_INIT_PNSSET0_VAL & BIT9 )
 # define USBH USBH_NS
@@ -641,12 +645,12 @@ extern void SystemInit(void);
 # define PDMA1 PDMA1_NS
 #else
 # define PDMA1 PDMA1_S
+#endif
 
 #if defined (SCU_INIT_PNSSET1_VAL) && (SCU_INIT_PNSSET1_VAL & BIT17)
 # define CRC CRC_NS
 #else
 # define CRC CRC_S
-#endif
 #endif
 
 #if defined (SCU_INIT_PNSSET1_VAL) && (SCU_INIT_PNSSET1_VAL & BIT18)
@@ -660,6 +664,14 @@ extern void SystemInit(void);
 #else
 # define EADC EADC_S
 #endif
+
+// CASCODA, 25/08/29; Changes for TZ (tiniuclx, Aug 6,2019)
+#if defined (SCU_INIT_PNSSET2_VAL) && (SCU_INIT_PNSSET2_VAL & BIT1 )
+# define RTC RTC_NS
+#else
+# define RTC RTC_S
+#endif
+// CASCODA
 
 #if defined (SCU_INIT_PNSSET2_VAL) && (SCU_INIT_PNSSET2_VAL & BIT5 )
 # define ACMP01 ACMP01_NS
@@ -945,7 +957,7 @@ extern void SystemInit(void);
 #pragma pop
 #elif defined (__ICCARM__)
 /* leave anonymous unions enabled */
-#elif (__ARMCC_VERSION >= 6010050)
+#elif defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
 #pragma clang diagnostic pop
 #elif defined (__GNUC__)
 /* anonymous unions are enabled by default */
@@ -1008,4 +1020,4 @@ extern void SystemInit(void);
 #endif  /* __M2351_H__ */
 
 
-/* Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved. */
+

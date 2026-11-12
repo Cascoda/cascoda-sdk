@@ -268,7 +268,7 @@ struct EVBME_Message
 		struct EVBME_COMM_CHECK_request COMM_CHECK_request;
 		struct EVBME_COMM_indication    COMM_indication;
 		struct EVBME_DFU_cmd            DFU_cmd;
-		uint8_t                         data[254]; //!< To access as raw data
+		uint8_t                         data[255]; //!< To access as raw data
 	} EVBME;
 };
 

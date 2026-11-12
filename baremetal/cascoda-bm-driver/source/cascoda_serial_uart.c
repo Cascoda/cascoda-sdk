@@ -54,8 +54,7 @@ enum serial_state
 
 #define SERIAL_SOM (0xDE)
 
-#define SERIAL_TIMEOUT 1000 /* serial rx_rdy timeout in [ms] */
-#define MAX_TIMEOUTS 5      /* number of rx_rdy timeouts before the Chili stops waiting */
+#define TX_TIMEOUT 1000		/* serial tx timeout in [ms] */
 #define RX_TIMEOUT 200      /* serial rx timeout in [ms] */
 
 /******************************************************************************/
@@ -82,7 +81,6 @@ static volatile bool           SerialTxStalled    = false; //!< Transmit waiting
 static volatile bool           SerialTxResendReq  = false; //!< Transmit resend required
 static volatile u32_t          SerialRxTimeout    = 0;     //!< Rx timeout
 static u32_t                   SerialTxTimeout    = 0;     //!< RxRdy timeout
-static u8_t                    SerialTimeoutCount = 0;     //!< Number of timeouts
 
 static u8_t SerialCmdId  = 0xFF;
 static u8_t SerialCmdLen = 0;
@@ -169,7 +167,9 @@ u8_t Serial_ReadInterface(void)
 			}
 			return 0;
 		case SERIAL_DATA:
-			if ((Count = BSP_SerialRead(SerialRxBuffer.Data + SerialCount, SerialRemainder)) != 0)
+			// temporarily disable Rx DMA
+			// if ((Count = BSP_SerialRead(SerialRxBuffer.Data + SerialCount, SerialRemainder)) != 0)
+			if ((Count = BSP_SerialRead(SerialRxBuffer.Data + SerialCount, 1)) != 0)
 			{
 				SerialCount += Count;
 				SerialRemainder -= Count;
@@ -193,10 +193,6 @@ u8_t SerialGetCommand(void)
 	if (SerialTxResendReq)
 	{
 		SerialResend();
-	}
-	if (SerialRxPending)
-	{
-		SerialTimeoutCount = 0;
 	}
 	return SerialRxPending;
 }
@@ -251,7 +247,6 @@ static u8_t SerialReceivedRxRdy(void)
 	if ((SerialCmdId == EVBME_RXRDY) && (SerialCmdLen == 0))
 	{
 		SerialTxStalled    = false;
-		SerialTimeoutCount = 0;
 		return 1;
 	}
 	return 0;
@@ -269,7 +264,6 @@ static u8_t SerialReceivedRxFail(void)
 	if ((SerialCmdId == EVBME_RXFAIL) && (SerialCmdLen == 0))
 	{
 		SerialTxResendReq  = true;
-		SerialTimeoutCount = 0;
 		return 1;
 	}
 	return 0;
@@ -305,19 +299,13 @@ static void SerialCheckTxTimeout(void)
 {
 	while (SerialTxStalled == true)
 	{
-		if (SerialTimeoutCount >= MAX_TIMEOUTS)
-		{
-			SerialTxStalled = false;
-			break;
-		}
-		else if (SerialTxResendReq)
+		if (SerialTxResendReq)
 		{
 			SerialResend();
 		}
-		else if ((TIME_ReadAbsoluteTime() - SerialTxTimeout) > SERIAL_TIMEOUT)
+		else if ((TIME_ReadAbsoluteTime() - SerialTxTimeout) > TX_TIMEOUT)
 		{
 			SerialTxStalled = false;
-			SerialTimeoutCount++;
 			break;
 		}
 	}
@@ -347,13 +335,13 @@ void EVBME_Message_UART(char *pBuffer, size_t Count)
 
 	SerialGetCommand();
 	SerialCheckTxTimeout();
+	BSP_SerialWaitWhileBusy(); /* for long printf buffer sometimes seems to be overwritten by next printf */
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
 	SerialTxBuffer.SerialBuf.CmdId  = EVBME_MESSAGE_INDICATION;
 	SerialTxBuffer.SerialBuf.CmdLen = Count;
 	memcpy(SerialTxBuffer.SerialBuf.Data, pBuffer, Count);
 	BSP_SerialWriteAll(&SerialTxBuffer.SofPkt, Count + 3);
 	SerialSetTxTimeout();
-	BSP_SerialWaitWhileBusy(); /* for long printf buffer sometimes seems to be overwritten by next printf */
 } // End of EVBME_Message()
 
 void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
@@ -364,6 +352,7 @@ void MAC_Message_UART(u8_t CommandId, u8_t Count, const u8_t *pBuffer)
 
 	SerialGetCommand();
 	SerialCheckTxTimeout();
+	BSP_SerialWaitWhileBusy();
 	SerialTxBuffer.SofPkt           = SERIAL_SOM;
 	SerialTxBuffer.SerialBuf.CmdId  = CommandId;
 	SerialTxBuffer.SerialBuf.CmdLen = Count;

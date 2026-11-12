@@ -28,7 +28,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Testing the Winbond external flash chip
+ * Testing the external flash chip for the following devices:
+ * - Windond  W25Q80DVSNIG
+ * - Macronix MX25R8035FM1IL0
+ * The comms i/o is selectable to:
+ * - USE_AERIAL_ADAPTER = 0: serial (USB/UART)
+ * - USE_AERIAL_ADAPTER = 1: AerialAdapter
+ * AerialAdapeter should be used when testing to low voltage range.
  */
 
 #include <stdbool.h>
@@ -46,10 +52,23 @@
 #include "cascoda-bm/cascoda_wait.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
+#include "cascoda-bm/cascoda_aerial_adapter.h"
 #include "ca821x_api.h"
 
 /* Insert Application-Specific Includes here */
 #include "cascoda-bm/test15_4_evbme.h"
+
+/* use aerial adapter interface when (1) */
+#define USE_AERIAL_ADAPTER 1
+
+#if(USE_AERIAL_ADAPTER)
+#define AERIAL_ADAPTER_CHANNEL 15
+/* aerial adapter aaprintf */
+#define xprintf aaprintf
+#else
+/* use normal printf via serial */
+#define xprintf printf
+#endif
 
 #define TEST_MSDULENGTH (40)
 #define TEST_MSDUHANDLE (0xAA)
@@ -93,6 +112,8 @@ static enum FLASH_nextState test_nextstate = FLASH_GET_DEVICE_ID;
 
 ca_tasklet        testTasklet;
 struct ca821x_dev dev;
+
+static ca_error total_error = CA_ERROR_SUCCESS;
 
 typedef struct read_data_helper_args
 {
@@ -140,11 +161,11 @@ typedef enum statusRegister1_pos
 } statusRegister1_pos;
 
 /** Forward declarations for non-BSP functions */
-ca_error W25Q80DLSNIG_WriteEnable();
-ca_error W25Q80DLSNIG_WriteDisable();
-ca_error W25Q80DLSNIG_PowerDown();
-ca_error W25Q80DLSNIG_ReleasePowerDown();
-ca_error W25Q80DLSNIG_ReadStatusRegister1(uint8_t *statusRegister1);
+ca_error FLASHDEV_WriteEnable();
+ca_error FLASHDEV_WriteDisable();
+ca_error FLASHDEV_PowerDown();
+ca_error FLASHDEV_ReleasePowerDown();
+ca_error FLASHDEV_ReadStatusRegister1(uint8_t *statusRegister1);
 
 int test15_4_serial_dispatch(uint8_t *buf, size_t len, struct ca821x_dev *pDeviceRef)
 {
@@ -203,7 +224,10 @@ static ca_error read_data_helper(void *aContext)
 	                                         args.dataReadFromFlash);
 
 	if (err == CA_ERROR_NO_ACCESS)
-		ca_log_note("Function was not scheduled...");
+	{
+		xprintf("Function was not scheduled...\n");
+		total_error = CA_ERROR_FAIL;
+	}
 
 	// Make sure that all bytes in the array have the value that is expected
 	for (uint8_t j = 0; j < NUMBER_OF_BYTES_IN_HALF_A_PAGE; j++)
@@ -281,14 +305,24 @@ ca_error test_GetDeviceId()
 
 	ca_error err = BSP_ExternalFlashGetDeviceId(&id);
 	if (err == CA_ERROR_NO_ACCESS)
-		ca_log_note("Function was not scheduled...");
+	{
+		xprintf("Function was not scheduled...\n");
+		total_error = CA_ERROR_FAIL;
+	}
 
-	ca_log_note("id: 0x%x", id);
+	xprintf("id: 0x%x\n", id);
 
-	if (id != 0x13)
-		ca_log_note("Test failed! The id is wrong.");
+	/* 0x13: Winbond  */
+	/* 0x14: Macronix */
+	if ((id != 0x13) && (id != 0x14))
+	{
+		xprintf("Test failed! The id is wrong.\n");
+		total_error = CA_ERROR_FAIL;
+	}
 	else
-		ca_log_note("Test Successful.");
+	{
+		xprintf("Test Successful.\n");
+	}
 
 	TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 	return CA_ERROR_SUCCESS;
@@ -298,27 +332,32 @@ ca_error test_ReadStatusRegister1()
 {
 	uint8_t statusRegister1 = 0xFF;
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_ReadStatusRegister1(&statusRegister1) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReadStatusRegister1(&statusRegister1) != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
-	ca_log_note("Status register1: 0x%x", statusRegister1);
-	ca_log_note("\tBUSY: %d", (statusRegister1 & BUSY_mask) >> BUSY_pos);
-	ca_log_note("\tWEL: %d", (statusRegister1 & WEL_mask) >> WEL_pos);
-	ca_log_note("\tBP0: %d", (statusRegister1 & BP0_mask) >> BP0_pos);
-	ca_log_note("\tBP1: %d", (statusRegister1 & BP1_mask) >> BP1_pos);
-	ca_log_note("\tBP2: %d", (statusRegister1 & BP2_mask) >> BP2_pos);
-	ca_log_note("\tTB: %d", (statusRegister1 & TB_mask) >> TB_pos);
-	ca_log_note("\tSEC: %d", (statusRegister1 & SEC_mask) >> SEC_pos);
-	ca_log_note("\tSRP0: %d", (statusRegister1 & SRP0_mask) >> SRP0_pos);
+	xprintf("Status register1: 0x%x\n", statusRegister1);
+	xprintf("\tBUSY: %d\n", (statusRegister1 & BUSY_mask) >> BUSY_pos);
+	xprintf("\tWEL:  %d\n", (statusRegister1 & WEL_mask) >> WEL_pos);
+	xprintf("\tBP0:  %d\n", (statusRegister1 & BP0_mask) >> BP0_pos);
+	xprintf("\tBP1:  %d\n", (statusRegister1 & BP1_mask) >> BP1_pos);
+	xprintf("\tBP2:  %d\n", (statusRegister1 & BP2_mask) >> BP2_pos);
+	xprintf("\tTB:   %d\n", (statusRegister1 & TB_mask) >> TB_pos);
+	xprintf("\tSEC:  %d\n", (statusRegister1 & SEC_mask) >> SEC_pos);
+	xprintf("\tSRP0: %d\n", (statusRegister1 & SRP0_mask) >> SRP0_pos);
 
 	if (statusRegister1 != 0x00)
-		ca_log_note("Test failed! The value of Status Register 1 is wrong.");
+	{
+		xprintf("Test failed! The value of Status Register 1 is wrong.\n");
+		total_error = CA_ERROR_FAIL;
+	}
 	else
-		ca_log_note("Test Successful.");
+	{
+		xprintf("Test Successful.\n");
+	}
 
 	TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 	return CA_ERROR_SUCCESS;
@@ -343,17 +382,21 @@ ca_error test_WriteEnableAndDisable(void *aContext)
 
 	switch (cur_state)
 	{
-	case CHECK_BEFORE_WRITE_ENABLE:;
+	case CHECK_BEFORE_WRITE_ENABLE:
 		err = BSP_ExternalFlashGetStatus(&status);
 		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
 
-		ca_log_note("Before Write Enable instruction:");
-		ca_log_note("\tWrite Enable Latch: %d", status.writeEnabled);
+		xprintf("Before Write Enable instruction:\n");
+		xprintf("\tWrite Enable Latch: %d\n", status.writeEnabled);
 
 		if (status.writeEnabled != 0)
 		{
-			ca_log_note("Test failed! The initial value of the external flash status is wrong.");
+			xprintf("Test failed! The initial value of the flash status is wrong.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -363,24 +406,30 @@ ca_error test_WriteEnableAndDisable(void *aContext)
 		}
 		break;
 	case CHECK_AFTER_WRITE_ENABLE:
-		while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+		while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 			;
-		while (W25Q80DLSNIG_WriteEnable() != CA_ERROR_SUCCESS)
-			;
-		while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+		while (FLASHDEV_WriteEnable() != CA_ERROR_SUCCESS)
 			;
 
 		err = BSP_ExternalFlashGetStatus(&status);
-		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
 
-		ca_log_note("After Write Enable instruction:");
-		ca_log_note("\tWrite Enable Latch: %d", status.writeEnabled);
+		while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
+			;
+
+		if (err == CA_ERROR_NO_ACCESS)
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
+
+		xprintf("After Write Enable instruction:\n");
+		xprintf("\tWrite Enable Latch: %d\n", status.writeEnabled);
 
 		if (status.writeEnabled != 1)
 		{
-			ca_log_note(
-			    "Test failed! The value of the external flash status is wrong after the Write Enable Instruction.");
+			xprintf(
+			    "Test failed! Exernal flash status is wrong after the Write Enable Instruction.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -390,25 +439,36 @@ ca_error test_WriteEnableAndDisable(void *aContext)
 		}
 		break;
 	case CHECK_AFTER_WRITE_DISABLE:
-		while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+		while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 			;
-		while (W25Q80DLSNIG_WriteDisable() != CA_ERROR_SUCCESS)
-			;
-		while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+		while (FLASHDEV_WriteDisable() != CA_ERROR_SUCCESS)
 			;
 
 		err = BSP_ExternalFlashGetStatus(&status);
-		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
 
-		ca_log_note("After Write Disable instruction:");
-		ca_log_note("\tWrite Enable Latch: %d", status.writeEnabled);
+		while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
+			;
+
+		if (err == CA_ERROR_NO_ACCESS)
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
+
+		xprintf("After Write Disable instruction:\n");
+		xprintf("\tWrite Enable Latch: %d\n", status.writeEnabled);
 
 		if (status.writeEnabled != 0)
-			ca_log_note(
-			    "Test failed! The value of the external flash status is wrong after the Write Disable Instruction.");
+		{
+			xprintf(
+			    "Test failed! The value of the flash status is wrong after the Write Disable Instruction.\n");
+			total_error = CA_ERROR_FAIL;
+		}
 		else
-			ca_log_note("Test Successful.");
+			xprintf("Test Successful.\n");
+
+		/* re-initialise for next run */
+		cur_state = CHECK_BEFORE_WRITE_ENABLE;
 
 		TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		break;
@@ -445,17 +505,20 @@ ca_error test_ChipEraseAndReadData(void *aContext)
 	switch (cur_state)
 	{
 	case ERASE:
-		ca_log_note("Erasing chip...");
+		xprintf("Erasing chip...\n");
 		ca_error err = BSP_ExternalFlashChipErase();
 		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
 
 		BSP_ExternalFlashScheduleCallback(&test_ChipEraseAndReadData, NULL);
 		cur_state = READ;
 		break;
 	case READ:;
 		if (args.iterationNumber == 0)
-			ca_log_note("Reading the contents of the external flash chip.");
+			xprintf("Reading the contents of the flash chip.\n");
 
 		read_status = read_data_helper(&args);
 
@@ -467,9 +530,19 @@ ca_error test_ChipEraseAndReadData(void *aContext)
 		else
 		{
 			if (read_status == CA_ERROR_FAIL)
-				ca_log_note("Test failed! The chip erase and/or the read data has failed.");
+			{
+				xprintf("Test failed! The chip erase and/or the read data has failed.\n");
+				total_error = CA_ERROR_FAIL;
+			}
 			else if (read_status == CA_ERROR_SUCCESS)
-				ca_log_note("Test successful.");
+			{
+ 				xprintf("Test successful.\n");
+			}
+
+			/* re-initialise for next run */
+			cur_state        = ERASE;
+			iterationNumber  = 0;
+			memset(dataReadFromFlash, 0x00, sizeof(dataReadFromFlash));
 
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
@@ -533,17 +606,17 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 	case READ:
 		if (read_state == READ_BEFORE_PROGRAM && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the sector is erased to begin with.");
+			xprintf("Checking that the sector is erased to begin with.\n");
 		}
 		else if (read_state == READ_AFTER_PROGRAM)
 		{
 			read_args.verificationByte = byteToProgram;
 			if (read_iterationNumber == 0)
-				ca_log_note("Checking that the sector was programmed correctly.");
+				xprintf("Checking that the sector was programmed correctly.\n");
 		}
 		else if (read_state == READ_AFTER_ERASE && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the sector was erased.");
+			xprintf("Checking that the sector was erased.\n");
 		}
 
 		read_status = read_data_helper(&read_args);
@@ -558,11 +631,13 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 			if (read_status == CA_ERROR_FAIL)
 			{
 				if (read_state == READ_BEFORE_PROGRAM)
-					ca_log_note("Test failed! The sector is not initially erased. Cannot program it.");
+					xprintf("Test failed! The sector is not initially erased. Cannot program it.\n");
 				else if (read_state == READ_AFTER_PROGRAM)
-					ca_log_note("Test failed! The sector was not programmed correctly.");
+					xprintf("Test failed! The sector was not programmed correctly.\n");
 				else if (read_state == READ_AFTER_ERASE)
-					ca_log_note("Test failed! The sector was not erased properly.");
+					xprintf("Test failed! The sector was not erased properly.\n");
+
+				total_error = CA_ERROR_FAIL;
 
 				TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 			}
@@ -584,7 +659,15 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 				}
 				else if (read_state == READ_AFTER_ERASE)
 				{
-					ca_log_note("Test successful.");
+					xprintf("Test successful.\n");
+
+					/* re-initialise for next run */
+					cur_state               = READ;
+					read_state              = READ_BEFORE_PROGRAM;
+					read_iterationNumber    = 0;
+					program_iterationNumber = 0;
+					memset(dataReadFromFlash, 0x00, sizeof(dataReadFromFlash));
+
 					TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 				}
 			}
@@ -592,7 +675,7 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 		break;
 	case PROGRAM:
 		if (program_iterationNumber == 0)
-			ca_log_note("Programming the sector.");
+			xprintf("Programming the sector.\n");
 
 		program_status = page_program_helper(&program_args);
 
@@ -603,13 +686,15 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 		}
 		else if (program_status == CA_ERROR_NO_ACCESS)
 		{
-			ca_log_note("Function was not scheduled......");
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_INVALID_ARGS)
 		{
-			ca_log_note(
-			    "Test failed! The programming function was given invalid arguments (check the start address and number of bytes to program.)");
+			xprintf(
+			    "Test failed! The programming function was given invalid arguments.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -620,11 +705,13 @@ ca_error test_PageProgramAndEraseSector(void *aContext)
 
 		break;
 	case ERASE:
-		ca_log_note("Erasing the sector.");
+		xprintf("Erasing the sector.\n");
 		ca_error err = BSP_ExternalFlashPartialErase(SECTOR_4KB, startAddress);
 		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
-
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseSector, NULL);
 		cur_state = READ;
 		break;
@@ -687,17 +774,17 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 	case READ:
 		if (read_state == READ_BEFORE_PROGRAM && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the 32KB block is erased to begin with.");
+			xprintf("Checking that the 32KB block is erased to begin with.\n");
 		}
 		else if (read_state == READ_AFTER_PROGRAM)
 		{
 			read_args.verificationByte = byteToProgram;
 			if (read_iterationNumber == 0)
-				ca_log_note("Checking that the 32KB block was programmed correctly.");
+				xprintf("Checking that the 32KB block was programmed correctly.\n");
 		}
 		else if (read_state == READ_AFTER_ERASE && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the 32KB block was erased.");
+			xprintf("Checking that the 32KB block was erased.\n");
 		}
 
 		read_status = read_data_helper(&read_args);
@@ -712,11 +799,13 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 			if (read_status == CA_ERROR_FAIL)
 			{
 				if (read_state == READ_BEFORE_PROGRAM)
-					ca_log_note("Test failed! The 32KB block is not initially erased. Cannot program it.");
+					xprintf("Test failed! The 32KB block is not initially erased. Cannot program it.\n");
 				else if (read_state == READ_AFTER_PROGRAM)
-					ca_log_note("Test failed! The 32KB block was not programmed correctly.");
+					xprintf("Test failed! The 32KB block was not programmed correctly.\n");
 				else if (read_state == READ_AFTER_ERASE)
-					ca_log_note("Test failed! The 32KB block was not erased properly.");
+					xprintf("Test failed! The 32KB block was not erased properly.\n");
+
+				total_error = CA_ERROR_FAIL;
 
 				TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 			}
@@ -738,7 +827,15 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 				}
 				else if (read_state == READ_AFTER_ERASE)
 				{
-					ca_log_note("Test successful.");
+					xprintf("Test successful.\n");
+
+					/* re-initialise for next run */
+					cur_state               = READ;
+					read_state              = READ_BEFORE_PROGRAM;
+					read_iterationNumber    = 0;
+					program_iterationNumber = 0;
+					memset(dataReadFromFlash, 0x00, sizeof(dataReadFromFlash));
+
 					TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 				}
 			}
@@ -746,7 +843,7 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 		break;
 	case PROGRAM:
 		if (program_iterationNumber == 0)
-			ca_log_note("Programming the 32KB block.");
+			xprintf("Programming the 32KB block.\n");
 
 		program_status = page_program_helper(&program_args);
 
@@ -757,13 +854,15 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 		}
 		else if (program_status == CA_ERROR_NO_ACCESS)
 		{
-			ca_log_note("Function was not scheduled......");
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_INVALID_ARGS)
 		{
-			ca_log_note(
-			    "Test failed! The programming function was given invalid arguments (check the start address and number of bytes to program.)");
+			xprintf(
+			    "Test failed! The programming function was given invalid arguments.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -773,10 +872,13 @@ ca_error test_PageProgramAndEraseBlock32k(void *aContext)
 		}
 		break;
 	case ERASE:
-		ca_log_note("Erasing the 32KB block.");
+		xprintf("Erasing the 32KB block.\n");
 		ca_error err = BSP_ExternalFlashPartialErase(BLOCK_32KB, startAddress);
 		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseBlock32k, NULL);
 		cur_state = READ;
 		break;
@@ -840,17 +942,17 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 	case READ:
 		if (read_state == READ_BEFORE_PROGRAM && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the 64KB block is erased to begin with.");
+			xprintf("Checking that the 64KB block is erased to begin with.\n");
 		}
 		else if (read_state == READ_AFTER_PROGRAM)
 		{
 			read_args.verificationByte = byteToProgram;
 			if (read_iterationNumber == 0)
-				ca_log_note("Checking that the 64KB block was programmed correctly.");
+				xprintf("Checking that the 64KB block was programmed correctly.\n");
 		}
 		else if (read_state == READ_AFTER_ERASE && read_iterationNumber == 0)
 		{
-			ca_log_note("Checking that the 64KB block was erased.");
+			xprintf("Checking that the 64KB block was erased.\n");
 		}
 
 		read_status = read_data_helper(&read_args);
@@ -865,17 +967,19 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 			if (read_status == CA_ERROR_FAIL)
 			{
 				if (read_state == READ_BEFORE_PROGRAM)
-					ca_log_note("Test failed! The 64KB block is not initially erased. Cannot program it.");
+					xprintf("Test failed! The 64KB block is not initially erased. Cannot program it.\n");
 				else if (read_state == READ_AFTER_PROGRAM)
-					ca_log_note("Test failed! The 64KB block was not programmed correctly.");
+					xprintf("Test failed! The 64KB block was not programmed correctly.\n");
 				else if (read_state == READ_AFTER_ERASE)
-					ca_log_note("Test failed! The 64KB block was not erased properly.");
+					xprintf("Test failed! The 64KB block was not erased properly.\n");
 
 				//Reset state in case this test function is called again.
 				read_iterationNumber    = 0;
 				program_iterationNumber = 0;
 				read_state              = READ_BEFORE_PROGRAM;
 				cur_state               = READ;
+
+				total_error = CA_ERROR_FAIL;
 
 				TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 			}
@@ -897,13 +1001,14 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 				}
 				else if (read_state == READ_AFTER_ERASE)
 				{
-					ca_log_note("Test successful.");
+					xprintf("Test successful.\n");
 
-					//Reset state in case this test function is called again.
-					read_iterationNumber    = 0;
-					program_iterationNumber = 0;
+					/* re-initialise for next run */
 					read_state              = READ_BEFORE_PROGRAM;
 					cur_state               = READ;
+					read_iterationNumber    = 0;
+					program_iterationNumber = 0;
+					memset(dataReadFromFlash, 0x00, sizeof(dataReadFromFlash));
 
 					TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 				}
@@ -912,7 +1017,7 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 		break;
 	case PROGRAM:
 		if (program_iterationNumber == 0)
-			ca_log_note("Programming the 64KB block.");
+			xprintf("Programming the 64KB block.\n");
 
 		program_status = page_program_helper(&program_args);
 
@@ -923,13 +1028,15 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 		}
 		else if (program_status == CA_ERROR_NO_ACCESS)
 		{
-			ca_log_note("Function was not scheduled......");
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_INVALID_ARGS)
 		{
-			ca_log_note(
-			    "Test failed! The programming function was given invalid arguments (check the start address and number of bytes to program.)");
+			xprintf(
+			    "Test failed! The programming function was given invalid arguments.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -939,10 +1046,13 @@ ca_error test_PageProgramAndEraseBlock64k(void *aContext)
 		}
 		break;
 	case ERASE:
-		ca_log_note("Erasing the 64KB block.");
+		xprintf("Erasing the 64KB block.\n");
 		ca_error err = BSP_ExternalFlashPartialErase(BLOCK_64KB, startAddress);
 		if (err == CA_ERROR_NO_ACCESS)
-			ca_log_note("Function was not scheduled......");
+		{
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
+		}
 
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseBlock64k, &stressed);
 		cur_state = READ;
@@ -962,36 +1072,40 @@ ca_error test_PowerDownAndReleasePowerDown(void *aContext)
 
 	ca_error err = CA_ERROR_SUCCESS;
 
-	ca_log_note("Checking that the external flash chip ignores the incoming status register read instruction.");
+	xprintf("Checking that the flash chip ignores the status register read instruction.\n");
 
-	while (W25Q80DLSNIG_ReadStatusRegister1(&statusRegisterValue) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReadStatusRegister1(&statusRegisterValue) != CA_ERROR_SUCCESS)
 		;
 
 	if (statusRegisterValue != expectedValueDuringPowerDown)
 	{
-		ca_log_note(
-		    "Test failed! The status register read instruction is supposed to be ignored when in power down mode!");
+		xprintf(
+		    "Test failed! The status register read instruction should be ignored in power down mode!\n");
+		total_error = CA_ERROR_FAIL;
 		TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		return CA_ERROR_SUCCESS;
 	}
 
-	ca_log_note("The external flash chip is being released from power down mode.");
+	xprintf("The flash chip is being released from power down mode.\n");
 
-	while (W25Q80DLSNIG_ReleasePowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReleasePowerDown() != CA_ERROR_SUCCESS)
 		;
 
-	ca_log_note(
-	    "Checking that the external flash chip no longer ignores the incoming status register read instruction.");
+	xprintf(
+	    "Checking that the flash chip no longer ignores the status register read instruction.\n");
 
-	while (W25Q80DLSNIG_ReadStatusRegister1(&statusRegisterValue) != CA_ERROR_SUCCESS)
+	while (FLASHDEV_ReadStatusRegister1(&statusRegisterValue) != CA_ERROR_SUCCESS)
 		;
-	while (W25Q80DLSNIG_PowerDown() != CA_ERROR_SUCCESS)
+	while (FLASHDEV_PowerDown() != CA_ERROR_SUCCESS)
 		;
 
 	if (statusRegisterValue != expectedValueAfterPowerDown)
-		ca_log_note("Test failed! The status register read was ignored!");
+	{
+		xprintf("Test failed! The status register read was ignored!\n");
+		total_error = CA_ERROR_FAIL;
+	}
 	else
-		ca_log_note("Test successful.");
+		xprintf("Test successful.\n");
 
 	TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 
@@ -1051,25 +1165,28 @@ ca_error test_OverWriteData(void *aContext)
 	switch (cur_state)
 	{
 	case PROGRAM_HALF_PAGE:
-		ca_log_note("Programming a single half page to 0x%x", byteToProgram);
+		xprintf("Programming a single half page to 0x%x\n", byteToProgram);
 
 		memset(dataProgrammedToFlash, byteToProgram, sizeof(dataProgrammedToFlash));
 		program_status = page_program_helper(&program_args);
 
 		if (program_status == CA_ERROR_NOT_HANDLED)
 		{
-			ca_log_note("Something went wrong...");
+			xprintf("Something went wrong...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_NO_ACCESS)
 		{
-			ca_log_note("Function was not scheduled......");
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_INVALID_ARGS)
 		{
-			ca_log_note(
-			    "Test failed! The programming function was given invalid arguments (check the start address and number of bytes to program.)");
+			xprintf(
+			    "Test failed! The programming function was given invalid arguments.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -1080,11 +1197,11 @@ ca_error test_OverWriteData(void *aContext)
 		break;
 	case READ:
 		if (read_state == READ_AFTER_PROGRAM && read_iterationNumber == 0)
-			ca_log_note(
-			    "Reading the previously programmed half page, as well as the half page before it and after it, for comparison (because those were left untouched).");
+			xprintf(
+			    "Reading the previously programmed half page as well as before and after it.\n");
 		else if (read_state == READ_AFTER_OVERWRITE && read_iterationNumber == 0)
-			ca_log_note(
-			    "Reading the overwritten half page, as well as the half page before it and after it, for comparison (because those were left untouched).");
+			xprintf(
+			    "Reading the overwritten half page as well as before and after it.\n");
 
 		if (read_state == READ_AFTER_PROGRAM && read_iterationNumber == 1)
 			read_args.verificationByte = byteToProgram;
@@ -1093,7 +1210,7 @@ ca_error test_OverWriteData(void *aContext)
 
 		read_status = read_data_helper(&read_args);
 
-		ca_log_note("Result (just one byte for simplicity), read_iteration %d: 0x%x",
+		xprintf("Result (just one byte for simplicity), read_iteration %d: 0x%x\n",
 		            read_args.iterationNumber,
 		            read_args.dataReadFromFlash[0]);
 
@@ -1107,9 +1224,11 @@ ca_error test_OverWriteData(void *aContext)
 			if (read_status == CA_ERROR_FAIL)
 			{
 				if (read_state == READ_AFTER_PROGRAM)
-					ca_log_note("Test failed! The half page was not programmed correctly.");
+					xprintf("Test failed! The half page was not programmed correctly.\n");
 				else if (read_state == READ_AFTER_OVERWRITE)
-					ca_log_note("Test failed! Overwritten result not correct.");
+					xprintf("Test failed! Overwritten result not correct.\n");
+
+				total_error = CA_ERROR_FAIL;
 
 				TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 			}
@@ -1124,32 +1243,43 @@ ca_error test_OverWriteData(void *aContext)
 				}
 				else if (read_state == READ_AFTER_OVERWRITE)
 				{
-					ca_log_note("Test successful.");
+					xprintf("Test successful.\n");
+
+					/* re-initialise for next run */
+					cur_state               = PROGRAM_HALF_PAGE;
+					read_state              = READ_AFTER_PROGRAM;
+					read_iterationNumber    = 0;
+					program_iterationNumber = 0;
+					memset(dataReadFromFlash, 0x00, sizeof(dataReadFromFlash));
+
 					TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 				}
 			}
 		}
 		break;
 	case OVERWRITE_HALF_PAGE:
-		ca_log_note("Overwriting a single half page to 0x%x", byteToOverwrite);
+		xprintf("Overwriting a single half page to 0x%x\n", byteToOverwrite);
 
 		memset(dataProgrammedToFlash, byteToOverwrite, sizeof(dataProgrammedToFlash));
 		program_status = page_program_helper(&program_args);
 
 		if (program_status == CA_ERROR_NOT_HANDLED)
 		{
-			ca_log_note("Something went wrong...");
+			xprintf("Something went wrong...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_NO_ACCESS)
 		{
-			ca_log_note("Function was not scheduled......");
+			xprintf("Function was not scheduled...\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else if (program_status == CA_ERROR_INVALID_ARGS)
 		{
-			ca_log_note(
-			    "Test failed! The programming function was given invalid arguments (check the start address and number of bytes to program.)");
+			xprintf(
+			    "Test failed! The programming function was given invalid arguments.\n");
+			total_error = CA_ERROR_FAIL;
 			TASKLET_ScheduleDelta(&testTasklet, 1000, NULL);
 		}
 		else
@@ -1170,85 +1300,119 @@ ca_error handle_tests()
 	switch (test_nextstate)
 	{
 	case FLASH_GET_DEVICE_ID:
-		ca_log_note("===================================================");
-		ca_log_note("===== TEST1 - GET DEVICE ID + SPI STRESS TEST =====");
-		ca_log_note("===================================================");
+		xprintf("===================================================\n");
+		xprintf("===== TEST1 - GET DEVICE ID + SPI STRESS TEST =====\n");
+		xprintf("===================================================\n");
 		test_nextstate = FLASH_READ_STATUS_REG1;
 		BSP_ExternalFlashScheduleCallback(&test_GetDeviceId, NULL);
 		break;
 	case FLASH_READ_STATUS_REG1:
-		ca_log_note("==========================================");
-		ca_log_note("===== TEST2 - READ STATUS REGISTER 1 =====");
-		ca_log_note("==========================================");
+		xprintf("==========================================\n");
+		xprintf("===== TEST2 - READ STATUS REGISTER 1 =====\n");
+		xprintf("==========================================\n");
 		test_nextstate = FLASH_WRITE_ENABLE_DISABLE;
 		BSP_ExternalFlashScheduleCallback(&test_ReadStatusRegister1, NULL);
 		break;
 	case FLASH_WRITE_ENABLE_DISABLE:
-		ca_log_note("============================================");
-		ca_log_note("===== TEST3 - WRITE ENABLE AND DISABLE =====");
-		ca_log_note("============================================");
+		xprintf("============================================\n");
+		xprintf("===== TEST3 - WRITE ENABLE AND DISABLE =====\n");
+		xprintf("============================================\n");
 		test_nextstate = FLASH_CHIP_ERASE_AND_READ_DATA;
 		BSP_ExternalFlashScheduleCallback(&test_WriteEnableAndDisable, NULL);
 		break;
 	case FLASH_CHIP_ERASE_AND_READ_DATA:
-		ca_log_note("=====================================================");
-		ca_log_note("===== TEST4 - ERASE THE ENTIRE CHIP AND READ IT =====");
-		ca_log_note("=====================================================");
+		xprintf("=====================================================\n");
+		xprintf("===== TEST4 - ERASE THE ENTIRE CHIP AND READ IT =====\n");
+		xprintf("=====================================================\n");
 		test_nextstate = FLASH_PAGE_PROGRAM_AND_ERASE_SECTOR;
 		BSP_ExternalFlashScheduleCallback(&test_ChipEraseAndReadData, NULL);
 		break;
 	case FLASH_PAGE_PROGRAM_AND_ERASE_SECTOR:
-		ca_log_note("==============================================");
-		ca_log_note("===== TEST5 - PROGRAM AND ERASE A SECTOR =====");
-		ca_log_note("==============================================");
+		xprintf("==============================================\n");
+		xprintf("===== TEST5 - PROGRAM AND ERASE A SECTOR =====\n");
+		xprintf("==============================================\n");
 		test_nextstate = FLASH_PAGE_PROGRAM_AND_ERASE_BLOCK32K;
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseSector, NULL);
 		break;
 	case FLASH_PAGE_PROGRAM_AND_ERASE_BLOCK32K:
-		ca_log_note("==================================================");
-		ca_log_note("===== TEST6 - PROGRAM AND ERASE A 32KB BLOCK =====");
-		ca_log_note("==================================================");
+		xprintf("==================================================\n");
+		xprintf("===== TEST6 - PROGRAM AND ERASE A 32KB BLOCK =====\n");
+		xprintf("==================================================\n");
 		test_nextstate = FLASH_PAGE_PROGRAM_AND_ERASE_BLOCK64K;
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseBlock32k, NULL);
 		break;
 	case FLASH_PAGE_PROGRAM_AND_ERASE_BLOCK64K:;
 		stressed = false;
-		ca_log_note("==================================================");
-		ca_log_note("===== TEST7 - PROGRAM AND ERASE A 64KB BLOCK =====");
-		ca_log_note("==================================================");
+		xprintf("==================================================\n");
+		xprintf("===== TEST7 - PROGRAM AND ERASE A 64KB BLOCK =====\n");
+		xprintf("==================================================\n");
 		test_nextstate = FLASH_POWERDOWN_AND_RELEASE;
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseBlock64k, &stressed);
 		break;
 	case FLASH_POWERDOWN_AND_RELEASE:
-		ca_log_note("=========================================================");
-		ca_log_note("===== TEST8 - POWER DOWN AND RELEASE FROM POWERDOWN =====");
-		ca_log_note("=========================================================");
+		xprintf("=========================================================\n");
+		xprintf("===== TEST8 - POWER DOWN AND RELEASE FROM POWERDOWN =====\n");
+		xprintf("=========================================================\n");
 		test_nextstate = FLASH_PROGRAM_READ_AND_ERASE_UNDER_STRESS;
 		BSP_ExternalFlashScheduleCallback(&test_PowerDownAndReleasePowerDown, NULL);
 		break;
 	case FLASH_PROGRAM_READ_AND_ERASE_UNDER_STRESS:;
 		stressed = true;
-		ca_log_note("=========================================================");
-		ca_log_note("===== TEST10 - PROGRAM, READ AND ERASE UNDER STRESS =====");
-		ca_log_note("=========================================================");
+		xprintf("=========================================================\n");
+		xprintf("===== TEST10 - PROGRAM, READ AND ERASE UNDER STRESS =====\n");
+		xprintf("=========================================================\n");
 		test_nextstate = FLASH_PROGRAM_AND_OVERWRITE;
 		BSP_ExternalFlashScheduleCallback(&test_PageProgramAndEraseBlock64k, &stressed);
 		break;
 	case FLASH_PROGRAM_AND_OVERWRITE:
-		ca_log_note("==========================================");
-		ca_log_note("===== TEST11 - PROGRAM AND OVERWRITE =====");
-		ca_log_note("==========================================");
+		xprintf("==========================================\n");
+		xprintf("===== TEST11 - PROGRAM AND OVERWRITE =====\n");
+		xprintf("==========================================\n");
 		test_nextstate = END;
 		BSP_ExternalFlashScheduleCallback(&test_OverWriteData, NULL);
 		break;
 	case END:
-		ca_log_note("~~~~~~~~~~~~~~~~~~~~~~");
-		ca_log_note("~~~~~ TESTS DONE ~~~~~");
-		ca_log_note("~~~~~~~~~~~~~~~~~~~~~~");
+		xprintf("~~~~~~~~~~~~~~~~~~~~~~\n");
+		xprintf("~~~~~ TESTS DONE ~~~~~\n");
+		xprintf("~~~~~~~~~~~~~~~~~~~~~~\n");
+		if(total_error)
+			xprintf("One or more Tests failed, check logs above.\n");
+		else
+			xprintf("All Tests passed successfully.\n");
 		break;
 	}
 
 	return CA_ERROR_SUCCESS;
+}
+
+/* initialise BTN (Pin 33) */
+void button_init(void)
+{
+	struct gpio_input_args args;
+
+	args.mpin     = 33;
+	args.pullup   = MODULE_PIN_PULLUP_ON;
+	args.debounce = MODULE_PIN_DEBOUNCE_ON;
+	args.irq      = MODULE_PIN_IRQ_OFF;
+	args.callback = NULL;
+
+	BSP_ModuleRegisterGPIOInput(&args);
+}
+
+/* poll BTN (Pin 33), restart when pressed */
+void button_poll(void)
+{
+	static uint8_t btn_del = 1;
+	uint8_t btn = 1;
+
+	BSP_ModuleSenseGPIOPin(33, &btn);
+
+	if((btn == 0) && (btn_del == 1))
+	{
+		BSP_SystemReset(SYSRESET_APROM);
+	}
+
+	btn_del = btn;
 }
 
 /******************************************************************************/
@@ -1267,12 +1431,20 @@ int main(void)
 	/* in case there is no UpStream Communications Channel available */
 	EVBMEInitialise(CA_TARGET_NAME, &dev);
 
+#if(USE_AERIAL_ADAPTER)
+	aainitialise(AERIAL_ADAPTER_CHANNEL, &dev);
+#endif
+
+	button_init();
+
 	/* Insert Application-Specific Initialisation Routines here */
 	TASKLET_Init(&testTasklet, &handle_tests);
 	TASKLET_ScheduleDelta(&testTasklet, 712, NULL);
+
 	/* Endless Polling Loop */
 	while (1)
 	{
 		cascoda_io_handler(&dev);
+		button_poll();
 	} /* while(1) */
 }

@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -96,6 +97,19 @@ static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 		abort();
 }
 
+static int uart_som_err_cnt = 0;
+static int uart_timeout_err_cnt = 0;
+static int uart_ack_err_cnt = 0;
+static struct timespec time_last_uart_err_check = {};
+
+static const int MAX_SOM_ERR = 5;
+static const int MAX_TIMEOUT_ERR = 5;
+static const int MAX_ACK_ERR = 5;
+static const struct timespec uart_err_timeout = {60, 0};
+
+uint8_t last_buf[MAX_BUF_SIZE];
+size_t last_buf_len = 0;
+
 /**
  * Get the amount of time that has passed since the last transmission.
  * @param priv exchange private state
@@ -104,7 +118,7 @@ static void assert_uart_exchange(struct ca821x_dev *pDeviceRef)
 static struct timespec get_tx_time_passed(const struct uart_exchange_priv *priv)
 {
 	struct timespec curTime;
-	if (!clock_gettime(CLOCK_REALTIME, &curTime))
+	if (!clock_gettime(CLOCK_MONOTONIC, &curTime))
 	{
 		curTime = time_sub(&curTime, &priv->prev_send);
 	}
@@ -123,7 +137,7 @@ static struct timespec get_tx_time_passed(const struct uart_exchange_priv *priv)
 static struct timespec get_rx_time_passed(const struct uart_exchange_priv *priv)
 {
 	struct timespec curTime;
-	if (!clock_gettime(CLOCK_REALTIME, &curTime))
+	if (!clock_gettime(CLOCK_MONOTONIC, &curTime))
 	{
 		curTime = time_sub(&curTime, &priv->rx_start);
 	}
@@ -134,6 +148,20 @@ static struct timespec get_rx_time_passed(const struct uart_exchange_priv *priv)
 	return curTime;
 }
 
+
+static struct timespec get_err_time_passed()
+{
+	struct timespec curTime;
+	if (!clock_gettime(CLOCK_MONOTONIC, &curTime))
+	{
+		curTime = time_sub(&curTime, &time_last_uart_err_check);
+	}
+	else
+	{
+		memset(&curTime, 0, sizeof(curTime));
+	}
+	return curTime;
+}
 /**
  * Send a UART ACK or NACK packet over the interface
  * @param fd The UART device to use to send the ACK
@@ -180,8 +208,10 @@ static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_
 		rval = write(priv->fd, &UART_SOM, 1);
 		if (rval < 0)
 		{
-			error = CA_ERROR_FAIL;
-			break;
+            // Return immediately. If can't send the SOM, then there
+            // is no point (and it is even harmful) to send the rest of the
+            // message.
+            return CA_ERROR_FAIL;
 		}
 	} while (rval != 1);
 
@@ -211,17 +241,82 @@ static ca_error uart_try_write(const uint8_t *buffer, size_t len, struct ca821x_
 		//Wait for ack
 		ca_log_debg("Wrote to UART");
 		priv->tx_stalled = 1;
-		clock_gettime(CLOCK_REALTIME, &(priv->prev_send));
+		clock_gettime(CLOCK_MONOTONIC, &(priv->prev_send));
 	}
 	return error;
+}
+
+static bool is_valid_command(uint8_t cmdid)
+{
+    switch (cmdid)
+    {
+        // Upstream SPI messages
+		//CA821x control bytes
+		case SPI_IDLE:
+		case SPI_NACK:
+		// MAC MCPS
+        case SPI_MCPS_DATA_INDICATION:
+        case SPI_MCPS_DATA_CONFIRM:
+        case SPI_MCPS_PURGE_CONFIRM:
+// MAC PCPS
+#if CASCODA_CA_VER >= 8211
+		case SPI_PCPS_DATA_CONFIRM:
+		case SPI_PCPS_DATA_INDICATION:
+#endif // CASCODA_CA_VER >= 8211
+		// MAC MLME
+        case SPI_MLME_ASSOCIATE_INDICATION:
+        case SPI_MLME_ASSOCIATE_CONFIRM:
+		case SPI_MLME_DISASSOCIATE_INDICATION:
+        case SPI_MLME_DISASSOCIATE_CONFIRM:
+        case SPI_MLME_BEACON_NOTIFY_INDICATION:
+        case SPI_MLME_GET_CONFIRM:
+        case SPI_MLME_ORPHAN_INDICATION:
+        case SPI_MLME_RESET_CONFIRM:
+        case SPI_MLME_RX_ENABLE_CONFIRM:
+        case SPI_MLME_SCAN_CONFIRM:
+        case SPI_MLME_COMM_STATUS_INDICATION:
+        case SPI_MLME_SET_CONFIRM:
+        case SPI_MLME_START_CONFIRM:
+        case SPI_MLME_SYNC_LOSS_INDICATION:
+        case SPI_MLME_POLL_CONFIRM:
+#if CASCODA_CA_VER >= 8212
+		case SPI_MLME_IE_NOTIFY_INDICATION:
+#endif // CASCODA_CA_VER >= 8212
+#if CASCODA_CA_VER >= 8211
+        case SPI_MLME_POLL_INDICATION:
+#endif // CASCODA_CA_VER >= 8211
+		// HWME
+        case SPI_HWME_SET_CONFIRM:
+        case SPI_HWME_GET_CONFIRM:
+        case SPI_HWME_HAES_CONFIRM:
+        case SPI_HWME_WAKEUP_INDICATION:
+		// TDME
+        case SPI_TDME_SETSFR_CONFIRM:
+        case SPI_TDME_GETSFR_CONFIRM:
+        case SPI_TDME_TESTMODE_CONFIRM:
+        case SPI_TDME_SET_CONFIRM:
+        case SPI_TDME_TXPKT_CONFIRM:
+        case SPI_TDME_RXPKT_INDICATION:
+        case SPI_TDME_EDDET_INDICATION:
+        case SPI_TDME_ERROR_INDICATION:
+        case SPI_TDME_LOTLK_CONFIRM:
+        // Upstream EVBME messages
+        case EVBME_GET_CONFIRM:
+        case EVBME_SET_CONFIRM:
+        case EVBME_MESSAGE_INDICATION:
+        case EVBME_COMM_INDICATION:
+        case EVBME_DFU_CMD:
+        case EVBME_RXRDY:
+        case EVBME_RXFAIL:
+            return true;
+    }
+
+    return false;
 }
 
 static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 {
 	struct uart_exchange_priv *priv = pDeviceRef->exchange_context;
-	fd_set                     rx_block_fd_set;
-	struct timespec            timeout;
-	int                        nfds;
 	ssize_t                    len;
 	int                        error  = 0;
 	uint8_t                   *som    = priv->rx_buf;
@@ -230,29 +325,31 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 
 	assert_uart_exchange(pDeviceRef);
 
-	//Initialise fd set for blocking select()
-	FD_ZERO(&rx_block_fd_set);
-	FD_SET(priv->fd, &rx_block_fd_set);
-	FD_SET(priv->dummy_pipe_fd[0], &rx_block_fd_set);
-	nfds = priv->fd > priv->dummy_pipe_fd[0] ? priv->fd : priv->dummy_pipe_fd[0];
-	nfds = nfds + 1;
-
-	//Set up timeout, taking ack timeout into account. Max block time = select_timeout
-	if (priv->tx_stalled)
-	{
-		timeout = get_tx_time_passed(priv);
-		timeout = time_sub(&ack_timeout, &timeout);
-		if (time_cmp(&timeout, &select_timeout) > 0)
-			timeout = select_timeout;
-	}
-	else
-	{
-		timeout = select_timeout;
-	}
-
 	if (!priv->offset)
 	{
-		uint8_t dummybyte = 0;
+        fd_set          rx_block_fd_set;
+        int             nfds;
+        struct timespec timeout;
+		uint8_t         dummybyte = 0;
+
+        //Initialise fd set for blocking select()
+        FD_ZERO(&rx_block_fd_set);
+        FD_SET(priv->fd, &rx_block_fd_set);
+        FD_SET(priv->dummy_pipe_fd[0], &rx_block_fd_set);
+        nfds = priv->fd > priv->dummy_pipe_fd[0] ? priv->fd : priv->dummy_pipe_fd[0];
+        nfds = nfds + 1;
+
+        //Set up timeout, taking ack timeout into account. Max block time = select_timeout
+        timeout = select_timeout;
+
+        if (priv->tx_stalled)
+        {
+            timeout = get_tx_time_passed(priv);
+            timeout = time_sub(&ack_timeout, &timeout);
+            if (time_cmp(&timeout, &select_timeout) > 0)
+                timeout = select_timeout;
+        }
+
 		//Block until activity required, then read potential dummy byte
 		pselect(nfds, &rx_block_fd_set, NULL, NULL, &timeout, NULL);
 		read(priv->dummy_pipe_fd[0], &dummybyte, 1);
@@ -278,13 +375,19 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	//If we are just starting to receive, then register the start time
 	if (len && !priv->offset)
 	{
-		clock_gettime(CLOCK_REALTIME, &(priv->rx_start));
+		clock_gettime(CLOCK_MONOTONIC, &(priv->rx_start));
 	}
 
 	priv->offset += len;
 
 	//Catch SOM errors
-	while (priv->offset && *som != UART_SOM)
+	bool som_error = false;
+	bool no_som_at_start = false;
+	bool debug_dumped = false;
+
+	// We enter the while loop if we have a non-empty rx_buf that doesn't begin with SOM,
+	// in which case we have to search the rest of rx_buf for a SOM
+	while (priv->offset && (*som != UART_SOM || !is_valid_command(*cmdid)))
 	{
 		/*
 		 * Getting these very occasionally is ok, but if they are regular then either the
@@ -292,9 +395,71 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		 * and the baud rate should be decreased. If a stream of these occur in a row
 		 * then it is likely a SOM has been missed and a packet has been lost.
 		 */
-		ca_log_warn("No SOM, got 0x%02x", priv->rx_buf[0]);
-		memmove(priv->rx_buf, priv->rx_buf + 1, priv->offset);
+		if (*som != UART_SOM)
+		{
+			ca_log_warn("UART No SOM, got 0x%02x", priv->rx_buf[0]);
+		}
+		else if (!is_valid_command(*cmdid))
+		{
+			ca_log_warn("Invalid command, got 0x%02x", priv->rx_buf[1]);
+		}
+		
+		no_som_at_start = true; // This marks that the while loop has been entered
+
+		if (!debug_dumped)
+			{
+				// Log priv->rx_buf contents
+				char rx_buf_str[3 * MAX_BUF_SIZE + 50] = {0}; // one byte takes 3 chars, plus prefix
+				size_t pos = 0;
+
+				pos += snprintf(rx_buf_str, sizeof(rx_buf_str) - pos,
+								"rx_buf (%zu bytes):", priv->offset);
+				for (size_t i = 0; i < priv->offset; i++) {
+					pos += snprintf(rx_buf_str + pos, sizeof(rx_buf_str) - pos,
+									" %02x", priv->rx_buf[i]);
+				}
+
+				ca_log_warn("%s", rx_buf_str);
+
+				// Log last_buf contents if it exists
+				if (last_buf_len > 0)
+				{
+					char last_buf_str[3 * MAX_BUF_SIZE + 50] = {0}; // one byte takes 3 chars, plus prefix
+					pos = 0;
+
+					pos += snprintf(last_buf_str, sizeof(last_buf_str) - pos,
+									"last_buf (%zu bytes, SOM excluded):", last_buf_len);
+					for (size_t i = 0; i < last_buf_len; i++) {
+						pos += snprintf(last_buf_str + pos, sizeof(last_buf_str) - pos,
+										" %02x", last_buf[i]);
+					}
+
+					ca_log_warn("%s", last_buf_str);
+				}
+
+				debug_dumped = true;
+			}
+
 		priv->offset -= 1;
+		memmove(priv->rx_buf, priv->rx_buf + 1, priv->offset);
+	}
+
+	// If the while loop was entered, check if it exited with or without finding a SOM
+	if (no_som_at_start) {
+		if (*som != UART_SOM || !is_valid_command(*cmdid))
+		{
+			// While loop exited without finding a SOM, so we mark it as a UART SOM error
+			ca_log_warn("UART SOM Error!");
+			som_error = true;
+			uart_som_err_cnt++;
+		}
+		else
+		{
+			// We found the start of message, followed by a valid command id,
+			// after printing some warning logs. Print the success status, as
+			// in the else branch som == UART_SOM
+			ca_log_warn("UART SOM Found, and cmdid valid (code 0x%x)", *cmdid);
+		}
 	}
 
 	// If an incomplete packet has been received, hold off returning it up until the full
@@ -306,9 +471,11 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		//Skip SOM byte in copy
 		len = framelen - 1;
 		memcpy(buf, cmdid, len);
+		memcpy(last_buf, buf, len);
+		last_buf_len = len;
 		// If extra data has been received, shuffle about
-		memmove(priv->rx_buf, priv->rx_buf + framelen, (priv->offset - framelen));
 		priv->offset -= framelen;
+		memmove(priv->rx_buf, priv->rx_buf + framelen, priv->offset);
 
 		//Send ACK
 		if (buf[0] != EVBME_RXRDY && send_uart_ack(priv->fd, true) != CA_ERROR_SUCCESS)
@@ -321,11 +488,12 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 	{
 		//If we fail to receive the entire packet within the receive timeout, then nack the entire packet and dump received data
 		struct timespec timeDiff = get_rx_time_passed(priv);
-		if (priv->offset && time_cmp(&timeDiff, &rx_timeout) > 0)
+		if ((priv->offset || som_error) && time_cmp(&timeDiff, &rx_timeout) > 0)
 		{
 			ca_log_warn("UART RX timed out");
 			send_uart_ack(priv->fd, false);
 			priv->offset = 0;
+			uart_timeout_err_cnt++;
 		}
 		len = 0;
 	}
@@ -361,7 +529,32 @@ static ssize_t uart_try_read(struct ca821x_dev *pDeviceRef, uint8_t *buf)
 		goto exit;
 	}
 
+	// keep track of the number of errors
+	struct timespec errTimeDiff;
 exit:
+	errTimeDiff = get_err_time_passed();
+	if (time_cmp(&errTimeDiff, &uart_err_timeout) > 0)
+	{
+		// timed out, check counters & reset
+		if (uart_som_err_cnt >= MAX_SOM_ERR ||
+            uart_timeout_err_cnt >= MAX_TIMEOUT_ERR ||
+            uart_ack_err_cnt >= MAX_ACK_ERR)
+		{
+            ca_log_crit("Excessive UART errors in the last 60 seconds!");
+			// kill all processes in the calling group of the POSIX exchange
+			// kill(0, SIGKILL);
+		}
+
+        if((uart_som_err_cnt > 0) || (uart_timeout_err_cnt > 0) || (uart_ack_err_cnt > 0))
+        {
+            ca_log_warn("Number of UART errors in the last 60 seconds: %d/%d/%d", uart_som_err_cnt, uart_timeout_err_cnt, uart_ack_err_cnt);
+        }
+
+        uart_som_err_cnt = 0;
+        uart_timeout_err_cnt = 0;
+        uart_ack_err_cnt = 0;
+        clock_gettime(CLOCK_MONOTONIC, &time_last_uart_err_check);
+	}
 	if (error < 0)
 	{
 		return error;
@@ -391,6 +584,7 @@ static ca_error uart_write_isready(struct ca821x_dev *pDeviceRef)
 		{
 			ca_log_warn("UART Ack missed");
 			priv->tx_stalled = 0;
+			uart_ack_err_cnt++;
 		}
 	}
 
@@ -700,6 +894,9 @@ ca_error uart_exchange_init(ca821x_errorhandler callback, const char *path, stru
 
 	//Add the new device to the device list for io
 	s_devcount++;
+
+	// initialize the time since the last UART error check
+	clock_gettime(CLOCK_MONOTONIC, &time_last_uart_err_check);
 
 exit:
 	if (error && pDeviceRef->exchange_context)

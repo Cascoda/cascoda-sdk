@@ -68,10 +68,11 @@ void WAIT_ms(uint32_t ticks);
  * This function is strictly not re-entrant.
  * It will fail if you try to call it while it is already waiting.
  * Do not use from an IRQ context.
+ * 
+ * If you need to pass a non-null context pointer to the callback, see WAIT_SetContext.
  *
  * \param aCommandId - Asynchronous, incoming command ID that is to be waited upon
  * \param aTimeoutMs - Timeout in milliseconds to wait for message before giving up
- * \param aCallbackContext - Generic pointer that can be retreived in the callback using WAIT_GetContext()
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return Status
@@ -80,7 +81,7 @@ void WAIT_ms(uint32_t ticks);
  * \retval CA_ERROR_SPI_WAIT_TIMEOUT Timed out waiting for message
  *
  */
-ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef);
+ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, struct ca821x_dev *pDeviceRef);
 
 /**
  * \brief Wait for an asynchronous callback to be triggered, with a given callback swapped in
@@ -101,10 +102,11 @@ ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackC
  * It will fail if you try to call it while it is already waiting.
  * Do not use from an IRQ context.
  *
+ * If you need to pass a non-null context pointer to the callback, see WAIT_SetContext.
+ * 
  * \param aCommandId - The commandId of the Asynchronous upstream command to be captured
  * \param aCallback  - A function pointer to the callback to be swapped in during the wait
  * \param aTimeoutMs - Timeout in milliseconds to wait for message before giving up
- * \param aCallbackContext - Provide a pointer to a context, which can be retrieved in the callback using WAIT_GetContext.
  * \param pDeviceRef - Pointer to initialised \ref ca821x_dev struct
  *
  * \return Status
@@ -116,7 +118,6 @@ ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackC
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
                            uint32_t                aTimeoutMs,
-                           void                   *aCallbackContext,
                            struct ca821x_dev      *pDeviceRef);
 
 /**
@@ -124,12 +125,20 @@ ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
  *
  * This is a helper function for \ref WAIT_Callback, which allows the callback function
  * being waited for to retrieve a single pointer. It is only valid for use inside the
- * relevent callback function, and will otherwise return NULL.
+ * relevant callback function, and will otherwise return NULL.
  *
  * \return Pointer to context or NULL
  *
  */
 void *WAIT_GetContext(void);
+
+/**
+ * @brief Set the callback context to be used with a callback passed to WAIT_Callback or WAIT_CallbackSwap
+ * 
+ * \param aCallbackContext - Provide a pointer to a context, which can be retrieved in the callback using WAIT_GetContext.
+ * 
+ */
+void WAIT_SetContext(void *aCallbackContext);
 
 #ifdef __cplusplus
 }

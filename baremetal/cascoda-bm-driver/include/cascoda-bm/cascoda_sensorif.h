@@ -144,6 +144,21 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 
 /******************************************************************************/
 /***************************************************************************/ /**
+ * \brief Write then Read bytes immediately from I2C slave with repeat start
+ *******************************************************************************
+ * \param slaveaddr - 6-Bit Slave Address
+ * \param pwrdata - Pointer to Write Data Buffer
+ * \param pwrlen - Pointer to Write Buffer Length (actual length is returned in pwrlen)
+ * \param prddata - Pointer to Read Data Buffer
+ * \param prdlen - Pointer to Read Buffer Length (actual length is returned in prdlen)
+ *******************************************************************************
+ * \return Status. 0: success, other: either I2C status or re-mapped
+ *******************************************************************************
+ ******************************************************************************/
+enum sensorif_i2c_status SENSORIF_I2C_WriteThenRead(u8_t slaveaddr, u8_t *pwrdata, u32_t *pwrlen, u8_t *prddata, u32_t *prdlen);
+
+/******************************************************************************/
+/***************************************************************************/ /**
  * \brief Initialises and enables SPI interface
  * \param is_eink_display_present whether the SPI interface is used for communicating
  * with a eink display. This configures it to half-duplex mode (MOSI only) and frees

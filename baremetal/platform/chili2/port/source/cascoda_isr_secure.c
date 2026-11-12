@@ -26,7 +26,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <stdio.h>
 
 /* Platform */
@@ -55,24 +54,24 @@ void IRC_IRQHandler(void)
 	/* 12 MHz HIRC */
 	if (SYS->TISTS12M & SYS_TISTS12M_TFAILIF_Msk) /* Get Trim Failure Interrupt */
 	{
-		ca_log_warn("HIRC Trim Failure Interrupt");
+		// ca_log_warn("HIRC Trim Failure Interrupt");
 		SYS->TISTS12M = SYS_TISTS12M_TFAILIF_Msk;
 	}
 	if (SYS->TISTS12M & SYS_TISTS12M_CLKERRIF_Msk) /* Get Clock Error Interrupt */
 	{
-		ca_log_warn("HIRC Clock Error Interrupt");
+		// ca_log_warn("HIRC Clock Error Interrupt");
 		SYS->TISTS12M = SYS_TISTS12M_CLKERRIF_Msk;
 	}
 
 	/* 48 MHz HIRC48 */
 	if (SYS->TISTS48M & SYS_TISTS48M_TFAILIF_Msk) /* Get Trim Failure Interrupt */
 	{
-		ca_log_warn("HIRC48 Trim Failure Interrupt");
+		// ca_log_warn("HIRC48 Trim Failure Interrupt");
 		SYS->TISTS48M = SYS_TISTS48M_TFAILIF_Msk;
 	}
 	if (SYS->TISTS48M & SYS_TISTS48M_CLKERRIF_Msk) /* Get Clock Error Interrupt */
 	{
-		ca_log_warn("HIRC48 Clock Error Interrupt");
+		// ca_log_warn("HIRC48 Clock Error Interrupt");
 		SYS->TISTS48M = SYS_TISTS48M_CLKERRIF_Msk;
 	}
 }
@@ -103,7 +102,7 @@ void CLKFAIL_IRQHandler(void)
 	if (u32Reg & CLK_CLKDSTS_HXTFIF_Msk)
 	{
 		/* HCLK is switched to HIRC automatically if HXT clock fail interrupt is happened */
-		ca_log_warn("HXT Clock is stopped! HCLK is switched to HIRC.");
+		// ca_log_warn("HXT Clock is stopped! HCLK is switched to HIRC.");
 		/* Disable HXT clock fail interrupt */
 		CLK->CLKDCTL &= ~(CLK_CLKDCTL_HXTFDEN_Msk | CLK_CLKDCTL_HXTFIEN_Msk);
 		/* Write 1 to clear HXT Clock fail interrupt flag */
@@ -113,7 +112,7 @@ void CLKFAIL_IRQHandler(void)
 	if (u32Reg & CLK_CLKDSTS_LXTFIF_Msk)
 	{
 		/* LXT clock fail interrupt is happened */
-		ca_log_warn("LXT Clock is stopped!");
+		// ca_log_warn("LXT Clock is stopped!");
 		/* Disable LXT clock fail interrupt */
 		CLK->CLKDCTL &= ~(CLK_CLKDCTL_LXTFIEN_Msk | CLK_CLKDCTL_LXTFDEN_Msk);
 		/* Write 1 to clear LXT Clock fail interrupt flag */
@@ -124,7 +123,7 @@ void CLKFAIL_IRQHandler(void)
 	{
 		/* HCLK should be switched to HIRC if HXT clock frequency monitor interrupt is happened */
 		CLK_SetHCLK(CLK_CLKSEL0_HCLKSEL_HIRC, CLK_CLKDIV0_HCLK(1));
-		ca_log_warn("HXT Frequency is abnormal! HCLK is switched to HIRC.");
+		// ca_log_warn("HXT Frequency is abnormal! HCLK is switched to HIRC.");
 		/* Disable HXT clock frequency monitor interrupt */
 		CLK->CLKDCTL &= ~(CLK_CLKDCTL_HXTFQDEN_Msk | CLK_CLKDCTL_HXTFQIEN_Msk);
 		/* Write 1 to clear HXT Clock frequency monitor interrupt */
@@ -188,31 +187,31 @@ void TMR1_IRQHandler(void)
 
 /******************************************************************************/
 /***************************************************************************/ /**
- * \brief ISR 40: PDMA0 interrupt
+ * \brief ISR 98: PDMA1 interrupt
  *******************************************************************************
  ******************************************************************************/
-void PDMA0_IRQHandler(void)
+void PDMA1_IRQHandler(void)
 {
 	/* Get PDMA interrupt status */
-	uint32_t u32Status = PDMA_GET_INT_STATUS(PDMA0);
+	uint32_t u32Status = PDMA_GET_INT_STATUS(PDMA1);
 
 	if (u32Status & PDMA_INTSTS_ABTIF_Msk) /* Target Abort */
 	{
-		ca_log_crit("DMA ABORT");
-		PDMA0->ABTSTS = PDMA0->ABTSTS;
+		// ca_log_crit("DMA ABORT");
+		PDMA1->ABTSTS = PDMA1->ABTSTS;
 		return;
 	}
 
 	if (u32Status & PDMA_INTSTS_TDIF_Msk) /* Transfer Done */
 	{
 #if defined(USE_UART)
-		if (PDMA_GET_TD_STS(PDMA0) & ((1 << UART_TX_DMA_CH) | (1 << UART_RX_DMA_CH)))
+		if (PDMA_GET_TD_STS(PDMA1) & ((1 << UART_TX_DMA_CH) | (1 << UART_RX_DMA_CH)))
 			CHILI_UARTDMAIRQHandler();
 #endif /* USE_UART */
-		if (PDMA_GET_TD_STS(PDMA0) & ((1 << SPI_RX_DMA_CH)))
+		if (PDMA_GET_TD_STS(PDMA1) & ((1 << SPI_RX_DMA_CH)))
 		{
 			// We trigger off the RX interrupt because it always comes in later. Assertion is here for debug purposes.
-			assert(PDMA_GET_TD_STS(PDMA0) & ((1 << SPI_TX_DMA_CH)));
+			//assert(PDMA_GET_TD_STS(PDMA1) & ((1 << SPI_TX_DMA_CH)));
 
 			CHILI_SPIDMAIRQHandler();
 		}

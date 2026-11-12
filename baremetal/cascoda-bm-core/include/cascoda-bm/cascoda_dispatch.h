@@ -85,6 +85,14 @@ ca_error DISPATCH_FromCA821x(struct ca821x_dev *pDeviceRef);
  */
 void DISPATCH_ReadCA821x(struct ca821x_dev *pDeviceRef);
 
+/**
+ * \brief Set current transmit power
+ *
+ * Sets/restores the current tx power setting after power-up/wakeup
+ *
+ */
+ca_mac_status DISPATCH_SetCurrentTxPower(struct ca821x_dev *pDeviceRef);
+
 #ifdef __cplusplus
 }
 #endif

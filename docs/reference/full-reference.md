@@ -61,7 +61,6 @@
 - [Cross-compiling for the Raspberry Pi](../dev/cross-compile-for-the-raspberry-pi.md)
 - [M2351 TrustZone Development Guide](../dev/M2351-TrustZone-development-guide.md)
 - [LWM2M over Thread](../dev/lwm2m-over-thread.md)
-- [Building binaries for production](../dev/building-for-production.md)
 
 ### Complete API Reference
 
@@ -255,7 +254,6 @@ These applications run on POSIX, Windows or OSX systems. They interface with Chi
 | security-test | Tests the advanced security mode of the CA-8211.
 | stress-test | Requires several mac-dongle Chilis to be connected to the host. Creates heavy 802.15.4 traffic. [More information.](../../posix/app/tests/README.md)
 | serial-test | Stress test of the serial connection between the host and the connected Chili. Requires a Chili to be connected to the host. [More information.](../../posix/app/tests/README.md)
-| zigbee-nwk-test | Tests the currently implemented functionality of the ZigBee network layer. Requires several mac-dongle Chilis to be connected to the host.
 
 ## Debugging
 

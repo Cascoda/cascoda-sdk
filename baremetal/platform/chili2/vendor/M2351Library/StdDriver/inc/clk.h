@@ -4,8 +4,9 @@
  * @brief    M2351 series Clock Controller (CLK) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __CLK_H__
 #define __CLK_H__
@@ -666,7 +667,7 @@ __STATIC_INLINE void CLK_SysTickLongDelay(uint32_t us);
   * @param[in]  us  Delay time. The Max value is (2^24-1) / CPU Clock(MHz). Ex:
   *                             64MHz => 262143us, 48MHz => 349525us ...
   * @return     None
-  * @details    Use the SysTick to generate the delay time and the UNIT is in us.
+  * @details    Use the SysTick to generate the delay time and the unit is in us.
   *             The SysTick clock source is from HCLK, i.e the same as system core clock.
   *             User can use SystemCoreClockUpdate() to calculate CyclesPerUs automatically before using this function.
   */
@@ -706,7 +707,9 @@ __STATIC_INLINE void CLK_SysTickDelay_NS(uint32_t us)
     SysTick_NS->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
 
     /* Waiting for down-count to zero */
-    while((SysTick_NS->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0UL);
+    while((SysTick_NS->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0UL)
+    {
+    }
 
     /* Disable SysTick counter */
     SysTick_NS->CTRL = 0UL;
@@ -752,10 +755,8 @@ __STATIC_INLINE void CLK_SysTickLongDelay(uint32_t us)
 
         /* Disable SysTick counter */
         SysTick->CTRL = 0UL;
-
     }
     while(us > 0UL);
-
 }
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
@@ -801,7 +802,6 @@ __STATIC_INLINE void CLK_SysTickLongDelay_NS(uint32_t us)
 
     }
     while(us > 0UL);
-
 }
 
 #endif /* defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L) */
@@ -856,4 +856,4 @@ uint32_t CLK_GetModuleClockDivider(uint32_t u32ModuleIdx);
 
 
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

@@ -4,8 +4,9 @@
  * @brief    M2351 series General Purpose I/O (GPIO) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __GPIO_H__
 #define __GPIO_H__
@@ -32,7 +33,7 @@ extern "C"
 
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  GPIO_MODE Constant Definitions                                                                               */
+/*  GPIO_MODE Constant Definitions                                                                         */
 /*---------------------------------------------------------------------------------------------------------*/
 #define GPIO_MODE_INPUT          0x0UL /*!< Input Mode */
 #define GPIO_MODE_OUTPUT         0x1UL /*!< Output Mode */
@@ -51,7 +52,7 @@ extern "C"
 
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  GPIO_INTTYPE Constant Definitions                                                                               */
+/*  GPIO_INTTYPE Constant Definitions                                                                      */
 /*---------------------------------------------------------------------------------------------------------*/
 #define GPIO_INTTYPE_EDGE           0UL /*!< GPIO_INTTYPE Setting for Edge Trigger Mode */
 #define GPIO_INTTYPE_LEVEL          1UL /*!< GPIO_INTTYPE Setting for Edge Level Mode */
@@ -66,7 +67,7 @@ extern "C"
 
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  GPIO Pull-up And Pull-down Type Constant Definitions                                                   */
+/*  GPIO Pull-up and Pull-down Type Constant Definitions                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
 #define GPIO_PUSEL_DISABLE          0x0UL           /*!< GPIO PUSEL setting for Disable Mode */
 #define GPIO_PUSEL_PULL_UP          0x1UL           /*!< GPIO PUSEL setting for Pull-up Mode */
@@ -501,9 +502,12 @@ extern "C"
  *
  * @param[in]   port        GPIO port. It could be PA, PB, PC, PD, PE, PF, PG or PH.
  * @param[in]   u32PinMask  The single or multiple pins of specified GPIO port. \n
- *                          It could be BIT0 ~ BIT15 for PA, PB, PC, PD and PF. \n
- *                          It could be BIT0 ~ BIT13 for PE. \n
- *                          It could be BIT1 ~ BIT5, BIT7 ~ BIT12 for PG.
+ *                          It could be BIT0 ~ BIT15 for PA, PB and PE. \n
+ *                          It could be BIT0 ~ BIT13 for PC. \n
+ *                          It could be BIT0 ~ BIT14 for PD. \n
+ *                          It could be BIT0 ~ BIT11 for PF. \n
+ *                          It could be BIT2 ~ BIT3, BIT9 ~ BIT15 for PG. \n
+ *                          It could be BIT4 ~ BIT11 for PH.
  *
  * @return      None
  *
@@ -663,7 +667,7 @@ extern "C"
  * @return      None
  *
  * @details     Set the interrupt de-bounce sampling cycle time based on the debounce counter clock source. \n
- *              Example: _GPIO_SET_DEBOUNCE_TIME(PA, GPIO_DBCTL_DBCLKSRC_LIRC, GPIO_DBCTL_DBCLKSEL_4). \n
+ *              Example: GPIO_SET_DEBOUNCE_TIME(PA, GPIO_DBCTL_DBCLKSRC_LIRC, GPIO_DBCTL_DBCLKSEL_4). \n
  *              It's meaning the De-debounce counter clock source is internal 10 KHz and sampling cycle selection is 4. \n
  *              Then the target de-bounce sampling cycle time is (4)*(1/(10*1000)) s = 4*0.0001 s = 400 us,
  *              and system will sampling interrupt input once per 400 us.
@@ -743,7 +747,7 @@ extern "C"
  *
  * @return      None
  *
- * @details     This function is used to enable specified GPIO pin interrupt.
+ * @details     This function is used to disable specified GPIO pin interrupt.
  */
 #define GPIO_DisableEINT    GPIO_DisableInt
 
@@ -767,4 +771,4 @@ void GPIO_SetPullCtl(GPIO_T *port, uint32_t u32PinMask, uint32_t u32Mode);
 
 #endif /* __GPIO_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

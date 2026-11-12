@@ -46,6 +46,9 @@
 #include "openthread/thread.h"
 
 #include "cascoda-bm/cascoda_interface.h"
+#include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-util/cascoda_tasklet.h"
+#include "cascoda-util/cascoda_time.h"
 #include "ca821x_api.h"
 #include "code_utils.h"
 #include "ieee_802_15_4.h"
@@ -62,9 +65,16 @@ static struct ca821x_dev *pDeviceRef = NULL;
 static int8_t sNoiseFloor = 127;
 
 static uint8_t sRadioInitialised      = 0;
-static uint8_t sIsExpectingIndication = 0;
+static volatile uint8_t sIsExpectingIndication = 0;
 
 #if CASCODA_CA_VER <= 8211
+static volatile uint8_t sIsDataPollInProgress = 0;
+static volatile uint8_t sUnicastReceivedDuringDataPoll = 0;
+
+static ca_tasklet sHandleUnicastIndTasklet;
+static ca_tasklet sResetDataPollInProgressTasklet;
+static otDataIndication sUnicastDataIndDuringPoll = {0};
+
 struct M_KeyDescriptor_thread
 {
 	struct M_KeyTableEntryFixed Fixed;
@@ -126,6 +136,47 @@ static otError ConvertErrorMacToOt(ca_mac_status aMacError)
 
 	return error;
 }
+
+#if CASCODA_CA_VER <= 8211
+static ca_error dataPollDone(void)
+{
+	uint8_t rxidl = 0;
+    ca_mac_status status = CA_ERROR_SUCCESS;
+
+    // Done with the data poll, turn the receiver off
+	if ((status = MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxidl, pDeviceRef)))
+    {
+        ca_log_crit("pollDone: FAILED TO TURN RECEIVER BACK OFF! err: %d", status);
+    }
+    ca_log_debg("pollDone: RECEIVER TURNED OFF");
+
+    // Update the state after at least a 30ms delay, to allow for correct handling
+    // (i.e. broadcast filtering) of any final messages that might still be coming from
+    // the MAC, due to having been received during the processing time that it took
+    // to request the receiver to turn off.
+    TASKLET_ScheduleDelta(&sResetDataPollInProgressTasklet, 30, NULL);
+
+    return status;
+}
+
+static ca_error handleUnicastIndDuringPoll(void *context)
+{
+    (void)context;
+    ca_log_debg("handleUni: sIsExpectingIndication %d -> 0", sIsExpectingIndication);
+    sIsExpectingIndication = 0;
+    otPlatMcpsDataIndication(OT_INSTANCE, &sUnicastDataIndDuringPoll);
+    return CA_ERROR_SUCCESS;
+}
+
+static ca_error resetDataPollInProgress(void *context)
+{
+    (void) context;
+    ca_log_debg("pollDone: sIsDataPollInProgress %d -> 0", sIsDataPollInProgress);
+    sIsDataPollInProgress = 0;
+    return CA_ERROR_SUCCESS;
+}
+#endif // CASCODA_CA_VER <= 8211
+
 
 otError otPlatMlmeGet(otInstance *aInstance, otPibAttr aAttr, uint8_t aIndex, uint8_t *aLen, uint8_t *aBuf)
 {
@@ -255,33 +306,8 @@ otError otPlatMlmeReset(otInstance *aInstance, bool setDefaultPib)
 	ca_mac_status error;
 
 	error = MLME_RESET_request_sync(setDefaultPib, pDeviceRef);
-
-	// Tx Power to max
-	uint8_t txPow = 8;
-	MLME_SET_request_sync(phyTransmitPower, 0, 1, &txPow, pDeviceRef);
-
-	// Enable poll indications when no data confirm is triggered.
-#if CASCODA_CA_VER >= 8211
-	uint8_t pollIndMode = 2;
-	HWME_SET_request_sync(HWME_POLLINDMODE, 1, &pollIndMode, pDeviceRef);
-#endif // CASCODA_CA_VER >= 8211
-
-	if (setDefaultPib)
-	{
-		//Disable low LQI rejection @ MAC Layer
-		uint8_t disable = 0;
-		HWME_SET_request_sync(0x11, 1, &disable, pDeviceRef);
-
-		//LQI values should be derived from receive energy
-		uint8_t LQImode = HWME_LQIMODE_ED;
-		HWME_SET_request_sync(HWME_LQIMODE, 1, &LQImode, pDeviceRef);
-
-#if CASCODA_CA_VER >= 8211
-		//Increase the max indirect queue length to 8
-		uint8_t maxInd = 8;
-		HWME_SET_request_sync(HWME_MAXINDIRECTS, 1, &maxInd, pDeviceRef);
-#endif // CASCODA_CA_VER >= 8211
-	}
+	if(!error)
+		error = TDME_ReconfigurePIB(setDefaultPib, pDeviceRef);
 
 	return ConvertErrorMacToOt(error);
 }
@@ -326,21 +352,63 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 {
 	(void)aInstance;
 	ca_mac_status error;
+	uint8_t sSendUnicastIndToOpenthread = 0;
 
 #if CASCODA_CA_VER >= 8212
 	error = MLME_POLL_request(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
 	                          0,
 	                          (struct SecSpec *)&(aPollRequest->mSecurity),
 	                          pDeviceRef);
-#elif CASCODA_CA_VER == 8211
+#else
+
+    // Only allow one poll request at a time
+    if (sIsDataPollInProgress)
+    {
+        ca_log_debg("poll_req: error: OT_ERROR_ALREADY");
+        return OT_ERROR_ALREADY;
+    }
+
+    uint8_t attlen;
+    uint16_t waittime = 0;
+	uint8_t rxidl = 1;
+
+    // Find out the rxon timeout duration from the MAC PIB (in number of symbols)
+    if ((error = MLME_GET_request_sync(macMaxFrameTotalWaitTime, 0, &attlen, &waittime, pDeviceRef)))
+    {
+        ca_log_crit("poll_req: MLME GET macMaxFrameTotalWaitTime FAILED");
+        goto exit;
+    }
+    ca_log_debg("poll_req: waittime in num of symbols: %d", waittime);
+
+    // Convert to ms (1 symbol = 16 us, as defined in the MAC)
+    waittime = (waittime * 16) / 1000;
+    ca_log_debg("poll_req: waittime_ms: %d", waittime);
+
+    // Starting states
+    ca_log_debg("poll_req: sIsDataPollInProgress %d -> 1", sIsDataPollInProgress);
+    sIsDataPollInProgress = 1;
+    ca_log_debg("poll_req: sUnicastReceivedDuringDataPoll %d -> 0", sUnicastReceivedDuringDataPoll);
+    sUnicastReceivedDuringDataPoll = 0;
+
+    // About to start a data poll, turn the receiver on
+	if ((error = MLME_SET_request_sync(macRxOnWhenIdle, 0, 1, &rxidl, pDeviceRef)))
+    {
+        ca_log_crit("poll_req: MLME SET macRxOnWhenIdle FAILED");
+        goto exit;
+    }
+    ca_log_debg("poll_req: RECEIVER TURNED ON");
+
+    // Start the data poll
+#if CASCODA_CA_VER == 8211
 	error = MLME_POLL_request_sync(
 	    *((struct FullAddr *)&(aPollRequest->mCoordAddress)), (struct SecSpec *)&(aPollRequest->mSecurity), pDeviceRef);
-#else
+#else // CASCODA_CA_VER == 8210
 	uint8_t interval[2] = {0, 0};
 	error               = MLME_POLL_request_sync(*((struct FullAddr *)&(aPollRequest->mCoordAddress)),
                                    interval,
                                    (struct SecSpec *)&(aPollRequest->mSecurity),
                                    pDeviceRef);
+#endif // CASCODA_CA_VER == 8211
 #endif // CASCODA_CA_VER >= 8212
 
 #if CASCODA_CA_VER < 8212
@@ -349,9 +417,72 @@ otError otPlatMlmePollRequest(otInstance *aInstance, otPollRequest *aPollRequest
 	the case for the CA8212, where the MLME POLL is an asynchronous command. In
 	that case, the confirm status will be available via a callback, as is the case
 	with all other asynchronous messages (e.g. MCPS-DATA). */
-	if (error == MAC_SUCCESS)
-		sIsExpectingIndication = 1;
+    if (error == MAC_SUCCESS)
+    {
+        ca_log_debg("poll_req: MAC_SUCCESS");
+        uint32_t startticks = TIME_ReadAbsoluteTime();
+
+        // MAC_SUCCESS means that some data has been received (either broadcast or not)
+        // We need to wait until timeout, or until a data indication has come through,
+        // in order to decide what to do next
+        while (true)
+        {
+            cascoda_io_handler(pDeviceRef);
+
+            if (sUnicastReceivedDuringDataPoll)
+            {
+                ca_log_debg("poll_req: sUnicastReceivedDuringDataPoll");
+
+				// Signal that the received unicast should be sent to openthread ASAP after returning from this function
+				sSendUnicastIndToOpenthread = 1;
+
+                // Let the platform know that an indication is expected (e.g. this is used
+                // by other functions to determine whether we can go to sleep or not)
+                ca_log_debg("poll_req: sIsExpectingIndication %d -> 1", sIsExpectingIndication);
+                sIsExpectingIndication = 1;
+
+                break;
+            }
+
+            if ((TIME_ReadAbsoluteTime() - startticks) >= waittime)
+            {
+                // The data poll has timed out without receiving any data
+                ca_log_debg("poll_req: MAC_NO_DATA");
+                error = MAC_NO_DATA;
+                break;
+            }
+
+        }
+    }
+    else
+    {
+        ca_log_debg("poll_req: ERROR: 0x%x", error);
+    }
+
 #endif // CASCODA_CA_VER < 8212
+
+exit:
+#if CASCODA_CA_VER <= 8211
+    // Signal that the data poll is done (turns receiver off and updates the state)
+    dataPollDone();
+    // Wait for the state to reset
+    uint32_t start_time = BSP_ReadAbsoluteTime();
+    while (sIsDataPollInProgress)
+    {
+        BSP_ResetOnLoopStuck(start_time); // Protection against infinite loop
+        cascoda_io_handler(pDeviceRef); // Allows handling of io and tasklets
+    }
+
+	// Schedule the received unicast to be sent to openthread ASAP after returning
+	// from this function. (It has to be done in this order, because the return of this function
+	// acts as the MLME POLL confirm. And that should go to Thread before the data indication)
+	if (sSendUnicastIndToOpenthread)
+	{
+		ca_log_debg("poll_req: Scheduling sHandleUnicastIndTasklet");
+		TASKLET_ScheduleDelta(&sHandleUnicastIndTasklet, 0, NULL);
+		sSendUnicastIndToOpenthread = 0;
+	}
+#endif
 
 	return ConvertErrorMacToOt(error);
 }
@@ -405,19 +536,64 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle)
 
 static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, struct ca821x_dev *aDeviceRef)
 {
-	(void)aDeviceRef;
 	int16_t rssi;
+	uint8_t csvallp;
+	uint8_t len;
 	//TODO: Move this off the stack
 	otDataIndication dataInd = {0};
 
-	sIsExpectingIndication = 0;
+#if CASCODA_CA_VER <= 8211
+    if (!sIsDataPollInProgress)
+    {
+        ca_log_debg("handleInd: !sIsDataPollInProgress");
+        // If a data poll is in progress, we don't want to reset the state
+        // of expecting indication yet, we need to do that once we are about
+        // to pass up a unicast to Thread.
+        ca_log_debg("handleInd: sIsExpectingIndication %d -> 0", sIsExpectingIndication);
+        sIsExpectingIndication = 0;
+    }
+#endif // CASCODA_CA_VER <= 8211
 
-	dataInd.mSrc             = *((struct otFullAddr *)&(params->Src));
-	dataInd.mDst             = *((struct otFullAddr *)&(params->Dst));
-	dataInd.mMsduLength      = params->MsduLength;
-	rssi                     = ((int16_t)params->MpduLinkQuality - 256) / 2; //convert to rssi
-	dataInd.mMpduLinkQuality = rssi;
-	dataInd.mDSN             = params->DSN;
+	// Get the Carrier Sense value for the last packet now. We are doing it here,
+	// because this is the earliest point at which this can be done. This minimizes
+	// the chance that a newer PHY frame is received by the CA821x before we get the chance to extract
+	// the Carrier Sense for the frame which is being handled here.
+
+	/* get cs value for last data packet */
+	HWME_GET_request_sync(HWME_CSVALLP, &len, &csvallp, aDeviceRef);
+
+	dataInd.mSrc              = *((struct otFullAddr *)&(params->Src));
+	dataInd.mDst              = *((struct otFullAddr *)&(params->Dst));
+
+#if CASCODA_CA_VER <= 8211
+    if (sIsDataPollInProgress)
+    {
+        ca_log_debg("handleInd: sIsDataPollInProgress");
+        if (dataInd.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
+            dataInd.mDst.mAddress[0] == 0xff && dataInd.mDst.mAddress[1] == 0xff)
+        {
+            ca_log_debg("handleInd: Broadcast Rejected");
+
+
+            // Silently reject broadcasts
+            goto exit;
+        }
+    }
+    else
+    {
+        if (dataInd.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
+            dataInd.mDst.mAddress[0] == 0xff && dataInd.mDst.mAddress[1] == 0xff)
+        {
+            ca_log_debg("handleInd: BROADCAST RECEIVED, BUT sIsDataPollInProgress is FALSE! (OK for non-sleepy devices)");
+        }
+    }
+#endif // CASCODA_CA_VER <= 8211
+
+	dataInd.mMsduLength       = params->MsduLength;
+	rssi                      = ((int16_t)params->MpduLinkQuality - 256) / 2; //convert to rssi
+	dataInd.mMpduLinkQuality  = rssi;
+	dataInd.mLinkCarrierSense = csvallp;
+	dataInd.mDSN              = params->DSN;
 #if CASCODA_CA_VER >= 8212
 	//TODO: Uncomment lines in this section once otDataIndication extra parameters are implemented in OpenThread.
 
@@ -460,8 +636,23 @@ static ca_error handleDataIndication(struct MCPS_DATA_indication_pset *params, s
 	}
 
 	ca_log_debg("MAC Rx Data Indication");
+
+#if CASCODA_CA_VER <= 8211
+    if (sIsDataPollInProgress)
+    {
+        ca_log_debg("handleInd: sIsDataPollInProgress");
+        // If a data poll is in progress, do not send the indication to OpenThread yet.
+        // Save it, to be sent after the the Poll Confirm.
+        ca_log_debg("handleInd: sUnicastReceivedDuringDataPoll %d -> 1", sUnicastReceivedDuringDataPoll);
+        sUnicastReceivedDuringDataPoll = 1;
+        sUnicastDataIndDuringPoll = dataInd;
+        goto exit;
+    }
+#endif // CASCODA_CA_VER <= 8211
+
 	otPlatMcpsDataIndication(OT_INSTANCE, &dataInd);
 
+exit:
 	return CA_ERROR_SUCCESS;
 }
 
@@ -583,7 +774,7 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance)
 {
 	(void)aInstance;
-	return -105;
+	return -95;
 }
 
 //static int driverErrorCallback(int error_number)
@@ -645,6 +836,12 @@ static int platformRadioInitWithDevNoEui(struct ca821x_dev *apDeviceRef)
 	otPlatMlmeReset(NULL, true);
 
 	sRadioInitialised = 1;
+
+#if CASCODA_CA_VER <= 8211
+    // Initialise the tasklets used for mlme poll
+    TASKLET_Init(&sHandleUnicastIndTasklet, &handleUnicastIndDuringPoll);
+    TASKLET_Init(&sResetDataPollInProgressTasklet, &resetDataPollInProgress);
+#endif // CASCODA_CA_VER <= 8211
 
 	return 0;
 }
@@ -770,6 +967,18 @@ otError otPlatHwmeSet(otInstance *aInstance, uint8_t aAttr, uint8_t aLen, uint8_
 	otErr = ConvertErrorMacToOt(error);
 
 	return otErr;
+}
+
+otError otPlatPowerUpRadio(otInstance *aInstance)
+{
+    (void)aInstance;
+    uint8_t error;
+    otError otErr;
+
+    error = EVBME_PowerUpRadio(pDeviceRef);
+    otErr = ConvertErrorMacToOt(error);
+
+    return otErr;
 }
 
 // EOF Cascoda low level cli access

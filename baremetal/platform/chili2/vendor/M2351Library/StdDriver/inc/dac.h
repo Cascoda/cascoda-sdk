@@ -4,7 +4,8 @@
  * @brief    M2351 series DAC driver header file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __DAC_H__
 #define __DAC_H__
@@ -86,26 +87,25 @@ extern "C"
 #define DAC_ENABLE_RIGHT_ALIGN(dac) ((dac)->CTL &= ~DAC_CTL_LALIGN_Msk)
 
 /**
-  * @brief Enable output voltage buffer.
+  * @brief Enable bypass voltage output buffer mode.
   * @param[in] dac The pointer of the specified DAC module.
   * @return None
-  * @details The DAC integrates a voltage output buffer that can be used to reduce output impedance and
-  *         drive external loads directly without having to add an external operational amplifier.
+  * @details This will make DAC output bypass the voltage output buffer.
   */
 #define DAC_ENABLE_BYPASS_BUFFER(dac) ((dac)->CTL |= DAC_CTL_BYPASS_Msk)
 
 /**
-  * @brief Disable output voltage buffer.
+  * @brief Disable bypass voltage output buffer mode.
   * @param[in] dac The pointer of the specified DAC module.
   * @return None
-  * @details This macro is used to disable output voltage buffer.
+  * @details This will make DAC output through the voltage output buffer.
   */
 #define DAC_DISABLE_BYPASS_BUFFER(dac) ((dac)->CTL &= ~DAC_CTL_BYPASS_Msk)
 
 /**
   * @brief Enable the interrupt.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @return None
   * @details This macro is used to enable DAC interrupt.
   */
@@ -114,7 +114,7 @@ extern "C"
 /**
   * @brief Disable the interrupt.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @return None
   * @details This macro is used to disable DAC interrupt.
   */
@@ -155,7 +155,7 @@ extern "C"
 /**
   * @brief Write data for conversion.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @param[in] u32Data Decides the data for conversion, valid range are between 0~0xFFF.
   * @return None
   * @details 12 bit left alignment: user has to load data into DAC_DAT[15:4] bits.
@@ -166,7 +166,7 @@ extern "C"
 /**
   * @brief Read DAC 12-bit holding data.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @return Return DAC 12-bit holding data.
   * @details This macro is used to read DAC_DAT register.
   */
@@ -175,7 +175,7 @@ extern "C"
 /**
   * @brief Get the busy state of DAC.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @retval 0 Idle state.
   * @retval 1 Busy state.
   * @details This macro is used to read BUSY bit (DAC_STATUS[8]) to get busy state.
@@ -185,7 +185,7 @@ extern "C"
 /**
   * @brief Get the interrupt flag.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @retval 0 DAC is in conversion state.
   * @retval 1 DAC conversion finish.
   * @details This macro is used to read FINISH bit (DAC_STATUS[0]) to get DAC conversion complete finish flag.
@@ -204,7 +204,7 @@ extern "C"
 /**
   * @brief This macro clear the interrupt status bit.
   * @param[in] dac The pointer of the specified DAC module.
-  * @param[in] u32Ch Not used in M2351 Series DAC.
+  * @param[in] u32Ch Not used.
   * @return None
   * @details User writes FINISH bit (DAC_STATUS[0]) to clear DAC conversion complete finish flag.
   */
@@ -253,4 +253,4 @@ uint32_t DAC_SetDelayTime(DAC_T *dac, uint32_t u32Delay);
 
 #endif /* __DAC_H__ */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

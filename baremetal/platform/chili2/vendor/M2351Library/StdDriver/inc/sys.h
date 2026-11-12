@@ -4,8 +4,9 @@
  * @brief    M2351 series System Manager (SYS) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __SYS_H__
 #define __SYS_H__
@@ -71,7 +72,6 @@ extern "C"
 #define SPI3_RST    ((0x8UL<<24)|(uint32_t)SYS_IPRST2_SPI3RST_Pos)      /*!< SPI3 reset is one of the SYS_ResetModule parameter */
 #define USCI0_RST   ((0x8UL<<24)|(uint32_t)SYS_IPRST2_USCI0RST_Pos)     /*!< USCI0 reset is one of the SYS_ResetModule parameter */
 #define USCI1_RST   ((0x8UL<<24)|(uint32_t)SYS_IPRST2_USCI1RST_Pos)     /*!< USCI1 reset is one of the SYS_ResetModule parameter */
-#define USCI2_RST   ((0x8UL<<24)|(uint32_t)SYS_IPRST2_USCI2RST_Pos)     /*!< USCI2 reset is one of the SYS_ResetModule parameter */
 #define DAC_RST     ((0x8UL<<24)|(uint32_t)SYS_IPRST2_DACRST_Pos)       /*!< DAC reset is one of the SYS_ResetModule parameter */
 #define EPWM0_RST   ((0x8UL<<24)|(uint32_t)SYS_IPRST2_EPWM0RST_Pos)     /*!< EPWM0 reset is one of the SYS_ResetModule parameter */
 #define EPWM1_RST   ((0x8UL<<24)|(uint32_t)SYS_IPRST2_EPWM1RST_Pos)     /*!< EPWM1 reset is one of the SYS_ResetModule parameter */
@@ -106,7 +106,9 @@ extern "C"
 #define SYS_VREFCTL_VREF_2_0V       (0x7UL<<SYS_VREFCTL_VREFCTL_Pos)    /*!< Vref = 2.0V */
 #define SYS_VREFCTL_VREF_2_5V       (0xBUL<<SYS_VREFCTL_VREFCTL_Pos)    /*!< Vref = 2.5V */
 #define SYS_VREFCTL_VREF_3_0V       (0xFUL<<SYS_VREFCTL_VREFCTL_Pos)    /*!< Vref = 3.0V */
+// CASCODA, 25/08/29; removed in v3.00.007. Needs Investigating !!
 #define SYS_VREFCTL_VREF_AVDD       (0x10UL<<SYS_VREFCTL_VREFCTL_Pos)   /*!< Vref = AVDD */
+// CASCODA
 
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -121,8 +123,8 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  PLCTL constant definitions. (Write-Protection Register)                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define SYS_PLCTL_PLSEL_PL0     (0x0UL<<SYS_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 0 */
-#define SYS_PLCTL_PLSEL_PL1     (0x1UL<<SYS_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 1 */
+#define SYS_PLCTL_PLSEL_PL0     (0x0UL<<SYS_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 0. Supports system clock up to 64MHz. */
+#define SYS_PLCTL_PLSEL_PL1     (0x1UL<<SYS_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 1. Supports system clock up to 48MHz. */
 #define SYS_PLCTL_MVRS_LDO      (0x0UL<<SYS_PLCTL_MVRS_Pos)    /*!< Set main voltage regulator type to LDO */
 #define SYS_PLCTL_MVRS_DCDC     (0x1UL<<SYS_PLCTL_MVRS_Pos)    /*!< Set main voltage regulator type to DCDC */
 
@@ -130,8 +132,8 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  PLSTS constant definitions. (Write-Protection Register)                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define SYS_PLSTS_PLSTATUS_PL0  (0x0UL<<SYS_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 0 */
-#define SYS_PLSTS_PLSTATUS_PL1  (0x1UL<<SYS_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 1 */
+#define SYS_PLSTS_PLSTATUS_PL0  (0x0UL<<SYS_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 0. Supports system clock up to 64MHz. */
+#define SYS_PLSTS_PLSTATUS_PL1  (0x1UL<<SYS_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 1. Supports system clock up to 48MHz. */
 #define SYS_PLSTS_CURMVR_LDO    (0x0UL<<SYS_PLSTS_CURMVR_Pos)   /*!< Main voltage regulator type is LDO */
 #define SYS_PLSTS_CURMVR_DCDC   (0x1UL<<SYS_PLSTS_CURMVR_Pos)   /*!< Main voltage regulator type is DCDC */
 
@@ -144,7 +146,7 @@ extern "C"
 #define SYS_SRAMPCTL_SRAM_POWER_SHUT_DOWN 0x2UL   /*!< Select system SRAM power mode to power shut down mode */
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  SRAMPPCTL constant definitions. (Write-Protection Register)                                            */
+/*  SRAMPPCT constant definitions. (Write-Protection Register)                                             */
 /*---------------------------------------------------------------------------------------------------------*/
 #define SYS_SRAMPPCT_SRAM_NORMAL          0x0UL   /*!< Select peripheral SRAM power mode to normal mode */
 #define SYS_SRAMPPCT_SRAM_RETENTION       0x1UL   /*!< Select peripheral SRAM power mode to retention mode */
@@ -2627,11 +2629,11 @@ Example: If user want to set PA.1 as UART0_TXD and PA.0 as UART0_RXD in initial 
 #define TM3_PB2_Msk             SYS_GPB_MFPL_PB2MFP_Msk        /*<! TM3             PB2      MFP Mask */
 #define TM3_EXT_PA8_Msk         SYS_GPA_MFPH_PA8MFP_Msk        /*<! TM3_EXT         PA8      MFP Mask */
 #define TM3_EXT_PB12_Msk        SYS_GPB_MFPH_PB12MFP_Msk       /*<! TM3_EXT         PB12     MFP Mask */
-#define TRACE_CLK_PE12_Msk      SYS_GPE_MFPH_PE8MFP_Msk        /*<! TRACE_CLK       PE12     MFP Mask */
-#define TRACE_DATA0_PE11_Msk    SYS_GPE_MFPH_PE9MFP_Msk        /*<! TRACE_DATA0     PE11     MFP Mask */
+#define TRACE_CLK_PE12_Msk      SYS_GPE_MFPH_PE12MFP_Msk        /*<! TRACE_CLK       PE12     MFP Mask */
+#define TRACE_DATA0_PE11_Msk    SYS_GPE_MFPH_PE11MFP_Msk        /*<! TRACE_DATA0     PE11     MFP Mask */
 #define TRACE_DATA1_PE10_Msk    SYS_GPE_MFPH_PE10MFP_Msk       /*<! TRACE_DATA1     PE10     MFP Mask */
-#define TRACE_DATA2_PE9_Msk     SYS_GPE_MFPH_PE11MFP_Msk       /*<! TRACE_DATA2     PE9      MFP Mask */
-#define TRACE_DATA3_PE8_Msk     SYS_GPE_MFPH_PE12MFP_Msk       /*<! TRACE_DATA3     PE8      MFP Mask */
+#define TRACE_DATA2_PE9_Msk     SYS_GPE_MFPH_PE9MFP_Msk       /*<! TRACE_DATA2     PE9      MFP Mask */
+#define TRACE_DATA3_PE8_Msk     SYS_GPE_MFPH_PE8MFP_Msk       /*<! TRACE_DATA3     PE8      MFP Mask */
 #define UART0_RXD_PD2_Msk       SYS_GPD_MFPL_PD2MFP_Msk        /*<! UART0_RXD       PD2      MFP Mask */
 #define UART0_RXD_PB8_Msk       SYS_GPB_MFPH_PB8MFP_Msk        /*<! UART0_RXD       PB8      MFP Mask */
 #define UART0_RXD_PA0_Msk       SYS_GPA_MFPL_PA0MFP_Msk        /*<! UART0_RXD       PA0      MFP Mask */
@@ -2800,6 +2802,801 @@ Example: If user want to set PA.1 as UART0_TXD and PA.0 as UART0_RXD in initial 
 #define XT1_IN_PF3_Msk          SYS_GPF_MFPL_PF3MFP_Msk        /*<! XT1_IN          PF3      MFP Mask */
 #define XT1_OUT_PF2_Msk         SYS_GPF_MFPL_PF2MFP_Msk        /*<! XT1_OUT         PF2      MFP Mask */
 
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  Multi-Function macro definitions.                                                                      */
+/*---------------------------------------------------------------------------------------------------------*/
+
+#define SET_ACMP0_N_PB3()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP0_N_PB3_Msk)) | ACMP0_N_PB3              /*!< Set PB3 function to ACMP0_N          */
+#define SET_ACMP0_O_PB7()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP0_O_PB7_Msk)) | ACMP0_O_PB7              /*!< Set PB7 function to ACMP0_O          */
+#define SET_ACMP0_O_PC1()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~ACMP0_O_PC1_Msk)) | ACMP0_O_PC1              /*!< Set PC1 function to ACMP0_O          */
+#define SET_ACMP0_O_PC12()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~ACMP0_O_PC12_Msk)) | ACMP0_O_PC12            /*!< Set PC12 function to ACMP0_O         */
+#define SET_ACMP0_P0_PA11()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~ACMP0_P0_PA11_Msk)) | ACMP0_P0_PA11          /*!< Set PA11 function to ACMP0_P0        */
+#define SET_ACMP0_P1_PB2()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP0_P1_PB2_Msk)) | ACMP0_P1_PB2            /*!< Set PB2 function to ACMP0_P1         */
+#define SET_ACMP0_P2_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~ACMP0_P2_PB12_Msk)) | ACMP0_P2_PB12          /*!< Set PB12 function to ACMP0_P2        */
+#define SET_ACMP0_P3_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~ACMP0_P3_PB13_Msk)) | ACMP0_P3_PB13          /*!< Set PB13 function to ACMP0_P3        */
+#define SET_ACMP0_WLAT_PA7()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~ACMP0_WLAT_PA7_Msk)) | ACMP0_WLAT_PA7        /*!< Set PA7 function to ACMP0_WLAT       */
+#define SET_ACMP1_N_PB5()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP1_N_PB5_Msk)) | ACMP1_N_PB5              /*!< Set PB5 function to ACMP1_N          */
+#define SET_ACMP1_O_PB6()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP1_O_PB6_Msk)) | ACMP1_O_PB6              /*!< Set PB6 function to ACMP1_O          */
+#define SET_ACMP1_O_PC11()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~ACMP1_O_PC11_Msk)) | ACMP1_O_PC11            /*!< Set PC11 function to ACMP1_O         */
+#define SET_ACMP1_O_PC0()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~ACMP1_O_PC0_Msk)) | ACMP1_O_PC0              /*!< Set PC0 function to ACMP1_O          */
+#define SET_ACMP1_P0_PA10()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~ACMP1_P0_PA10_Msk)) | ACMP1_P0_PA10          /*!< Set PA10 function to ACMP1_P0        */
+#define SET_ACMP1_P1_PB4()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~ACMP1_P1_PB4_Msk)) | ACMP1_P1_PB4            /*!< Set PB4 function to ACMP1_P1         */
+#define SET_ACMP1_P2_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~ACMP1_P2_PB12_Msk)) | ACMP1_P2_PB12          /*!< Set PB12 function to ACMP1_P2        */
+#define SET_ACMP1_P3_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~ACMP1_P3_PB13_Msk)) | ACMP1_P3_PB13          /*!< Set PB13 function to ACMP1_P3        */
+#define SET_ACMP1_WLAT_PA6()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~ACMP1_WLAT_PA6_Msk)) | ACMP1_WLAT_PA6        /*!< Set PA6 function to ACMP1_WLAT       */
+#define SET_BPWM0_CH0_PA0()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH0_PA0_Msk)) | BPWM0_CH0_PA0          /*!< Set PA0 function to BPWM0_CH0        */
+#define SET_BPWM0_CH0_PA11()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM0_CH0_PA11_Msk)) | BPWM0_CH0_PA11        /*!< Set PA11 function to BPWM0_CH0       */
+#define SET_BPWM0_CH0_PE2()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH0_PE2_Msk)) | BPWM0_CH0_PE2          /*!< Set PE2 function to BPWM0_CH0        */
+#define SET_BPWM0_CH0_PG14()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH0_PG14_Msk)) | BPWM0_CH0_PG14        /*!< Set PG14 function to BPWM0_CH0       */
+#define SET_BPWM0_CH1_PA1()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH1_PA1_Msk)) | BPWM0_CH1_PA1          /*!< Set PA1 function to BPWM0_CH1        */
+#define SET_BPWM0_CH1_PE3()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH1_PE3_Msk)) | BPWM0_CH1_PE3          /*!< Set PE3 function to BPWM0_CH1        */
+#define SET_BPWM0_CH1_PG13()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH1_PG13_Msk)) | BPWM0_CH1_PG13        /*!< Set PG13 function to BPWM0_CH1       */
+#define SET_BPWM0_CH1_PA10()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM0_CH1_PA10_Msk)) | BPWM0_CH1_PA10        /*!< Set PA10 function to BPWM0_CH1       */
+#define SET_BPWM0_CH2_PE4()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH2_PE4_Msk)) | BPWM0_CH2_PE4          /*!< Set PE4 function to BPWM0_CH2        */
+#define SET_BPWM0_CH2_PG12()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH2_PG12_Msk)) | BPWM0_CH2_PG12        /*!< Set PG12 function to BPWM0_CH2       */
+#define SET_BPWM0_CH2_PA2()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH2_PA2_Msk)) | BPWM0_CH2_PA2          /*!< Set PA2 function to BPWM0_CH2        */
+#define SET_BPWM0_CH2_PA9()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM0_CH2_PA9_Msk)) | BPWM0_CH2_PA9          /*!< Set PA9 function to BPWM0_CH2        */
+#define SET_BPWM0_CH3_PG11()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH3_PG11_Msk)) | BPWM0_CH3_PG11        /*!< Set PG11 function to BPWM0_CH3       */
+#define SET_BPWM0_CH3_PA3()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH3_PA3_Msk)) | BPWM0_CH3_PA3          /*!< Set PA3 function to BPWM0_CH3        */
+#define SET_BPWM0_CH3_PA8()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM0_CH3_PA8_Msk)) | BPWM0_CH3_PA8          /*!< Set PA8 function to BPWM0_CH3        */
+#define SET_BPWM0_CH3_PE5()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH3_PE5_Msk)) | BPWM0_CH3_PE5          /*!< Set PE5 function to BPWM0_CH3        */
+#define SET_BPWM0_CH4_PG10()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH4_PG10_Msk)) | BPWM0_CH4_PG10        /*!< Set PG10 function to BPWM0_CH4       */
+#define SET_BPWM0_CH4_PA4()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH4_PA4_Msk)) | BPWM0_CH4_PA4          /*!< Set PA4 function to BPWM0_CH4        */
+#define SET_BPWM0_CH4_PC13()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~BPWM0_CH4_PC13_Msk)) | BPWM0_CH4_PC13        /*!< Set PC13 function to BPWM0_CH4       */
+#define SET_BPWM0_CH4_PE6()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH4_PE6_Msk)) | BPWM0_CH4_PE6          /*!< Set PE6 function to BPWM0_CH4        */
+#define SET_BPWM0_CH4_PF5()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM0_CH4_PF5_Msk)) | BPWM0_CH4_PF5          /*!< Set PF5 function to BPWM0_CH4        */
+#define SET_BPWM0_CH5_PA5()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM0_CH5_PA5_Msk)) | BPWM0_CH5_PA5          /*!< Set PA5 function to BPWM0_CH5        */
+#define SET_BPWM0_CH5_PE7()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~BPWM0_CH5_PE7_Msk)) | BPWM0_CH5_PE7          /*!< Set PE7 function to BPWM0_CH5        */
+#define SET_BPWM0_CH5_PF4()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM0_CH5_PF4_Msk)) | BPWM0_CH5_PF4          /*!< Set PF4 function to BPWM0_CH5        */
+#define SET_BPWM0_CH5_PD12()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~BPWM0_CH5_PD12_Msk)) | BPWM0_CH5_PD12        /*!< Set PD12 function to BPWM0_CH5       */
+#define SET_BPWM0_CH5_PG9()      SYS->GPG_MFPH = (SYS->GPG_MFPH & (~BPWM0_CH5_PG9_Msk)) | BPWM0_CH5_PG9          /*!< Set PG9 function to BPWM0_CH5        */
+#define SET_BPWM1_CH0_PB11()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~BPWM1_CH0_PB11_Msk)) | BPWM1_CH0_PB11        /*!< Set PB11 function to BPWM1_CH0       */
+#define SET_BPWM1_CH0_PC7()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~BPWM1_CH0_PC7_Msk)) | BPWM1_CH0_PC7          /*!< Set PC7 function to BPWM1_CH0        */
+#define SET_BPWM1_CH0_PF0()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM1_CH0_PF0_Msk)) | BPWM1_CH0_PF0          /*!< Set PF0 function to BPWM1_CH0        */
+#define SET_BPWM1_CH0_PF3()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM1_CH0_PF3_Msk)) | BPWM1_CH0_PF3          /*!< Set PF3 function to BPWM1_CH0        */
+#define SET_BPWM1_CH1_PC6()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~BPWM1_CH1_PC6_Msk)) | BPWM1_CH1_PC6          /*!< Set PC6 function to BPWM1_CH1        */
+#define SET_BPWM1_CH1_PF1()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM1_CH1_PF1_Msk)) | BPWM1_CH1_PF1          /*!< Set PF1 function to BPWM1_CH1        */
+#define SET_BPWM1_CH1_PF2()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~BPWM1_CH1_PF2_Msk)) | BPWM1_CH1_PF2          /*!< Set PF2 function to BPWM1_CH1        */
+#define SET_BPWM1_CH1_PB10()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~BPWM1_CH1_PB10_Msk)) | BPWM1_CH1_PB10        /*!< Set PB10 function to BPWM1_CH1       */
+#define SET_BPWM1_CH2_PB9()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~BPWM1_CH2_PB9_Msk)) | BPWM1_CH2_PB9          /*!< Set PB9 function to BPWM1_CH2        */
+#define SET_BPWM1_CH2_PA7()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM1_CH2_PA7_Msk)) | BPWM1_CH2_PA7          /*!< Set PA7 function to BPWM1_CH2        */
+#define SET_BPWM1_CH2_PA12()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM1_CH2_PA12_Msk)) | BPWM1_CH2_PA12        /*!< Set PA12 function to BPWM1_CH2       */
+#define SET_BPWM1_CH3_PA6()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~BPWM1_CH3_PA6_Msk)) | BPWM1_CH3_PA6          /*!< Set PA6 function to BPWM1_CH3        */
+#define SET_BPWM1_CH3_PA13()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM1_CH3_PA13_Msk)) | BPWM1_CH3_PA13        /*!< Set PA13 function to BPWM1_CH3       */
+#define SET_BPWM1_CH3_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~BPWM1_CH3_PB8_Msk)) | BPWM1_CH3_PB8          /*!< Set PB8 function to BPWM1_CH3        */
+#define SET_BPWM1_CH4_PA14()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM1_CH4_PA14_Msk)) | BPWM1_CH4_PA14        /*!< Set PA14 function to BPWM1_CH4       */
+#define SET_BPWM1_CH4_PC8()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~BPWM1_CH4_PC8_Msk)) | BPWM1_CH4_PC8          /*!< Set PC8 function to BPWM1_CH4        */
+#define SET_BPWM1_CH4_PB7()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~BPWM1_CH4_PB7_Msk)) | BPWM1_CH4_PB7          /*!< Set PB7 function to BPWM1_CH4        */
+#define SET_BPWM1_CH5_PA15()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~BPWM1_CH5_PA15_Msk)) | BPWM1_CH5_PA15        /*!< Set PA15 function to BPWM1_CH5       */
+#define SET_BPWM1_CH5_PB6()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~BPWM1_CH5_PB6_Msk)) | BPWM1_CH5_PB6          /*!< Set PB6 function to BPWM1_CH5        */
+#define SET_BPWM1_CH5_PE13()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~BPWM1_CH5_PE13_Msk)) | BPWM1_CH5_PE13        /*!< Set PE13 function to BPWM1_CH5       */
+#define SET_CAN0_RXD_PA13()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~CAN0_RXD_PA13_Msk)) | CAN0_RXD_PA13          /*!< Set PA13 function to CAN0_RXD        */
+#define SET_CAN0_RXD_PD10()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~CAN0_RXD_PD10_Msk)) | CAN0_RXD_PD10          /*!< Set PD10 function to CAN0_RXD        */
+#define SET_CAN0_RXD_PA4()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~CAN0_RXD_PA4_Msk)) | CAN0_RXD_PA4            /*!< Set PA4 function to CAN0_RXD         */
+#define SET_CAN0_RXD_PC4()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~CAN0_RXD_PC4_Msk)) | CAN0_RXD_PC4            /*!< Set PC4 function to CAN0_RXD         */
+#define SET_CAN0_RXD_PB10()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~CAN0_RXD_PB10_Msk)) | CAN0_RXD_PB10          /*!< Set PB10 function to CAN0_RXD        */
+#define SET_CAN0_RXD_PE15()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~CAN0_RXD_PE15_Msk)) | CAN0_RXD_PE15          /*!< Set PE15 function to CAN0_RXD        */
+#define SET_CAN0_TXD_PD11()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~CAN0_TXD_PD11_Msk)) | CAN0_TXD_PD11          /*!< Set PD11 function to CAN0_TXD        */
+#define SET_CAN0_TXD_PC5()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~CAN0_TXD_PC5_Msk)) | CAN0_TXD_PC5            /*!< Set PC5 function to CAN0_TXD         */
+#define SET_CAN0_TXD_PB11()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~CAN0_TXD_PB11_Msk)) | CAN0_TXD_PB11          /*!< Set PB11 function to CAN0_TXD        */
+#define SET_CAN0_TXD_PA12()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~CAN0_TXD_PA12_Msk)) | CAN0_TXD_PA12          /*!< Set PA12 function to CAN0_TXD        */
+#define SET_CAN0_TXD_PE14()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~CAN0_TXD_PE14_Msk)) | CAN0_TXD_PE14          /*!< Set PE14 function to CAN0_TXD        */
+#define SET_CAN0_TXD_PA5()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~CAN0_TXD_PA5_Msk)) | CAN0_TXD_PA5            /*!< Set PA5 function to CAN0_TXD         */
+#define SET_CLKO_PC13()          SYS->GPC_MFPH = (SYS->GPC_MFPH & (~CLKO_PC13_Msk)) | CLKO_PC13                  /*!< Set PC13 function to CLKO            */
+#define SET_CLKO_PB14()          SYS->GPB_MFPH = (SYS->GPB_MFPH & (~CLKO_PB14_Msk)) | CLKO_PB14                  /*!< Set PB14 function to CLKO            */
+#define SET_CLKO_PD12()          SYS->GPD_MFPH = (SYS->GPD_MFPH & (~CLKO_PD12_Msk)) | CLKO_PD12                  /*!< Set PD12 function to CLKO            */
+#define SET_CLKO_PG15()          SYS->GPG_MFPH = (SYS->GPG_MFPH & (~CLKO_PG15_Msk)) | CLKO_PG15                  /*!< Set PG15 function to CLKO            */
+#define SET_DAC0_OUT_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~DAC0_OUT_PB12_Msk)) | DAC0_OUT_PB12          /*!< Set PB12 function to DAC0_OUT        */
+#define SET_DAC0_ST_PA10()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~DAC0_ST_PA10_Msk)) | DAC0_ST_PA10            /*!< Set PA10 function to DAC0_ST         */
+#define SET_DAC0_ST_PA0()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~DAC0_ST_PA0_Msk)) | DAC0_ST_PA0              /*!< Set PA0 function to DAC0_ST          */
+#define SET_DAC1_OUT_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~DAC1_OUT_PB13_Msk)) | DAC1_OUT_PB13          /*!< Set PB13 function to DAC1_OUT        */
+#define SET_DAC1_ST_PA1()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~DAC1_ST_PA1_Msk)) | DAC1_ST_PA1              /*!< Set PA1 function to DAC1_ST          */
+#define SET_DAC1_ST_PA11()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~DAC1_ST_PA11_Msk)) | DAC1_ST_PA11            /*!< Set PA11 function to DAC1_ST         */
+#define SET_DSRC_RXON_PG14()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~DSRC_RXON_PG14_Msk)) | DSRC_RXON_PG14        /*!< Set PG14 function to DSRC_RXON       */
+#define SET_DSRC_RXON_PC4()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~DSRC_RXON_PC4_Msk)) | DSRC_RXON_PC4          /*!< Set PC4 function to DSRC_RXON        */
+#define SET_DSRC_RXON_PE6()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~DSRC_RXON_PE6_Msk)) | DSRC_RXON_PE6          /*!< Set PE6 function to DSRC_RXON        */
+#define SET_DSRC_TXON_PE7()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~DSRC_TXON_PE7_Msk)) | DSRC_TXON_PE7          /*!< Set PE7 function to DSRC_TXON        */
+#define SET_DSRC_TXON_PG13()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~DSRC_TXON_PG13_Msk)) | DSRC_TXON_PG13        /*!< Set PG13 function to DSRC_TXON       */
+#define SET_DSRC_TXON_PC5()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~DSRC_TXON_PC5_Msk)) | DSRC_TXON_PC5          /*!< Set PC5 function to DSRC_TXON        */
+#define SET_DSRC_WAKEUP_PE1()    SYS->GPE_MFPL = (SYS->GPE_MFPL & (~DSRC_WAKEUP_PE1_Msk)) | DSRC_WAKEUP_PE1      /*!< Set PE1 function to DSRC_WAKEUP      */
+#define SET_DSRC_WAKEUP_PB0()    SYS->GPB_MFPL = (SYS->GPB_MFPL & (~DSRC_WAKEUP_PB0_Msk)) | DSRC_WAKEUP_PB0      /*!< Set PB0 function to DSRC_WAKEUP      */
+#define SET_DSRC_WAKEUP_PG15()   SYS->GPG_MFPH = (SYS->GPG_MFPH & (~DSRC_WAKEUP_PG15_Msk)) | DSRC_WAKEUP_PG15    /*!< Set PG15 function to DSRC_WAKEUP     */
+#define SET_DSRC_WAKEUP_PD8()    SYS->GPD_MFPH = (SYS->GPD_MFPH & (~DSRC_WAKEUP_PD8_Msk)) | DSRC_WAKEUP_PD8      /*!< Set PD8 function to DSRC_WAKEUP      */
+#define SET_EADC0_CH0_PB0()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH0_PB0_Msk)) | EADC0_CH0_PB0          /*!< Set PB0 function to EADC0_CH0        */
+#define SET_EADC0_CH1_PB1()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH1_PB1_Msk)) | EADC0_CH1_PB1          /*!< Set PB1 function to EADC0_CH1        */
+#define SET_EADC0_CH10_PB10()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH10_PB10_Msk)) | EADC0_CH10_PB10      /*!< Set PB10 function to EADC0_CH10      */
+#define SET_EADC0_CH11_PB11()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH11_PB11_Msk)) | EADC0_CH11_PB11      /*!< Set PB11 function to EADC0_CH11      */
+#define SET_EADC0_CH12_PB12()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH12_PB12_Msk)) | EADC0_CH12_PB12      /*!< Set PB12 function to EADC0_CH12      */
+#define SET_EADC0_CH13_PB13()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH13_PB13_Msk)) | EADC0_CH13_PB13      /*!< Set PB13 function to EADC0_CH13      */
+#define SET_EADC0_CH14_PB14()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH14_PB14_Msk)) | EADC0_CH14_PB14      /*!< Set PB14 function to EADC0_CH14      */
+#define SET_EADC0_CH15_PB15()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH15_PB15_Msk)) | EADC0_CH15_PB15      /*!< Set PB15 function to EADC0_CH15      */
+#define SET_EADC0_CH2_PB2()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH2_PB2_Msk)) | EADC0_CH2_PB2          /*!< Set PB2 function to EADC0_CH2        */
+#define SET_EADC0_CH3_PB3()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH3_PB3_Msk)) | EADC0_CH3_PB3          /*!< Set PB3 function to EADC0_CH3        */
+#define SET_EADC0_CH4_PB4()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH4_PB4_Msk)) | EADC0_CH4_PB4          /*!< Set PB4 function to EADC0_CH4        */
+#define SET_EADC0_CH5_PB5()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH5_PB5_Msk)) | EADC0_CH5_PB5          /*!< Set PB5 function to EADC0_CH5        */
+#define SET_EADC0_CH6_PB6()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH6_PB6_Msk)) | EADC0_CH6_PB6          /*!< Set PB6 function to EADC0_CH6        */
+#define SET_EADC0_CH7_PB7()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EADC0_CH7_PB7_Msk)) | EADC0_CH7_PB7          /*!< Set PB7 function to EADC0_CH7        */
+#define SET_EADC0_CH8_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH8_PB8_Msk)) | EADC0_CH8_PB8          /*!< Set PB8 function to EADC0_CH8        */
+#define SET_EADC0_CH9_PB9()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EADC0_CH9_PB9_Msk)) | EADC0_CH9_PB9          /*!< Set PB9 function to EADC0_CH9        */
+#define SET_EADC0_ST_PD12()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EADC0_ST_PD12_Msk)) | EADC0_ST_PD12          /*!< Set PD12 function to EADC0_ST        */
+#define SET_EADC0_ST_PF5()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EADC0_ST_PF5_Msk)) | EADC0_ST_PF5            /*!< Set PF5 function to EADC0_ST         */
+#define SET_EADC0_ST_PC13()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EADC0_ST_PC13_Msk)) | EADC0_ST_PC13          /*!< Set PC13 function to EADC0_ST        */
+#define SET_EADC0_ST_PG15()      SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EADC0_ST_PG15_Msk)) | EADC0_ST_PG15          /*!< Set PG15 function to EADC0_ST        */
+#define SET_EBI_AD0_PG9()        SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD0_PG9_Msk)) | EBI_AD0_PG9              /*!< Set PG9 function to EBI_AD0          */
+#define SET_EBI_AD0_PC0()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD0_PC0_Msk)) | EBI_AD0_PC0              /*!< Set PC0 function to EBI_AD0          */
+#define SET_EBI_AD1_PC1()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD1_PC1_Msk)) | EBI_AD1_PC1              /*!< Set PC1 function to EBI_AD1          */
+#define SET_EBI_AD1_PG10()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD1_PG10_Msk)) | EBI_AD1_PG10            /*!< Set PG10 function to EBI_AD1         */
+#define SET_EBI_AD10_PE1()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_AD10_PE1_Msk)) | EBI_AD10_PE1            /*!< Set PE1 function to EBI_AD10         */
+#define SET_EBI_AD10_PD3()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~EBI_AD10_PD3_Msk)) | EBI_AD10_PD3            /*!< Set PD3 function to EBI_AD10         */
+#define SET_EBI_AD10_PD13()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_AD10_PD13_Msk)) | EBI_AD10_PD13          /*!< Set PD13 function to EBI_AD10        */
+#define SET_EBI_AD11_PE0()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_AD11_PE0_Msk)) | EBI_AD11_PE0            /*!< Set PE0 function to EBI_AD11         */
+#define SET_EBI_AD11_PD2()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~EBI_AD11_PD2_Msk)) | EBI_AD11_PD2            /*!< Set PD2 function to EBI_AD11         */
+#define SET_EBI_AD12_PD1()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~EBI_AD12_PD1_Msk)) | EBI_AD12_PD1            /*!< Set PD1 function to EBI_AD12         */
+#define SET_EBI_AD12_PB15()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_AD12_PB15_Msk)) | EBI_AD12_PB15          /*!< Set PB15 function to EBI_AD12        */
+#define SET_EBI_AD12_PH8()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~EBI_AD12_PH8_Msk)) | EBI_AD12_PH8            /*!< Set PH8 function to EBI_AD12         */
+#define SET_EBI_AD13_PD0()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~EBI_AD13_PD0_Msk)) | EBI_AD13_PD0            /*!< Set PD0 function to EBI_AD13         */
+#define SET_EBI_AD13_PB14()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_AD13_PB14_Msk)) | EBI_AD13_PB14          /*!< Set PB14 function to EBI_AD13        */
+#define SET_EBI_AD13_PH9()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~EBI_AD13_PH9_Msk)) | EBI_AD13_PH9            /*!< Set PH9 function to EBI_AD13         */
+#define SET_EBI_AD14_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_AD14_PB13_Msk)) | EBI_AD14_PB13          /*!< Set PB13 function to EBI_AD14        */
+#define SET_EBI_AD14_PH10()      SYS->GPH_MFPH = (SYS->GPH_MFPH & (~EBI_AD14_PH10_Msk)) | EBI_AD14_PH10          /*!< Set PH10 function to EBI_AD14        */
+#define SET_EBI_AD15_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_AD15_PB12_Msk)) | EBI_AD15_PB12          /*!< Set PB12 function to EBI_AD15        */
+#define SET_EBI_AD15_PH11()      SYS->GPH_MFPH = (SYS->GPH_MFPH & (~EBI_AD15_PH11_Msk)) | EBI_AD15_PH11          /*!< Set PH11 function to EBI_AD15        */
+#define SET_EBI_AD2_PG11()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD2_PG11_Msk)) | EBI_AD2_PG11            /*!< Set PG11 function to EBI_AD2         */
+#define SET_EBI_AD2_PC2()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD2_PC2_Msk)) | EBI_AD2_PC2              /*!< Set PC2 function to EBI_AD2          */
+#define SET_EBI_AD3_PC3()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD3_PC3_Msk)) | EBI_AD3_PC3              /*!< Set PC3 function to EBI_AD3          */
+#define SET_EBI_AD3_PG12()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD3_PG12_Msk)) | EBI_AD3_PG12            /*!< Set PG12 function to EBI_AD3         */
+#define SET_EBI_AD4_PG13()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD4_PG13_Msk)) | EBI_AD4_PG13            /*!< Set PG13 function to EBI_AD4         */
+#define SET_EBI_AD4_PC4()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD4_PC4_Msk)) | EBI_AD4_PC4              /*!< Set PC4 function to EBI_AD4          */
+#define SET_EBI_AD5_PG14()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~EBI_AD5_PG14_Msk)) | EBI_AD5_PG14            /*!< Set PG14 function to EBI_AD5         */
+#define SET_EBI_AD5_PC5()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD5_PC5_Msk)) | EBI_AD5_PC5              /*!< Set PC5 function to EBI_AD5          */
+#define SET_EBI_AD6_PD8()        SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_AD6_PD8_Msk)) | EBI_AD6_PD8              /*!< Set PD8 function to EBI_AD6          */
+#define SET_EBI_AD6_PA6()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EBI_AD6_PA6_Msk)) | EBI_AD6_PA6              /*!< Set PA6 function to EBI_AD6          */
+#define SET_EBI_AD7_PA7()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EBI_AD7_PA7_Msk)) | EBI_AD7_PA7              /*!< Set PA7 function to EBI_AD7          */
+#define SET_EBI_AD7_PD9()        SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_AD7_PD9_Msk)) | EBI_AD7_PD9              /*!< Set PD9 function to EBI_AD7          */
+#define SET_EBI_AD8_PC6()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD8_PC6_Msk)) | EBI_AD8_PC6              /*!< Set PC6 function to EBI_AD8          */
+#define SET_EBI_AD8_PE14()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_AD8_PE14_Msk)) | EBI_AD8_PE14            /*!< Set PE14 function to EBI_AD8         */
+#define SET_EBI_AD9_PE15()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_AD9_PE15_Msk)) | EBI_AD9_PE15            /*!< Set PE15 function to EBI_AD9         */
+#define SET_EBI_AD9_PC7()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~EBI_AD9_PC7_Msk)) | EBI_AD9_PC7              /*!< Set PC7 function to EBI_AD9          */
+#define SET_EBI_ADR0_PB5()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR0_PB5_Msk)) | EBI_ADR0_PB5            /*!< Set PB5 function to EBI_ADR0         */
+#define SET_EBI_ADR0_PH7()       SYS->GPH_MFPL = (SYS->GPH_MFPL & (~EBI_ADR0_PH7_Msk)) | EBI_ADR0_PH7            /*!< Set PH7 function to EBI_ADR0         */
+#define SET_EBI_ADR1_PH6()       SYS->GPH_MFPL = (SYS->GPH_MFPL & (~EBI_ADR1_PH6_Msk)) | EBI_ADR1_PH6            /*!< Set PH6 function to EBI_ADR1         */
+#define SET_EBI_ADR1_PB4()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR1_PB4_Msk)) | EBI_ADR1_PB4            /*!< Set PB4 function to EBI_ADR1         */
+#define SET_EBI_ADR10_PE8()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR10_PE8_Msk)) | EBI_ADR10_PE8          /*!< Set PE8 function to EBI_ADR10        */
+#define SET_EBI_ADR10_PC13()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR10_PC13_Msk)) | EBI_ADR10_PC13        /*!< Set PC13 function to EBI_ADR10       */
+#define SET_EBI_ADR11_PG2()      SYS->GPG_MFPL = (SYS->GPG_MFPL & (~EBI_ADR11_PG2_Msk)) | EBI_ADR11_PG2          /*!< Set PG2 function to EBI_ADR11        */
+#define SET_EBI_ADR11_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR11_PE9_Msk)) | EBI_ADR11_PE9          /*!< Set PE9 function to EBI_ADR11        */
+#define SET_EBI_ADR12_PG3()      SYS->GPG_MFPL = (SYS->GPG_MFPL & (~EBI_ADR12_PG3_Msk)) | EBI_ADR12_PG3          /*!< Set PG3 function to EBI_ADR12        */
+#define SET_EBI_ADR12_PE10()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR12_PE10_Msk)) | EBI_ADR12_PE10        /*!< Set PE10 function to EBI_ADR12       */
+#define SET_EBI_ADR13_PG4()      SYS->GPG_MFPL = (SYS->GPG_MFPL & (~EBI_ADR13_PG4_Msk)) | EBI_ADR13_PG4          /*!< Set PG4 function to EBI_ADR13        */
+#define SET_EBI_ADR13_PE11()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR13_PE11_Msk)) | EBI_ADR13_PE11        /*!< Set PE11 function to EBI_ADR13       */
+#define SET_EBI_ADR14_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR14_PE12_Msk)) | EBI_ADR14_PE12        /*!< Set PE12 function to EBI_ADR14       */
+#define SET_EBI_ADR14_PF11()     SYS->GPF_MFPH = (SYS->GPF_MFPH & (~EBI_ADR14_PF11_Msk)) | EBI_ADR14_PF11        /*!< Set PF11 function to EBI_ADR14       */
+#define SET_EBI_ADR15_PF10()     SYS->GPF_MFPH = (SYS->GPF_MFPH & (~EBI_ADR15_PF10_Msk)) | EBI_ADR15_PF10        /*!< Set PF10 function to EBI_ADR15       */
+#define SET_EBI_ADR15_PE13()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EBI_ADR15_PE13_Msk)) | EBI_ADR15_PE13        /*!< Set PE13 function to EBI_ADR15       */
+#define SET_EBI_ADR16_PB11()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_ADR16_PB11_Msk)) | EBI_ADR16_PB11        /*!< Set PB11 function to EBI_ADR16       */
+#define SET_EBI_ADR16_PF9()      SYS->GPF_MFPH = (SYS->GPF_MFPH & (~EBI_ADR16_PF9_Msk)) | EBI_ADR16_PF9          /*!< Set PF9 function to EBI_ADR16        */
+#define SET_EBI_ADR16_PC8()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR16_PC8_Msk)) | EBI_ADR16_PC8          /*!< Set PC8 function to EBI_ADR16        */
+#define SET_EBI_ADR17_PF8()      SYS->GPF_MFPH = (SYS->GPF_MFPH & (~EBI_ADR17_PF8_Msk)) | EBI_ADR17_PF8          /*!< Set PF8 function to EBI_ADR17        */
+#define SET_EBI_ADR17_PB10()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_ADR17_PB10_Msk)) | EBI_ADR17_PB10        /*!< Set PB10 function to EBI_ADR17       */
+#define SET_EBI_ADR18_PB9()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_ADR18_PB9_Msk)) | EBI_ADR18_PB9          /*!< Set PB9 function to EBI_ADR18        */
+#define SET_EBI_ADR18_PF7()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EBI_ADR18_PF7_Msk)) | EBI_ADR18_PF7          /*!< Set PF7 function to EBI_ADR18        */
+#define SET_EBI_ADR19_PF6()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EBI_ADR19_PF6_Msk)) | EBI_ADR19_PF6          /*!< Set PF6 function to EBI_ADR19        */
+#define SET_EBI_ADR19_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~EBI_ADR19_PB8_Msk)) | EBI_ADR19_PB8          /*!< Set PB8 function to EBI_ADR19        */
+#define SET_EBI_ADR2_PB3()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR2_PB3_Msk)) | EBI_ADR2_PB3            /*!< Set PB3 function to EBI_ADR2         */
+#define SET_EBI_ADR2_PH5()       SYS->GPH_MFPL = (SYS->GPH_MFPL & (~EBI_ADR2_PH5_Msk)) | EBI_ADR2_PH5            /*!< Set PH5 function to EBI_ADR2         */
+#define SET_EBI_ADR3_PH4()       SYS->GPH_MFPL = (SYS->GPH_MFPL & (~EBI_ADR3_PH4_Msk)) | EBI_ADR3_PH4            /*!< Set PH4 function to EBI_ADR3         */
+#define SET_EBI_ADR3_PB2()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR3_PB2_Msk)) | EBI_ADR3_PB2            /*!< Set PB2 function to EBI_ADR3         */
+#define SET_EBI_ADR4_PC12()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR4_PC12_Msk)) | EBI_ADR4_PC12          /*!< Set PC12 function to EBI_ADR4        */
+#define SET_EBI_ADR5_PC11()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR5_PC11_Msk)) | EBI_ADR5_PC11          /*!< Set PC11 function to EBI_ADR5        */
+#define SET_EBI_ADR6_PC10()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR6_PC10_Msk)) | EBI_ADR6_PC10          /*!< Set PC10 function to EBI_ADR6        */
+#define SET_EBI_ADR7_PC9()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~EBI_ADR7_PC9_Msk)) | EBI_ADR7_PC9            /*!< Set PC9 function to EBI_ADR7         */
+#define SET_EBI_ADR8_PB1()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR8_PB1_Msk)) | EBI_ADR8_PB1            /*!< Set PB1 function to EBI_ADR8         */
+#define SET_EBI_ADR9_PB0()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_ADR9_PB0_Msk)) | EBI_ADR9_PB0            /*!< Set PB0 function to EBI_ADR9         */
+#define SET_EBI_ALE_PA8()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EBI_ALE_PA8_Msk)) | EBI_ALE_PA8              /*!< Set PA8 function to EBI_ALE          */
+#define SET_EBI_ALE_PE2()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_ALE_PE2_Msk)) | EBI_ALE_PE2              /*!< Set PE2 function to EBI_ALE          */
+#define SET_EBI_MCLK_PE3()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_MCLK_PE3_Msk)) | EBI_MCLK_PE3            /*!< Set PE3 function to EBI_MCLK         */
+#define SET_EBI_MCLK_PA9()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EBI_MCLK_PA9_Msk)) | EBI_MCLK_PA9            /*!< Set PA9 function to EBI_MCLK         */
+#define SET_EBI_nCS0_PB7()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_nCS0_PB7_Msk)) | EBI_nCS0_PB7            /*!< Set PB7 function to EBI_nCS0         */
+#define SET_EBI_nCS0_PF6()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EBI_nCS0_PF6_Msk)) | EBI_nCS0_PF6            /*!< Set PF6 function to EBI_nCS0         */
+#define SET_EBI_nCS0_PD12()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_nCS0_PD12_Msk)) | EBI_nCS0_PD12          /*!< Set PD12 function to EBI_nCS0        */
+#define SET_EBI_nCS0_PD14()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_nCS0_PD14_Msk)) | EBI_nCS0_PD14          /*!< Set PD14 function to EBI_nCS0        */
+#define SET_EBI_nCS0_PF3()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EBI_nCS0_PF3_Msk)) | EBI_nCS0_PF3            /*!< Set PF3 function to EBI_nCS0         */
+#define SET_EBI_nCS1_PF2()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EBI_nCS1_PF2_Msk)) | EBI_nCS1_PF2            /*!< Set PF2 function to EBI_nCS1         */
+#define SET_EBI_nCS1_PD11()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_nCS1_PD11_Msk)) | EBI_nCS1_PD11          /*!< Set PD11 function to EBI_nCS1        */
+#define SET_EBI_nCS1_PB6()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_nCS1_PB6_Msk)) | EBI_nCS1_PB6            /*!< Set PB6 function to EBI_nCS1         */
+#define SET_EBI_nCS2_PD10()      SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EBI_nCS2_PD10_Msk)) | EBI_nCS2_PD10          /*!< Set PD10 function to EBI_nCS2        */
+#define SET_EBI_nRD_PA11()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EBI_nRD_PA11_Msk)) | EBI_nRD_PA11            /*!< Set PA11 function to EBI_nRD         */
+#define SET_EBI_nRD_PE5()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_nRD_PE5_Msk)) | EBI_nRD_PE5              /*!< Set PE5 function to EBI_nRD          */
+#define SET_EBI_nWR_PA10()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EBI_nWR_PA10_Msk)) | EBI_nWR_PA10            /*!< Set PA10 function to EBI_nWR         */
+#define SET_EBI_nWR_PE4()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EBI_nWR_PE4_Msk)) | EBI_nWR_PE4              /*!< Set PE4 function to EBI_nWR          */
+#define SET_EBI_nWRH_PB6()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_nWRH_PB6_Msk)) | EBI_nWRH_PB6            /*!< Set PB6 function to EBI_nWRH         */
+#define SET_EBI_nWRL_PB7()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EBI_nWRL_PB7_Msk)) | EBI_nWRL_PB7            /*!< Set PB7 function to EBI_nWRL         */
+#define SET_ECAP0_IC0_PA10()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~ECAP0_IC0_PA10_Msk)) | ECAP0_IC0_PA10        /*!< Set PA10 function to ECAP0_IC0       */
+#define SET_ECAP0_IC0_PE8()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP0_IC0_PE8_Msk)) | ECAP0_IC0_PE8          /*!< Set PE8 function to ECAP0_IC0        */
+#define SET_ECAP0_IC1_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP0_IC1_PE9_Msk)) | ECAP0_IC1_PE9          /*!< Set PE9 function to ECAP0_IC1        */
+#define SET_ECAP0_IC1_PA9()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~ECAP0_IC1_PA9_Msk)) | ECAP0_IC1_PA9          /*!< Set PA9 function to ECAP0_IC1        */
+#define SET_ECAP0_IC2_PA8()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~ECAP0_IC2_PA8_Msk)) | ECAP0_IC2_PA8          /*!< Set PA8 function to ECAP0_IC2        */
+#define SET_ECAP0_IC2_PE10()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP0_IC2_PE10_Msk)) | ECAP0_IC2_PE10        /*!< Set PE10 function to ECAP0_IC2       */
+#define SET_ECAP1_IC0_PC10()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~ECAP1_IC0_PC10_Msk)) | ECAP1_IC0_PC10        /*!< Set PC10 function to ECAP1_IC0       */
+#define SET_ECAP1_IC0_PE13()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP1_IC0_PE13_Msk)) | ECAP1_IC0_PE13        /*!< Set PE13 function to ECAP1_IC0       */
+#define SET_ECAP1_IC1_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP1_IC1_PE12_Msk)) | ECAP1_IC1_PE12        /*!< Set PE12 function to ECAP1_IC1       */
+#define SET_ECAP1_IC1_PC11()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~ECAP1_IC1_PC11_Msk)) | ECAP1_IC1_PC11        /*!< Set PC11 function to ECAP1_IC1       */
+#define SET_ECAP1_IC2_PE11()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~ECAP1_IC2_PE11_Msk)) | ECAP1_IC2_PE11        /*!< Set PE11 function to ECAP1_IC2       */
+#define SET_ECAP1_IC2_PC12()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~ECAP1_IC2_PC12_Msk)) | ECAP1_IC2_PC12        /*!< Set PC12 function to ECAP1_IC2       */
+#define SET_I2C0_SCL_PB5()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2C0_SCL_PB5_Msk)) | I2C0_SCL_PB5            /*!< Set PB5 function to I2C0_SCL         */
+#define SET_I2C0_SCL_PC1()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C0_SCL_PC1_Msk)) | I2C0_SCL_PC1            /*!< Set PC1 function to I2C0_SCL         */
+#define SET_I2C0_SCL_PF3()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2C0_SCL_PF3_Msk)) | I2C0_SCL_PF3            /*!< Set PF3 function to I2C0_SCL         */
+#define SET_I2C0_SCL_PE13()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2C0_SCL_PE13_Msk)) | I2C0_SCL_PE13          /*!< Set PE13 function to I2C0_SCL        */
+#define SET_I2C0_SCL_PD7()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C0_SCL_PD7_Msk)) | I2C0_SCL_PD7            /*!< Set PD7 function to I2C0_SCL         */
+#define SET_I2C0_SCL_PA5()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C0_SCL_PA5_Msk)) | I2C0_SCL_PA5            /*!< Set PA5 function to I2C0_SCL         */
+#define SET_I2C0_SCL_PC12()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~I2C0_SCL_PC12_Msk)) | I2C0_SCL_PC12          /*!< Set PC12 function to I2C0_SCL        */
+#define SET_I2C0_SDA_PB4()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2C0_SDA_PB4_Msk)) | I2C0_SDA_PB4            /*!< Set PB4 function to I2C0_SDA         */
+#define SET_I2C0_SDA_PC8()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~I2C0_SDA_PC8_Msk)) | I2C0_SDA_PC8            /*!< Set PC8 function to I2C0_SDA         */
+#define SET_I2C0_SDA_PC0()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C0_SDA_PC0_Msk)) | I2C0_SDA_PC0            /*!< Set PC0 function to I2C0_SDA         */
+#define SET_I2C0_SDA_PD6()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C0_SDA_PD6_Msk)) | I2C0_SDA_PD6            /*!< Set PD6 function to I2C0_SDA         */
+#define SET_I2C0_SDA_PC11()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~I2C0_SDA_PC11_Msk)) | I2C0_SDA_PC11          /*!< Set PC11 function to I2C0_SDA        */
+#define SET_I2C0_SDA_PA4()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C0_SDA_PA4_Msk)) | I2C0_SDA_PA4            /*!< Set PA4 function to I2C0_SDA         */
+#define SET_I2C0_SDA_PF2()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2C0_SDA_PF2_Msk)) | I2C0_SDA_PF2            /*!< Set PF2 function to I2C0_SDA         */
+#define SET_I2C0_SMBAL_PG2()     SYS->GPG_MFPL = (SYS->GPG_MFPL & (~I2C0_SMBAL_PG2_Msk)) | I2C0_SMBAL_PG2        /*!< Set PG2 function to I2C0_SMBAL       */
+#define SET_I2C0_SMBAL_PC3()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C0_SMBAL_PC3_Msk)) | I2C0_SMBAL_PC3        /*!< Set PC3 function to I2C0_SMBAL       */
+#define SET_I2C0_SMBSUS_PC2()    SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C0_SMBSUS_PC2_Msk)) | I2C0_SMBSUS_PC2      /*!< Set PC2 function to I2C0_SMBSUS      */
+#define SET_I2C0_SMBSUS_PG3()    SYS->GPG_MFPL = (SYS->GPG_MFPL & (~I2C0_SMBSUS_PG3_Msk)) | I2C0_SMBSUS_PG3      /*!< Set PG3 function to I2C0_SMBSUS      */
+#define SET_I2C1_SCL_PA3()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C1_SCL_PA3_Msk)) | I2C1_SCL_PA3            /*!< Set PA3 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PG2()       SYS->GPG_MFPL = (SYS->GPG_MFPL & (~I2C1_SCL_PG2_Msk)) | I2C1_SCL_PG2            /*!< Set PG2 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PB1()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2C1_SCL_PB1_Msk)) | I2C1_SCL_PB1            /*!< Set PB1 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PB11()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C1_SCL_PB11_Msk)) | I2C1_SCL_PB11          /*!< Set PB11 function to I2C1_SCL        */
+#define SET_I2C1_SCL_PD5()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C1_SCL_PD5_Msk)) | I2C1_SCL_PD5            /*!< Set PD5 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PA12()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C1_SCL_PA12_Msk)) | I2C1_SCL_PA12          /*!< Set PA12 function to I2C1_SCL        */
+#define SET_I2C1_SCL_PC5()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C1_SCL_PC5_Msk)) | I2C1_SCL_PC5            /*!< Set PC5 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PA7()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C1_SCL_PA7_Msk)) | I2C1_SCL_PA7            /*!< Set PA7 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PF0()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2C1_SCL_PF0_Msk)) | I2C1_SCL_PF0            /*!< Set PF0 function to I2C1_SCL         */
+#define SET_I2C1_SCL_PE1()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~I2C1_SCL_PE1_Msk)) | I2C1_SCL_PE1            /*!< Set PE1 function to I2C1_SCL         */
+#define SET_I2C1_SDA_PB0()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2C1_SDA_PB0_Msk)) | I2C1_SDA_PB0            /*!< Set PB0 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PA6()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C1_SDA_PA6_Msk)) | I2C1_SDA_PA6            /*!< Set PA6 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PA13()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C1_SDA_PA13_Msk)) | I2C1_SDA_PA13          /*!< Set PA13 function to I2C1_SDA        */
+#define SET_I2C1_SDA_PG3()       SYS->GPG_MFPL = (SYS->GPG_MFPL & (~I2C1_SDA_PG3_Msk)) | I2C1_SDA_PG3            /*!< Set PG3 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PE0()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~I2C1_SDA_PE0_Msk)) | I2C1_SDA_PE0            /*!< Set PE0 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PC4()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C1_SDA_PC4_Msk)) | I2C1_SDA_PC4            /*!< Set PC4 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PA2()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C1_SDA_PA2_Msk)) | I2C1_SDA_PA2            /*!< Set PA2 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PB10()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C1_SDA_PB10_Msk)) | I2C1_SDA_PB10          /*!< Set PB10 function to I2C1_SDA        */
+#define SET_I2C1_SDA_PF1()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2C1_SDA_PF1_Msk)) | I2C1_SDA_PF1            /*!< Set PF1 function to I2C1_SDA         */
+#define SET_I2C1_SDA_PD4()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C1_SDA_PD4_Msk)) | I2C1_SDA_PD4            /*!< Set PD4 function to I2C1_SDA         */
+#define SET_I2C1_SMBAL_PB9()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C1_SMBAL_PB9_Msk)) | I2C1_SMBAL_PB9        /*!< Set PB9 function to I2C1_SMBAL       */
+#define SET_I2C1_SMBAL_PC7()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C1_SMBAL_PC7_Msk)) | I2C1_SMBAL_PC7        /*!< Set PC7 function to I2C1_SMBAL       */
+#define SET_I2C1_SMBAL_PH8()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2C1_SMBAL_PH8_Msk)) | I2C1_SMBAL_PH8        /*!< Set PH8 function to I2C1_SMBAL       */
+#define SET_I2C1_SMBSUS_PH9()    SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2C1_SMBSUS_PH9_Msk)) | I2C1_SMBSUS_PH9      /*!< Set PH9 function to I2C1_SMBSUS      */
+#define SET_I2C1_SMBSUS_PC6()    SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2C1_SMBSUS_PC6_Msk)) | I2C1_SMBSUS_PC6      /*!< Set PC6 function to I2C1_SMBSUS      */
+#define SET_I2C1_SMBSUS_PB8()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C1_SMBSUS_PB8_Msk)) | I2C1_SMBSUS_PB8      /*!< Set PB8 function to I2C1_SMBSUS      */
+#define SET_I2C2_SCL_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C2_SCL_PB13_Msk)) | I2C2_SCL_PB13          /*!< Set PB13 function to I2C2_SCL        */
+#define SET_I2C2_SCL_PA11()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C2_SCL_PA11_Msk)) | I2C2_SCL_PA11          /*!< Set PA11 function to I2C2_SCL        */
+#define SET_I2C2_SCL_PH8()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2C2_SCL_PH8_Msk)) | I2C2_SCL_PH8            /*!< Set PH8 function to I2C2_SCL         */
+#define SET_I2C2_SCL_PD9()       SYS->GPD_MFPH = (SYS->GPD_MFPH & (~I2C2_SCL_PD9_Msk)) | I2C2_SCL_PD9            /*!< Set PD9 function to I2C2_SCL         */
+#define SET_I2C2_SCL_PD1()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C2_SCL_PD1_Msk)) | I2C2_SCL_PD1            /*!< Set PD1 function to I2C2_SCL         */
+#define SET_I2C2_SCL_PA14()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C2_SCL_PA14_Msk)) | I2C2_SCL_PA14          /*!< Set PA14 function to I2C2_SCL        */
+#define SET_I2C2_SCL_PA1()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C2_SCL_PA1_Msk)) | I2C2_SCL_PA1            /*!< Set PA1 function to I2C2_SCL         */
+#define SET_I2C2_SDA_PA0()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~I2C2_SDA_PA0_Msk)) | I2C2_SDA_PA0            /*!< Set PA0 function to I2C2_SDA         */
+#define SET_I2C2_SDA_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C2_SDA_PB12_Msk)) | I2C2_SDA_PB12          /*!< Set PB12 function to I2C2_SDA        */
+#define SET_I2C2_SDA_PA10()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C2_SDA_PA10_Msk)) | I2C2_SDA_PA10          /*!< Set PA10 function to I2C2_SDA        */
+#define SET_I2C2_SDA_PA15()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2C2_SDA_PA15_Msk)) | I2C2_SDA_PA15          /*!< Set PA15 function to I2C2_SDA        */
+#define SET_I2C2_SDA_PH9()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2C2_SDA_PH9_Msk)) | I2C2_SDA_PH9            /*!< Set PH9 function to I2C2_SDA         */
+#define SET_I2C2_SDA_PD8()       SYS->GPD_MFPH = (SYS->GPD_MFPH & (~I2C2_SDA_PD8_Msk)) | I2C2_SDA_PD8            /*!< Set PD8 function to I2C2_SDA         */
+#define SET_I2C2_SDA_PD0()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~I2C2_SDA_PD0_Msk)) | I2C2_SDA_PD0            /*!< Set PD0 function to I2C2_SDA         */
+#define SET_I2C2_SMBAL_PB15()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C2_SMBAL_PB15_Msk)) | I2C2_SMBAL_PB15      /*!< Set PB15 function to I2C2_SMBAL      */
+#define SET_I2C2_SMBSUS_PB14()   SYS->GPB_MFPH = (SYS->GPB_MFPH & (~I2C2_SMBSUS_PB14_Msk)) | I2C2_SMBSUS_PB14    /*!< Set PB14 function to I2C2_SMBSUS     */
+#define SET_I2S0_BCLK_PA12()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2S0_BCLK_PA12_Msk)) | I2S0_BCLK_PA12        /*!< Set PA12 function to I2S0_BCLK       */
+#define SET_I2S0_BCLK_PB5()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2S0_BCLK_PB5_Msk)) | I2S0_BCLK_PB5          /*!< Set PB5 function to I2S0_BCLK        */
+#define SET_I2S0_BCLK_PE8()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2S0_BCLK_PE8_Msk)) | I2S0_BCLK_PE8          /*!< Set PE8 function to I2S0_BCLK        */
+#define SET_I2S0_BCLK_PE1()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~I2S0_BCLK_PE1_Msk)) | I2S0_BCLK_PE1          /*!< Set PE1 function to I2S0_BCLK        */
+#define SET_I2S0_BCLK_PF10()     SYS->GPF_MFPH = (SYS->GPF_MFPH & (~I2S0_BCLK_PF10_Msk)) | I2S0_BCLK_PF10        /*!< Set PF10 function to I2S0_BCLK       */
+#define SET_I2S0_BCLK_PC4()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2S0_BCLK_PC4_Msk)) | I2S0_BCLK_PC4          /*!< Set PC4 function to I2S0_BCLK        */
+#define SET_I2S0_DI_PF8()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~I2S0_DI_PF8_Msk)) | I2S0_DI_PF8              /*!< Set PF8 function to I2S0_DI          */
+#define SET_I2S0_DI_PB3()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2S0_DI_PB3_Msk)) | I2S0_DI_PB3              /*!< Set PB3 function to I2S0_DI          */
+#define SET_I2S0_DI_PE10()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2S0_DI_PE10_Msk)) | I2S0_DI_PE10            /*!< Set PE10 function to I2S0_DI         */
+#define SET_I2S0_DI_PA14()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2S0_DI_PA14_Msk)) | I2S0_DI_PA14            /*!< Set PA14 function to I2S0_DI         */
+#define SET_I2S0_DI_PH8()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2S0_DI_PH8_Msk)) | I2S0_DI_PH8              /*!< Set PH8 function to I2S0_DI          */
+#define SET_I2S0_DI_PC2()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2S0_DI_PC2_Msk)) | I2S0_DI_PC2              /*!< Set PC2 function to I2S0_DI          */
+#define SET_I2S0_DO_PB2()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2S0_DO_PB2_Msk)) | I2S0_DO_PB2              /*!< Set PB2 function to I2S0_DO          */
+#define SET_I2S0_DO_PH9()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2S0_DO_PH9_Msk)) | I2S0_DO_PH9              /*!< Set PH9 function to I2S0_DO          */
+#define SET_I2S0_DO_PF7()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2S0_DO_PF7_Msk)) | I2S0_DO_PF7              /*!< Set PF7 function to I2S0_DO          */
+#define SET_I2S0_DO_PE11()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2S0_DO_PE11_Msk)) | I2S0_DO_PE11            /*!< Set PE11 function to I2S0_DO         */
+#define SET_I2S0_DO_PC1()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2S0_DO_PC1_Msk)) | I2S0_DO_PC1              /*!< Set PC1 function to I2S0_DO          */
+#define SET_I2S0_DO_PA15()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2S0_DO_PA15_Msk)) | I2S0_DO_PA15            /*!< Set PA15 function to I2S0_DO         */
+#define SET_I2S0_LRCK_PF6()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~I2S0_LRCK_PF6_Msk)) | I2S0_LRCK_PF6          /*!< Set PF6 function to I2S0_LRCK        */
+#define SET_I2S0_LRCK_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2S0_LRCK_PE12_Msk)) | I2S0_LRCK_PE12        /*!< Set PE12 function to I2S0_LRCK       */
+#define SET_I2S0_LRCK_PC0()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2S0_LRCK_PC0_Msk)) | I2S0_LRCK_PC0          /*!< Set PC0 function to I2S0_LRCK        */
+#define SET_I2S0_LRCK_PH10()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~I2S0_LRCK_PH10_Msk)) | I2S0_LRCK_PH10        /*!< Set PH10 function to I2S0_LRCK       */
+#define SET_I2S0_LRCK_PB1()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2S0_LRCK_PB1_Msk)) | I2S0_LRCK_PB1          /*!< Set PB1 function to I2S0_LRCK        */
+#define SET_I2S0_MCLK_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~I2S0_MCLK_PE9_Msk)) | I2S0_MCLK_PE9          /*!< Set PE9 function to I2S0_MCLK        */
+#define SET_I2S0_MCLK_PB4()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~I2S0_MCLK_PB4_Msk)) | I2S0_MCLK_PB4          /*!< Set PB4 function to I2S0_MCLK        */
+#define SET_I2S0_MCLK_PC3()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~I2S0_MCLK_PC3_Msk)) | I2S0_MCLK_PC3          /*!< Set PC3 function to I2S0_MCLK        */
+#define SET_I2S0_MCLK_PE0()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~I2S0_MCLK_PE0_Msk)) | I2S0_MCLK_PE0          /*!< Set PE0 function to I2S0_MCLK        */
+#define SET_I2S0_MCLK_PA13()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~I2S0_MCLK_PA13_Msk)) | I2S0_MCLK_PA13        /*!< Set PA13 function to I2S0_MCLK       */
+#define SET_I2S0_MCLK_PF9()      SYS->GPF_MFPH = (SYS->GPF_MFPH & (~I2S0_MCLK_PF9_Msk)) | I2S0_MCLK_PF9          /*!< Set PF9 function to I2S0_MCLK        */
+#define SET_ICE_CLK_PF1()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~ICE_CLK_PF1_Msk)) | ICE_CLK_PF1              /*!< Set PF1 function to ICE_CLK          */
+#define SET_ICE_DAT_PF0()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~ICE_DAT_PF0_Msk)) | ICE_DAT_PF0              /*!< Set PF0 function to ICE_DAT          */
+#define SET_INT0_PB5()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT0_PB5_Msk)) | INT0_PB5                    /*!< Set PB5 function to INT0             */
+#define SET_INT0_PA6()           SYS->GPA_MFPL = (SYS->GPA_MFPL & (~INT0_PA6_Msk)) | INT0_PA6                    /*!< Set PA6 function to INT0             */
+#define SET_INT1_PB4()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT1_PB4_Msk)) | INT1_PB4                    /*!< Set PB4 function to INT1             */
+#define SET_INT1_PA7()           SYS->GPA_MFPL = (SYS->GPA_MFPL & (~INT1_PA7_Msk)) | INT1_PA7                    /*!< Set PA7 function to INT1             */
+#define SET_INT2_PB3()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT2_PB3_Msk)) | INT2_PB3                    /*!< Set PB3 function to INT2             */
+#define SET_INT2_PC6()           SYS->GPC_MFPL = (SYS->GPC_MFPL & (~INT2_PC6_Msk)) | INT2_PC6                    /*!< Set PC6 function to INT2             */
+#define SET_INT3_PC7()           SYS->GPC_MFPL = (SYS->GPC_MFPL & (~INT3_PC7_Msk)) | INT3_PC7                    /*!< Set PC7 function to INT3             */
+#define SET_INT3_PB2()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT3_PB2_Msk)) | INT3_PB2                    /*!< Set PB2 function to INT3             */
+#define SET_INT4_PB6()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT4_PB6_Msk)) | INT4_PB6                    /*!< Set PB6 function to INT4             */
+#define SET_INT4_PA8()           SYS->GPA_MFPH = (SYS->GPA_MFPH & (~INT4_PA8_Msk)) | INT4_PA8                    /*!< Set PA8 function to INT4             */
+#define SET_INT5_PB7()           SYS->GPB_MFPL = (SYS->GPB_MFPL & (~INT5_PB7_Msk)) | INT5_PB7                    /*!< Set PB7 function to INT5             */
+#define SET_INT5_PD12()          SYS->GPD_MFPH = (SYS->GPD_MFPH & (~INT5_PD12_Msk)) | INT5_PD12                  /*!< Set PD12 function to INT5            */
+#define SET_INT6_PD11()          SYS->GPD_MFPH = (SYS->GPD_MFPH & (~INT6_PD11_Msk)) | INT6_PD11                  /*!< Set PD11 function to INT6            */
+#define SET_INT6_PB8()           SYS->GPB_MFPH = (SYS->GPB_MFPH & (~INT6_PB8_Msk)) | INT6_PB8                    /*!< Set PB8 function to INT6             */
+#define SET_INT7_PB9()           SYS->GPB_MFPH = (SYS->GPB_MFPH & (~INT7_PB9_Msk)) | INT7_PB9                    /*!< Set PB9 function to INT7             */
+#define SET_INT7_PD10()          SYS->GPD_MFPH = (SYS->GPD_MFPH & (~INT7_PD10_Msk)) | INT7_PD10                  /*!< Set PD10 function to INT7            */
+#define SET_EPWM0_BRAKE0_PE8()   SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_BRAKE0_PE8_Msk)) | EPWM0_BRAKE0_PE8    /*!< Set PE8 function to EPWM0_BRAKE0     */
+#define SET_EPWM0_BRAKE0_PB1()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_BRAKE0_PB1_Msk)) | EPWM0_BRAKE0_PB1    /*!< Set PB1 function to EPWM0_BRAKE0     */
+#define SET_EPWM0_BRAKE1_PB0()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_BRAKE1_PB0_Msk)) | EPWM0_BRAKE1_PB0    /*!< Set PB0 function to EPWM0_BRAKE1     */
+#define SET_EPWM0_BRAKE1_PE9()   SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_BRAKE1_PE9_Msk)) | EPWM0_BRAKE1_PE9    /*!< Set PE9 function to EPWM0_BRAKE1     */
+#define SET_EPWM0_CH0_PA5()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH0_PA5_Msk)) | EPWM0_CH0_PA5          /*!< Set PA5 function to EPWM0_CH0        */
+#define SET_EPWM0_CH0_PE7()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH0_PE7_Msk)) | EPWM0_CH0_PE7          /*!< Set PE7 function to EPWM0_CH0        */
+#define SET_EPWM0_CH0_PE8()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH0_PE8_Msk)) | EPWM0_CH0_PE8          /*!< Set PE8 function to EPWM0_CH0        */
+#define SET_EPWM0_CH0_PB5()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH0_PB5_Msk)) | EPWM0_CH0_PB5          /*!< Set PB5 function to EPWM0_CH0        */
+#define SET_EPWM0_CH1_PA4()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH1_PA4_Msk)) | EPWM0_CH1_PA4          /*!< Set PA4 function to EPWM0_CH1        */
+#define SET_EPWM0_CH1_PB4()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH1_PB4_Msk)) | EPWM0_CH1_PB4          /*!< Set PB4 function to EPWM0_CH1        */
+#define SET_EPWM0_CH1_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH1_PE9_Msk)) | EPWM0_CH1_PE9          /*!< Set PE9 function to EPWM0_CH1        */
+#define SET_EPWM0_CH1_PE6()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH1_PE6_Msk)) | EPWM0_CH1_PE6          /*!< Set PE6 function to EPWM0_CH1        */
+#define SET_EPWM0_CH2_PE5()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH2_PE5_Msk)) | EPWM0_CH2_PE5          /*!< Set PE5 function to EPWM0_CH2        */
+#define SET_EPWM0_CH2_PB3()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH2_PB3_Msk)) | EPWM0_CH2_PB3          /*!< Set PB3 function to EPWM0_CH2        */
+#define SET_EPWM0_CH2_PE10()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH2_PE10_Msk)) | EPWM0_CH2_PE10        /*!< Set PE10 function to EPWM0_CH2       */
+#define SET_EPWM0_CH2_PA3()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH2_PA3_Msk)) | EPWM0_CH2_PA3          /*!< Set PA3 function to EPWM0_CH2        */
+#define SET_EPWM0_CH3_PA2()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH3_PA2_Msk)) | EPWM0_CH3_PA2          /*!< Set PA2 function to EPWM0_CH3        */
+#define SET_EPWM0_CH3_PE11()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH3_PE11_Msk)) | EPWM0_CH3_PE11        /*!< Set PE11 function to EPWM0_CH3       */
+#define SET_EPWM0_CH3_PE4()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH3_PE4_Msk)) | EPWM0_CH3_PE4          /*!< Set PE4 function to EPWM0_CH3        */
+#define SET_EPWM0_CH3_PB2()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH3_PB2_Msk)) | EPWM0_CH3_PB2          /*!< Set PB2 function to EPWM0_CH3        */
+#define SET_EPWM0_CH4_PD14()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~EPWM0_CH4_PD14_Msk)) | EPWM0_CH4_PD14        /*!< Set PD14 function to EPWM0_CH4       */
+#define SET_EPWM0_CH4_PB1()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH4_PB1_Msk)) | EPWM0_CH4_PB1          /*!< Set PB1 function to EPWM0_CH4        */
+#define SET_EPWM0_CH4_PE3()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH4_PE3_Msk)) | EPWM0_CH4_PE3          /*!< Set PE3 function to EPWM0_CH4        */
+#define SET_EPWM0_CH4_PA1()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH4_PA1_Msk)) | EPWM0_CH4_PA1          /*!< Set PA1 function to EPWM0_CH4        */
+#define SET_EPWM0_CH4_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH4_PE12_Msk)) | EPWM0_CH4_PE12        /*!< Set PE12 function to EPWM0_CH4       */
+#define SET_EPWM0_CH5_PB0()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM0_CH5_PB0_Msk)) | EPWM0_CH5_PB0          /*!< Set PB0 function to EPWM0_CH5        */
+#define SET_EPWM0_CH5_PE2()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~EPWM0_CH5_PE2_Msk)) | EPWM0_CH5_PE2          /*!< Set PE2 function to EPWM0_CH5        */
+#define SET_EPWM0_CH5_PA0()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~EPWM0_CH5_PA0_Msk)) | EPWM0_CH5_PA0          /*!< Set PA0 function to EPWM0_CH5        */
+#define SET_EPWM0_CH5_PE13()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM0_CH5_PE13_Msk)) | EPWM0_CH5_PE13        /*!< Set PE13 function to EPWM0_CH5       */
+#define SET_EPWM0_CH5_PH11()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~EPWM0_CH5_PH11_Msk)) | EPWM0_CH5_PH11        /*!< Set PH11 function to EPWM0_CH5       */
+#define SET_EPWM0_SYNC_IN_PA15() SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EPWM0_SYNC_IN_PA15_Msk)) | EPWM0_SYNC_IN_PA15 /*!< Set PA15 function to EPWM0_SYNC_IN  */
+#define SET_EPWM0_SYNC_OUT_PF5() SYS->GPF_MFPL = (SYS->GPF_MFPL & (~EPWM0_SYNC_OUT_PF5_Msk)) | EPWM0_SYNC_OUT_PF5 /*!< Set PF5 function to EPWM0_SYNC_OUT  */
+#define SET_EPWM0_SYNC_OUT_PA11() SYS->GPA_MFPH = (SYS->GPA_MFPH & (~EPWM0_SYNC_OUT_PA11_Msk)) | EPWM0_SYNC_OUT_PA11 /*!< Set PA11 function to EPWM0_SYNC_OUT */
+#define SET_EPWM1_BRAKE0_PB7()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM1_BRAKE0_PB7_Msk)) | EPWM1_BRAKE0_PB7    /*!< Set PB7 function to EPWM1_BRAKE0     */
+#define SET_EPWM1_BRAKE0_PE10()  SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM1_BRAKE0_PE10_Msk)) | EPWM1_BRAKE0_PE10  /*!< Set PE10 function to EPWM1_BRAKE0    */
+#define SET_EPWM1_BRAKE1_PB6()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~EPWM1_BRAKE1_PB6_Msk)) | EPWM1_BRAKE1_PB6    /*!< Set PB6 function to EPWM1_BRAKE1     */
+#define SET_EPWM1_BRAKE1_PE11()  SYS->GPE_MFPH = (SYS->GPE_MFPH & (~EPWM1_BRAKE1_PE11_Msk)) | EPWM1_BRAKE1_PE11  /*!< Set PE11 function to EPWM1_BRAKE1    */
+#define SET_EPWM1_CH0_PC5()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH0_PC5_Msk)) | EPWM1_CH0_PC5          /*!< Set PC5 function to EPWM1_CH0        */
+#define SET_EPWM1_CH0_PE13()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~PWM1_CH0_PE13_Msk)) | EPWM1_CH0_PE13        /*!< Set PE13 function to EPWM1_CH0       */
+#define SET_EPWM1_CH0_PC12()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~PWM1_CH0_PC12_Msk)) | EPWM1_CH0_PC12        /*!< Set PC12 function to EPWM1_CH0       */
+#define SET_EPWM1_CH0_PB15()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~PWM1_CH0_PB15_Msk)) | EPWM1_CH0_PB15        /*!< Set PB15 function to EPWM1_CH0       */
+#define SET_EPWM1_CH1_PB14()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~PWM1_CH1_PB14_Msk)) | EPWM1_CH1_PB14        /*!< Set PB14 function to EPWM1_CH1       */
+#define SET_EPWM1_CH1_PC11()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~PWM1_CH1_PC11_Msk)) | EPWM1_CH1_PC11        /*!< Set PC11 function to EPWM1_CH1       */
+#define SET_EPWM1_CH1_PC4()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH1_PC4_Msk)) | EPWM1_CH1_PC4          /*!< Set PC4 function to EPWM1_CH1        */
+#define SET_EPWM1_CH1_PC8()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~PWM1_CH1_PC8_Msk)) | EPWM1_CH1_PC8          /*!< Set PC8 function to EPWM1_CH1        */
+#define SET_EPWM1_CH2_PC7()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH2_PC7_Msk)) | EPWM1_CH2_PC7          /*!< Set PC7 function to EPWM1_CH2        */
+#define SET_EPWM1_CH2_PC10()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~PWM1_CH2_PC10_Msk)) | EPWM1_CH2_PC10        /*!< Set PC10 function to EPWM1_CH2       */
+#define SET_EPWM1_CH2_PC3()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH2_PC3_Msk)) | EPWM1_CH2_PC3          /*!< Set PC3 function to EPWM1_CH2        */
+#define SET_EPWM1_CH2_PB13()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~PWM1_CH2_PB13_Msk)) | EPWM1_CH2_PB13        /*!< Set PB13 function to EPWM1_CH2       */
+#define SET_EPWM1_CH3_PB12()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~PWM1_CH3_PB12_Msk)) | EPWM1_CH3_PB12        /*!< Set PB12 function to EPWM1_CH3       */
+#define SET_EPWM1_CH3_PC6()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH3_PC6_Msk)) | EPWM1_CH3_PC6          /*!< Set PC6 function to EPWM1_CH3        */
+#define SET_EPWM1_CH3_PC9()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~PWM1_CH3_PC9_Msk)) | EPWM1_CH3_PC9          /*!< Set PC9 function to EPWM1_CH3        */
+#define SET_EPWM1_CH3_PC2()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH3_PC2_Msk)) | EPWM1_CH3_PC2          /*!< Set PC2 function to EPWM1_CH3        */
+#define SET_EPWM1_CH4_PB7()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~PWM1_CH4_PB7_Msk)) | EPWM1_CH4_PB7          /*!< Set PB7 function to EPWM1_CH4        */
+#define SET_EPWM1_CH4_PB1()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~PWM1_CH4_PB1_Msk)) | EPWM1_CH4_PB1          /*!< Set PB1 function to EPWM1_CH4        */
+#define SET_EPWM1_CH4_PC1()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH4_PC1_Msk)) | EPWM1_CH4_PC1          /*!< Set PC1 function to EPWM1_CH4        */
+#define SET_EPWM1_CH4_PA7()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~PWM1_CH4_PA7_Msk)) | EPWM1_CH4_PA7          /*!< Set PA7 function to EPWM1_CH4        */
+#define SET_EPWM1_CH5_PA6()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~PWM1_CH5_PA6_Msk)) | EPWM1_CH5_PA6          /*!< Set PA6 function to EPWM1_CH5        */
+#define SET_EPWM1_CH5_PC0()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~PWM1_CH5_PC0_Msk)) | EPWM1_CH5_PC0          /*!< Set PC0 function to EPWM1_CH5        */
+#define SET_EPWM1_CH5_PB6()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~PWM1_CH5_PB6_Msk)) | EPWM1_CH5_PB6          /*!< Set PB6 function to EPWM1_CH5        */
+#define SET_EPWM1_CH5_PB0()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~PWM1_CH5_PB0_Msk)) | EPWM1_CH5_PB0          /*!< Set PB0 function to EPWM1_CH5        */
+#define SET_QEI0_A_PE3()         SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI0_A_PE3_Msk)) | QEI0_A_PE3                /*!< Set PE3 function to QEI0_A           */
+#define SET_QEI0_A_PA4()         SYS->GPA_MFPL = (SYS->GPA_MFPL & (~QEI0_A_PA4_Msk)) | QEI0_A_PA4                /*!< Set PA4 function to QEI0_A           */
+#define SET_QEI0_A_PD11()        SYS->GPD_MFPH = (SYS->GPD_MFPH & (~QEI0_A_PD11_Msk)) | QEI0_A_PD11              /*!< Set PD11 function to QEI0_A          */
+#define SET_QEI0_B_PD10()        SYS->GPD_MFPH = (SYS->GPD_MFPH & (~QEI0_B_PD10_Msk)) | QEI0_B_PD10              /*!< Set PD10 function to QEI0_B          */
+#define SET_QEI0_B_PA3()         SYS->GPA_MFPL = (SYS->GPA_MFPL & (~QEI0_B_PA3_Msk)) | QEI0_B_PA3                /*!< Set PA3 function to QEI0_B           */
+#define SET_QEI0_B_PE2()         SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI0_B_PE2_Msk)) | QEI0_B_PE2                /*!< Set PE2 function to QEI0_B           */
+#define SET_QEI0_INDEX_PE4()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI0_INDEX_PE4_Msk)) | QEI0_INDEX_PE4        /*!< Set PE4 function to QEI0_INDEX       */
+#define SET_QEI0_INDEX_PA5()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~QEI0_INDEX_PA5_Msk)) | QEI0_INDEX_PA5        /*!< Set PA5 function to QEI0_INDEX       */
+#define SET_QEI0_INDEX_PD12()    SYS->GPD_MFPH = (SYS->GPD_MFPH & (~QEI0_INDEX_PD12_Msk)) | QEI0_INDEX_PD12      /*!< Set PD12 function to QEI0_INDEX      */
+#define SET_QEI1_A_PE6()         SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI1_A_PE6_Msk)) | QEI1_A_PE6                /*!< Set PE6 function to QEI1_A           */
+#define SET_QEI1_A_PA13()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_A_PA13_Msk)) | QEI1_A_PA13              /*!< Set PA13 function to QEI1_A          */
+#define SET_QEI1_A_PA9()         SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_A_PA9_Msk)) | QEI1_A_PA9                /*!< Set PA9 function to QEI1_A           */
+#define SET_QEI1_B_PA14()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_B_PA14_Msk)) | QEI1_B_PA14              /*!< Set PA14 function to QEI1_B          */
+#define SET_QEI1_B_PA8()         SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_B_PA8_Msk)) | QEI1_B_PA8                /*!< Set PA8 function to QEI1_B           */
+#define SET_QEI1_B_PE5()         SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI1_B_PE5_Msk)) | QEI1_B_PE5                /*!< Set PE5 function to QEI1_B           */
+#define SET_QEI1_INDEX_PE7()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~QEI1_INDEX_PE7_Msk)) | QEI1_INDEX_PE7        /*!< Set PE7 function to QEI1_INDEX       */
+#define SET_QEI1_INDEX_PA10()    SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_INDEX_PA10_Msk)) | QEI1_INDEX_PA10      /*!< Set PA10 function to QEI1_INDEX      */
+#define SET_QEI1_INDEX_PA12()    SYS->GPA_MFPH = (SYS->GPA_MFPH & (~QEI1_INDEX_PA12_Msk)) | QEI1_INDEX_PA12      /*!< Set PA12 function to QEI1_INDEX      */
+#define SET_SC0_CLK_PF6()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~SC0_CLK_PF6_Msk)) | SC0_CLK_PF6              /*!< Set PF6 function to SC0_CLK          */
+#define SET_SC0_CLK_PE2()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC0_CLK_PE2_Msk)) | SC0_CLK_PE2              /*!< Set PE2 function to SC0_CLK          */
+#define SET_SC0_CLK_PA0()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC0_CLK_PA0_Msk)) | SC0_CLK_PA0              /*!< Set PA0 function to SC0_CLK          */
+#define SET_SC0_CLK_PB5()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SC0_CLK_PB5_Msk)) | SC0_CLK_PB5              /*!< Set PB5 function to SC0_CLK          */
+#define SET_SC0_DAT_PE3()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC0_DAT_PE3_Msk)) | SC0_DAT_PE3              /*!< Set PE3 function to SC0_DAT          */
+#define SET_SC0_DAT_PB4()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SC0_DAT_PB4_Msk)) | SC0_DAT_PB4              /*!< Set PB4 function to SC0_DAT          */
+#define SET_SC0_DAT_PA1()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC0_DAT_PA1_Msk)) | SC0_DAT_PA1              /*!< Set PA1 function to SC0_DAT          */
+#define SET_SC0_DAT_PF7()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~SC0_DAT_PF7_Msk)) | SC0_DAT_PF7              /*!< Set PF7 function to SC0_DAT          */
+#define SET_SC0_PWR_PE5()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC0_PWR_PE5_Msk)) | SC0_PWR_PE5              /*!< Set PE5 function to SC0_PWR          */
+#define SET_SC0_PWR_PA3()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC0_PWR_PA3_Msk)) | SC0_PWR_PA3              /*!< Set PA3 function to SC0_PWR          */
+#define SET_SC0_PWR_PB2()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SC0_PWR_PB2_Msk)) | SC0_PWR_PB2              /*!< Set PB2 function to SC0_PWR          */
+#define SET_SC0_PWR_PF9()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SC0_PWR_PF9_Msk)) | SC0_PWR_PF9              /*!< Set PF9 function to SC0_PWR          */
+#define SET_SC0_RST_PF8()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SC0_RST_PF8_Msk)) | SC0_RST_PF8              /*!< Set PF8 function to SC0_RST          */
+#define SET_SC0_RST_PE4()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC0_RST_PE4_Msk)) | SC0_RST_PE4              /*!< Set PE4 function to SC0_RST          */
+#define SET_SC0_RST_PA2()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC0_RST_PA2_Msk)) | SC0_RST_PA2              /*!< Set PA2 function to SC0_RST          */
+#define SET_SC0_RST_PB3()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SC0_RST_PB3_Msk)) | SC0_RST_PB3              /*!< Set PB3 function to SC0_RST          */
+#define SET_SC0_nCD_PE6()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC0_nCD_PE6_Msk)) | SC0_nCD_PE6              /*!< Set PE6 function to SC0_nCD          */
+#define SET_SC0_nCD_PF10()       SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SC0_nCD_PF10_Msk)) | SC0_nCD_PF10            /*!< Set PF10 function to SC0_nCD         */
+#define SET_SC0_nCD_PA4()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC0_nCD_PA4_Msk)) | SC0_nCD_PA4              /*!< Set PA4 function to SC0_nCD          */
+#define SET_SC0_nCD_PC12()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SC0_nCD_PC12_Msk)) | SC0_nCD_PC12            /*!< Set PC12 function to SC0_nCD         */
+#define SET_SC1_CLK_PC0()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC1_CLK_PC0_Msk)) | SC1_CLK_PC0              /*!< Set PC0 function to SC1_CLK          */
+#define SET_SC1_CLK_PB12()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SC1_CLK_PB12_Msk)) | SC1_CLK_PB12            /*!< Set PB12 function to SC1_CLK         */
+#define SET_SC1_CLK_PD4()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC1_CLK_PD4_Msk)) | SC1_CLK_PD4              /*!< Set PD4 function to SC1_CLK          */
+#define SET_SC1_DAT_PD5()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC1_DAT_PD5_Msk)) | SC1_DAT_PD5              /*!< Set PD5 function to SC1_DAT          */
+#define SET_SC1_DAT_PB13()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SC1_DAT_PB13_Msk)) | SC1_DAT_PB13            /*!< Set PB13 function to SC1_DAT         */
+#define SET_SC1_DAT_PC1()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC1_DAT_PC1_Msk)) | SC1_DAT_PC1              /*!< Set PC1 function to SC1_DAT          */
+#define SET_SC1_PWR_PB15()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SC1_PWR_PB15_Msk)) | SC1_PWR_PB15            /*!< Set PB15 function to SC1_PWR         */
+#define SET_SC1_PWR_PC3()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC1_PWR_PC3_Msk)) | SC1_PWR_PC3              /*!< Set PC3 function to SC1_PWR          */
+#define SET_SC1_PWR_PD7()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC1_PWR_PD7_Msk)) | SC1_PWR_PD7              /*!< Set PD7 function to SC1_PWR          */
+#define SET_SC1_RST_PD6()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC1_RST_PD6_Msk)) | SC1_RST_PD6              /*!< Set PD6 function to SC1_RST          */
+#define SET_SC1_RST_PB14()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SC1_RST_PB14_Msk)) | SC1_RST_PB14            /*!< Set PB14 function to SC1_RST         */
+#define SET_SC1_RST_PC2()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC1_RST_PC2_Msk)) | SC1_RST_PC2              /*!< Set PC2 function to SC1_RST          */
+#define SET_SC1_nCD_PD3()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC1_nCD_PD3_Msk)) | SC1_nCD_PD3              /*!< Set PD3 function to SC1_nCD          */
+#define SET_SC1_nCD_PC4()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC1_nCD_PC4_Msk)) | SC1_nCD_PC4              /*!< Set PC4 function to SC1_nCD          */
+#define SET_SC1_nCD_PD14()       SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SC1_nCD_PD14_Msk)) | SC1_nCD_PD14            /*!< Set PD14 function to SC1_nCD         */
+#define SET_SC2_CLK_PD0()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC2_CLK_PD0_Msk)) | SC2_CLK_PD0              /*!< Set PD0 function to SC2_CLK          */
+#define SET_SC2_CLK_PA15()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_CLK_PA15_Msk)) | SC2_CLK_PA15            /*!< Set PA15 function to SC2_CLK         */
+#define SET_SC2_CLK_PE0()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC2_CLK_PE0_Msk)) | SC2_CLK_PE0              /*!< Set PE0 function to SC2_CLK          */
+#define SET_SC2_CLK_PA8()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_CLK_PA8_Msk)) | SC2_CLK_PA8              /*!< Set PA8 function to SC2_CLK          */
+#define SET_SC2_CLK_PA6()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC2_CLK_PA6_Msk)) | SC2_CLK_PA6              /*!< Set PA6 function to SC2_CLK          */
+#define SET_SC2_DAT_PE1()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SC2_DAT_PE1_Msk)) | SC2_DAT_PE1              /*!< Set PE1 function to SC2_DAT          */
+#define SET_SC2_DAT_PD1()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC2_DAT_PD1_Msk)) | SC2_DAT_PD1              /*!< Set PD1 function to SC2_DAT          */
+#define SET_SC2_DAT_PA9()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_DAT_PA9_Msk)) | SC2_DAT_PA9              /*!< Set PA9 function to SC2_DAT          */
+#define SET_SC2_DAT_PA14()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_DAT_PA14_Msk)) | SC2_DAT_PA14            /*!< Set PA14 function to SC2_DAT         */
+#define SET_SC2_DAT_PA7()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC2_DAT_PA7_Msk)) | SC2_DAT_PA7              /*!< Set PA7 function to SC2_DAT          */
+#define SET_SC2_PWR_PD3()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC2_PWR_PD3_Msk)) | SC2_PWR_PD3              /*!< Set PD3 function to SC2_PWR          */
+#define SET_SC2_PWR_PA11()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_PWR_PA11_Msk)) | SC2_PWR_PA11            /*!< Set PA11 function to SC2_PWR         */
+#define SET_SC2_PWR_PA12()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_PWR_PA12_Msk)) | SC2_PWR_PA12            /*!< Set PA12 function to SC2_PWR         */
+#define SET_SC2_PWR_PH8()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SC2_PWR_PH8_Msk)) | SC2_PWR_PH8              /*!< Set PH8 function to SC2_PWR          */
+#define SET_SC2_PWR_PC7()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC2_PWR_PC7_Msk)) | SC2_PWR_PC7              /*!< Set PC7 function to SC2_PWR          */
+#define SET_SC2_RST_PD2()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SC2_RST_PD2_Msk)) | SC2_RST_PD2              /*!< Set PD2 function to SC2_RST          */
+#define SET_SC2_RST_PC6()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SC2_RST_PC6_Msk)) | SC2_RST_PC6              /*!< Set PC6 function to SC2_RST          */
+#define SET_SC2_RST_PH9()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SC2_RST_PH9_Msk)) | SC2_RST_PH9              /*!< Set PH9 function to SC2_RST          */
+#define SET_SC2_RST_PA10()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_RST_PA10_Msk)) | SC2_RST_PA10            /*!< Set PA10 function to SC2_RST         */
+#define SET_SC2_RST_PA13()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SC2_RST_PA13_Msk)) | SC2_RST_PA13            /*!< Set PA13 function to SC2_RST         */
+#define SET_SC2_nCD_PH10()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SC2_nCD_PH10_Msk)) | SC2_nCD_PH10            /*!< Set PH10 function to SC2_nCD         */
+#define SET_SC2_nCD_PA5()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SC2_nCD_PA5_Msk)) | SC2_nCD_PA5              /*!< Set PA5 function to SC2_nCD          */
+#define SET_SC2_nCD_PC13()       SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SC2_nCD_PC13_Msk)) | SC2_nCD_PC13            /*!< Set PC13 function to SC2_nCD         */
+#define SET_SC2_nCD_PD13()       SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SC2_nCD_PD13_Msk)) | SC2_nCD_PD13            /*!< Set PD13 function to SC2_nCD         */
+#define SET_SD0_CLK_PE6()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_CLK_PE6_Msk)) | SD0_CLK_PE6              /*!< Set PE6 function to SD0_CLK          */
+#define SET_SD0_CLK_PB1()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_CLK_PB1_Msk)) | SD0_CLK_PB1              /*!< Set PB1 function to SD0_CLK          */
+#define SET_SD0_CMD_PB0()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_CMD_PB0_Msk)) | SD0_CMD_PB0              /*!< Set PB0 function to SD0_CMD          */
+#define SET_SD0_CMD_PE7()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_CMD_PE7_Msk)) | SD0_CMD_PE7              /*!< Set PE7 function to SD0_CMD          */
+#define SET_SD0_DAT0_PB2()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_DAT0_PB2_Msk)) | SD0_DAT0_PB2            /*!< Set PB2 function to SD0_DAT0         */
+#define SET_SD0_DAT0_PE2()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_DAT0_PE2_Msk)) | SD0_DAT0_PE2            /*!< Set PE2 function to SD0_DAT0         */
+#define SET_SD0_DAT1_PE3()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_DAT1_PE3_Msk)) | SD0_DAT1_PE3            /*!< Set PE3 function to SD0_DAT1         */
+#define SET_SD0_DAT1_PB3()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_DAT1_PB3_Msk)) | SD0_DAT1_PB3            /*!< Set PB3 function to SD0_DAT1         */
+#define SET_SD0_DAT2_PB4()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_DAT2_PB4_Msk)) | SD0_DAT2_PB4            /*!< Set PB4 function to SD0_DAT2         */
+#define SET_SD0_DAT2_PE4()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_DAT2_PE4_Msk)) | SD0_DAT2_PE4            /*!< Set PE4 function to SD0_DAT2         */
+#define SET_SD0_DAT3_PE5()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SD0_DAT3_PE5_Msk)) | SD0_DAT3_PE5            /*!< Set PE5 function to SD0_DAT3         */
+#define SET_SD0_DAT3_PB5()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SD0_DAT3_PB5_Msk)) | SD0_DAT3_PB5            /*!< Set PB5 function to SD0_DAT3         */
+#define SET_SD0_nCD_PB12()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SD0_nCD_PB12_Msk)) | SD0_nCD_PB12            /*!< Set PB12 function to SD0_nCD         */
+#define SET_SD0_nCD_PD13()       SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SD0_nCD_PD13_Msk)) | SD0_nCD_PD13            /*!< Set PD13 function to SD0_nCD         */
+#define SET_SPI0_CLK_PF2()       SYS->GPF_MFPL = (SYS->GPF_MFPL & (~SPI0_CLK_PF2_Msk)) | SPI0_CLK_PF2            /*!< Set PF2 function to SPI0_CLK         */
+#define SET_SPI0_CLK_PH8()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI0_CLK_PH8_Msk)) | SPI0_CLK_PH8            /*!< Set PH8 function to SPI0_CLK         */
+#define SET_SPI0_CLK_PA2()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_CLK_PA2_Msk)) | SPI0_CLK_PA2            /*!< Set PA2 function to SPI0_CLK         */
+#define SET_SPI0_CLK_PC2()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_CLK_PC2_Msk)) | SPI0_CLK_PC2            /*!< Set PC2 function to SPI0_CLK         */
+#define SET_SPI0_MISO0_PC1()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_MISO0_PC1_Msk)) | SPI0_MISO0_PC1        /*!< Set PC1 function to SPI0_MISO0       */
+#define SET_SPI0_MISO0_PE1()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI0_MISO0_PE1_Msk)) | SPI0_MISO0_PE1        /*!< Set PE1 function to SPI0_MISO0       */
+#define SET_SPI0_MISO0_PA1()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_MISO0_PA1_Msk)) | SPI0_MISO0_PA1        /*!< Set PA1 function to SPI0_MISO0       */
+#define SET_SPI0_MISO1_PC5()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_MISO1_PC5_Msk)) | SPI0_MISO1_PC5        /*!< Set PC5 function to SPI0_MISO1       */
+#define SET_SPI0_MISO1_PH10()    SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI0_MISO1_PH10_Msk)) | SPI0_MISO1_PH10      /*!< Set PH10 function to SPI0_MISO1      */
+#define SET_SPI0_MISO1_PA5()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_MISO1_PA5_Msk)) | SPI0_MISO1_PA5        /*!< Set PA5 function to SPI0_MISO1       */
+#define SET_SPI0_MOSI0_PC0()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_MOSI0_PC0_Msk)) | SPI0_MOSI0_PC0        /*!< Set PC0 function to SPI0_MOSI0       */
+#define SET_SPI0_MOSI0_PE0()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI0_MOSI0_PE0_Msk)) | SPI0_MOSI0_PE0        /*!< Set PE0 function to SPI0_MOSI0       */
+#define SET_SPI0_MOSI0_PA0()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_MOSI0_PA0_Msk)) | SPI0_MOSI0_PA0        /*!< Set PA0 function to SPI0_MOSI0       */
+#define SET_SPI0_MOSI1_PA4()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_MOSI1_PA4_Msk)) | SPI0_MOSI1_PA4        /*!< Set PA4 function to SPI0_MOSI1       */
+#define SET_SPI0_MOSI1_PH11()    SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI0_MOSI1_PH11_Msk)) | SPI0_MOSI1_PH11      /*!< Set PH11 function to SPI0_MOSI1      */
+#define SET_SPI0_MOSI1_PC4()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_MOSI1_PC4_Msk)) | SPI0_MOSI1_PC4        /*!< Set PC4 function to SPI0_MOSI1       */
+#define SET_SPI0_SS_PH9()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI0_SS_PH9_Msk)) | SPI0_SS_PH9              /*!< Set PH9 function to SPI0_SS          */
+#define SET_SPI0_SS_PA3()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI0_SS_PA3_Msk)) | SPI0_SS_PA3              /*!< Set PA3 function to SPI0_SS          */
+#define SET_SPI0_SS_PC3()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI0_SS_PC3_Msk)) | SPI0_SS_PC3              /*!< Set PC3 function to SPI0_SS          */
+#define SET_SPI1_CLK_PD2()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI1_CLK_PD2_Msk)) | SPI1_CLK_PD2            /*!< Set PD2 function to SPI1_CLK         */
+#define SET_SPI1_CLK_PF8()       SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SPI1_CLK_PF8_Msk)) | SPI1_CLK_PF8            /*!< Set PF8 function to SPI1_CLK         */
+#define SET_SPI1_CLK_PA2()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI1_CLK_PA2_Msk)) | SPI1_CLK_PA2            /*!< Set PA2 function to SPI1_CLK         */
+#define SET_SPI1_CLK_PB14()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI1_CLK_PB14_Msk)) | SPI1_CLK_PB14          /*!< Set PB14 function to SPI1_CLK        */
+#define SET_SPI1_I2SMCLK_PD13()  SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SPI1_I2SMCLK_PD13_Msk)) | SPI1_I2SMCLK_PD13  /*!< Set PD13 function to SPI1_I2SMCLK    */
+#define SET_SPI1_I2SMCLK_PA4()   SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI1_I2SMCLK_PA4_Msk)) | SPI1_I2SMCLK_PA4    /*!< Set PA4 function to SPI1_I2SMCLK     */
+#define SET_SPI1_I2SMCLK_PB11()  SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI1_I2SMCLK_PB11_Msk)) | SPI1_I2SMCLK_PB11  /*!< Set PB11 function to SPI1_I2SMCLK    */
+#define SET_SPI1_I2SMCLK_PB0()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI1_I2SMCLK_PB0_Msk)) | SPI1_I2SMCLK_PB0    /*!< Set PB0 function to SPI1_I2SMCLK     */
+#define SET_SPI1_I2SMCLK_PD14()  SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SPI1_I2SMCLK_PD14_Msk)) | SPI1_I2SMCLK_PD14  /*!< Set PD14 function to SPI1_I2SMCLK    */
+#define SET_SPI1_I2SMCLK_PF10()  SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SPI1_I2SMCLK_PF10_Msk)) | SPI1_I2SMCLK_PF10  /*!< Set PF10 function to SPI1_I2SMCLK    */
+#define SET_SPI1_MISO_PF7()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~SPI1_MISO_PF7_Msk)) | SPI1_MISO_PF7          /*!< Set PF7 function to SPI1_MISO        */
+#define SET_SPI1_MISO_PB13()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI1_MISO_PB13_Msk)) | SPI1_MISO_PB13        /*!< Set PB13 function to SPI1_MISO       */
+#define SET_SPI1_MISO_PA1()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI1_MISO_PA1_Msk)) | SPI1_MISO_PA1          /*!< Set PA1 function to SPI1_MISO        */
+#define SET_SPI1_MISO_PD1()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI1_MISO_PD1_Msk)) | SPI1_MISO_PD1          /*!< Set PD1 function to SPI1_MISO        */
+#define SET_SPI1_MOSI_PA0()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI1_MOSI_PA0_Msk)) | SPI1_MOSI_PA0          /*!< Set PA0 function to SPI1_MOSI        */
+#define SET_SPI1_MOSI_PB12()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI1_MOSI_PB12_Msk)) | SPI1_MOSI_PB12        /*!< Set PB12 function to SPI1_MOSI       */
+#define SET_SPI1_MOSI_PD0()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI1_MOSI_PD0_Msk)) | SPI1_MOSI_PD0          /*!< Set PD0 function to SPI1_MOSI        */
+#define SET_SPI1_MOSI_PF6()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~SPI1_MOSI_PF6_Msk)) | SPI1_MOSI_PF6          /*!< Set PF6 function to SPI1_MOSI        */
+#define SET_SPI1_SS_PB15()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI1_SS_PB15_Msk)) | SPI1_SS_PB15            /*!< Set PB15 function to SPI1_SS         */
+#define SET_SPI1_SS_PA3()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI1_SS_PA3_Msk)) | SPI1_SS_PA3              /*!< Set PA3 function to SPI1_SS          */
+#define SET_SPI1_SS_PD3()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI1_SS_PD3_Msk)) | SPI1_SS_PD3              /*!< Set PD3 function to SPI1_SS          */
+#define SET_SPI1_SS_PF9()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SPI1_SS_PF9_Msk)) | SPI1_SS_PF9              /*!< Set PF9 function to SPI1_SS          */
+#define SET_SPI2_CLK_PB3()       SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI2_CLK_PB3_Msk)) | SPI2_CLK_PB3            /*!< Set PB3 function to SPI2_CLK         */
+#define SET_SPI2_CLK_PH6()       SYS->GPH_MFPL = (SYS->GPH_MFPL & (~SPI2_CLK_PH6_Msk)) | SPI2_CLK_PH6            /*!< Set PH6 function to SPI2_CLK         */
+#define SET_SPI2_CLK_PH8()       SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI2_CLK_PH8_Msk)) | SPI2_CLK_PH8            /*!< Set PH8 function to SPI2_CLK         */
+#define SET_SPI2_CLK_PC1()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_CLK_PC1_Msk)) | SPI2_CLK_PC1            /*!< Set PC1 function to SPI2_CLK         */
+#define SET_SPI2_CLK_PD5()       SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI2_CLK_PD5_Msk)) | SPI2_CLK_PD5            /*!< Set PD5 function to SPI2_CLK         */
+#define SET_SPI2_CLK_PA7()       SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI2_CLK_PA7_Msk)) | SPI2_CLK_PA7            /*!< Set PA7 function to SPI2_CLK         */
+#define SET_SPI2_I2SMCLK_PB1()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI2_I2SMCLK_PB1_Msk)) | SPI2_I2SMCLK_PB1    /*!< Set PB1 function to SPI2_I2SMCLK     */
+#define SET_SPI2_I2SMCLK_PH10()  SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI2_I2SMCLK_PH10_Msk)) | SPI2_I2SMCLK_PH10  /*!< Set PH10 function to SPI2_I2SMCLK    */
+#define SET_SPI2_I2SMCLK_PC4()   SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_I2SMCLK_PC4_Msk)) | SPI2_I2SMCLK_PC4    /*!< Set PC4 function to SPI2_I2SMCLK     */
+#define SET_SPI2_I2SMCLK_PD13()  SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SPI2_I2SMCLK_PD13_Msk)) | SPI2_I2SMCLK_PD13  /*!< Set PD13 function to SPI2_I2SMCLK    */
+#define SET_SPI2_I2SMCLK_PA5()   SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI2_I2SMCLK_PA5_Msk)) | SPI2_I2SMCLK_PA5    /*!< Set PA5 function to SPI2_I2SMCLK     */
+#define SET_SPI2_MISO_PD7()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI2_MISO_PD7_Msk)) | SPI2_MISO_PD7          /*!< Set PD7 function to SPI2_MISO        */
+#define SET_SPI2_MISO_PC7()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_MISO_PC7_Msk)) | SPI2_MISO_PC7          /*!< Set PC7 function to SPI2_MISO        */
+#define SET_SPI2_MISO_PB5()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI2_MISO_PB5_Msk)) | SPI2_MISO_PB5          /*!< Set PB5 function to SPI2_MISO        */
+#define SET_SPI2_MISO_PE1()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI2_MISO_PE1_Msk)) | SPI2_MISO_PE1          /*!< Set PE1 function to SPI2_MISO        */
+#define SET_SPI2_MISO_PH4()      SYS->GPH_MFPL = (SYS->GPH_MFPL & (~SPI2_MISO_PH4_Msk)) | SPI2_MISO_PH4          /*!< Set PH4 function to SPI2_MISO        */
+#define SET_SPI2_MISO_PC3()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_MISO_PC3_Msk)) | SPI2_MISO_PC3          /*!< Set PC3 function to SPI2_MISO        */
+#define SET_SPI2_MOSI_PD6()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI2_MOSI_PD6_Msk)) | SPI2_MOSI_PD6          /*!< Set PD6 function to SPI2_MOSI        */
+#define SET_SPI2_MOSI_PE0()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI2_MOSI_PE0_Msk)) | SPI2_MOSI_PE0          /*!< Set PE0 function to SPI2_MOSI        */
+#define SET_SPI2_MOSI_PB4()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI2_MOSI_PB4_Msk)) | SPI2_MOSI_PB4          /*!< Set PB4 function to SPI2_MOSI        */
+#define SET_SPI2_MOSI_PC6()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_MOSI_PC6_Msk)) | SPI2_MOSI_PC6          /*!< Set PC6 function to SPI2_MOSI        */
+#define SET_SPI2_MOSI_PC2()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_MOSI_PC2_Msk)) | SPI2_MOSI_PC2          /*!< Set PC2 function to SPI2_MOSI        */
+#define SET_SPI2_MOSI_PH5()      SYS->GPH_MFPL = (SYS->GPH_MFPL & (~SPI2_MOSI_PH5_Msk)) | SPI2_MOSI_PH5          /*!< Set PH5 function to SPI2_MOSI        */
+#define SET_SPI2_SS_PB2()        SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI2_SS_PB2_Msk)) | SPI2_SS_PB2              /*!< Set PB2 function to SPI2_SS          */
+#define SET_SPI2_SS_PH9()        SYS->GPH_MFPH = (SYS->GPH_MFPH & (~SPI2_SS_PH9_Msk)) | SPI2_SS_PH9              /*!< Set PH9 function to SPI2_SS          */
+#define SET_SPI2_SS_PD4()        SYS->GPD_MFPL = (SYS->GPD_MFPL & (~SPI2_SS_PD4_Msk)) | SPI2_SS_PD4              /*!< Set PD4 function to SPI2_SS          */
+#define SET_SPI2_SS_PC0()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI2_SS_PC0_Msk)) | SPI2_SS_PC0              /*!< Set PC0 function to SPI2_SS          */
+#define SET_SPI2_SS_PA6()        SYS->GPA_MFPL = (SYS->GPA_MFPL & (~SPI2_SS_PA6_Msk)) | SPI2_SS_PA6              /*!< Set PA6 function to SPI2_SS          */
+#define SET_SPI2_SS_PH7()        SYS->GPH_MFPL = (SYS->GPH_MFPL & (~SPI2_SS_PH7_Msk)) | SPI2_SS_PH7              /*!< Set PH7 function to SPI2_SS          */
+#define SET_SPI3_CLK_PE8()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~SPI3_CLK_PE8_Msk)) | SPI3_CLK_PE8            /*!< Set PE8 function to SPI3_CLK         */
+#define SET_SPI3_CLK_PG3()       SYS->GPG_MFPL = (SYS->GPG_MFPL & (~SPI3_CLK_PG3_Msk)) | SPI3_CLK_PG3            /*!< Set PG3 function to SPI3_CLK         */
+#define SET_SPI3_CLK_PA10()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_CLK_PA10_Msk)) | SPI3_CLK_PA10          /*!< Set PA10 function to SPI3_CLK        */
+#define SET_SPI3_CLK_PA13()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_CLK_PA13_Msk)) | SPI3_CLK_PA13          /*!< Set PA13 function to SPI3_CLK        */
+#define SET_SPI3_I2SMCLK_PC13()  SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SPI3_I2SMCLK_PC13_Msk)) | SPI3_I2SMCLK_PC13  /*!< Set PC13 function to SPI3_I2SMCLK    */
+#define SET_SPI3_I2SMCLK_PE12()  SYS->GPE_MFPH = (SYS->GPE_MFPH & (~SPI3_I2SMCLK_PE12_Msk)) | SPI3_I2SMCLK_PE12  /*!< Set PE12 function to SPI3_I2SMCLK    */
+#define SET_SPI3_MISO_PG4()      SYS->GPG_MFPL = (SYS->GPG_MFPL & (~SPI3_MISO_PG4_Msk)) | SPI3_MISO_PG4          /*!< Set PG4 function to SPI3_MISO        */
+#define SET_SPI3_MISO_PA9()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_MISO_PA9_Msk)) | SPI3_MISO_PA9          /*!< Set PA9 function to SPI3_MISO        */
+#define SET_SPI3_MISO_PA14()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_MISO_PA14_Msk)) | SPI3_MISO_PA14        /*!< Set PA14 function to SPI3_MISO       */
+#define SET_SPI3_MISO_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~SPI3_MISO_PE9_Msk)) | SPI3_MISO_PE9          /*!< Set PE9 function to SPI3_MISO        */
+#define SET_SPI3_MOSI_PE10()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~SPI3_MOSI_PE10_Msk)) | SPI3_MOSI_PE10        /*!< Set PE10 function to SPI3_MOSI       */
+#define SET_SPI3_MOSI_PA15()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_MOSI_PA15_Msk)) | SPI3_MOSI_PA15        /*!< Set PA15 function to SPI3_MOSI       */
+#define SET_SPI3_MOSI_PA8()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_MOSI_PA8_Msk)) | SPI3_MOSI_PA8          /*!< Set PA8 function to SPI3_MOSI        */
+#define SET_SPI3_MOSI_PF11()     SYS->GPF_MFPH = (SYS->GPF_MFPH & (~SPI3_MOSI_PF11_Msk)) | SPI3_MOSI_PF11        /*!< Set PF11 function to SPI3_MOSI       */
+#define SET_SPI3_SS_PG2()        SYS->GPG_MFPL = (SYS->GPG_MFPL & (~SPI3_SS_PG2_Msk)) | SPI3_SS_PG2              /*!< Set PG2 function to SPI3_SS          */
+#define SET_SPI3_SS_PE11()       SYS->GPE_MFPH = (SYS->GPE_MFPH & (~SPI3_SS_PE11_Msk)) | SPI3_SS_PE11            /*!< Set PE11 function to SPI3_SS         */
+#define SET_SPI3_SS_PA11()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_SS_PA11_Msk)) | SPI3_SS_PA11            /*!< Set PA11 function to SPI3_SS         */
+#define SET_SPI3_SS_PA12()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~SPI3_SS_PA12_Msk)) | SPI3_SS_PA12            /*!< Set PA12 function to SPI3_SS         */
+#define SET_SPI4_CLK_PB11()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI4_CLK_PB11_Msk)) | SPI4_CLK_PB11          /*!< Set PB11 function to SPI4_CLK        */
+#define SET_SPI4_CLK_PE4()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI4_CLK_PE4_Msk)) | SPI4_CLK_PE4            /*!< Set PE4 function to SPI4_CLK         */
+#define SET_SPI4_CLK_PC10()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SPI4_CLK_PC10_Msk)) | SPI4_CLK_PC10          /*!< Set PC10 function to SPI4_CLK        */
+#define SET_SPI4_I2SMCLK_PE6()   SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI4_I2SMCLK_PE6_Msk)) | SPI4_I2SMCLK_PE6    /*!< Set PE6 function to SPI4_I2SMCLK     */
+#define SET_SPI4_I2SMCLK_PB1()   SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SPI4_I2SMCLK_PB1_Msk)) | SPI4_I2SMCLK_PB1    /*!< Set PB1 function to SPI4_I2SMCLK     */
+#define SET_SPI4_I2SMCLK_PD14()  SYS->GPD_MFPH = (SYS->GPD_MFPH & (~SPI4_I2SMCLK_PD14_Msk)) | SPI4_I2SMCLK_PD14  /*!< Set PD14 function to SPI4_I2SMCLK    */
+#define SET_SPI4_MISO_PC12()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SPI4_MISO_PC12_Msk)) | SPI4_MISO_PC12        /*!< Set PC12 function to SPI4_MISO       */
+#define SET_SPI4_MISO_PB9()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI4_MISO_PB9_Msk)) | SPI4_MISO_PB9          /*!< Set PB9 function to SPI4_MISO        */
+#define SET_SPI4_MISO_PE3()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI4_MISO_PE3_Msk)) | SPI4_MISO_PE3          /*!< Set PE3 function to SPI4_MISO        */
+#define SET_SPI4_MOSI_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI4_MOSI_PB8_Msk)) | SPI4_MOSI_PB8          /*!< Set PB8 function to SPI4_MOSI        */
+#define SET_SPI4_MOSI_PE2()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI4_MOSI_PE2_Msk)) | SPI4_MOSI_PE2          /*!< Set PE2 function to SPI4_MOSI        */
+#define SET_SPI4_MOSI_PC11()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SPI4_MOSI_PC11_Msk)) | SPI4_MOSI_PC11        /*!< Set PC11 function to SPI4_MOSI       */
+#define SET_SPI4_SS_PE5()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI4_SS_PE5_Msk)) | SPI4_SS_PE5              /*!< Set PE5 function to SPI4_SS          */
+#define SET_SPI4_SS_PB10()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~SPI4_SS_PB10_Msk)) | SPI4_SS_PB10            /*!< Set PB10 function to SPI4_SS         */
+#define SET_SPI4_SS_PC9()        SYS->GPC_MFPH = (SYS->GPC_MFPH & (~SPI4_SS_PC9_Msk)) | SPI4_SS_PC9              /*!< Set PC9 function to SPI4_SS          */
+#define SET_SPI5_CLK_PC2()       SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI5_CLK_PC2_Msk)) | SPI5_CLK_PC2            /*!< Set PC2 function to SPI5_CLK         */
+#define SET_SPI5_CLK_PE4()       SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI5_CLK_PE4_Msk)) | SPI5_CLK_PE4            /*!< Set PE4 function to SPI5_CLK         */
+#define SET_SPI5_CLK_PG11()      SYS->GPG_MFPH = (SYS->GPG_MFPH & (~SPI5_CLK_PG11_Msk)) | SPI5_CLK_PG11          /*!< Set PG11 function to SPI5_CLK        */
+#define SET_SPI5_MISO_PG9()      SYS->GPG_MFPH = (SYS->GPG_MFPH & (~SPI5_MISO_PG9_Msk)) | SPI5_MISO_PG9          /*!< Set PG9 function to SPI5_MISO        */
+#define SET_SPI5_MISO_PC1()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI5_MISO_PC1_Msk)) | SPI5_MISO_PC1          /*!< Set PC1 function to SPI5_MISO        */
+#define SET_SPI5_MISO_PE3()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI5_MISO_PE3_Msk)) | SPI5_MISO_PE3          /*!< Set PE3 function to SPI5_MISO        */
+#define SET_SPI5_MOSI_PE2()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI5_MOSI_PE2_Msk)) | SPI5_MOSI_PE2          /*!< Set PE2 function to SPI5_MOSI        */
+#define SET_SPI5_MOSI_PC0()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI5_MOSI_PC0_Msk)) | SPI5_MOSI_PC0          /*!< Set PC0 function to SPI5_MOSI        */
+#define SET_SPI5_MOSI_PG10()     SYS->GPG_MFPH = (SYS->GPG_MFPH & (~SPI5_MOSI_PG10_Msk)) | SPI5_MOSI_PG10        /*!< Set PG10 function to SPI5_MOSI       */
+#define SET_SPI5_SS_PE5()        SYS->GPE_MFPL = (SYS->GPE_MFPL & (~SPI5_SS_PE5_Msk)) | SPI5_SS_PE5              /*!< Set PE5 function to SPI5_SS          */
+#define SET_SPI5_SS_PG12()       SYS->GPG_MFPH = (SYS->GPG_MFPH & (~SPI5_SS_PG12_Msk)) | SPI5_SS_PG12            /*!< Set PG12 function to SPI5_SS         */
+#define SET_SPI5_SS_PC3()        SYS->GPC_MFPL = (SYS->GPC_MFPL & (~SPI5_SS_PC3_Msk)) | SPI5_SS_PC3              /*!< Set PC3 function to SPI5_SS          */
+#define SET_TAMPER0_PF6()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~TAMPER0_PF6_Msk)) | TAMPER0_PF6              /*!< Set PF6 function to TAMPER0          */
+#define SET_TAMPER1_PF7()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~TAMPER1_PF7_Msk)) | TAMPER1_PF7              /*!< Set PF7 function to TAMPER1          */
+#define SET_TAMPER2_PF8()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~TAMPER2_PF8_Msk)) | TAMPER2_PF8              /*!< Set PF8 function to TAMPER2          */
+#define SET_TAMPER3_PF9()        SYS->GPF_MFPH = (SYS->GPF_MFPH & (~TAMPER3_PF9_Msk)) | TAMPER3_PF9              /*!< Set PF9 function to TAMPER3          */
+#define SET_TAMPER4_PF10()       SYS->GPF_MFPH = (SYS->GPF_MFPH & (~TAMPER4_PF10_Msk)) | TAMPER4_PF10            /*!< Set PF10 function to TAMPER4         */
+#define SET_TAMPER5_PF11()       SYS->GPF_MFPH = (SYS->GPF_MFPH & (~TAMPER5_PF11_Msk)) | TAMPER5_PF11            /*!< Set PF11 function to TAMPER5         */
+#define SET_TM0_PC7()            SYS->GPC_MFPL = (SYS->GPC_MFPL & (~TM0_PC7_Msk)) | TM0_PC7                      /*!< Set PC7 function to TM0              */
+#define SET_TM0_PB5()            SYS->GPB_MFPL = (SYS->GPB_MFPL & (~TM0_PB5_Msk)) | TM0_PB5                      /*!< Set PB5 function to TM0              */
+#define SET_TM0_PG2()            SYS->GPG_MFPL = (SYS->GPG_MFPL & (~TM0_PG2_Msk)) | TM0_PG2                      /*!< Set PG2 function to TM0              */
+#define SET_TM0_EXT_PA11()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~TM0_EXT_PA11_Msk)) | TM0_EXT_PA11            /*!< Set PA11 function to TM0_EXT         */
+#define SET_TM0_EXT_PB15()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~TM0_EXT_PB15_Msk)) | TM0_EXT_PB15            /*!< Set PB15 function to TM0_EXT         */
+#define SET_TM1_PG3()            SYS->GPG_MFPL = (SYS->GPG_MFPL & (~TM1_PG3_Msk)) | TM1_PG3                      /*!< Set PG3 function to TM1              */
+#define SET_TM1_PB4()            SYS->GPB_MFPL = (SYS->GPB_MFPL & (~TM1_PB4_Msk)) | TM1_PB4                      /*!< Set PB4 function to TM1              */
+#define SET_TM1_PC6()            SYS->GPC_MFPL = (SYS->GPC_MFPL & (~TM1_PC6_Msk)) | TM1_PC6                      /*!< Set PC6 function to TM1              */
+#define SET_TM1_EXT_PA10()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~TM1_EXT_PA10_Msk)) | TM1_EXT_PA10            /*!< Set PA10 function to TM1_EXT         */
+#define SET_TM1_EXT_PB14()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~TM1_EXT_PB14_Msk)) | TM1_EXT_PB14            /*!< Set PB14 function to TM1_EXT         */
+#define SET_TM2_PG4()            SYS->GPG_MFPL = (SYS->GPG_MFPL & (~TM2_PG4_Msk)) | TM2_PG4                      /*!< Set PG4 function to TM2              */
+#define SET_TM2_PD0()            SYS->GPD_MFPL = (SYS->GPD_MFPL & (~TM2_PD0_Msk)) | TM2_PD0                      /*!< Set PD0 function to TM2              */
+#define SET_TM2_PB3()            SYS->GPB_MFPL = (SYS->GPB_MFPL & (~TM2_PB3_Msk)) | TM2_PB3                      /*!< Set PB3 function to TM2              */
+#define SET_TM2_PA7()            SYS->GPA_MFPL = (SYS->GPA_MFPL & (~TM2_PA7_Msk)) | TM2_PA7                      /*!< Set PA7 function to TM2              */
+#define SET_TM2_EXT_PB13()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~TM2_EXT_PB13_Msk)) | TM2_EXT_PB13            /*!< Set PB13 function to TM2_EXT         */
+#define SET_TM2_EXT_PA9()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~TM2_EXT_PA9_Msk)) | TM2_EXT_PA9              /*!< Set PA9 function to TM2_EXT          */
+#define SET_TM3_PA6()            SYS->GPA_MFPL = (SYS->GPA_MFPL & (~TM3_PA6_Msk)) | TM3_PA6                      /*!< Set PA6 function to TM3              */
+#define SET_TM3_PF11()           SYS->GPF_MFPH = (SYS->GPF_MFPH & (~TM3_PF11_Msk)) | TM3_PF11                    /*!< Set PF11 function to TM3             */
+#define SET_TM3_PB2()            SYS->GPB_MFPL = (SYS->GPB_MFPL & (~TM3_PB2_Msk)) | TM3_PB2                      /*!< Set PB2 function to TM3              */
+#define SET_TM3_EXT_PA8()        SYS->GPA_MFPH = (SYS->GPA_MFPH & (~TM3_EXT_PA8_Msk)) | TM3_EXT_PA8              /*!< Set PA8 function to TM3_EXT          */
+#define SET_TM3_EXT_PB12()       SYS->GPB_MFPH = (SYS->GPB_MFPH & (~TM3_EXT_PB12_Msk)) | TM3_EXT_PB12            /*!< Set PB12 function to TM3_EXT         */
+#define SET_TRACE_CLK_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~TRACE_CLK_PE12_Msk)) | TRACE_CLK_PE12        /*!< Set PE8 function to TRACE_CLK        */
+#define SET_TRACE_DATA0_PE11()   SYS->GPE_MFPH = (SYS->GPE_MFPH & (~TRACE_DATA0_PE11_Msk)) | TRACE_DATA0_PE11    /*!< Set PE9 function to TRACE_DATA0      */
+#define SET_TRACE_DATA1_PE10()   SYS->GPE_MFPH = (SYS->GPE_MFPH & (~TRACE_DATA1_PE10_Msk)) | TRACE_DATA1_PE10    /*!< Set PE10 function to TRACE_DATA1     */
+#define SET_TRACE_DATA2_PE9()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~TRACE_DATA2_PE9_Msk)) | TRACE_DATA2_PE9      /*!< Set PE11 function to TRACE_DATA2     */
+#define SET_TRACE_DATA3_PE8()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~TRACE_DATA3_PE8_Msk)) | TRACE_DATA3_PE8      /*!< Set PE12 function to TRACE_DATA3     */
+#define SET_UART0_RXD_PD2()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART0_RXD_PD2_Msk)) | UART0_RXD_PD2          /*!< Set PD2 function to UART0_RXD        */
+#define SET_UART0_RXD_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_RXD_PB8_Msk)) | UART0_RXD_PB8          /*!< Set PB8 function to UART0_RXD        */
+#define SET_UART0_RXD_PA0()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_RXD_PA0_Msk)) | UART0_RXD_PA0          /*!< Set PA0 function to UART0_RXD        */
+#define SET_UART0_RXD_PA6()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_RXD_PA6_Msk)) | UART0_RXD_PA6          /*!< Set PA6 function to UART0_RXD        */
+#define SET_UART0_RXD_PB12()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_RXD_PB12_Msk)) | UART0_RXD_PB12        /*!< Set PB12 function to UART0_RXD       */
+#define SET_UART0_RXD_PA15()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART0_RXD_PA15_Msk)) | UART0_RXD_PA15        /*!< Set PA15 function to UART0_RXD       */
+#define SET_UART0_RXD_PC11()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART0_RXD_PC11_Msk)) | UART0_RXD_PC11        /*!< Set PC11 function to UART0_RXD       */
+#define SET_UART0_RXD_PH11()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART0_RXD_PH11_Msk)) | UART0_RXD_PH11        /*!< Set PH11 function to UART0_RXD       */
+#define SET_UART0_RXD_PF2()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART0_RXD_PF2_Msk)) | UART0_RXD_PF2          /*!< Set PF2 function to UART0_RXD        */
+#define SET_UART0_TXD_PA7()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_TXD_PA7_Msk)) | UART0_TXD_PA7          /*!< Set PA7 function to UART0_TXD        */
+#define SET_UART0_TXD_PD3()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART0_TXD_PD3_Msk)) | UART0_TXD_PD3          /*!< Set PD3 function to UART0_TXD        */
+#define SET_UART0_TXD_PF3()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART0_TXD_PF3_Msk)) | UART0_TXD_PF3          /*!< Set PF3 function to UART0_TXD        */
+#define SET_UART0_TXD_PC12()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART0_TXD_PC12_Msk)) | UART0_TXD_PC12        /*!< Set PC12 function to UART0_TXD       */
+#define SET_UART0_TXD_PH10()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART0_TXD_PH10_Msk)) | UART0_TXD_PH10        /*!< Set PH10 function to UART0_TXD       */
+#define SET_UART0_TXD_PA1()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_TXD_PA1_Msk)) | UART0_TXD_PA1          /*!< Set PA1 function to UART0_TXD        */
+#define SET_UART0_TXD_PB9()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_TXD_PB9_Msk)) | UART0_TXD_PB9          /*!< Set PB9 function to UART0_TXD        */
+#define SET_UART0_TXD_PB13()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_TXD_PB13_Msk)) | UART0_TXD_PB13        /*!< Set PB13 function to UART0_TXD       */
+#define SET_UART0_TXD_PA14()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART0_TXD_PA14_Msk)) | UART0_TXD_PA14        /*!< Set PA14 function to UART0_TXD       */
+#define SET_UART0_nCTS_PA5()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_nCTS_PA5_Msk)) | UART0_nCTS_PA5        /*!< Set PA5 function to UART0_nCTS       */
+#define SET_UART0_nCTS_PB11()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_nCTS_PB11_Msk)) | UART0_nCTS_PB11      /*!< Set PB11 function to UART0_nCTS      */
+#define SET_UART0_nCTS_PB15()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_nCTS_PB15_Msk)) | UART0_nCTS_PB15      /*!< Set PB15 function to UART0_nCTS      */
+#define SET_UART0_nCTS_PC7()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART0_nCTS_PC7_Msk)) | UART0_nCTS_PC7        /*!< Set PC7 function to UART0_nCTS       */
+#define SET_UART0_nRTS_PB14()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_nRTS_PB14_Msk)) | UART0_nRTS_PB14      /*!< Set PB14 function to UART0_nRTS      */
+#define SET_UART0_nRTS_PB10()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART0_nRTS_PB10_Msk)) | UART0_nRTS_PB10      /*!< Set PB10 function to UART0_nRTS      */
+#define SET_UART0_nRTS_PC6()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART0_nRTS_PC6_Msk)) | UART0_nRTS_PC6        /*!< Set PC6 function to UART0_nRTS       */
+#define SET_UART0_nRTS_PA4()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART0_nRTS_PA4_Msk)) | UART0_nRTS_PA4        /*!< Set PA4 function to UART0_nRTS       */
+#define SET_UART1_RXD_PF1()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART1_RXD_PF1_Msk)) | UART1_RXD_PF1          /*!< Set PF1 function to UART1_RXD        */
+#define SET_UART1_RXD_PA8()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART1_RXD_PA8_Msk)) | UART1_RXD_PA8          /*!< Set PA8 function to UART1_RXD        */
+#define SET_UART1_RXD_PA2()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART1_RXD_PA2_Msk)) | UART1_RXD_PA2          /*!< Set PA2 function to UART1_RXD        */
+#define SET_UART1_RXD_PB2()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART1_RXD_PB2_Msk)) | UART1_RXD_PB2          /*!< Set PB2 function to UART1_RXD        */
+#define SET_UART1_RXD_PB6()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART1_RXD_PB6_Msk)) | UART1_RXD_PB6          /*!< Set PB6 function to UART1_RXD        */
+#define SET_UART1_RXD_PD6()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART1_RXD_PD6_Msk)) | UART1_RXD_PD6          /*!< Set PD6 function to UART1_RXD        */
+#define SET_UART1_RXD_PD10()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~UART1_RXD_PD10_Msk)) | UART1_RXD_PD10        /*!< Set PD10 function to UART1_RXD       */
+#define SET_UART1_RXD_PH9()      SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART1_RXD_PH9_Msk)) | UART1_RXD_PH9          /*!< Set PH9 function to UART1_RXD        */
+#define SET_UART1_RXD_PC8()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART1_RXD_PC8_Msk)) | UART1_RXD_PC8          /*!< Set PC8 function to UART1_RXD        */
+#define SET_UART1_TXD_PB3()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART1_TXD_PB3_Msk)) | UART1_TXD_PB3          /*!< Set PB3 function to UART1_TXD        */
+#define SET_UART1_TXD_PA3()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART1_TXD_PA3_Msk)) | UART1_TXD_PA3          /*!< Set PA3 function to UART1_TXD        */
+#define SET_UART1_TXD_PE13()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART1_TXD_PE13_Msk)) | UART1_TXD_PE13        /*!< Set PE13 function to UART1_TXD       */
+#define SET_UART1_TXD_PA9()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART1_TXD_PA9_Msk)) | UART1_TXD_PA9          /*!< Set PA9 function to UART1_TXD        */
+#define SET_UART1_TXD_PF0()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART1_TXD_PF0_Msk)) | UART1_TXD_PF0          /*!< Set PF0 function to UART1_TXD        */
+#define SET_UART1_TXD_PD11()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~UART1_TXD_PD11_Msk)) | UART1_TXD_PD11        /*!< Set PD11 function to UART1_TXD       */
+#define SET_UART1_TXD_PD7()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART1_TXD_PD7_Msk)) | UART1_TXD_PD7          /*!< Set PD7 function to UART1_TXD        */
+#define SET_UART1_TXD_PB7()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART1_TXD_PB7_Msk)) | UART1_TXD_PB7          /*!< Set PB7 function to UART1_TXD        */
+#define SET_UART1_TXD_PH8()      SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART1_TXD_PH8_Msk)) | UART1_TXD_PH8          /*!< Set PH8 function to UART1_TXD        */
+#define SET_UART1_nCTS_PE11()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART1_nCTS_PE11_Msk)) | UART1_nCTS_PE11      /*!< Set PE11 function to UART1_nCTS      */
+#define SET_UART1_nCTS_PB9()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART1_nCTS_PB9_Msk)) | UART1_nCTS_PB9        /*!< Set PB9 function to UART1_nCTS       */
+#define SET_UART1_nCTS_PA1()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART1_nCTS_PA1_Msk)) | UART1_nCTS_PA1        /*!< Set PA1 function to UART1_nCTS       */
+#define SET_UART1_nRTS_PA0()     SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART1_nRTS_PA0_Msk)) | UART1_nRTS_PA0        /*!< Set PA0 function to UART1_nRTS       */
+#define SET_UART1_nRTS_PE12()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART1_nRTS_PE12_Msk)) | UART1_nRTS_PE12      /*!< Set PE12 function to UART1_nRTS      */
+#define SET_UART1_nRTS_PB8()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART1_nRTS_PB8_Msk)) | UART1_nRTS_PB8        /*!< Set PB8 function to UART1_nRTS       */
+#define SET_UART2_RXD_PB0()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART2_RXD_PB0_Msk)) | UART2_RXD_PB0          /*!< Set PB0 function to UART2_RXD        */
+#define SET_UART2_RXD_PE15()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART2_RXD_PE15_Msk)) | UART2_RXD_PE15        /*!< Set PE15 function to UART2_RXD       */
+#define SET_UART2_RXD_PD12()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~UART2_RXD_PD12_Msk)) | UART2_RXD_PD12        /*!< Set PD12 function to UART2_RXD       */
+#define SET_UART2_RXD_PF5()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART2_RXD_PF5_Msk)) | UART2_RXD_PF5          /*!< Set PF5 function to UART2_RXD        */
+#define SET_UART2_RXD_PC0()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_RXD_PC0_Msk)) | UART2_RXD_PC0          /*!< Set PC0 function to UART2_RXD        */
+#define SET_UART2_RXD_PC4()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_RXD_PC4_Msk)) | UART2_RXD_PC4          /*!< Set PC4 function to UART2_RXD        */
+#define SET_UART2_RXD_PE9()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART2_RXD_PE9_Msk)) | UART2_RXD_PE9          /*!< Set PE9 function to UART2_RXD        */
+#define SET_UART2_TXD_PE8()      SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART2_TXD_PE8_Msk)) | UART2_TXD_PE8          /*!< Set PE8 function to UART2_TXD        */
+#define SET_UART2_TXD_PF4()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART2_TXD_PF4_Msk)) | UART2_TXD_PF4          /*!< Set PF4 function to UART2_TXD        */
+#define SET_UART2_TXD_PC13()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART2_TXD_PC13_Msk)) | UART2_TXD_PC13        /*!< Set PC13 function to UART2_TXD       */
+#define SET_UART2_TXD_PC1()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_TXD_PC1_Msk)) | UART2_TXD_PC1          /*!< Set PC1 function to UART2_TXD        */
+#define SET_UART2_TXD_PE14()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART2_TXD_PE14_Msk)) | UART2_TXD_PE14        /*!< Set PE14 function to UART2_TXD       */
+#define SET_UART2_TXD_PC5()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_TXD_PC5_Msk)) | UART2_TXD_PC5          /*!< Set PC5 function to UART2_TXD        */
+#define SET_UART2_TXD_PB1()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART2_TXD_PB1_Msk)) | UART2_TXD_PB1          /*!< Set PB1 function to UART2_TXD        */
+#define SET_UART2_nCTS_PF5()     SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART2_nCTS_PF5_Msk)) | UART2_nCTS_PF5        /*!< Set PF5 function to UART2_nCTS       */
+#define SET_UART2_nCTS_PD9()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~UART2_nCTS_PD9_Msk)) | UART2_nCTS_PD9        /*!< Set PD9 function to UART2_nCTS       */
+#define SET_UART2_nCTS_PC2()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_nCTS_PC2_Msk)) | UART2_nCTS_PC2        /*!< Set PC2 function to UART2_nCTS       */
+#define SET_UART2_nRTS_PF4()     SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART2_nRTS_PF4_Msk)) | UART2_nRTS_PF4        /*!< Set PF4 function to UART2_nRTS       */
+#define SET_UART2_nRTS_PD8()     SYS->GPD_MFPH = (SYS->GPD_MFPH & (~UART2_nRTS_PD8_Msk)) | UART2_nRTS_PD8        /*!< Set PD8 function to UART2_nRTS       */
+#define SET_UART2_nRTS_PC3()     SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART2_nRTS_PC3_Msk)) | UART2_nRTS_PC3        /*!< Set PC3 function to UART2_nRTS       */
+#define SET_UART3_RXD_PD0()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART3_RXD_PD0_Msk)) | UART3_RXD_PD0          /*!< Set PD0 function to UART3_RXD        */
+#define SET_UART3_RXD_PE11()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART3_RXD_PE11_Msk)) | UART3_RXD_PE11        /*!< Set PE11 function to UART3_RXD       */
+#define SET_UART3_RXD_PC9()      SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART3_RXD_PC9_Msk)) | UART3_RXD_PC9          /*!< Set PC9 function to UART3_RXD        */
+#define SET_UART3_RXD_PE0()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART3_RXD_PE0_Msk)) | UART3_RXD_PE0          /*!< Set PE0 function to UART3_RXD        */
+#define SET_UART3_RXD_PC2()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART3_RXD_PC2_Msk)) | UART3_RXD_PC2          /*!< Set PC2 function to UART3_RXD        */
+#define SET_UART3_RXD_PB14()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART3_RXD_PB14_Msk)) | UART3_RXD_PB14        /*!< Set PB14 function to UART3_RXD       */
+#define SET_UART3_TXD_PD1()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART3_TXD_PD1_Msk)) | UART3_TXD_PD1          /*!< Set PD1 function to UART3_TXD        */
+#define SET_UART3_TXD_PC10()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART3_TXD_PC10_Msk)) | UART3_TXD_PC10        /*!< Set PC10 function to UART3_TXD       */
+#define SET_UART3_TXD_PB15()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART3_TXD_PB15_Msk)) | UART3_TXD_PB15        /*!< Set PB15 function to UART3_TXD       */
+#define SET_UART3_TXD_PC3()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART3_TXD_PC3_Msk)) | UART3_TXD_PC3          /*!< Set PC3 function to UART3_TXD        */
+#define SET_UART3_TXD_PE1()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART3_TXD_PE1_Msk)) | UART3_TXD_PE1          /*!< Set PE1 function to UART3_TXD        */
+#define SET_UART3_TXD_PE10()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART3_TXD_PE10_Msk)) | UART3_TXD_PE10        /*!< Set PE10 function to UART3_TXD       */
+#define SET_UART3_nCTS_PB12()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART3_nCTS_PB12_Msk)) | UART3_nCTS_PB12      /*!< Set PB12 function to UART3_nCTS      */
+#define SET_UART3_nCTS_PH9()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART3_nCTS_PH9_Msk)) | UART3_nCTS_PH9        /*!< Set PH9 function to UART3_nCTS       */
+#define SET_UART3_nCTS_PD2()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART3_nCTS_PD2_Msk)) | UART3_nCTS_PD2        /*!< Set PD2 function to UART3_nCTS       */
+#define SET_UART3_nRTS_PB13()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART3_nRTS_PB13_Msk)) | UART3_nRTS_PB13      /*!< Set PB13 function to UART3_nRTS      */
+#define SET_UART3_nRTS_PH8()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART3_nRTS_PH8_Msk)) | UART3_nRTS_PH8        /*!< Set PH8 function to UART3_nRTS       */
+#define SET_UART3_nRTS_PD3()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~UART3_nRTS_PD3_Msk)) | UART3_nRTS_PD3        /*!< Set PD3 function to UART3_nRTS       */
+#define SET_UART4_RXD_PA13()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART4_RXD_PA13_Msk)) | UART4_RXD_PA13        /*!< Set PA13 function to UART4_RXD       */
+#define SET_UART4_RXD_PC6()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART4_RXD_PC6_Msk)) | UART4_RXD_PC6          /*!< Set PC6 function to UART4_RXD        */
+#define SET_UART4_RXD_PC4()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART4_RXD_PC4_Msk)) | UART4_RXD_PC4          /*!< Set PC4 function to UART4_RXD        */
+#define SET_UART4_RXD_PB10()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART4_RXD_PB10_Msk)) | UART4_RXD_PB10        /*!< Set PB10 function to UART4_RXD       */
+#define SET_UART4_RXD_PH11()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART4_RXD_PH11_Msk)) | UART4_RXD_PH11        /*!< Set PH11 function to UART4_RXD       */
+#define SET_UART4_RXD_PA2()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART4_RXD_PA2_Msk)) | UART4_RXD_PA2          /*!< Set PA2 function to UART4_RXD        */
+#define SET_UART4_RXD_PF6()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART4_RXD_PF6_Msk)) | UART4_RXD_PF6          /*!< Set PF6 function to UART4_RXD        */
+#define SET_UART4_TXD_PH10()     SYS->GPH_MFPH = (SYS->GPH_MFPH & (~UART4_TXD_PH10_Msk)) | UART4_TXD_PH10        /*!< Set PH10 function to UART4_TXD       */
+#define SET_UART4_TXD_PA3()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART4_TXD_PA3_Msk)) | UART4_TXD_PA3          /*!< Set PA3 function to UART4_TXD        */
+#define SET_UART4_TXD_PA12()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~UART4_TXD_PA12_Msk)) | UART4_TXD_PA12        /*!< Set PA12 function to UART4_TXD       */
+#define SET_UART4_TXD_PC7()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART4_TXD_PC7_Msk)) | UART4_TXD_PC7          /*!< Set PC7 function to UART4_TXD        */
+#define SET_UART4_TXD_PB11()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~UART4_TXD_PB11_Msk)) | UART4_TXD_PB11        /*!< Set PB11 function to UART4_TXD       */
+#define SET_UART4_TXD_PF7()      SYS->GPF_MFPL = (SYS->GPF_MFPL & (~UART4_TXD_PF7_Msk)) | UART4_TXD_PF7          /*!< Set PF7 function to UART4_TXD        */
+#define SET_UART4_TXD_PC5()      SYS->GPC_MFPL = (SYS->GPC_MFPL & (~UART4_TXD_PC5_Msk)) | UART4_TXD_PC5          /*!< Set PC5 function to UART4_TXD        */
+#define SET_UART4_nCTS_PE1()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART4_nCTS_PE1_Msk)) | UART4_nCTS_PE1        /*!< Set PE1 function to UART4_nCTS       */
+#define SET_UART4_nCTS_PC8()     SYS->GPC_MFPH = (SYS->GPC_MFPH & (~UART4_nCTS_PC8_Msk)) | UART4_nCTS_PC8        /*!< Set PC8 function to UART4_nCTS       */
+#define SET_UART4_nRTS_PE0()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART4_nRTS_PE0_Msk)) | UART4_nRTS_PE0        /*!< Set PE0 function to UART4_nRTS       */
+#define SET_UART4_nRTS_PE13()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~UART4_nRTS_PE13_Msk)) | UART4_nRTS_PE13      /*!< Set PE13 function to UART4_nRTS      */
+#define SET_UART5_RXD_PB4()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART5_RXD_PB4_Msk)) | UART5_RXD_PB4          /*!< Set PB4 function to UART5_RXD        */
+#define SET_UART5_RXD_PA4()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART5_RXD_PA4_Msk)) | UART5_RXD_PA4          /*!< Set PA4 function to UART5_RXD        */
+#define SET_UART5_RXD_PE6()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART5_RXD_PE6_Msk)) | UART5_RXD_PE6          /*!< Set PE6 function to UART5_RXD        */
+#define SET_UART5_TXD_PB5()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART5_TXD_PB5_Msk)) | UART5_TXD_PB5          /*!< Set PB5 function to UART5_TXD        */
+#define SET_UART5_TXD_PE7()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~UART5_TXD_PE7_Msk)) | UART5_TXD_PE7          /*!< Set PE7 function to UART5_TXD        */
+#define SET_UART5_TXD_PA5()      SYS->GPA_MFPL = (SYS->GPA_MFPL & (~UART5_TXD_PA5_Msk)) | UART5_TXD_PA5          /*!< Set PA5 function to UART5_TXD        */
+#define SET_UART5_nCTS_PB2()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART5_nCTS_PB2_Msk)) | UART5_nCTS_PB2        /*!< Set PB2 function to UART5_nCTS       */
+#define SET_UART5_nRTS_PB3()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~UART5_nRTS_PB3_Msk)) | UART5_nRTS_PB3        /*!< Set PB3 function to UART5_nRTS       */
+#define SET_USB_D_P_PA14()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USB_D_P_PA14_Msk)) | USB_D_P_PA14            /*!< Set PA14 function to USB_D+          */
+#define SET_USB_D_N_PA13()       SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USB_D_N_PA13_Msk)) | USB_D_N_PA13            /*!< Set PA13 function to USB_D-          */
+#define SET_USB_OTG_ID_PA15()    SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USB_OTG_ID_PA15_Msk)) | USB_OTG_ID_PA15      /*!< Set PA15 function to USB_OTG_ID      */
+#define SET_USB_VBUS_PA12()      SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USB_VBUS_PA12_Msk)) | USB_VBUS_PA12          /*!< Set PA12 function to USB_VBUS        */
+#define SET_USB_VBUS_EN_PB6()    SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USB_VBUS_EN_PB6_Msk)) | USB_VBUS_EN_PB6      /*!< Set PB6 function to USB_VBUS_EN      */
+#define SET_USB_VBUS_EN_PB15()   SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USB_VBUS_EN_PB15_Msk)) | USB_VBUS_EN_PB15    /*!< Set PB15 function to USB_VBUS_EN     */
+#define SET_USB_VBUS_ST_PB14()   SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USB_VBUS_ST_PB14_Msk)) | USB_VBUS_ST_PB14    /*!< Set PB14 function to USB_VBUS_ST     */
+#define SET_USB_VBUS_ST_PB7()    SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USB_VBUS_ST_PB7_Msk)) | USB_VBUS_ST_PB7      /*!< Set PB7 function to USB_VBUS_ST      */
+#define SET_USB_VBUS_ST_PD4()    SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USB_VBUS_ST_PD4_Msk)) | USB_VBUS_ST_PD4      /*!< Set PD4 function to USB_VBUS_ST      */
+#define SET_USCI0_CLK_PD0()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI0_CLK_PD0_Msk)) | USCI0_CLK_PD0          /*!< Set PD0 function to USCI0_CLK        */
+#define SET_USCI0_CLK_PA11()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USCI0_CLK_PA11_Msk)) | USCI0_CLK_PA11        /*!< Set PA11 function to USCI0_CLK       */
+#define SET_USCI0_CLK_PE2()      SYS->GPE_MFPL = (SYS->GPE_MFPL & (~USCI0_CLK_PE2_Msk)) | USCI0_CLK_PE2          /*!< Set PE2 function to USCI0_CLK        */
+#define SET_USCI0_CLK_PB12()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI0_CLK_PB12_Msk)) | USCI0_CLK_PB12        /*!< Set PB12 function to USCI0_CLK       */
+#define SET_USCI0_CTL0_PD4()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI0_CTL0_PD4_Msk)) | USCI0_CTL0_PD4        /*!< Set PD4 function to USCI0_CTL0       */
+#define SET_USCI0_CTL0_PE6()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~USCI0_CTL0_PE6_Msk)) | USCI0_CTL0_PE6        /*!< Set PE6 function to USCI0_CTL0       */
+#define SET_USCI0_CTL0_PC13()    SYS->GPC_MFPH = (SYS->GPC_MFPH & (~USCI0_CTL0_PC13_Msk)) | USCI0_CTL0_PC13      /*!< Set PC13 function to USCI0_CTL0      */
+#define SET_USCI0_CTL0_PD14()    SYS->GPD_MFPH = (SYS->GPD_MFPH & (~USCI0_CTL0_PD14_Msk)) | USCI0_CTL0_PD14      /*!< Set PD14 function to USCI0_CTL0      */
+#define SET_USCI0_CTL1_PD3()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI0_CTL1_PD3_Msk)) | USCI0_CTL1_PD3        /*!< Set PD3 function to USCI0_CTL1       */
+#define SET_USCI0_CTL1_PE5()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~USCI0_CTL1_PE5_Msk)) | USCI0_CTL1_PE5        /*!< Set PE5 function to USCI0_CTL1       */
+#define SET_USCI0_CTL1_PB15()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI0_CTL1_PB15_Msk)) | USCI0_CTL1_PB15      /*!< Set PB15 function to USCI0_CTL1      */
+#define SET_USCI0_CTL1_PA8()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USCI0_CTL1_PA8_Msk)) | USCI0_CTL1_PA8        /*!< Set PA8 function to USCI0_CTL1       */
+#define SET_USCI0_DAT0_PE3()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~USCI0_DAT0_PE3_Msk)) | USCI0_DAT0_PE3        /*!< Set PE3 function to USCI0_DAT0       */
+#define SET_USCI0_DAT0_PB13()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI0_DAT0_PB13_Msk)) | USCI0_DAT0_PB13      /*!< Set PB13 function to USCI0_DAT0      */
+#define SET_USCI0_DAT0_PD1()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI0_DAT0_PD1_Msk)) | USCI0_DAT0_PD1        /*!< Set PD1 function to USCI0_DAT0       */
+#define SET_USCI0_DAT0_PA10()    SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USCI0_DAT0_PA10_Msk)) | USCI0_DAT0_PA10      /*!< Set PA10 function to USCI0_DAT0      */
+#define SET_USCI0_DAT1_PE4()     SYS->GPE_MFPL = (SYS->GPE_MFPL & (~USCI0_DAT1_PE4_Msk)) | USCI0_DAT1_PE4        /*!< Set PE4 function to USCI0_DAT1       */
+#define SET_USCI0_DAT1_PD2()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI0_DAT1_PD2_Msk)) | USCI0_DAT1_PD2        /*!< Set PD2 function to USCI0_DAT1       */
+#define SET_USCI0_DAT1_PB14()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI0_DAT1_PB14_Msk)) | USCI0_DAT1_PB14      /*!< Set PB14 function to USCI0_DAT1      */
+#define SET_USCI0_DAT1_PA9()     SYS->GPA_MFPH = (SYS->GPA_MFPH & (~USCI0_DAT1_PA9_Msk)) | USCI0_DAT1_PA9        /*!< Set PA9 function to USCI0_DAT1       */
+#define SET_USCI1_CLK_PE12()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~USCI1_CLK_PE12_Msk)) | USCI1_CLK_PE12        /*!< Set PE12 function to USCI1_CLK       */
+#define SET_USCI1_CLK_PD7()      SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI1_CLK_PD7_Msk)) | USCI1_CLK_PD7          /*!< Set PD7 function to USCI1_CLK        */
+#define SET_USCI1_CLK_PB8()      SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI1_CLK_PB8_Msk)) | USCI1_CLK_PB8          /*!< Set PB8 function to USCI1_CLK        */
+#define SET_USCI1_CLK_PB1()      SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_CLK_PB1_Msk)) | USCI1_CLK_PB1          /*!< Set PB1 function to USCI1_CLK        */
+#define SET_USCI1_CTL0_PB10()    SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI1_CTL0_PB10_Msk)) | USCI1_CTL0_PB10      /*!< Set PB10 function to USCI1_CTL0      */
+#define SET_USCI1_CTL0_PB5()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_CTL0_PB5_Msk)) | USCI1_CTL0_PB5        /*!< Set PB5 function to USCI1_CTL0       */
+#define SET_USCI1_CTL0_PE9()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~USCI1_CTL0_PE9_Msk)) | USCI1_CTL0_PE9        /*!< Set PE9 function to USCI1_CTL0       */
+#define SET_USCI1_CTL0_PD3()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI1_CTL0_PD3_Msk)) | USCI1_CTL0_PD3        /*!< Set PD3 function to USCI1_CTL0       */
+#define SET_USCI1_CTL1_PD4()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI1_CTL1_PD4_Msk)) | USCI1_CTL1_PD4        /*!< Set PD4 function to USCI1_CTL1       */
+#define SET_USCI1_CTL1_PE8()     SYS->GPE_MFPH = (SYS->GPE_MFPH & (~USCI1_CTL1_PE8_Msk)) | USCI1_CTL1_PE8        /*!< Set PE8 function to USCI1_CTL1       */
+#define SET_USCI1_CTL1_PB9()     SYS->GPB_MFPH = (SYS->GPB_MFPH & (~USCI1_CTL1_PB9_Msk)) | USCI1_CTL1_PB9        /*!< Set PB9 function to USCI1_CTL1       */
+#define SET_USCI1_CTL1_PB4()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_CTL1_PB4_Msk)) | USCI1_CTL1_PB4        /*!< Set PB4 function to USCI1_CTL1       */
+#define SET_USCI1_DAT0_PB2()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_DAT0_PB2_Msk)) | USCI1_DAT0_PB2        /*!< Set PB2 function to USCI1_DAT0       */
+#define SET_USCI1_DAT0_PB7()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_DAT0_PB7_Msk)) | USCI1_DAT0_PB7        /*!< Set PB7 function to USCI1_DAT0       */
+#define SET_USCI1_DAT0_PE10()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~USCI1_DAT0_PE10_Msk)) | USCI1_DAT0_PE10      /*!< Set PE10 function to USCI1_DAT0      */
+#define SET_USCI1_DAT0_PD5()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI1_DAT0_PD5_Msk)) | USCI1_DAT0_PD5        /*!< Set PD5 function to USCI1_DAT0       */
+#define SET_USCI1_DAT1_PD6()     SYS->GPD_MFPL = (SYS->GPD_MFPL & (~USCI1_DAT1_PD6_Msk)) | USCI1_DAT1_PD6        /*!< Set PD6 function to USCI1_DAT1       */
+#define SET_USCI1_DAT1_PB3()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_DAT1_PB3_Msk)) | USCI1_DAT1_PB3        /*!< Set PB3 function to USCI1_DAT1       */
+#define SET_USCI1_DAT1_PE11()    SYS->GPE_MFPH = (SYS->GPE_MFPH & (~USCI1_DAT1_PE11_Msk)) | USCI1_DAT1_PE11      /*!< Set PE11 function to USCI1_DAT1      */
+#define SET_USCI1_DAT1_PB6()     SYS->GPB_MFPL = (SYS->GPB_MFPL & (~USCI1_DAT1_PB6_Msk)) | USCI1_DAT1_PB6        /*!< Set PB6 function to USCI1_DAT1       */
+#define SET_X32_IN_PF5()         SYS->GPF_MFPL = (SYS->GPF_MFPL & (~X32_IN_PF5_Msk)) | X32_IN_PF5                /*!< Set PF5 function to X32_IN           */
+#define SET_X32_OUT_PF4()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~X32_OUT_PF4_Msk)) | X32_OUT_PF4              /*!< Set PF4 function to X32_OUT          */
+#define SET_XT1_IN_PF3()         SYS->GPF_MFPL = (SYS->GPF_MFPL & (~XT1_IN_PF3_Msk)) | XT1_IN_PF3                /*!< Set PF3 function to XT1_IN           */
+#define SET_XT1_OUT_PF2()        SYS->GPF_MFPL = (SYS->GPF_MFPL & (~XT1_OUT_PF2_Msk)) | XT1_OUT_PF2              /*!< Set PF2 function to XT1_OUT          */
 
 
 /*@}*/ /* end of group SYS_EXPORTED_CONSTANTS */
@@ -3040,11 +3837,15 @@ __STATIC_INLINE void SYS_LockReg(void);
   */
 __STATIC_INLINE void SYS_UnlockReg(void)
 {
+    uint32_t u32TimeOutCount = __HIRC;
+
     do
     {
         SYS->REGLCTL = 0x59UL;
         SYS->REGLCTL = 0x16UL;
         SYS->REGLCTL = 0x88UL;
+
+        if(--u32TimeOutCount == 0) break;
     }
     while(SYS->REGLCTL == 0UL);
 }
@@ -3076,6 +3877,7 @@ void SYS_SetPowerLevel(uint32_t u32PowerLevel);
 uint32_t SYS_SetPowerRegulator(uint32_t u32PowerRegulator);
 void SYS_SetSSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode);
 void SYS_SetPSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode);
+void SYS_SetVRef(uint32_t u32VRefCTL);
 
 
 /*@}*/ /* end of group SYS_EXPORTED_FUNCTIONS */
@@ -3092,4 +3894,4 @@ void SYS_SetPSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode);
 #endif /* __SYS_H__ */
 
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

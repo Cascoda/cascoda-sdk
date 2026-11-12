@@ -255,6 +255,13 @@ void BSP_USBSerialWrite(u8_t *pBuffer)
 
 void BSP_SerialWriteAll(u8_t *pBuffer, u32_t BufferSize)
 {
+	/* Wait until Tx FIFO is empty, AND Tx DMA channel is released */
+	/* Both checks should pass before proceeding to write*/
+	while (!(UART->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk))
+		;
+	while (PDMA_IS_CH_BUSY(PDMA1, UART_TX_DMA_CH))
+		;
+
 	if (BufferSize < UART_FIFOSIZE)
 		CHILI_UARTFIFOWrite(pBuffer, BufferSize);
 	else
@@ -395,7 +402,6 @@ u32_t BSP_ADCGetVolts(void)
 void BSP_SPIInit(void)
 {
 	CHILI_EnableSpiModuleClock();
-	CHILI_RegisterSPIComplete(&SPI_ExchangeComplete); //Trustzone workaround
 
 	/* SPI clock rate */
 	SPI_Open(SPI, SPI_MASTER, SPI_MODE_2, 8, FCLK_SPI);
@@ -421,6 +427,14 @@ void BSP_SystemReset(sysreset_mode resetMode)
 
 	NVIC_SystemReset();
 	__enable_irq(); // Should never be hit
+}
+
+void BSP_ResetOnLoopStuck(uint32_t start_time)
+{
+	if ((BSP_ReadAbsoluteTime() - start_time) > WHILE_LOOP_STUCK_TIMEOUT)
+	{
+		BSP_SystemReset(SYSRESET_APROM);
+	}
 }
 
 void BSP_Initialise(struct ca821x_dev *pDeviceRef)

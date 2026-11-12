@@ -26,11 +26,35 @@
 extern "C" {
 #endif
 
-#define OC_INOUT_BUFFER_POOL (6)
+// Number of oscore contexts that can be stored in the pool
+#ifndef OC_OSCORE_CONTEXT_COUNT
+#define OC_OSCORE_CONTEXT_COUNT (20)
+#endif
+
+// Use the message pool instead of malloc for incoming & outgoing frames
+#define OC_INOUT_BUFFER_POOL
+// Size of data to be held within each buffer
+#ifndef OC_INOUT_BUFFER_SIZE
 #define OC_INOUT_BUFFER_SIZE (1232)
+#endif
+
+// Number of buffers used for reception
+#ifndef OC_INPUT_BUFFER_COUNT
+#define OC_INPUT_BUFFER_COUNT (5)
+#endif
+
+// Number of buffers used for transmission of arbitrary messages
+#ifndef OC_OUTPUT_BUFFER_COUNT
+#define OC_OUTPUT_BUFFER_COUNT (5)
+#endif
+
+// Number of buffers used for transmitting S-Mode messages
+#ifndef OC_S_MODE_BUFFER_COUNT
+#define OC_S_MODE_BUFFER_COUNT (6)
+#endif
 
 typedef uint64_t oc_clock_time_t;
-#define OC_CLOCK_CONF_TICKS_PER_SECOND CLOCKS_PER_SEC
+#define OC_CLOCK_CONF_TICKS_PER_SECOND 1000
 
 /* Security Layer */
 /* Max inactivity timeout before tearing down DTLS connection */

@@ -3,7 +3,8 @@
  * @version  V1.00
  * @brief    EBI register definition header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __EBI_REG_H__
 #define __EBI_REG_H__
@@ -64,6 +65,10 @@ typedef struct
      * |        |          |The EBI_ALE high pulse period (tALE) to latch the address can be controlled by TALE.
      * |        |          |tALE = (TALE+1)*EBI_MCLK.
      * |        |          |Note: This field only available in EBI_CTL0 register
+     * |[24]    |WBUFEN    |EBI Write Buffer Enable Bit
+     * |        |          |0 = EBI write buffer Disabled.
+     * |        |          |1 = EBI write buffer Enabled.
+     * |        |          |Note: This bit only available in EBI_CTL0 register
      * @var EBI_T::TCTL0
      * Offset: 0x04  External Bus Interface Timing Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -126,6 +131,9 @@ typedef struct
 
 #define EBI_CTL_TALE_Pos                 (16)                                              /*!< EBI_T::CTL0: TALE Position                */
 #define EBI_CTL_TALE_Msk                 (0x7ul << EBI_CTL_TALE_Pos)                       /*!< EBI_T::CTL0: TALE Mask                    */
+
+#define EBI_CTL_WBUFEN_Pos               (24)                                              /*!< EBI_T::CTL0: WBUFEN Position              */
+#define EBI_CTL_WBUFEN_Msk               (0x1ul << EBI_CTL_WBUFEN_Pos)                     /*!< EBI_T::CTL0: WBUFEN Mask                  */
 
 #define EBI_TCTL_TACC_Pos                (3)                                               /*!< EBI_T::TCTL0: TACC Position               */
 #define EBI_TCTL_TACC_Msk                (0x1ful << EBI_TCTL_TACC_Pos)                     /*!< EBI_T::TCTL0: TACC Mask                   */

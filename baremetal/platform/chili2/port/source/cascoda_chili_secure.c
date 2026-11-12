@@ -67,8 +67,33 @@ static volatile u8_t asleep    = 0;
 static volatile u8_t wakeup    = 0;
 static volatile u8_t gpioint   = 0;
 static volatile u8_t powerdown = 0;
-static u8_t          lxt_connected;
-static uint32_t      systick_freq = 0;
+static volatile u8_t lxt_connected;
+static volatile uint32_t systick_freq = 0;
+
+/* sleep mode debounce filter clock devider for port PB */
+static volatile u32_t PB_DebounceClkSel = GPIO_DBCTL_DBCLKSEL_2;
+static volatile bool PB_KeepPermanent = false;
+
+// List of IRQ's to disable and re-enable while timers are being reconfigured
+IRQn_Type irqs_to_protect[] = {
+	TMR1_IRQn,
+	CKFAIL_IRQn,
+	USBD_IRQn,
+	UART0_IRQn, // UART_IRQn
+	PDMA1_IRQn,
+	GPA_IRQn,
+	GPB_IRQn,
+	GPC_IRQn, // ZIG_IRQB_IRQn
+	GPD_IRQn,
+	GPE_IRQn,
+	GPF_IRQn,
+	GPG_IRQn,
+	GPH_IRQn,
+	RTC_IRQn
+};
+
+#define NR_IRQ (sizeof(irqs_to_protect) / sizeof(irqs_to_protect[0]))
+u32_t irq_was_enabled[NR_IRQ];
 
 __NONSECURE_ENTRY ca_error BSP_SetBootMode(sysreset_mode bootMode)
 {
@@ -138,7 +163,18 @@ __NONSECURE_ENTRY void CHILI_InitADC(u32_t reference)
 	CLK_SetModuleClock(EADC_MODULE, 0, CLK_CLKDIV0_EADC(clkFreqMhz));
 
 	/* reset EADC module */
+	SYS_UnlockReg();
 	SYS_ResetModule(EADC_RST);
+	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void CHILI_PDMAInit(void)
+{
+	SYS_UnlockReg();
+	CLK_EnableModuleClock(PDMA1_MODULE);
+	SYS_ResetModule(PDMA1_RST);
+	SYS_LockReg();
+	NVIC_EnableIRQ(PDMA1_IRQn);
 }
 
 __NONSECURE_ENTRY void CHILI_DeinitADC()
@@ -390,7 +426,6 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 		    clk_enable((CLK_PWRCTL_HXTEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk), CLK_STATUS_HXTSTB_Msk);
 		if (status)
 		{
-			ca_log_crit("HXT Enable Fail");
 			return (status);
 		}
 	}
@@ -402,7 +437,6 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 		    clk_enable((CLK_PWRCTL_HIRCEN_Msk | CLK_PWRCTL_LXTEN_Msk | CLK_PWRCTL_LIRCEN_Msk), CLK_STATUS_HIRCSTB_Msk);
 		if (status)
 		{
-			ca_log_crit("HIRC Enable Fail");
 			return (status);
 		}
 	}
@@ -414,7 +448,6 @@ __NONSECURE_ENTRY ca_error CHILI_ClockInit(fsys_mhz fsys, u8_t enable_comms)
 		                    CLK_STATUS_HIRC48STB_Msk);
 		if (status)
 		{
-			ca_log_crit("HIRC48 Enable Fail");
 			return (status);
 		}
 	}
@@ -637,6 +670,46 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 {
 	bool useExtClk = CHILI_GetUseExternalClock();
 
+    /* Protection: disable all enabled IRQ's while we reconfigure the timers.
+     * This prevents the ISR from firing during timer reconfiguration, thus
+     * Preventing potential unexpected behaviour, e.g. freeze */
+
+	// NVIC for Timer 0 always needs disabling
+	NVIC_DisableIRQ(TMR0_IRQn);
+
+	// Disable all other IRQ's that are currently enabled
+	for (u8_t i = 0; i < NR_IRQ; i++)
+	{
+		irq_was_enabled[i] = NVIC_GetEnableIRQ(irqs_to_protect[i]);
+		if (irq_was_enabled[i])
+		{
+			NVIC_DisableIRQ(irqs_to_protect[i]);
+		}
+	}
+
+	//Protection: Stop Timer 0 before reconfiguring it
+	TIMER_Stop(TIMER0);
+	TIMER_DisableInt(TIMER0);
+
+	// Reset counter for Timer 0
+	int32_t reset_counter_status = TIMER_ResetCounter(TIMER0);
+
+	// Reset chip if reset counter failed
+	if (reset_counter_status != TIMER_OK)
+	{
+		BSP_ChipReset();
+	}
+
+	// (maybe needed?) clear all Timer 0 interrupt status bits
+	TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
+
+	SYS_UnlockReg();
+	SYS_ResetModule(TMR0_RST);
+	SYS_LockReg();
+
+	// Probably not necessary, as SYS_ResetModule() already puts the timer in a clean state
+	// CLK_DisableModuleClock(TMR0_MODULE);
+
 	/* TIMER0: millisecond periodic tick (AbsoluteTicks) and power-down wake-up */
 	/* TIMER1: microsecond timer / counter */
 	CLK_EnableModuleClock(TMR0_MODULE);
@@ -647,11 +720,29 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	or HIRC (12 MHz) */
 	if (useExtClk)
 	{
+		// Wait for clock to be ready before switching to it
+		u32_t clock_stable = CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
+
+		// Reset chip if clock is still unstable
+		if (clock_stable == 0)
+		{
+			BSP_ChipReset();
+		}
+
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HXT, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HXT, 0);
 	}
 	else
 	{
+		// Wait for clock to be ready before switching to it
+		u32_t clock_stable = CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
+
+		// Reset chip if clock is still unstable
+		if (clock_stable == 0)
+		{
+			BSP_ChipReset();
+		}
+
 		CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_HIRC, 0);
 		CLK_SetModuleClock(TMR1_MODULE, CLK_CLKSEL1_TMR1SEL_HIRC, 0);
 	}
@@ -688,21 +779,27 @@ __NONSECURE_ENTRY void CHILI_TimersInit(void)
 	/* 1uSec units, counts microseconds */
 	TIMER_SET_CMP_VALUE(TIMER1, 0xFFFFFF);
 
-	NVIC_EnableIRQ(TMR0_IRQn);
+	// (maybe needed again?) clear all Timer0 interrupt status bits BEFORE enabling interrupts
+	TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
+
+	// Enable interrupts for Timer 0
 	TIMER_EnableInt(TIMER0);
+
+	// IRQ for Timer 0 always needs re-enabling
+	NVIC_ClearPendingIRQ(TMR0_IRQn);
+	NVIC_EnableIRQ(TMR0_IRQn);
+
+	// Re-enable all other IRQ's disabled above
+	for (u8_t i = 0; i < NR_IRQ; i++)
+	{
+		if (irq_was_enabled[i])
+		{
+			NVIC_ClearPendingIRQ(irqs_to_protect[i]);
+			NVIC_EnableIRQ(irqs_to_protect[i]);
+		}
+	}
+
 	TIMER_Start(TIMER0);
-
-	/* For some reason, this is what is needed to kick the linker into actually linking the ISR file */
-	TMR0_IRQHandler();
-}
-
-__NONSECURE_ENTRY void CHILI_PDMAInit(void)
-{
-	SYS_UnlockReg();
-	CLK_EnableModuleClock(PDMA0_MODULE);
-	SYS_ResetModule(PDMA0_RST);
-	SYS_LockReg();
-	NVIC_EnableIRQ(PDMA0_IRQn);
 }
 
 __NONSECURE_ENTRY void CHILI_ReInitSetTimerPriority()
@@ -735,8 +832,12 @@ __NONSECURE_ENTRY uint32_t HardFault_Handler(uint32_t lr, uint32_t msp, uint32_t
 	return 1;
 }
 
-__NONSECURE_ENTRY void ProcessHardFault()
+__NONSECURE_ENTRY void ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 {
+	(void)lr;
+	(void)msp;
+	(void)psp;
+
 #ifdef CASCODA_HF_REBOOT
 	BSP_SystemReset(SYSRESET_APROM);
 #endif
@@ -839,7 +940,9 @@ __NONSECURE_ENTRY void CHILI_UARTInit(void)
 	CLK_EnableModuleClock(UART_MODULE);
 
 	/* Initialise UART */
+	SYS_UnlockReg();
 	SYS_ResetModule(UART_RST);
+	SYS_LockReg();
 	UART_SetLineConfig(UART, UART_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
 	UART_Open(UART, UART_BAUDRATE);
 	UART_EnableInt(UART,
@@ -881,17 +984,16 @@ __NONSECURE_ENTRY void CHILI_UARTDeinit(void)
 static void CHILI_UARTDMAInitialise(void)
 {
 	/* Open DMA channels */
-	PDMA_Open(PDMA0, (1 << UART_RX_DMA_CH) | (1 << UART_TX_DMA_CH));
+	PDMA_Open(PDMA1, (1 << UART_RX_DMA_CH) | (1 << UART_TX_DMA_CH));
 
 	/* Single request type */
-	PDMA_SetBurstType(PDMA0, UART_TX_DMA_CH, PDMA_REQ_SINGLE, 0);
-	PDMA_SetBurstType(PDMA0, UART_RX_DMA_CH, PDMA_REQ_SINGLE, 0);
+	PDMA_SetBurstType(PDMA1, UART_TX_DMA_CH, PDMA_REQ_SINGLE, 0);
+	PDMA_SetBurstType(PDMA1, UART_RX_DMA_CH, PDMA_REQ_SINGLE, 0);
 
 	/* Disable table interrupt */
-	PDMA0->DSCT[UART_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
-	PDMA0->DSCT[UART_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+	PDMA1->DSCT[UART_TX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+	PDMA1->DSCT[UART_RX_DMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
 }
-
 #endif // USE_UART
 
 /******************************************************************************/
@@ -916,40 +1018,6 @@ static void CHILI_UARTDMAInitialise(void)
 
 #define TBUFFS (8) /* Number of HID transmit buffers */
 #define RBUFFS (8) /* Number of HID receive  buffers */
-
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
-//Duplicate ca_log for secure code
-void ca_log(ca_loglevel loglevel, const char *format, va_list argp)
-{
-	char *lev_str;
-
-	switch (loglevel)
-	{
-	case CA_LOGLEVEL_CRIT:
-		lev_str = "CRIT: ";
-		break;
-	case CA_LOGLEVEL_WARN:
-		lev_str = "WARN: ";
-		break;
-	case CA_LOGLEVEL_NOTE:
-		lev_str = "NOTE: ";
-		break;
-	case CA_LOGLEVEL_INFO:
-		lev_str = "INFO: ";
-		break;
-	case CA_LOGLEVEL_DEBG:
-		lev_str = "DEBG: ";
-		break;
-	default:
-		lev_str = "UNKN: ";
-		break;
-	}
-
-	printf("%dms %s", BSP_ReadAbsoluteTime(), lev_str);
-	vprintf(format, argp);
-	printf("\r\n");
-}
-#endif
 
 __NONSECURE_ENTRY void CHILI_EnableTemperatureSensor()
 {
@@ -987,18 +1055,76 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 {
 	u32_t wakeuptime;
 
+	// NVIC for Timer 0 always needs disabling
+	NVIC_DisableIRQ(TMR0_IRQn);
+
+	//Protection: Stop Timer 0 before reconfiguring it
 	TIMER_Stop(TIMER0);
+	TIMER_DisableInt(TIMER0);
+
+	// Reset counter for Timer 0
+	int32_t reset_counter_status = TIMER_ResetCounter(TIMER0);
+
+	// Reset chip if reset counter failed
+	if (reset_counter_status != TIMER_OK)
+	{
+		BSP_ChipReset();
+	}
+
+	// (maybe needed?) clear all Timer 0 interrupt status bits
+	TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
+
+	SYS_UnlockReg();
 	SYS_ResetModule(TMR0_RST);
-	TIMER_ResetCounter(TIMER0);
+	SYS_LockReg();
+
+	// Probably not necessary, as SYS_ResetModule() already puts the timer in a clean state
+	// CLK_DisableModuleClock(TMR0_MODULE);
 
 	if (use_timer0)
 	{
+		/* Protection: disable all enabled IRQ's while we reconfigure Timer 0.
+		* This prevents the ISR from firing during timer reconfiguration, thus
+		* Preventing potential unexpected behaviour, e.g. freeze */
+
+		// Disable all other IRQ's that are currently enabled
+		for (u8_t i = 0; i < NR_IRQ; i++)
+		{
+			irq_was_enabled[i] = NVIC_GetEnableIRQ(irqs_to_protect[i]);
+			if (irq_was_enabled[i])
+			{
+				NVIC_DisableIRQ(irqs_to_protect[i]);
+			}
+		}
+
 		/* timer has to be set up otherwise wakeup is unreliable when not in dpd */
 		CLK_EnableModuleClock(TMR0_MODULE);
 		if (lxt_connected)
+		{
+			// Wait for clock to be ready before switching to it
+			u32_t clock_stable = CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
+
+			// Reset chip if clock is still unstable
+			if (clock_stable == 0)
+			{
+				BSP_ChipReset();
+			}
+
 			CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_LXT, 0);
+		}
 		else
+		{
+			// Wait for clock to be ready before switching to it
+			u32_t clock_stable = CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
+
+			// Reset chip if clock is still unstable
+			if (clock_stable == 0)
+			{
+				BSP_ChipReset();
+			}
+
 			CLK_SetModuleClock(TMR0_MODULE, CLK_CLKSEL1_TMR0SEL_LIRC, 0);
+		}
 
 		/*  1s period - 1Hz */
 		TIMER_Open(TIMER0, TIMER_ONESHOT_MODE, 1);
@@ -1025,15 +1151,35 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 			TIMER_SET_CMP_VALUE(TIMER0, sleeptime_ms);
 		}
 
-		NVIC_EnableIRQ(TMR0_IRQn);
+		// (maybe needed again?) clear all Timer0 interrupt status bits BEFORE enabling interrupts
+		TIMER0->INTSTS = TIMER_INTSTS_TIF_Msk | TIMER_INTSTS_TWKF_Msk;
+
 		TIMER_EnableInt(TIMER0);
 		TIMER_EnableWakeup(TIMER0);
+
+		// IRQ for Timer 0 always needs re-enabling
+		NVIC_ClearPendingIRQ(TMR0_IRQn);
+		NVIC_EnableIRQ(TMR0_IRQn);
+
+		// Re-enable all other IRQ's disabled above
+		for (u8_t i = 0; i < NR_IRQ; i++)
+		{
+			if (irq_was_enabled[i])
+			{
+				NVIC_ClearPendingIRQ(irqs_to_protect[i]);
+				NVIC_EnableIRQ(irqs_to_protect[i]);
+			}
+		}
+
 		TIMER_Start(TIMER0);
 	}
 
+	/* modify debounce filter time for port PB */
+	GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_LIRC, PB_DebounceClkSel);
+
 	SYS_UnlockReg();
 
-	/* disable peripheral memory (fmc, pdma0/1, usbd, can) */
+	/* disable peripheral memory (fmc, PDMA0/1, usbd, can) */
 	SYS->SRAMPPCT = 0x000002AA;
 
 	if (dpd > DPD_FLAG_NO_DPD)
@@ -1127,10 +1273,13 @@ __NONSECURE_ENTRY u32_t CHILI_PowerDownSecure(u32_t sleeptime_ms, u8_t use_timer
 	CHILI_SetGPIOInt(0);
 
 	TIMER_Stop(TIMER0);
+	SYS_UnlockReg();
 	SYS_ResetModule(TMR0_RST);
+	SYS_LockReg();
 
 	GPIO_SET_DEBOUNCE_TIME(PA, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
-	GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
+	if(PB_KeepPermanent == false)
+		GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 	GPIO_SET_DEBOUNCE_TIME(PC, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 	GPIO_SET_DEBOUNCE_TIME(PD, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
 	GPIO_SET_DEBOUNCE_TIME(PE, GPIO_DBCTL_DBCLKSRC_HCLK, GPIO_DBCTL_DBCLKSEL_8);
@@ -1184,8 +1333,11 @@ __NONSECURE_ENTRY u8_t CHILI_GetPowerDown(void)
 /** Wait until system is stable after potential usb plug-in */
 __NONSECURE_ENTRY void CHILI_WaitForSystemStable(void)
 {
+	u32_t starttime = BSP_ReadAbsoluteTime();
 	while (!(CLK->STATUS & CLK_STATUS_HIRCSTB_Msk))
-		;
+	{
+		BSP_ResetOnLoopStuck(starttime);
+	}
 }
 
 /*---------------------------------------------------------------------------*
@@ -1221,4 +1373,12 @@ __NONSECURE_ENTRY void CHILI_DisableTRNGClk(void)
 	SYS_UnlockReg();
 	CLK_DisableModuleClock(TRNG_MODULE);
 	SYS_LockReg();
+}
+
+__NONSECURE_ENTRY void CHILI_SetPBDebounceClkSel(u32_t clksel, bool keep_permanent)
+{
+	PB_DebounceClkSel = clksel;
+	PB_KeepPermanent  = keep_permanent;
+	if(keep_permanent == true)
+		GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_LIRC, clksel);
 }

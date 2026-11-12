@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series SPI driver header file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __SPI_H__
 #define __SPI_H__
@@ -141,6 +142,14 @@ extern "C"
 #define SPI_TRIGGER_TX_PDMA(spi)   ( (spi)->PDMACTL |= SPI_PDMACTL_TXPDMAEN_Msk )
 
 /**
+  * @brief      Trigger TX and RX PDMA function.
+  * @param[in]  spi The pointer of the specified SPI module.
+  * @return     None.
+  * @details    Set TXPDMAEN bit and RXPDMAEN bit of SPI_PDMACTL register to enable TX and RX PDMA transfer function.
+  */
+#define SPI_TRIGGER_TX_RX_PDMA(spi)   ( (spi)->PDMACTL |= (SPI_PDMACTL_TXPDMAEN_Msk | SPI_PDMACTL_RXPDMAEN_Msk) )
+
+/**
   * @brief      Disable RX PDMA transfer.
   * @param[in]  spi The pointer of the specified SPI module.
   * @return     None.
@@ -155,6 +164,14 @@ extern "C"
   * @details    Clear TXPDMAEN bit of SPI_PDMACTL register to disable TX PDMA transfer function.
   */
 #define SPI_DISABLE_TX_PDMA(spi) ( (spi)->PDMACTL &= ~SPI_PDMACTL_TXPDMAEN_Msk )
+
+/**
+  * @brief      Disable TX and RX PDMA transfer.
+  * @param[in]  spi The pointer of the specified SPI module.
+  * @return     None.
+  * @details    Clear TXPDMAEN bit and RXPDMAEN bit of SPI_PDMACTL register to disable TX and RX PDMA transfer function.
+  */
+#define SPI_DISABLE_TX_RX_PDMA(spi)   ( (spi)->PDMACTL &= ~(SPI_PDMACTL_TXPDMAEN_Msk | SPI_PDMACTL_RXPDMAEN_Msk) )
 
 /**
   * @brief      Get the count of available data in RX FIFO.
@@ -299,11 +316,6 @@ extern "C"
   * @details    Clear SPIEN (SPI_CTL[0]) to disable SPI controller.
   */
 #define SPI_DISABLE(spi)   ( (spi)->CTL &= ~SPI_CTL_SPIEN_Msk )
-
-/* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
-__STATIC_INLINE void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch);
 
 /**
   * @brief  Enable zero cross detection function.
@@ -511,8 +523,6 @@ __STATIC_INLINE void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch)
   */
 #define SPII2S_GET_RX_FIFO_LEVEL(i2s) ( ((i2s)->I2SSTS & SPI_I2SSTS_RXCNT_Msk) >> SPI_I2SSTS_RXCNT_Pos )
 
-
-
 /* Function prototype declaration */
 uint32_t SPI_Open(SPI_T *spi, uint32_t u32MasterSlave, uint32_t u32SPIMode, uint32_t u32DataWidth, uint32_t u32BusClock);
 void SPI_Close(SPI_T *spi);
@@ -550,4 +560,4 @@ void SPII2S_SetFIFO(SPI_T *i2s, uint32_t u32TxThreshold, uint32_t u32RxThreshold
 
 #endif /* __SPI_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

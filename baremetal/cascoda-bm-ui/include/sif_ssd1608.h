@@ -125,7 +125,7 @@ in the display often getting corrupted after a full update!! */
 #define SIF_SSD1608_TUPDATE_FULL 1050
 
 /* flag to avoid re-entry into display update functions when not waiting for busy */
-extern bool sif_ssd1608_display_is_busy;
+extern volatile bool sif_ssd1608_display_is_busy;
 
 /* functions */
 

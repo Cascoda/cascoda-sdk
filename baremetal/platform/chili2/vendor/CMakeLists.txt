@@ -48,13 +48,11 @@ set(VENDOR_SECURE_SOURCES
 )
 
 if(CMAKE_C_COMPILER MATCHES arm-none-eabi-gcc)
-	set(VENDOR_SOURCES
-		${VENDOR_SOURCES}
+	set(STARTUP_SOURCES
 		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/GCC/startup_M2351.S
 	)
 elseif(CMAKE_C_COMPILER MATCHES armclang)
-	set(VENDOR_SOURCES
-		${VENDOR_SOURCES}
+	set(STARTUP_SOURCES
 		${PROJECT_SOURCE_DIR}/M2351Library/Device/Nuvoton/M2351/Source/ARM/startup_M2351.s
 	)
 endif()
@@ -63,6 +61,7 @@ add_library(m2351-mkrom STATIC IMPORTED)
 set_target_properties(m2351-mkrom PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/M2351Library/StdDriver/src/libmkrom.a")
 
 add_library(m2351 OBJECT
+	${STARTUP_SOURCES}
 	${VENDOR_SOURCES}
 	${VENDOR_SECURE_SOURCES}
 )
@@ -89,6 +88,7 @@ target_include_directories(m2351-s
 cascoda_tz_build(m2351-s)
 
 add_library(m2351-ns OBJECT
+	${STARTUP_SOURCES}
 	${VENDOR_SOURCES}
 )
 

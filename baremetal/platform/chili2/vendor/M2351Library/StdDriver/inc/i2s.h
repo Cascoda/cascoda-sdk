@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series I2S driver header file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __I2S_H__
 #define __I2S_H__
@@ -25,17 +26,17 @@ extern "C"
 /** @addtogroup I2S_EXPORTED_CONSTANTS I2S Exported Constants
   @{
 */
+
 #define I2S_DATABIT_8           (0UL << I2S_CTL0_DATWIDTH_Pos)       /*!< I2S data width is 8-bit  \hideinitializer */
 #define I2S_DATABIT_16          (1UL << I2S_CTL0_DATWIDTH_Pos)       /*!< I2S data width is 16-bit  \hideinitializer */
 #define I2S_DATABIT_24          (2UL << I2S_CTL0_DATWIDTH_Pos)       /*!< I2S data width is 24-bit  \hideinitializer */
 #define I2S_DATABIT_32          (3UL << I2S_CTL0_DATWIDTH_Pos)       /*!< I2S data width is 32-bit  \hideinitializer */
 
 /* Audio Format */
-#define I2S_ENABLE_MONO         I2S_CTL0_MONO_Msk                    /*!< Mono channel  \hideinitializer */
-#define I2S_DISABLE_MONO        (0UL)                                /*!< Stereo channel  \hideinitializer */
-#define I2S_MONO                I2S_ENABLE_MONO
-#define I2S_STEREO              I2S_DISABLE_MONO
-
+#define I2S_MONO                I2S_CTL0_MONO_Msk                    /*!< Mono channel  \hideinitializer */
+#define I2S_STEREO              (0UL)                                /*!< Stereo channel  \hideinitializer */
+#define I2S_ENABLE_MONO         I2S_MONO
+#define I2S_DISABLE_MONO        I2S_STEREO
 
 /* I2S Data Format */
 #define I2S_FORMAT_I2S          (0UL << I2S_CTL0_FORMAT_Pos)         /*!< I2S data format  \hideinitializer */
@@ -114,17 +115,11 @@ extern "C"
 
 /*@}*/ /* end of group I2S_EXPORTED_CONSTANTS */
 
+
 /** @addtogroup I2S_EXPORTED_FUNCTIONS I2S Exported Functions
   @{
 */
-/*---------------------------------------------------------------------------------------------------------*/
-/* inline functions                                                                                        */
-/*---------------------------------------------------------------------------------------------------------*/
 
-/* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
-__STATIC_INLINE void I2S_ENABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void I2S_DISABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch);
 
 /**
   * @brief  Enable zero cross detect function.
@@ -346,8 +341,8 @@ void I2S_DisableMCLK(I2S_T *i2s);
 void I2S_SetFIFO(I2S_T *i2s, uint32_t u32TxThreshold, uint32_t u32RxThreshold);
 void I2S_ConfigureTDM(I2S_T *i2s, uint32_t u32ChannelWidth, uint32_t u32ChannelNum, uint32_t u32SyncWidth);
 
-/*@}*/ /* end of group I2S_EXPORTED_FUNCTIONS */
 
+/*@}*/ /* end of group I2S_EXPORTED_FUNCTIONS */
 
 /*@}*/ /* end of group I2S_Driver */
 
@@ -359,5 +354,4 @@ void I2S_ConfigureTDM(I2S_T *i2s, uint32_t u32ChannelWidth, uint32_t u32ChannelN
 
 #endif /* __I2S_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
-
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

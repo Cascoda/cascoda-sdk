@@ -36,6 +36,8 @@
 #include "cascoda_chili_config.h"
 #include "ldrom_uart.h"
 
+void ProcessHardFault(void) __attribute__((weak));
+
 void ProcessHardFault(void)
 {
 }

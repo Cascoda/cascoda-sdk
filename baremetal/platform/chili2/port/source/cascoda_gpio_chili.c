@@ -27,8 +27,8 @@
  */
 /*
  * Cascoda Interface to Vendor BSP/Library Support Package.
- * MCU:    Nuvoton Nano120
- * MODULE: Chili 1 (1.2, 1.3)
+ * MCU:    Nuvoton M2351
+ * MODULE: Chili2
  * Module Pin and GPIO Mapping
 */
 /* System */
@@ -697,6 +697,24 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 	CHILI_ModuleSetMFP(ModulePinList[index].portnum, ModulePinList[index].portbit, PMFP_GPIO);
 	GPIO_ENABLE_DIGITAL_PATH(port, BITMASK(ModulePinList[index].portbit));
 	GPIO_SetMode(port, BITMASK(ModulePinList[index].portbit), GPIO_MODE_INPUT);
+
+	return CA_ERROR_SUCCESS;
+}
+
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleSetPBDebounceFilterTime(module_debounce_filter_time time, bool keep_permanent)
+{
+		u32_t clksel;
+
+		if(time > MODULE_T_FILTER_3P2S)
+			return CA_ERROR_INVALID_ARGS;
+
+		clksel = (u32_t)(time);
+
+		CHILI_SetPBDebounceClkSel(clksel, keep_permanent);
 
 	return CA_ERROR_SUCCESS;
 }

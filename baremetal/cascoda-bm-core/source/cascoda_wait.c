@@ -62,13 +62,13 @@ static ca_error WAIT_CallbackInternal(void *params, struct ca821x_dev *pDeviceRe
 
 	sWaitCallbackActive = false;
 	sWaitCalled         = true;
+	sCallbackContext    = NULL;
 
 	return status;
 }
 
 static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
                                      uint32_t                   aTimeoutMs,
-                                     void                      *aCallbackContext,
                                      struct ca821x_dev         *pDeviceRef)
 {
 	ca_error status    = CA_ERROR_SUCCESS;
@@ -84,7 +84,6 @@ static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
 	sTargetCallback                   = *aTargetCallback;
 	aTargetCallback->generic_callback = &WAIT_CallbackInternal;
 	sWaitCalled                       = false;
-	sCallbackContext                  = aCallbackContext;
 
 	for (uint32_t timepassed = 0; timepassed < aTimeoutMs; timepassed = TIME_ReadAbsoluteTime() - startTime)
 	{
@@ -103,7 +102,7 @@ static ca_error WAIT_CallbackWithRef(union ca821x_api_callback *aTargetCallback,
 	return status;
 }
 
-ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackContext, struct ca821x_dev *pDeviceRef)
+ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, struct ca821x_dev *pDeviceRef)
 {
 	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
 	ca_error                   status      = CA_ERROR_FAIL;
@@ -113,7 +112,7 @@ ca_error WAIT_Callback(uint8_t aCommandId, uint32_t aTimeoutMs, void *aCallbackC
 		goto exit; //Invalid command ID
 	}
 
-	status = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, aCallbackContext, pDeviceRef);
+	status = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, pDeviceRef);
 
 exit:
 	return status;
@@ -122,7 +121,6 @@ exit:
 ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
                            ca821x_generic_callback aCallback,
                            uint32_t                aTimeoutMs,
-                           void                   *aCallbackContext,
                            struct ca821x_dev      *pDeviceRef)
 {
 	union ca821x_api_callback *callbackRef = ca821x_get_callback(aCommandId, pDeviceRef);
@@ -136,11 +134,17 @@ ca_error WAIT_CallbackSwap(uint8_t                 aCommandId,
 
 	oldCallback                   = *callbackRef;
 	callbackRef->generic_callback = aCallback;
-	status                        = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, aCallbackContext, pDeviceRef);
+	status                        = WAIT_CallbackWithRef(callbackRef, aTimeoutMs, pDeviceRef);
 	*callbackRef                  = oldCallback;
 
 exit:
 	return status;
+}
+
+void WAIT_SetContext(void *aCallbackContext)
+{
+	sCallbackContext = aCallbackContext;
+	return;
 }
 
 void *WAIT_GetContext(void)

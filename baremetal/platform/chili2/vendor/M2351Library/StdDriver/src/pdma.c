@@ -4,7 +4,8 @@
  * @brief    M2351 series PDMA driver source file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -371,22 +372,21 @@ void PDMA_Trigger(PDMA_T *pdma, uint32_t u32Ch)
  */
 void PDMA_EnableInt(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Mask)
 {
-    switch(u32Mask)
+    if(u32Mask & (PDMA_INT_TRANS_DONE | PDMA_INT_ALIGN))
     {
-        case PDMA_INT_TRANS_DONE:
-        case PDMA_INT_ALIGN:
-            (pdma)->INTEN |= (1UL << u32Ch);
-            break;
-        case PDMA_INT_TABLE:
-            (pdma)->DSCT[u32Ch].CTL &= ~PDMA_DSCT_CTL_TBINTDIS_Msk;
-            break;
-        case PDMA_INT_TIMEOUT:
-            (pdma)->TOUTIEN |= (1UL << u32Ch);
-            break;
-
-        default:
-            break;
+        (pdma)->INTEN |= (1UL << u32Ch);
     }
+
+    if(u32Mask & PDMA_INT_TABLE)
+    {
+        (pdma)->DSCT[u32Ch].CTL &= ~PDMA_DSCT_CTL_TBINTDIS_Msk;
+    }
+
+    if(u32Mask & PDMA_INT_TIMEOUT)
+    {
+        (pdma)->TOUTIEN |= (1UL << u32Ch);
+    }
+
 }
 
 /**
@@ -408,21 +408,20 @@ void PDMA_EnableInt(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Mask)
  */
 void PDMA_DisableInt(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Mask)
 {
-    switch(u32Mask)
-    {
-        case PDMA_INT_TRANS_DONE:
-        case PDMA_INT_ALIGN:
-            (pdma)->INTEN &= ~(1UL << u32Ch);
-            break;
-        case PDMA_INT_TABLE:
-            (pdma)->DSCT[u32Ch].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
-            break;
-        case PDMA_INT_TIMEOUT:
-            (pdma)->TOUTIEN &= ~(1UL << u32Ch);
-            break;
 
-        default:
-            break;
+    if(u32Mask & (PDMA_INT_TRANS_DONE | PDMA_INT_ALIGN))
+    {
+        (pdma)->INTEN &= ~(1UL << u32Ch);
+    }
+
+    if(u32Mask & PDMA_INT_TABLE)
+    {
+        (pdma)->DSCT[u32Ch].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+    }
+
+    if(u32Mask & PDMA_INT_TIMEOUT)
+    {
+        (pdma)->TOUTIEN &= ~(1UL << u32Ch);
     }
 }
 
@@ -432,4 +431,4 @@ void PDMA_DisableInt(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Mask)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

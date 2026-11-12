@@ -32,6 +32,7 @@ set(CASCODA_HF_REBOOT OFF CACHE BOOL "Reboot the device after a hard fault. If f
 set(CASCODA_CHILI2_TRUSTZONE OFF CACHE BOOL "Enable the Chili2 armv8-m CSME build (TrustZone)")
 mark_as_advanced(CASCODA_CHILI2_TRUSTZONE)
 
+
 # Number of flash pages
 set(CASCODA_CHILI_FLASH_PAGES 8 CACHE STRING "The number of 2048 byte flash pages that should be used for user flash")
 
@@ -55,9 +56,6 @@ if(CASCODA_BM_INTERFACE STREQUAL "UART")
 	set(CASCODA_CHILI2_UART_BAUDRATE 115200 CACHE STRING "The baud rate to use for UART. Max 6MHz")
 	if(CASCODA_CHILI2_UART_BAUDRATE GREATER 6000000)
 		message( FATAL_ERROR "Baud rate must be under 6MHz")
-	endif()
-	if(CASCODA_CHILI2_TRUSTZONE)
-		message(FATAL_ERROR "Chili2 trustzone build does not currently support UART, please change either CASCODA_BM_INTERFACE or CASCODA_CHILI2_TRUSTZONE")
 	endif()
 endif()
 
@@ -89,7 +87,10 @@ configure_file(
 add_subdirectory(vendor)
 add_subdirectory(third-party/freertos)
 add_subdirectory(third-party/mbedtls)
-add_subdirectory(chili2-default-secure)
+
+if(NOT CASCODA_OTA_UPGRADE_ENABLED)
+	add_subdirectory(chili2-default-secure)
+endif()
 
 # Configure partition.h accordingly for vendorlibs
 target_include_directories(m2351 PUBLIC ${PROJECT_SOURCE_DIR}/port/include_notz)
@@ -102,9 +103,10 @@ set(CHILI2_SOURCES
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_gpio_chili.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_isr_chili.c
-	${PROJECT_SOURCE_DIR}/port/source/cascoda_uart_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_rtc_m2351.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_m2351.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_bod_m2351.c
 	${PROJECT_SOURCE_DIR}/third-party/mbedtls/TARGET_M2351/aes_alt.c
 	${PROJECT_SOURCE_DIR}/third-party/mbedtls/TARGET_M2351/hardware_poll.c
 	${PROJECT_SOURCE_DIR}/third-party/mbedtls/TARGET_M2351/ecp_internal_alt.c
@@ -118,9 +120,10 @@ set(CHILI2_SECURE_SOURCES
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_dataflash_m2351_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_rtc_m2351_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_sensorif_secure.c
-	${PROJECT_SOURCE_DIR}/port/source/cascoda_spi_secure.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_spi.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_time_secure.c
 	${PROJECT_SOURCE_DIR}/port/source/cascoda_usb_m2351_secure.c
+	${PROJECT_SOURCE_DIR}/port/source/cascoda_uart_m2351.c
 )
 
 set(CASCODA_OTA_UPGRADE_ENABLED OFF CACHE BOOL "Enables partition of APROM into a BOOTLOADER region and APPLICATION region for OTA upgrade.")
@@ -150,7 +153,7 @@ elseif(CMAKE_C_COMPILER MATCHES armclang)
 endif()
 
 if(CASCODA_EXTERNAL_FLASHCHIP_PRESENT)
-	set(FLASH_SOURCES ${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_w25q80dlsnig.c)
+	set(FLASH_SOURCES ${PROJECT_SOURCE_DIR}/port/source/cascoda_bsp_flashdevice.c)
 endif()
 
 if(NOT CASCODA_CHILI2_TRUSTZONE)
@@ -196,7 +199,6 @@ else()
 	# Use TrustZone Build ----------------------------------------------------------------------------------------------------------------
 	add_library(chili2-secure OBJECT
 		${CHILI2_SECURE_SOURCES}
-		${FLASH_SOURCES}
 	)
 
 	target_link_libraries(chili2-secure
@@ -217,6 +219,7 @@ else()
 
 	add_library(chili2-nonsecure
 		${CHILI2_SOURCES}
+		${FLASH_SOURCES}
 	)
 
 	target_include_directories(chili2-nonsecure
@@ -232,7 +235,7 @@ else()
 		PUBLIC
 			cascoda-bm
 			m2351-ns
-			chili2-default-secure-implib
+			chili2-ldfile
 		PRIVATE
 			mbedcrypto
 			mbedcrypto-plat
@@ -240,6 +243,7 @@ else()
 
 	# Export the chili2 ns platform as cascoda-bm-plat
 	add_library(cascoda-bm-plat ALIAS chili2-nonsecure)
+
 endif()
 
 # Variables for configuring memory usage using the cascoda_configure_memory CMake function

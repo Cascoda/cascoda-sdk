@@ -306,6 +306,7 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Init(void)
 		SYS->GPB_MFPH |= (SYS_GPB_MFPH_PB12MFP_I2C2_SDA | SYS_GPB_MFPH_PB13MFP_I2C2_SCL);
 	}
 
+	SYS_UnlockReg();
 	/* reset I2C module */
 	if (SENSORIF_I2CNUM_S == 0)
 		SYS_ResetModule(I2C0_RST);
@@ -313,6 +314,7 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Init(void)
 		SYS_ResetModule(I2C1_RST);
 	else
 		SYS_ResetModule(I2C2_RST);
+	SYS_LockReg();
 
 	/* enable I2C */
 	I2C_Open(SENSORIF_I2CIF_S, SENSORIF_I2C_CLK_FREQUENCY);
@@ -339,6 +341,12 @@ __NONSECURE_ENTRY void SENSORIF_I2C_Deinit(void)
 
 __NONSECURE_ENTRY void SENSORIF_SPI_Init(bool is_eink_display_present)
 {
+	if (!SENSORIF_SPIIF_S)
+	{
+		ca_log_warn("SENSORIF_SPI_Init failed, SENSORIF_SPIIF_S not set!");
+		return;
+	}
+
 	/* enable SPI peripheral clock */
 	if (SENSORIF_SPINUM_S == 1)
 		CLK_EnableModuleClock(SPI1_MODULE);
@@ -398,9 +406,17 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(bool is_eink_display_present)
 
 	/* reset SPI module */
 	if (SENSORIF_SPINUM_S == 1)
+	{
+		SYS_UnlockReg();
 		SYS_ResetModule(SPI1_RST);
+		SYS_LockReg();
+	}
 	else if (SENSORIF_SPINUM_S == 2)
+	{
+		SYS_UnlockReg();
 		SYS_ResetModule(SPI2_RST);
+		SYS_LockReg();
+	}
 
 	/* clear transmit fifo but only clear receive fifo for full-duplex mode*/
 	SPI_ClearTxFIFO(SENSORIF_SPIIF_S);
@@ -419,6 +435,12 @@ __NONSECURE_ENTRY void SENSORIF_SPI_Init(bool is_eink_display_present)
 
 __NONSECURE_ENTRY void SENSORIF_SPI_Deinit(void)
 {
+	if (!SENSORIF_SPIIF_S)
+	{
+		ca_log_warn("SENSORIF_SPI_Deinit failed, SENSORIF_SPIIF_S not set!");
+		return;
+	}
+
 	SPI_DisableInt(SENSORIF_SPIIF_S, 0x3FF);
 	SPI_Close(SENSORIF_SPIIF_S);
 	if (SENSORIF_SPINUM_S == 1)
@@ -448,7 +470,10 @@ __NONSECURE_ENTRY void SENSORIF_UART_Init(void)
 		SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB4MFP_Msk)) | SYS_GPB_MFPL_PB4MFP_UART5_RXD;
 		SYS->GPB_MFPL = (SYS->GPB_MFPL & (~SYS_GPB_MFPL_PB5MFP_Msk)) | SYS_GPB_MFPL_PB5MFP_UART5_TXD;
 	}
+
+	SYS_UnlockReg();
 	SYS_ResetModule(SENSORIF_UART_RST_S);
+	SYS_LockReg();
 	UART_SetLineConfig(SENSORIF_UARTIF_S, UART_SENSORIF_BAUDRATE, UART_WORD_LEN_8, UART_PARITY_NONE, UART_STOP_BIT_1);
 	UART_Open(SENSORIF_UARTIF_S, UART_SENSORIF_BAUDRATE);
 }
@@ -490,7 +515,9 @@ __NONSECURE_ENTRY ca_error SENSORIF_PWM_Init(u8_t pin, u32_t u32Frequency, u32_t
 	SENSORIF_SECURE_PWM_Pin_Config_Helper();
 
 	// Reset PWM module
+	SYS_UnlockReg();
 	SYS_ResetModule(SENSORIF_PWM_RST_S);
+	SYS_LockReg();
 
 	// Configure PWM settings (Module, channel, freq and duty cycle)
 	if (SENSORIF_PWM_TYPE_S == USING_BPWM)
@@ -541,7 +568,7 @@ __NONSECURE_ENTRY void SENSORIF_PWM_Deinit(void)
 	SENSORIF_PWM_TYPE_S = NOT_INITIALISED;
 }
 
-void SENSORIF_PWM_SetDutyCycle(u32_t u32DutyCycle)
+__NONSECURE_ENTRY void SENSORIF_PWM_SetDutyCycle(u32_t u32DutyCycle)
 {
 	ca_log_debg("In SENSORIF_PWM_SetDutyCycle(), duty cycle: %d", u32DutyCycle);
 

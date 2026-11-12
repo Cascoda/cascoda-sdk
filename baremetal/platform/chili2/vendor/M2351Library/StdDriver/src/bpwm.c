@@ -4,7 +4,8 @@
  * @brief    M2351 series BPWM driver source file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -35,10 +36,12 @@
 uint32_t BPWM_ConfigCaptureChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32UnitTimeNsec, uint32_t u32CaptureEdge)
 {
     uint32_t u32PWMClockSrc;
-    uint32_t u32NearestUnitTimeNsec;
+    uint32_t u32NearestUnitTimeNsec = 0U;
     uint32_t u32Prescale = 1U, u32CNR = 0xFFFFU;
     uint8_t u8BreakLoop = 0U;
 
+    (void)u32ChannelNum;
+    (void)u32CaptureEdge;
     /* clock source is from PCLK */
     if((((uint32_t)bpwm) == BPWM0_BASE) || (((uint32_t)bpwm) == BPWM0_BASE + NS_OFFSET))
     {
@@ -163,6 +166,7 @@ uint32_t BPWM_ConfigOutputChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t
  */
 void BPWM_Start(BPWM_T *bpwm, uint32_t u32ChannelMask)
 {
+    (void)u32ChannelMask;
     (bpwm)->CNTEN = BPWM_CNTEN_CNTEN0_Msk;
 }
 
@@ -178,6 +182,7 @@ void BPWM_Start(BPWM_T *bpwm, uint32_t u32ChannelMask)
  */
 void BPWM_Stop(BPWM_T *bpwm, uint32_t u32ChannelMask)
 {
+    (void)u32ChannelMask;
     (bpwm)->PERIOD = 0UL;
 }
 
@@ -193,6 +198,7 @@ void BPWM_Stop(BPWM_T *bpwm, uint32_t u32ChannelMask)
  */
 void BPWM_ForceStop(BPWM_T *bpwm, uint32_t u32ChannelMask)
 {
+    (void)u32ChannelMask;
     (bpwm)->CNTEN &= ~BPWM_CNTEN_CNTEN0_Msk;
 }
 
@@ -260,6 +266,7 @@ void BPWM_DisableADCTrigger(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_ClearADCTriggerFlag(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32Condition)
 {
+    (void)u32Condition;
     (bpwm)->STATUS = (BPWM_STATUS_EADCTRG0_Msk << u32ChannelNum);
 }
 
@@ -407,8 +414,8 @@ uint32_t BPWM_GetCaptureIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
     uint32_t u32CapIf = 0UL;
 
-    u32CapIf = ((((bpwm)->CAPIF & (BYTE1_Msk << u32ChannelNum)) ? 1UL : 0UL) << 1);
-    u32CapIf |= (((bpwm)->CAPIF & (BYTE0_Msk << u32ChannelNum)) ? 1UL : 0UL);
+    u32CapIf = ((((bpwm)->CAPIF & (BPWM_CAPIF_CAPFIF0_Msk << u32ChannelNum)) ? 1UL : 0UL) << 1);
+    u32CapIf |= (((bpwm)->CAPIF & (BPWM_CAPIF_CAPRIF0_Msk << u32ChannelNum)) ? 1UL : 0UL);
     return u32CapIf;
 }
 /**
@@ -439,7 +446,7 @@ void BPWM_EnableDutyInt(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32IntDut
  */
 void BPWM_DisableDutyInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
-    (bpwm)->INTEN &= ~((BPWM_DUTY_INT_DOWN_COUNT_MATCH_CMP | BPWM_DUTY_INT_UP_COUNT_MATCH_CMP) << u32ChannelNum);
+    (bpwm)->INTEN &= ~(uint32_t)((BPWM_DUTY_INT_DOWN_COUNT_MATCH_CMP | BPWM_DUTY_INT_UP_COUNT_MATCH_CMP) << u32ChannelNum);
 }
 
 /**
@@ -453,7 +460,7 @@ void BPWM_DisableDutyInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_ClearDutyIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
-    (bpwm)->INTSTS = (BYTE2_Msk | BYTE3_Msk) << u32ChannelNum;
+    (bpwm)->INTSTS = (BPWM_INTSTS_CMPUIF0_Msk | BPWM_INTSTS_CMPDIF0_Msk) << u32ChannelNum;
 }
 
 /**
@@ -469,7 +476,7 @@ void BPWM_ClearDutyIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 uint32_t BPWM_GetDutyIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
-    return ((((bpwm)->INTSTS & ((BYTE2_Msk | BYTE3_Msk) << u32ChannelNum))) ? 1UL : 0UL);
+    return ((((bpwm)->INTSTS & ((BPWM_INTSTS_CMPDIF0_Msk | BPWM_INTSTS_CMPUIF0_Msk) << u32ChannelNum))) ? 1UL : 0UL);
 }
 
 /**
@@ -485,6 +492,8 @@ uint32_t BPWM_GetDutyIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_EnablePeriodInt(BPWM_T *bpwm, uint32_t u32ChannelNum,  uint32_t u32IntPeriodType)
 {
+    (void)u32ChannelNum;
+    (void)u32IntPeriodType;
     (bpwm)->INTEN |= BPWM_INTEN_PIEN0_Msk;
 }
 
@@ -500,6 +509,7 @@ void BPWM_EnablePeriodInt(BPWM_T *bpwm, uint32_t u32ChannelNum,  uint32_t u32Int
  */
 void BPWM_DisablePeriodInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->INTEN &= ~BPWM_INTEN_PIEN0_Msk;
 }
 
@@ -515,6 +525,7 @@ void BPWM_DisablePeriodInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_ClearPeriodIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->INTSTS = BPWM_INTSTS_PIF0_Msk;
 }
 
@@ -532,6 +543,7 @@ void BPWM_ClearPeriodIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 uint32_t BPWM_GetPeriodIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     return (((bpwm)->INTSTS & BPWM_INTSTS_PIF0_Msk) ? 1UL : 0UL);
 }
 
@@ -547,6 +559,7 @@ uint32_t BPWM_GetPeriodIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_EnableZeroInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->INTEN |= BPWM_INTEN_ZIEN0_Msk;
 }
 
@@ -562,6 +575,7 @@ void BPWM_EnableZeroInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_DisableZeroInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->INTEN &= ~BPWM_INTEN_ZIEN0_Msk;
 }
 
@@ -577,6 +591,7 @@ void BPWM_DisableZeroInt(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_ClearZeroIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->INTSTS = BPWM_INTSTS_ZIF0_Msk;
 }
 
@@ -594,6 +609,7 @@ void BPWM_ClearZeroIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 uint32_t BPWM_GetZeroIntFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     return (((bpwm)->INTSTS & BPWM_INTSTS_ZIF0_Msk) ? 1UL : 0UL);
 }
 
@@ -649,6 +665,7 @@ void BPWM_DisableLoadMode(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32Load
  */
 void BPWM_SetClockSource(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32ClkSrcSel)
 {
+    (void)u32ChannelNum;
     (bpwm)->CLKSRC = (u32ClkSrcSel);
 }
 
@@ -666,6 +683,7 @@ void BPWM_SetClockSource(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32ClkSr
  */
 uint32_t BPWM_GetWrapAroundFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     return (((bpwm)->STATUS & BPWM_STATUS_CNTMAX0_Msk) ? 1UL : 0UL);
 }
 
@@ -681,6 +699,7 @@ uint32_t BPWM_GetWrapAroundFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
  */
 void BPWM_ClearWrapAroundFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 {
+    (void)u32ChannelNum;
     (bpwm)->STATUS = BPWM_STATUS_CNTMAX0_Msk;
 }
 
@@ -691,4 +710,4 @@ void BPWM_ClearWrapAroundFlag(BPWM_T *bpwm, uint32_t u32ChannelNum)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

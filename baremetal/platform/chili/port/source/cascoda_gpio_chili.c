@@ -649,3 +649,11 @@ ca_error BSP_ModuleReadVoltsPin(u8_t mpin, u32_t *val)
 
 	return CA_ERROR_SUCCESS;
 }
+
+/*---------------------------------------------------------------------------*
+ * See cascoda-bm/cascoda_interface.h for docs                               *
+ *---------------------------------------------------------------------------*/
+ca_error BSP_ModuleSetPBDebounceFilterTime(module_debounce_filter_time time, bool keep_permanent)
+{
+	return CA_ERROR_NO_ACCESS;
+}

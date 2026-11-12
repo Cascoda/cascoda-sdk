@@ -4,7 +4,8 @@
  * @brief    M2351 series PDMA driver header file
  *
  * @note
- * Copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __PDMA_H__
 #define __PDMA_H__
@@ -140,10 +141,10 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Interrupt Type Constant Definitions                                                                    */
 /*---------------------------------------------------------------------------------------------------------*/
-#define PDMA_INT_TRANS_DONE 0x00000000UL            /*!<Transfer Done Interrupt  \hideinitializer */
-#define PDMA_INT_TABLE      0x00000001UL            /*!<Table Interrupt  \hideinitializer */
-#define PDMA_INT_TIMEOUT    0x00000002UL            /*!<Timeout Interrupt  \hideinitializer */
-#define PDMA_INT_ALIGN      0x00000003UL            /*!<Transfer Alignment Interrupt  \hideinitializer */
+#define PDMA_INT_TRANS_DONE 0x00000001UL            /*!<Transfer Done Interrupt  \hideinitializer */
+#define PDMA_INT_TABLE      0x00000002UL            /*!<Table Interrupt  \hideinitializer */
+#define PDMA_INT_TIMEOUT    0x00000004UL            /*!<Timeout Interrupt  \hideinitializer */
+#define PDMA_INT_ALIGN      0x00000008UL            /*!<Transfer Alignment Interrupt  \hideinitializer */
 
 
 /*@}*/ /* end of group PDMA_EXPORTED_CONSTANTS */
@@ -376,4 +377,4 @@ void PDMA_DisableInt(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Mask);
 
 #endif /* __PDMA_H__ */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

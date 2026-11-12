@@ -137,7 +137,7 @@ void hardware_sleep(struct ca821x_dev *pDeviceRef)
 		       (sleepTime / 1000));
 
 	sleepTime = TIME_ReadAbsoluteTime();
-	DVBD_DevboardSleep(TIME_DOWN, pDeviceRef);
+	DVBD_Sleep(WUP_WAKEUP_ALL, TIME_DOWN, pDeviceRef);
 	sleepTime = TIME_ReadAbsoluteTime() - sleepTime;
 
 	/* schedule next power-down after power-up */

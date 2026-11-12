@@ -4,7 +4,8 @@
  * @brief    M2351 series UART Interface Controller (UART) driver source file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
 #include <stdio.h>
@@ -43,7 +44,7 @@ void UART_ClearIntFlag(UART_T* uart, uint32_t u32InterruptFlag)
 
     if(u32InterruptFlag & UART_INTSTS_RLSINT_Msk)           /* Clear Receive Line Status Interrupt */
     {
-        uart->FIFOSTS = UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_ADDRDETF_Msk;
+        uart->FIFOSTS = UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_ADDRDETF_Msk;
     }
 
     if(u32InterruptFlag & UART_INTSTS_MODEMINT_Msk)         /* Clear MODEM Status Interrupt */
@@ -169,16 +170,7 @@ void UART_DisableInt(UART_T*  uart, uint32_t u32InterruptFlag)
  *
  *    @return       None
  *
- *    @details      The function is used to Enable UART auto flow control.
- */
-/**
- *    @brief        Enable UART auto flow control function
- *
- *    @param[in]    uart    The pointer of the specified UART module.
- *
- *    @return       None
- *
- *    @details      The function is used to Enable UART auto flow control.
+ *    @details      The function is used to enable UART auto flow control.
  */
 void UART_EnableFlowCtrl(UART_T* uart)
 {
@@ -303,7 +295,7 @@ void UART_Open(UART_T* uart, uint32_t u32baudrate)
             u32UartClkDivNum = CLK_GetModuleClockDivider(UART5_MODULE);
             break;
         default:
-            break;
+            return ;
     }
 
     /* Select UART function */
@@ -343,7 +335,7 @@ void UART_Open(UART_T* uart, uint32_t u32baudrate)
  *
  *    @param[in]    uart            The pointer of the specified UART module.
  *    @param[in]    pu8RxBuf        The buffer to receive the data of receive FIFO.
- *    @param[in]    u32ReadBytes    The the read bytes number of data.
+ *    @param[in]    u32ReadBytes    The read bytes number of data.
  *
  *    @return       u32Count Receive byte count
  *
@@ -389,7 +381,7 @@ uint32_t UART_Read(UART_T* uart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
  *    @brief        Set UART line configuration
  *
  *    @param[in]    uart            The pointer of the specified UART module.
- *    @param[in]    u32baudrate     The register value of baudrate of UART module.
+ *    @param[in]    u32baudrate     The baudrate of UART module.
  *                                  If u32baudrate = 0, UART baudrate will not change.
  *    @param[in]    u32data_width   The data length of UART module.
  *                                  - \ref UART_WORD_LEN_5
@@ -451,7 +443,7 @@ void UART_SetLineConfig(UART_T* uart, uint32_t u32baudrate, uint32_t u32data_wid
             u32UartClkDivNum = CLK_GetModuleClockDivider(UART5_MODULE);
             break;
         default:
-            break;
+            return ;
     }
 
     /* Get PLL clock frequency if UART clock source selection is PLL */
@@ -510,7 +502,7 @@ void UART_SetTimeoutCnt(UART_T* uart, uint32_t u32TOC)
  *                                  - \ref UART_IRDA_RXEN
  *
  *    @return       None
-  *
+ *
  *    @details      The function is used to configure IrDA relative settings. It consists of TX or RX mode and baudrate.
  */
 void UART_SelectIrDAMode(UART_T* uart, uint32_t u32Buadrate, uint32_t u32Direction)
@@ -556,7 +548,7 @@ void UART_SelectIrDAMode(UART_T* uart, uint32_t u32Buadrate, uint32_t u32Directi
             u32UartClkDivNum = CLK_GetModuleClockDivider(UART5_MODULE);
             break;
         default:
-            break;
+            return ;
     }
 
     /* Get PLL clock frequency if UART clock source selection is PLL */
@@ -610,7 +602,7 @@ void UART_SelectRS485Mode(UART_T* uart, uint32_t u32Mode, uint32_t u32Addr)
     /* Select UART RS485 function mode */
     uart->FUNCSEL = UART_FUNCSEL_RS485;
 
-    /* Set RS585 configuration */
+    /* Set RS485 configuration */
     uart->ALTCTL &= ~(UART_ALTCTL_RS485NMM_Msk | UART_ALTCTL_RS485AUD_Msk | UART_ALTCTL_RS485AAD_Msk | UART_ALTCTL_ADDRMV_Msk);
     uart->ALTCTL |= (u32Mode | (u32Addr << UART_ALTCTL_ADDRMV_Pos));
 }
@@ -623,7 +615,7 @@ void UART_SelectRS485Mode(UART_T* uart, uint32_t u32Mode, uint32_t u32Addr)
  *    @param[in]    u32Mode         The LIN direction :
  *                                  - \ref UART_ALTCTL_LINTXEN_Msk
  *                                  - \ref UART_ALTCTL_LINRXEN_Msk
- *    @param[in]    u32BreakLength  The breakfield length.
+ *    @param[in]    u32BreakLength  The break field length.
  *
  *    @return       None
  *
@@ -659,7 +651,10 @@ uint32_t UART_Write(UART_T* uart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
     for(u32Count = 0ul; u32Count != u32WriteBytes; u32Count++)
     {
         u32delayno = 0ul;
+        // CASCODA, 25/08/29; Changes (??/??/??). Function not used in SDK.
+        // while( UART_IS_TX_FULL(uart) )   /* Wait Tx not full or Time-out manner */
         while((uart->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk) == 0ul)   /* Wait Tx empty and Time-out manner */
+        // CASCODA
         {
             u32delayno++;
             if(u32delayno >= 0x40000000ul)
@@ -692,4 +687,4 @@ uint32_t UART_Write(UART_T* uart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

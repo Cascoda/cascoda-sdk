@@ -130,7 +130,7 @@ void CHILI_DisableTRNGClk(void);
 /** Interrupt Handler for SPI DMA */
 void CHILI_SPIDMAIRQHandler(void);
 
-/** Register the SPIComplete callback on trustzone (Compiles to nothing on non-tz) */
-void CHILI_RegisterSPIComplete(void (*callback)(void));
+/** modify debounce filter time for port PB */
+void CHILI_SetPBDebounceClkSel(u32_t clksel, bool keep_permanent);
 
 #endif

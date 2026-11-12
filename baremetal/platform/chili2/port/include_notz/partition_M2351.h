@@ -1,34 +1,38 @@
-/**************************************************************************/ /**
- * @file
+/**************************************************************************//**
+ * @file     partition_M2351.c
  * @version  V3.00
  * @brief    SAU configuration for secure/nonsecure region settings.
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
 #ifndef PARTITION_M2351
 #define PARTITION_M2351
 
-#if defined(__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
 
-/*
+/* 
    Default M2351 pritition configuration file is for non-TrustZone sample code only.
    If user wants to use TrurstZone, they should have their partition_m2351.h.
-   For TrustZone projects, path of local partition_m2351.h should be in the
+   For TrustZone projects, path of local partition_m2351.h should be in the 
    front of the include path list to make sure local partition_m2351.h is used.
-
+   
    It also apply to non-secure project of the TrustZone projects.
-
+   
 */
-#error "Link to default partition_m2351.h in secure mode. Please check your include path."
+# error "Link to default partition_m2351.h in secure mode. Please check your include path."
 
 #endif
+
+
 
 /*
 //-------- <<< Use Configuration Wizard in Context Menu >>> -----------------
 */
+
 
 /*
     SRAMNSSET
@@ -49,24 +53,27 @@
 //                                         <0x16000=> 88KB
 //                                         <0x18000=> 96KB
 */
-#define SCU_SECURE_SRAM_SIZE 0x18000
-#define NON_SECURE_SRAM_BASE (0x30000000 + SCU_SECURE_SRAM_SIZE)
+#define SCU_SECURE_SRAM_SIZE      0x18000
+#define NON_SECURE_SRAM_BASE    (0x30000000 + SCU_SECURE_SRAM_SIZE)
+
+
 
 /*--------------------------------------------------------------------------------------------------------*/
 
 /*
     NSBA
 */
-#define FMC_INIT_NSBA 1
+#define FMC_INIT_NSBA          1
 /*
 //     <o>Secure Flash ROM Size <0x800-0x80000:0x800>
 */
 
-#define FMC_SECURE_ROM_SIZE 0x80000
+#define FMC_SECURE_ROM_SIZE      0x80000
 
-#define FMC_NON_SECURE_BASE (0x10000000 + FMC_SECURE_ROM_SIZE)
+#define FMC_NON_SECURE_BASE     (0x10000000 + FMC_SECURE_ROM_SIZE)
 
 /*--------------------------------------------------------------------------------------------------------*/
+
 
 /*
 // <h> Peripheral Secure Attribution Configuration
@@ -82,7 +89,7 @@
 //   <o.16>  EBI    <0=> Secure <1=> Non-Secure
 //   <o.24>  PDMA1      <0=> Secure <1=> Non-Secure
 */
-#define SCU_INIT_PNSSET0_VAL 0x0
+#define SCU_INIT_PNSSET0_VAL      0x0
 /*
     PNSSET1
 */
@@ -91,7 +98,7 @@
 //   <o.17>  CRC       <0=> Secure <1=> Non-Secure
 //   <o.18>  CRPT   <0=> Secure <1=> Non-Secure
 */
-#define SCU_INIT_PNSSET1_VAL 0x00000
+#define SCU_INIT_PNSSET1_VAL      0x00000
 /*
     PNSSET2
 */
@@ -112,7 +119,7 @@
 //   <o.27>  BPWM1      <0=> Secure <1=> Non-Secure
 //   </h>
 */
-#define SCU_INIT_PNSSET2_VAL 0x0
+#define SCU_INIT_PNSSET2_VAL      0x0
 /*
     PNSSET3
 */
@@ -134,7 +141,7 @@
 //   <o.21>  UART5      <0=> Secure <1=> Non-Secure
 //   </h>
 */
-#define SCU_INIT_PNSSET3_VAL 0x00000
+#define SCU_INIT_PNSSET3_VAL      0x00000
 /*
     PNSSET4
 */
@@ -151,7 +158,7 @@
 //   <o.18>  SC2      <0=> Secure <1=> Non-Secure
 //   </h>
 */
-#define SCU_INIT_PNSSET4_VAL 0x0
+#define SCU_INIT_PNSSET4_VAL      0x0
 /*
     PNSSET5
 */
@@ -168,7 +175,7 @@
 //   </h>
 //   <o.25>  TRNG    <0=> Secure <1=> Non-Secure
 */
-#define SCU_INIT_PNSSET5_VAL 0x0
+#define SCU_INIT_PNSSET5_VAL      0x0
 /*
     PNSSET6
 */
@@ -180,10 +187,12 @@
 //   <o.17>  USCI1      <0=> Secure <1=> Non-Secure
 //   </h>
 */
-#define SCU_INIT_PNSSET6_VAL 0x0
+#define SCU_INIT_PNSSET6_VAL      0x0
 /*
 // </h>
 */
+
+
 
 /*
 // <h> GPIO Secure Attribution Configuration
@@ -203,10 +212,12 @@
 //   <o.6>  PG      <0=> Secure <1=> Non-Secure
 //   <o.7>  PH      <0=> Secure <1=> Non-Secure
 */
-#define SCU_INIT_IONSSET_VAL 0x0
+#define SCU_INIT_IONSSET_VAL      0x0
 /*
 // </h>
 */
+
+
 
 /* ---------------------------------------------------------------------------------------------------- */
 
@@ -228,36 +239,37 @@
 //   <i> To set the ALLNS bit in SAU CTRL.
 //   <i> When all Memory is Non-Secure (ALLNS is 1), IDAU can override memory map configuration.
 */
-#define SAU_INIT_CTRL_ALLNS 0
+#define SAU_INIT_CTRL_ALLNS  0
 
 /*
 // </e>
 */
 
+
 /*
 // <h>Enable and Set Secure/Non-Secure region
 */
-#define SAU_REGIONS_MAX 8 /* Max. number of SAU regions */
+#define SAU_REGIONS_MAX   8                 /* Max. number of SAU regions */
 
 /*
 //   <e>SAU Region 0
 //   <i> Setup SAU Region 0
 */
-#define SAU_INIT_REGION0 0
+#define SAU_INIT_REGION0    0
 /*
 //     <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START0 0x0003F000 /* start address of SAU region 0 */
+#define SAU_INIT_START0     0x0003F000      /* start address of SAU region 0 */
 /*
 //     <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END0 0x0003FFFF /* end address of SAU region 0 */
+#define SAU_INIT_END0       0x0003FFFF      /* end address of SAU region 0 */
 /*
 //     <o>Region is
 //         <0=>Non-Secure
 //         <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC0 1
+#define SAU_INIT_NSC0       1
 /*
 //   </e>
 */
@@ -266,21 +278,21 @@
 //   <e>SAU Region 1
 //   <i> Setup SAU Region 1
 */
-#define SAU_INIT_REGION1 0
+#define SAU_INIT_REGION1    0
 /*
 //     <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START1 0x10040000
+#define SAU_INIT_START1     0x10040000
 /*
 //     <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END1 0x1007FFFF
+#define SAU_INIT_END1       0x1007FFFF
 /*
 //     <o>Region is
 //         <0=>Non-Secure
 //         <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC1 0
+#define SAU_INIT_NSC1       0
 /*
 //   </e>
 */
@@ -289,21 +301,21 @@
 //   <e>SAU Region 2
 //   <i> Setup SAU Region 2
 */
-#define SAU_INIT_REGION2 0
+#define SAU_INIT_REGION2    0
 /*
 //     <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START2 0x2000F000
+#define SAU_INIT_START2     0x2000F000
 /*
 //     <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END2 0x2000FFFF
+#define SAU_INIT_END2       0x2000FFFF
 /*
 //     <o>Region is
 //         <0=>Non-Secure
 //         <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC2 1
+#define SAU_INIT_NSC2       1
 /*
 //   </e>
 */
@@ -312,21 +324,21 @@
 //   <e>SAU Region 3
 //   <i> Setup SAU Region 3
 */
-#define SAU_INIT_REGION3 0
+#define SAU_INIT_REGION3    0
 /*
 //     <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START3 0x3f000
+#define SAU_INIT_START3     0x3f000
 /*
 //     <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END3 0x3f7ff
+#define SAU_INIT_END3       0x3f7ff
 /*
 //     <o>Region is
 //         <0=>Non-Secure
 //         <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC3 1
+#define SAU_INIT_NSC3       1
 /*
 //   </e>
 */
@@ -335,23 +347,23 @@
    <e>SAU Region 4
    <i> Setup SAU Region 4
 */
-#define SAU_INIT_REGION4 1
+#define SAU_INIT_REGION4    1
 /*
      <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START4 FMC_NON_SECURE_BASE /* start address of SAU region 4 */
+#define SAU_INIT_START4     FMC_NON_SECURE_BASE      /* start address of SAU region 4 */
 
 /*
      <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END4 0x1007FFFF /* end address of SAU region 4 */
+#define SAU_INIT_END4       0x1007FFFF      /* end address of SAU region 4 */
 
 /*
      <o>Region is
          <0=>Non-Secure
          <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC4 0
+#define SAU_INIT_NSC4       0
 /*
    </e>
 */
@@ -360,24 +372,24 @@
    <e>SAU Region 5
    <i> Setup SAU Region 5
 */
-#define SAU_INIT_REGION5 1
+#define SAU_INIT_REGION5    1
 
 /*
      <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START5 0x00807E00
+#define SAU_INIT_START5     0x00807E00
 
 /*
      <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END5 0x00807FFF
+#define SAU_INIT_END5       0x00807FFF
 
 /*
      <o>Region is
          <0=>Non-Secure
          <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC5 1
+#define SAU_INIT_NSC5       1
 /*
    </e>
 */
@@ -386,24 +398,24 @@
    <e>SAU Region 6
    <i> Setup SAU Region 6
 */
-#define SAU_INIT_REGION6 1
+#define SAU_INIT_REGION6    1
 
 /*
      <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START6 NON_SECURE_SRAM_BASE
+#define SAU_INIT_START6     NON_SECURE_SRAM_BASE
 
 /*
      <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END6 0x30017FFF
+#define SAU_INIT_END6       0x30017FFF
 
 /*
      <o>Region is
          <0=>Non-Secure
          <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC6 0
+#define SAU_INIT_NSC6       0
 /*
    </e>
 */
@@ -412,24 +424,24 @@
    <e>SAU Region 7
    <i> Setup SAU Region 7
 */
-#define SAU_INIT_REGION7 1
+#define SAU_INIT_REGION7    1
 
 /*
      <o>Start Address <0-0xFFFFFFE0>
 */
-#define SAU_INIT_START7 0x50000000
+#define SAU_INIT_START7     0x50000000
 
 /*
      <o>End Address <0x1F-0xFFFFFFFF>
 */
-#define SAU_INIT_END7 0x5FFFFFFF
+#define SAU_INIT_END7       0x5FFFFFFF
 
 /*
      <o>Region is
          <0=>Non-Secure
          <1=>Secure, Non-Secure Callable
 */
-#define SAU_INIT_NSC7 0
+#define SAU_INIT_NSC7       0
 /*
    </e>
 */
@@ -441,7 +453,7 @@
 /*
 // <e>Setup behavior of Sleep and Exception Handling
 */
-#define SCB_CSR_AIRCR_INIT 1
+#define SCB_CSR_AIRCR_INIT  1
 
 /*
 //   <o> Deep Sleep can be enabled by
@@ -449,7 +461,7 @@
 //     <1=>Secure state only
 //   <i> Value for SCB->CSR register bit DEEPSLEEPS
 */
-#define SCB_CSR_DEEPSLEEPS_VAL 0
+#define SCB_CSR_DEEPSLEEPS_VAL  0
 
 /*
 //   <o>System reset request accessible from
@@ -457,7 +469,7 @@
 //     <1=> Secure state only
 //   <i> Value for SCB->AIRCR register bit SYSRESETREQS
 */
-#define SCB_AIRCR_SYSRESETREQS_VAL 0
+#define SCB_AIRCR_SYSRESETREQS_VAL  0
 
 /*
 //   <o>Priority of Non-Secure exceptions is
@@ -465,7 +477,7 @@
 //     <1=> Lowered to 0x80-0xFF
 //   <i> Value for SCB->AIRCR register bit PRIS
 */
-#define SCB_AIRCR_PRIS_VAL 0
+#define SCB_AIRCR_PRIS_VAL      0
 
 /* Assign HardFault to be always secure for safe */
 #define SCB_AIRCR_BFHFNMINS_VAL 0
@@ -479,9 +491,12 @@
     SAU regions are defined in partition.h
  */
 
-#define SAU_INIT_REGION(n)                                \
-	SAU->RNR  = (n & SAU_RNR_REGION_Msk);                 \
-	SAU->RBAR = (SAU_INIT_START##n & SAU_RBAR_BADDR_Msk); \
-	SAU->RLAR = (SAU_INIT_END##n & SAU_RLAR_LADDR_Msk) | ((SAU_INIT_NSC##n << SAU_RLAR_NSC_Pos) & SAU_RLAR_NSC_Msk) | 1U
+#define SAU_INIT_REGION(n) \
+    SAU->RNR  =  (n                                     & SAU_RNR_REGION_Msk); \
+    SAU->RBAR =  (SAU_INIT_START##n                     & SAU_RBAR_BADDR_Msk); \
+    SAU->RLAR =  (SAU_INIT_END##n                       & SAU_RLAR_LADDR_Msk) | \
+                ((SAU_INIT_NSC##n << SAU_RLAR_NSC_Pos)  & SAU_RLAR_NSC_Msk)   | 1U
 
-#endif /* PARTITION_M2351 */
+
+#endif  /* PARTITION_M2351 */
+

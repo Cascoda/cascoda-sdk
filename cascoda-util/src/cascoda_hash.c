@@ -90,7 +90,7 @@ void HASH_fnv1a_64_stream(const void *data_in, size_t num_bytes, uint64_t *hash)
 	}
 }
 
-uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen)
+uint32_t HASH_CRC32(const uint8_t *data, uint32_t dataLen)
 {
 	uint32_t crc = 0xFFFFFFFF;
 
@@ -100,7 +100,7 @@ uint32_t HASH_CRC32(uint8_t *data, uint32_t dataLen)
 	return crc;
 }
 
-void HASH_CRC32_stream(uint8_t *data, uint32_t dataLen, uint32_t *crc)
+void HASH_CRC32_stream(const uint8_t *data, uint32_t dataLen, uint32_t *crc)
 {
 	// CRC algorithm adapted from zlib source, which is
 	// Copyright (C) 1995-1998 Jean-loup Gailly and Mark Adler

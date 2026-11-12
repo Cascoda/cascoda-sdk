@@ -1,13 +1,14 @@
 ;/**************************************************************************//**
-; * @file     startup_TC8234.s
+; * @file     startup_M2351.s
 ; * @version  V2.00
 ; * $Revision: 9 $
 ; * $Date: 16/08/27 12:33p $ 
 ; * @brief   Startup Source File
 ; *
 ; * @note
-; * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+; * @copyright SPDX-License-Identifier: Apache-2.0
 ; *
+; * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 ; ******************************************************************************/
 		
 		
@@ -19,7 +20,7 @@
 ; </h>
 
     IF :LNOT: :DEF: Stack_Size
-Stack_Size      EQU     0x00000800
+Stack_Size      EQU     0x00001000
     ENDIF
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
@@ -32,7 +33,7 @@ __initial_sp
 ; </h>
 
     IF :LNOT: :DEF: Heap_Size
-Heap_Size       EQU     0x00000000
+Heap_Size       EQU     0x00002800
     ENDIF
 
                 AREA    HEAP, NOINIT, READWRITE, ALIGN=3

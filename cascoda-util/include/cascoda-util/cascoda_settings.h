@@ -251,6 +251,83 @@ ca_error caUtilSettingsAddVector(struct ca821x_dev    *aInstance,
                                  size_t                aCount);
 
 /**
+ * @brief Attempt to read a setting from a specific address in constant time.
+ * 
+ * This function is designed to be used alongside a cache in RAM which stores
+ * addresses obtained using @ref caUtilSettingsGetLastWriteAddress. In return,
+ * this function is very fast and its speed is independent of how full the
+ * persistent storage is, unlike @ref caUtilSettingsGet.
+ * 
+ * @param aInstance Device instance
+ * @param aKey Key we are expecting to find at aRelativeAddress
+ * @param aRelativeAddress Address where the entry is expected
+ * @param aValue Output buffer
+ * @param aValueLength Input for the output buffer size. Outputs the written size
+ * @retval CA_ERROR_SUCCESS Found a valid item with the matching key.
+ * @retval CA_ERROR_NOT_FOUND Item at address is not valid.
+ */
+ca_error caUtilSettingsGetFromAddress(struct ca821x_dev *aInstance,
+                                      uint16_t           aKey,
+                                      uint16_t           aRelativeAddress,
+                                      uint8_t          **aValue,
+                                      uint16_t          *aValueLength);
+
+/**
+ * @brief Delete a setting stored at a specific address.
+
+ * This function is designed to be used alongside a cache in RAM which stores
+ * addresses obtained using @ref caUtilSettingsGetLastWriteAddress. In return,
+ * this function is very fast and its speed is independent of how full the
+ * persistent storage is, unlike @ref caUtilSettingsGet.
+ * 
+ * @param aInstance Device Instance
+ * @param aKey Expected key of the entry
+ * @param aRelativeAddress Address of the entry
+ * @retval CA_ERROR_SUCCESS Deleted a valid item with the matching key.
+ * @retval CA_ERROR_ALREADY Item is valid but already deleted.
+ * @retval CA_ERROR_NOT_FOUND Item at address is not valid.
+ */
+ca_error caUtilSettingsDeleteAtAddress(struct ca821x_dev *aInstance, uint16_t aKey, uint16_t aRelativeAddress);
+
+/**
+ * @brief Get the address of the last write made by a caUtilSettings* API.
+ * 
+ * @return uint16_t Relative address of the previous write. Internally converted 
+ * to an absolute address when calling utilsFlash* functions
+ */
+uint16_t caUtilSettingsGetLastWriteAddress(void);
+
+/**
+ * @brief Get the address of the last read made by a caUtilSettings* API.
+ * 
+ * @return uint16_t Relative address of the previous read. Internally converted 
+ * to an absolute address when calling utilsFlash* functions
+ */
+uint32_t caUtilSettingsGetLastReadAddress(void);
+
+typedef void (*setting_moved_cb_t)(void);
+
+/**
+ * @brief Registers the callback for when all settings have moved. Used for updating or
+ * invalidating an address cache generated with @ref caUtilSettingsGetLastWriteAddress
+ * 
+ * @param aCb The function to be called. Will be called once per settings swap
+ * (aka defragment / garbage collection).
+ */
+void caUtilSettingsSetSettingMovedCb(setting_moved_cb_t aCb);
+
+/**
+ * @brief Defragment the persistent storage by migrating all valid items to a fresh
+ * flash region.
+ * 
+ * This function is called automatically when necessary by the caUtilSettingsSet/Add 
+ * APIs. In general, calling this function is unnecessary unless you want to guarantee
+ * that future writes will return quickly (without having to defragment).
+ * 
+ */
+uint32_t caUtilSettingsSwapSettingsBlock(struct ca821x_dev *aInstance);
+
+/**
  * @}
  *
  */

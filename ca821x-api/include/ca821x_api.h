@@ -65,6 +65,47 @@ extern "C" {
 struct ca821x_dev;
 
 /******************************************************************************/
+/****** ca821x PIB attributes modified values                            ******/
+/******************************************************************************/
+#define PIB_NEW_MAC_MAXFRAMERETRIES       7
+#define PIB_NEW_MAC_MAXCSMABACKOFFS       5
+#define PIB_NEW_MAC_MINBE                 7
+#define PIB_NEW_MAC_MAXBE                 8
+#define PIB_NEW_PHY_CCAMODE               0 /* CCAM_EDORCS */
+#define PIB_NEW_HWME_LQILIMIT             0
+#define PIB_NEW_HWME_LQIMODE              1 /* HWME_LQIMODE_ED */
+#define PIB_NEW_HWME_EDTHRESHOLD          106
+#define PIB_NEW_HWME_CSTHRESHOLD          128
+#if CASCODA_CA_VER >= 8211
+#define PIB_NEW_HWME_MAXINDIRECTS         8
+#define PIB_NEW_HWME_POLLINDMODE          2
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+#define PIB_NEW_HWME_LOTXCALOVERWRITEMODE 1
+#endif // CASCODA_CA_VER >= 8212
+
+/******************************************************************************/
+/****** ca821x PIB default attribute values (as implemented in MAC)      ******/
+/******************************************************************************/
+#define PIB_DEF_MAC_MAXFRAMERETRIES       3
+#define PIB_DEF_MAC_MAXCSMABACKOFFS       4
+#define PIB_DEF_MAC_MINBE                 3
+#define PIB_DEF_MAC_MAXBE                 5
+#define PIB_DEF_PHY_CCAMODE               3 /* CCAM_EDANDCS */
+#define PIB_DEF_HWME_LQILIMIT             75
+#define PIB_DEF_HWME_LQIMODE              0 /* HWME_LQIMODE_CS */
+#define PIB_DEF_HWME_EDTHRESHOLD          60
+#define PIB_DEF_HWME_CSTHRESHOLD          80
+#if CASCODA_CA_VER >= 8211
+#define PIB_DEF_HWME_MAXINDIRECTS         6
+#define PIB_DEF_HWME_POLLINDMODE          0
+#endif // CASCODA_CA_VER >= 8211
+#if CASCODA_CA_VER >= 8212
+#define PIB_DEF_HWME_LOTXCALOVERWRITEMODE 0
+#endif // CASCODA_CA_VER >= 8212
+
+
+/******************************************************************************/
 /****** External function pointers                                       ******/
 /******************************************************************************/
 
@@ -727,6 +768,15 @@ ca_mac_status TDME_ChannelInit(uint8_t channel, struct ca821x_dev *pDeviceRef);
  *******************************************************************************
  ******************************************************************************/
 ca_mac_status TDME_CheckPIBAttribute(uint8_t PIBAttribute, uint8_t PIBAttributeLength, const void *pPIBAttributeValue);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Reconfigures PIB (MLME and HWME) from MAC defaults
+ *******************************************************************************
+ * \return 802.15.4 status
+ *******************************************************************************
+ ******************************************************************************/
+ca_mac_status TDME_ReconfigurePIB(uint8_t SetDefaultPIB, struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**

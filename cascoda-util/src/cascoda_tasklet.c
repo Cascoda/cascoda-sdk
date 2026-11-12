@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ca821x_log.h"
 #include "cascoda-util/cascoda_tasklet.h"
 #include "cascoda-util/cascoda_time.h"
 
@@ -190,7 +191,15 @@ ca_error TASKLET_Process(void)
 
 		error = CA_ERROR_SUCCESS;
 		TASKLET_Cancel(tasklet); //Cancel before calling callback so that tasklet can self-reschedule
-		tasklet->callback(tasklet->context);
+        if (tasklet->callback) 
+        {
+            tasklet->callback(tasklet->context);
+        }
+        else
+        {
+            ca_log_crit("Callback is NULL! Something went wrong...");
+            error = CA_ERROR_INVALID_STATE;
+        }
 	}
 
 	return error;

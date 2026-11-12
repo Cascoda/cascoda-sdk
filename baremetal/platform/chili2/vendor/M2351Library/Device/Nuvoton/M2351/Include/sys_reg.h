@@ -3,7 +3,8 @@
  * @version  V1.00
  * @brief    SYS register definition header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __SYS_REG_H__
 #define __SYS_REG_H__
@@ -667,7 +668,7 @@ typedef struct
      * |        |          |Note1: Bank0 SRAM is always operating in power shut down mode for system enter Deep Power-down mode (DPD).
      * |        |          |Note2: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |[13:12] |SRAM0PM2  |Bank0 SRAM Power Mode Select 2 (Write Protect)
-     * |        |          |This field can control bank0 SRAM (32k) power mode in system enter power down mode for range 0x2004_0000 - 0x2000_5FFF.
+     * |        |          |This field can control bank0 SRAM (32k) power mode in system enter power down mode for range 0x2000_4000 - 0x2000_5FFF.
      * |        |          |00 = Normal mode.
      * |        |          |01 = Retention mode.
      * |        |          |10 = Power shut down mode.
@@ -675,7 +676,7 @@ typedef struct
      * |        |          |Note1: Bank 0 SRAM is always operating in power shut down mode for system enter Deep Power-down Mode (DPD).
      * |        |          |Note2: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |[15:14] |SRAM0PM3  |Bank0 SRAM Power Mode Select 3 (Write Protect)
-     * |        |          |This field can control bank0 SRAM (32k) power mode in system enter power down mode for range 0x2006_0000 - 0x2000_7FFF.
+     * |        |          |This field can control bank0 SRAM (32k) power mode in system enter power down mode for range 0x2000_6000 - 0x2000_7FFF.
      * |        |          |00 = Normal mode.
      * |        |          |01 = Retention mode.
      * |        |          |10 = Power shut down mode.

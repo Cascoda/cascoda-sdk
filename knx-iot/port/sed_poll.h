@@ -29,6 +29,19 @@
 void SED_InitPolling(uint32_t min_delay, uint32_t max_delay, uint32_t max_retries);
 
 /**
+ * @brief Stop polling for messages
+ * 
+ * After calling this function, the device will no longer send 802.15.4 Data Requests
+ * until SED_InitPolling is called, in order to reschedule periodic polls. Alternatively,
+ * a single data poll can still be sent using SED_PollNowNoReset(). 
+ * 
+ * @note: This includes stopping of polls that are automatically done by OpenThread!
+ *        SED_InitPolling() needs to be called to resume those polls as well.
+ * 
+ */
+void SED_DeinitPolling();
+
+/**
  * @brief Set the maximum delay between polls.
  * 
  * This function can be used after initialisation, to dynamically modify the polling rate

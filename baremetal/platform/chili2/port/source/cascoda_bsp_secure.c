@@ -200,3 +200,10 @@ __NONSECURE_ENTRY u8_t BSP_IsWatchdogTriggered(void)
 __NONSECURE_ENTRY void BSP_Waiting(void)
 {
 }
+
+__NONSECURE_ENTRY void BSP_ChipReset()
+{
+	SYS_UnlockReg();
+	SYS_ResetChip();
+	SYS_LockReg(); // Should never be hit
+}

@@ -198,12 +198,6 @@ static ca_error AerialAdapter_MCPS_DATA_confirm(struct MCPS_DATA_confirm_pset *p
 	if (status)
 		ca_log_warn("AerialAdapter_MCPS_DATA_confirm Status %02X", status);
 
-	/* filter non-success mac status that can actually happen from time to time */
-	if ((status != MAC_SUCCESS) && (status != MAC_NO_ACK) && (status != MAC_CHANNEL_ACCESS_FAILURE))
-	{
-		gAerialAdapterStatus = CA_ERROR_FAIL;
-	}
-
 	/* supress message other messages */
 	return CA_ERROR_SUCCESS;
 }
@@ -284,7 +278,7 @@ static ca_error AerialAdapterSendPacket(uint8_t type, aerial_adapter_payload_wit
 #endif // CASCODA_CA_VER >= 8212
 
 	/* make synchronous to avoid switching pib before confirm */
-	status = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, NULL, pAerialAdapterDeviceRef);
+	status = WAIT_Callback(SPI_MCPS_DATA_CONFIRM, 100, pAerialAdapterDeviceRef);
 	if (status)
 		ca_log_warn("AerialAdapterSendPacket: WAIT_Callback Status %02X", status);
 
@@ -338,7 +332,7 @@ ca_error aainitialise(uint8_t channel, struct ca821x_dev *pDeviceRef)
 	}
 
 	/* wait for reference device confirmation packet, failure not critical as reference device responded to request */
-	status = WAIT_Callback(SPI_MCPS_DATA_INDICATION, 100, NULL, pAerialAdapterDeviceRef);
+	status = WAIT_Callback(SPI_MCPS_DATA_INDICATION, 100, pAerialAdapterDeviceRef);
 	if (status)
 		ca_log_warn("aainitialise: WAIT_Callback Status %02X", status);
 

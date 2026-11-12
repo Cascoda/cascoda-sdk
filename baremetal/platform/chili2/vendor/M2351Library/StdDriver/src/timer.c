@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    Timer Controller(Timer) driver source file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -83,17 +84,18 @@ void TIMER_Close(TIMER_T *timer)
   * @param[in]  timer       The pointer of the specified Timer module. It could be TIMER0, TIMER1, TIMER2, TIMER3.
   * @param[in]  u32Usec     Delay period in micro seconds. Valid values are between 100~1000000 (100 micro second ~ 1 second).
   *
-  * @return     None
+  * @retval     TIMER_OK          Delay success, target delay time reached
+  * @retval     TIMER_ERR_TIMEOUT Delay function execute failed due to timer stop working
   *
   * @details    This API is used to create a delay loop for u32usec micro seconds by using timer one-shot mode.
   * @note       This API overwrites the register setting of the timer used to count the delay time.
   * @note       This API use polling mode. So there is no need to enable interrupt for the timer module used to generate delay.
   */
-void TIMER_Delay(TIMER_T *timer, uint32_t u32Usec)
+int32_t TIMER_Delay(TIMER_T *timer, uint32_t u32Usec)
 {
     uint32_t u32Clk = TIMER_GetModuleClock(timer);
-    uint32_t u32Prescale = 0UL, u32Delay = (SystemCoreClock / u32Clk) + 1UL;
-    uint32_t u32Cmpr, u32NsecPerTick;
+    uint32_t u32Prescale = 0UL, u32Delay;
+    uint32_t u32Cmpr, u32Cntr, u32NsecPerTick, i = 0UL;
 
     /* Clear current timer configuration */
     timer->CTL = 0UL;
@@ -143,12 +145,33 @@ void TIMER_Delay(TIMER_T *timer, uint32_t u32Usec)
         When system clock is faster than timer clock, it is possible timer active bit cannot set in time while we check it.
         And the while loop below return immediately, so put a tiny delay here allowing timer start counting and raise active flag.
     */
-    for(; u32Delay > 0UL; u32Delay--)
+    for(u32Delay = (SystemCoreClock / u32Clk) + 1UL; u32Delay > 0UL; u32Delay--)
     {
         __NOP();
     }
 
-    while(timer->CTL & TIMER_CTL_ACTSTS_Msk) {}
+    /* Add a bail out counter here in case timer clock source is disabled accidentally.
+       Prescale counter reset every ECLK * (prescale value + 1).
+       The u32Delay here is to make sure timer counter value changed when prescale counter reset */
+    u32Delay = (SystemCoreClock / TIMER_GetModuleClock(timer)) * (u32Prescale + 1);
+    u32Cntr = timer->CNT;
+    while(timer->CTL & TIMER_CTL_ACTSTS_Msk)
+    {
+        /* Bailed out if timer stop counting e.g. Some interrupt handler close timer clock source. */
+        if(u32Cntr == timer->CNT)
+        {
+            if(i++ > u32Delay)
+            {
+                return TIMER_ERR_TIMEOUT;
+            }
+        }
+        else
+        {
+            i = 0;
+            u32Cntr = timer->CNT;
+        }
+    }
+    return TIMER_OK;
 }
 
 /**
@@ -259,30 +282,23 @@ uint32_t TIMER_GetModuleClock(TIMER_T *timer)
     }
     else
     {
-        u32Clk = 0UL;
+        return 0UL;
     }
 
-    if(u32Clk == 0UL)
+    if(u32Src == 2UL)
     {
-        ; /* Invalid timer channel */
-    }
-    else
-    {
-        if(u32Src == 2UL)
+        if((timer == TIMER0) || (timer == TIMER1))
         {
-            if((timer == TIMER0) || (timer == TIMER1))
-            {
-                u32Clk = CLK_GetPCLK0Freq();
-            }
-            else
-            {
-                u32Clk = CLK_GetPCLK1Freq();
-            }
+            u32Clk = CLK_GetPCLK0Freq();
         }
         else
         {
-            u32Clk = au32Clk[u32Src];
+            u32Clk = CLK_GetPCLK1Freq();
         }
+    }
+    else
+    {
+        u32Clk = au32Clk[u32Src];
     }
 
     return u32Clk;
@@ -311,6 +327,9 @@ void TIMER_EnableFreqCounter(TIMER_T *timer,
 {
     TIMER_T *t;    /* store the timer base to configure compare value */
 
+    (void)u32DropCount;
+    (void)u32Timeout;
+
     if(timer == TIMER0)
     {
         t = TIMER1;
@@ -325,10 +344,10 @@ void TIMER_EnableFreqCounter(TIMER_T *timer,
     }
     else
     {
-        t = NULL;
+        t = 0UL;
     }
 
-    if(t != NULL)
+    if(t != 0)
     {
         t->CMP = 0xFFFFFFUL;
         t->EXTCTL = u32EnableInt ? TIMER_EXTCTL_CAPIEN_Msk : 0UL;
@@ -386,10 +405,34 @@ void TIMER_SetTriggerTarget(TIMER_T *timer, uint32_t u32Mask)
     timer->TRGCTL = (timer->TRGCTL & ~(TIMER_TRGCTL_TRGEPWM_Msk | TIMER_TRGCTL_TRGDAC_Msk | TIMER_TRGCTL_TRGEADC_Msk | TIMER_TRGCTL_TRGPDMA_Msk)) | u32Mask;
 }
 
+/**
+  * @brief      Reset Counter
+  *
+  * @param[in]  timer       The pointer of the specified Timer module. It could be TIMER0, TIMER1, TIMER2, TIMER3.
+  *
+  * @retval     TIMER_OK          Timer reset success
+  * @retval     TIMER_ERR_TIMEOUT Timer reset failed
+  *
+  * @details    This function is used to reset current counter value and internal prescale counter value.
+  */
+int32_t TIMER_ResetCounter(TIMER_T *timer)
+{
+    uint32_t u32Delay;
+
+    timer->CNT = 0UL;
+    /* Takes 2~3 ECLKs to reset timer counter */
+    u32Delay = (SystemCoreClock / TIMER_GetModuleClock(timer)) * 3;
+    while(((timer->CNT&TIMER_CNT_RSTACT_Msk) == TIMER_CNT_RSTACT_Msk) && (--u32Delay))
+    {
+        __NOP();
+    }
+    return u32Delay > 0 ? TIMER_OK : TIMER_ERR_TIMEOUT;
+}
+
 /*@}*/ /* end of group TIMER_EXPORTED_FUNCTIONS */
 
 /*@}*/ /* end of group TIMER_Driver */
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

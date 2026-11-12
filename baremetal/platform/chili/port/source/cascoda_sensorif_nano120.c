@@ -198,6 +198,16 @@ enum sensorif_i2c_status SENSORIF_I2C_Read(u8_t slaveaddr, u8_t *pdata, u32_t *p
 	return status;
 }
 
+enum sensorif_i2c_status SENSORIF_I2C_WriteThenRead(u8_t slaveaddr, u8_t *pwrdata, u32_t *pwrlen, u8_t *prddata, u32_t *prdlen)
+{
+	(void)slaveaddr;
+	(void)pwrdata;
+	(void)pwrlen;
+	(void)prddata;
+	(void)prdlen;
+	return SENSORIF_I2C_ST_NOT_IMPLEMENTED;
+}
+
 void SENSORIF_I2C_Init(void)
 {
 	/* enable I2C peripheral clock */

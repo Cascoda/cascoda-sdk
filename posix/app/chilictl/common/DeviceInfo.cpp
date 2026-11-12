@@ -37,7 +37,7 @@ DeviceInfo::DeviceInfo(const ca_device_info *aDeviceInfo)
 	copy_from(aDeviceInfo);
 }
 
-DeviceInfo::DeviceInfo(const DeviceInfo &aDeviceInfo) //NOLINT(bugprone-copy-constructor-init)
+DeviceInfo::DeviceInfo(const DeviceInfo &aDeviceInfo)
     : ca_device_info()
 {
 	copy_from(static_cast<const ca_device_info *>(&aDeviceInfo));
@@ -70,6 +70,9 @@ DeviceInfo &DeviceInfo::operator=(DeviceInfo &&other)
 
 void DeviceInfo::copy_from(const ca_device_info *aDeviceInfo)
 {
+    if (aDeviceInfo == NULL) {
+        return;
+    }
 	size_t pathlen    = aDeviceInfo->path ? 1 + strlen(aDeviceInfo->path) : 0;
 	size_t devnamelen = aDeviceInfo->device_name ? 1 + strlen(aDeviceInfo->device_name) : 0;
 	size_t appnamelen = aDeviceInfo->app_name ? 1 + strlen(aDeviceInfo->app_name) : 0;

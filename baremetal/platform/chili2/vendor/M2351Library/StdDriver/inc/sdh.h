@@ -3,7 +3,8 @@
  * @version  V1.00
  * @brief    M2351 SDH driver header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #ifndef __SDH_H__
 #define __SDH_H__
@@ -63,11 +64,19 @@ extern "C"
 #define    CardDetect_From_GPIO  (1UL << 8)   /*!< Card detection pin is GPIO \hideinitializer */
 #define    CardDetect_From_DAT3  (1UL << 9)   /*!< Card detection pin is DAT3 \hideinitializer */
 
+/* SDH Define Error Code */
+#define SDH_TIMEOUT_CNT     SystemCoreClock     /*!< SDH time-out counter (1 second time-out) \hideinitializer */
+#define SDH_OK              ( 0L)               /*!< SDH operation OK \hideinitializer */
+#define SDH_ERR_FAIL        (-1L)               /*!< SDH operation failed \hideinitializer */
+#define SDH_ERR_TIMEOUT     (-2L)               /*!< SDH operation abort due to timeout error \hideinitializer */
+
 /*@}*/ /* end of group SDH_EXPORTED_CONSTANTS */
 
 /** @addtogroup SDH_EXPORTED_TYPEDEF SDH Exported Type Defines
   @{
 */
+#pragma pack(push)
+#pragma pack(1)
 typedef struct SDH_info_t
 {
     unsigned int    CardType;       /*!< SDHC, SD, or MMC */
@@ -77,11 +86,13 @@ typedef struct SDH_info_t
     unsigned int    diskSize;       /*!< Disk size in K bytes */
     int             sectorSize;     /*!< Sector size in bytes */
 } SDH_INFO_T;                       /*!< Structure holds SD card info */
+#pragma pack(pop)
 
 /*@}*/ /* end of group SDH_EXPORTED_TYPEDEF */
 
 /** @cond HIDDEN_SYMBOLS */
 extern SDH_INFO_T SD0;
+extern int32_t g_SDH_i32ErrCode;
 /** @endcond HIDDEN_SYMBOLS */
 
 /** @addtogroup SDH_EXPORTED_FUNCTIONS SDH Exported Functions
@@ -170,6 +181,9 @@ extern SDH_INFO_T SD0;
  */
 #define SDH_GET_CARD_CAPACITY(sdh)  ((((sdh) == SDH0)||((sdh) == SDH0_NS))? SD0.diskSize : 0)
 
+extern uint8_t g_u8R3Flag;
+extern uint8_t volatile g_u8SDDataReadyFlag;
+extern int     SDH_ok;
 
 void SDH_Open(SDH_T *sdh, uint32_t u32CardDetSrc);
 uint32_t SDH_Probe(SDH_T *sdh);
@@ -191,4 +205,4 @@ void SDH_Close_Disk(SDH_T *sdh);
 #endif
 
 #endif  /* end of __SDH_H__ */
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

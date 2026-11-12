@@ -55,9 +55,9 @@
 /******************************************************************************/
 /****** Global Variables only used in Phy Test Files                     ******/
 /******************************************************************************/
-uint16_t PHYPANId;
-uint16_t PHYTxShortAddress;
-uint16_t PHYRxShortAddress;
+uint8_t PHYPANId[2];
+uint8_t PHYTxShortAddress[2];
+uint8_t PHYRxShortAddress[2];
 uint8_t  PHYTxLongAddress[8];
 uint8_t  PHYRxLongAddress[8];
 
@@ -65,9 +65,9 @@ uint8_t DSN_OLD;
 
 void PHYTestMACAddInit(void)
 {
-	PHYPANId          = PHY_PANID;
-	PHYTxShortAddress = PHY_TX_SHORTADD;
-	PHYRxShortAddress = PHY_RX_SHORTADD;
+	PUTLE16(PHY_PANID, PHYPANId);
+	PUTLE16(PHY_TX_SHORTADD, PHYTxShortAddress);
+	PUTLE16(PHY_RX_SHORTADD, PHYRxShortAddress);
 	memcpy(PHYTxLongAddress, (uint8_t[])PHY_TX_LONGADD, 8);
 	memcpy(PHYRxLongAddress, (uint8_t[])PHY_RX_LONGADD, 8);
 } // End of PHYTestMACAddInit()
@@ -212,8 +212,8 @@ uint8_t PHY_TXPKT_MAC_request(struct MAC_Message *msg, struct ca821x_dev *pDevic
 	}
 
 	DstFAdd.AddressMode = MAC_MODE_SHORT_ADDR;
-	PUTLE16(PHYPANId, DstFAdd.PANId);
-	PUTLE16(PHYRxShortAddress, DstFAdd.Address);
+	memcpy(DstFAdd.PANId, PHYPANId, sizeof(PHYPANId));
+	memcpy(DstFAdd.Address, PHYRxShortAddress, sizeof(PHYRxShortAddress));
 
 	/* convert TDME to MLME */
 #if CASCODA_CA_VER >= 8212

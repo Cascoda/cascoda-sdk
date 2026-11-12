@@ -40,6 +40,9 @@
 #include "cascoda-bm/cascoda_bm.h"
 #include "ca821x_api.h"
 
+#include "M2351.h"
+#include "sys.h"
+
 #ifndef CASCODA_EVBME_H
 #define CASCODA_EVBME_H
 
@@ -63,6 +66,16 @@ enum powerdown_mode
 	PDM_DPD          = 5, //!< No CAX Retention or MCU Retention (Data saved in NVM)
 	PDM_DPD_MCU_ONLY = 6, //!< No CAX Retention or MCU Retention (Data saved in NVM)
 };
+
+/** Definitions for Wakeup after Powerdown */
+enum wakeup_mode
+{
+	WUP_WAKEUP_ALL     = 0, //!< restart micro and CAX
+	WUP_KEEP_RADIO_OFF = 1, //!< keep CAX off when waking up
+};
+
+/* CAX wakeup check time in [ms] */
+#define CAX_WAKEUP_TIME 100
 
 /******************************************************************************/
 /****** Global Parameters that can by set via EVBME_SET_request          ******/
@@ -124,6 +137,12 @@ void cascoda_io_handler(struct ca821x_dev *pDeviceRef);
 /***************************************************************************/ /**
  * \brief re-initialises CA821x / MAC PIB after powerdown. The function pointer
  *        should be populated at the top level
+ *
+ * WARNING: This function will not be called on Wakeup if the device wakes up
+ *          without CA821x radio (when keep_radio_off_on_wakeup is set to
+ *          WUP_KEEP_RADIO_OFF in function EVBME_PowerDown()).
+ *          So this function should only be used to re-initialise the CA821X
+ *          (802.15.4 PIB parameters etc.), and not the application level.
  *******************************************************************************
  ******************************************************************************/
 extern int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
@@ -134,6 +153,7 @@ extern int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
 *******************************************************************************
 * \param mode - Power-Down Mode
 * \param sleeptime_ms - milliseconds to sleep for
+* \param keep_radio_off_on_wakeup - keep radio in power-down mode when waking up
 * \param pDeviceRef - Pointer to initialised ca821x_device_ref struct
 *******************************************************************************
 * Power-Down Modes
@@ -149,7 +169,15 @@ extern int (*cascoda_reinitialise)(struct ca821x_dev *pDeviceRef);
 * PDM_DPD_MCU_ONLY  | Deep-Power-Down | Power-Down 0     | No CAX Retention or MCU Retention (Data saved in NVM). MCU-Wakeup only
 *******************************************************************************
 ******************************************************************************/
-void EVBME_PowerDown(enum powerdown_mode mode, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+ca_error EVBME_PowerDown(enum powerdown_mode mode, enum wakeup_mode keep_radio_off_on_wakeup, u32_t sleeptime_ms, struct ca821x_dev *pDeviceRef);
+
+/******************************************************************************/
+/***************************************************************************/ /**
+ * \brief Powers Up CA821x if it is sleeping
+ *        to be used for PDM_POWERDOWN or PDM_STANDBY only
+ *******************************************************************************
+ ******************************************************************************/
+ca_error EVBME_PowerUpRadio(struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**
@@ -168,7 +196,7 @@ void EVBME_SwitchClock(struct ca821x_dev *pDeviceRef, u8_t useExternalClock);
  * Resets and re-initialises CAX
  *******************************************************************************
  ******************************************************************************/
-void EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
+ca_error EVBME_CAX_Restart(struct ca821x_dev *pDeviceRef);
 
 /******************************************************************************/
 /***************************************************************************/ /**

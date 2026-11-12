@@ -3,7 +3,8 @@
  * @version  V1.00
  * @brief    PDMA register definition header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __PDMA_REG_H__
 #define __PDMA_REG_H__
@@ -81,7 +82,7 @@ typedef struct
      * |        |          |0 = Stride transfer mode Disabled.
      * |        |          |1 = Stride transfer mode Enabled.
      * |[31:16] |TXCNT     |Transfer Count
-     * |        |          |The TXCNT represents the required number of PDMA transfer, the real transfer count is (TXCNT + 1); The maximum transfer count is 16384 , every transfer may be byte, half-word or word that is dependent on TXWIDTH field.
+     * |        |          |The TXCNT represents the required number of PDMA transfer, the real transfer count is (TXCNT + 1); The maximum transfer count is 65536, every transfer may be byte, half-word or word that is dependent on TXWIDTH field.
      * |        |          |Note: When PDMA finish each transfer data, this field will be decrease immediately.
      * @var DSCT_T::SA
      * Offset: 0x04/0x14/0x24/0x34/0x44/0x54/0x64/0x74  Source Address Register of PDMA Channel 0~7

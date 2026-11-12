@@ -1216,7 +1216,7 @@ int main(int argc, char *argv[])
 	}
 
 	fprintf(stderr, "Initialising ca821x_api.\n");
-	while (ca821x_util_init(pDeviceRef, NULL, sniffer_arg))
+	while (ca821x_util_init(pDeviceRef, NULL, sniffer_arg, false))
 	{
 		sleep(1); //Wait while there isn't a device available to connect
 		fprintf(stderr, ".");

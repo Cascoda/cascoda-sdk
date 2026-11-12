@@ -103,7 +103,9 @@ int _write(int file, char *ptr, int len)
 
 	(void)file;
 
+#ifndef CASCODA_SPI_BUF_TRACKING
 	assert(!BSP_IsInsideInterrupt());
+#endif
 
 	CA_OS_LockAPI();
 	for (i = 0; i < len; i++)

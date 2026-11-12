@@ -49,6 +49,7 @@ extern "C" {
 #define MAX_HWME_ATTRIBUTE_SIZE 16
 #define MAX_TDME_ATTRIBUTE_SIZE 2
 
+#define MAX_TXPOWER      8 //!< Channel 11-25 Transmit Power with 1.75 dBi Antenna Gain
 #define MAX_TXPOWER_CH26 4 //!< Channel 26 Transmit Power limited to +4 dBm
 
 /** HWME Status Codes */
@@ -111,6 +112,13 @@ enum rcosc_tracking_mode
 	HWME_RCOSC_TRMD_GUARDR = 0x02, //!< Tracking with guard band, but delta values reset when neutral
 	HWME_RCOSC_TRMD_INST   = 0x03, //!< Instantaneous tracking
 };
+
+/** Potential values of HWME_CSMACAMODE */
+enum csmaca_mode
+{
+	HWME_CSMACAMODE_OFF = 0x00, //!< CSMA-CA disabled
+	HWME_CSMACAMODE_ON  = 0x01, //!< CSMA-CA enabled
+};
 #endif // CASCODA_CA_VER >= 8212
 
 /** HWME Attribute IDs */
@@ -145,7 +153,8 @@ enum hwme_attribute
 	HWME_DCDCMODE             = 0x18, //!< DC/DC Buck converter mode
 	HWME_RCOSCTRMODE          = 0x19, //!< 32KHz RC oscillator frequency tracking mode
 	HWME_LOTXCALVALUES        = 0x1A, //!< Local Oscillator Transmit Calibration Values
-	HWME_LOTXCALOVERWRITEMODE = 0x1B  //!< LOTXCAL Overwrite mode (0: Read mode, 1: Overwrite mode)
+	HWME_LOTXCALOVERWRITEMODE = 0x1B, //!< LOTXCAL Overwrite mode (0: Read mode, 1: Overwrite mode)
+    HWME_CSMACAMODE           = 0x1C  //!< CSMA-CA mode (0: CSMA-CA disabled, 1: CSMA-CA enabled)
 #else
 	HWME_IMAGINARYINDIRECT = 0x17, //!< 0=Normal Indirect behaviour, 1=Imaginary mode, don't send indirect frames
 #endif // CASCODA_CA_VER >= 8212

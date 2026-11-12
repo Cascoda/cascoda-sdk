@@ -136,7 +136,10 @@ uint32_t utilsFlashWrite(struct ca821x_dev *aInstance, uint32_t aAddress, const 
  *
  * The flash address starts from 0, and this function maps the input address to the physical address of flash for reading.
  * 0 is always mapped to the beginning of one flash page.
- * The input address should never be mapped to the firmware space or any other protected flash space.
+ * 
+ * For performance reasons, the validity of input addresses is never checked. The input address should never be mapped 
+ * to the firmware space or any other protected flash space.
+ *
  *
  * @param[in] aInstance API instance to initialize/whose storage to access. Unused on baremetal.
  * @param[in]   aAddress  The start address of the flash to read.

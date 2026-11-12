@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    Smartcard UART mode (SCUART) driver source file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -70,42 +71,35 @@ static uint32_t SCUART_GetClock(SC_T *sc)
     }
     else
     {
-        u32Clk = 0UL;
+        return 0UL;
     }
 
-    if(u32Clk == 0UL)
+    /* Get smartcard module clock */
+    if(u32ClkSrc == 0UL)
     {
-        ; /* Invalid sc port */
+        u32Clk = __HXT;
     }
-    else
+    else if(u32ClkSrc == 1UL)
     {
-        /* Get smartcard module clock */
-        if(u32ClkSrc == 0UL)
+        u32Clk = CLK_GetPLLClockFreq();
+    }
+    else if(u32ClkSrc == 2UL)
+    {
+        if(u32Num == 1UL)
         {
-            u32Clk = __HXT;
-        }
-        else if(u32ClkSrc == 1UL)
-        {
-            u32Clk = CLK_GetPLLClockFreq();
-        }
-        else if(u32ClkSrc == 2UL)
-        {
-            if(u32Num == 1UL)
-            {
-                u32Clk = CLK_GetPCLK1Freq();
-            }
-            else
-            {
-                u32Clk = CLK_GetPCLK0Freq();
-            }
+            u32Clk = CLK_GetPCLK1Freq();
         }
         else
         {
-            u32Clk = __HIRC;
+            u32Clk = CLK_GetPCLK0Freq();
         }
-
-        u32Clk /= (u32Div + 1UL);
     }
+    else
+    {
+        u32Clk = __HIRC;
+    }
+
+    u32Clk /= (u32Div + 1UL);
 
     return u32Clk;
 }
@@ -245,26 +239,29 @@ void SCUART_SetTimeoutCnt(SC_T* sc, uint32_t u32TOC)
   * @param[in]  pu8TxBuf        The buffer containing data to send to transmit FIFO.
   * @param[in]  u32WriteBytes   Number of data to send.
   *
-  * @return     None
+  * @return     Actual number of data put into SCUART Tx FIFO
   *
   * @details    This function is used to write data into Tx FIFO to send data out.
-  *
-  * @note       This function blocks until all data write into FIFO.
   */
-void SCUART_Write(SC_T* sc, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
+uint32_t SCUART_Write(SC_T* sc, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 {
     uint32_t u32Count;
+    /* Baudrate * (start bit + 8-bit data + 1-bit parity + 2-bit stop) */
+    uint32_t u32Delay = (SystemCoreClock / SCUART_GetClock(sc)) * sc->ETUCTL * 12, i;
 
     for(u32Count = 0UL; u32Count != u32WriteBytes; u32Count++)
     {
+        i = 0;
         /* Wait 'til FIFO not full */
         while(SCUART_GET_TX_FULL(sc))
         {
-            ;
+            /* Block longer than expected. Maybe some interrupt disable SCUART clock. */
+            if(i++ > u32Delay) return u32Count;
         }
         /* Write 1 byte to FIFO */
-        sc->DAT = pu8TxBuf[u32Count];  /* Write 1 byte to FIFO */
+        sc->DAT = pu8TxBuf[u32Count];
     }
+    return u32Count;
 }
 
 
@@ -274,4 +271,4 @@ void SCUART_Write(SC_T* sc, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

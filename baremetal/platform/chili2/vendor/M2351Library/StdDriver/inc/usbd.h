@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series USBD driver header file
  *
- * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __USBD_H__
 #define __USBD_H__
@@ -27,6 +28,7 @@ extern "C"
 /** @addtogroup USBD_EXPORTED_STRUCTS USBD Exported Structs
   @{
 */
+
 typedef struct s_usbd_info
 {
     uint8_t *gu8DevDesc;            /*!< Pointer for USB Device Descriptor          */
@@ -44,11 +46,10 @@ extern const S_USBD_INFO_T gsInfo;
 /*@}*/ /* end of group USBD_EXPORTED_STRUCTS */
 
 
-
-
 /** @addtogroup USBD_EXPORTED_CONSTANTS USBD Exported Constants
   @{
 */
+
 #define USBD_BUF_BASE      (uint32_t)(((__PC() & NS_OFFSET) == NS_OFFSET)? (USBD_BASE+NS_OFFSET+0x100UL):(USBD_BASE+0x100UL))  /*!< USBD buffer base address */
 #define USBD_MAX_EP        12UL  /*!< Total EP number */
 
@@ -171,8 +172,8 @@ extern const S_USBD_INFO_T gsInfo;
 #define USBD_STATE_SUSPEND      USBD_ATTR_SUSPEND_Msk       /*!< USB Bus Suspend */
 #define USBD_STATE_RESUME       USBD_ATTR_RESUME_Msk        /*!< USB Bus Resume */
 #define USBD_STATE_TIMEOUT      USBD_ATTR_TOUT_Msk          /*!< USB Bus Timeout */
-#define USBD_STATE_L1SUSPEND    USBD_ATTR_L1SUSPEND_Msk     /*!< USB Bus L1SUSPEND  */
-#define USBD_STATE_L1RESUME     USBD_ATTR_L1RESUME_Msk      /*!< USB Bus L1RESUME   */
+#define USBD_STATE_L1SUSPEND    USBD_ATTR_L1SUSPEND_Msk     /*!< USB Bus L1SUSPEND */
+#define USBD_STATE_L1RESUME     USBD_ATTR_L1RESUME_Msk      /*!< USB Bus L1RESUME */
 
 #define USBD_CFGP_SSTALL        USBD_CFGP_SSTALL_Msk        /*!< Set Stall */
 #define USBD_CFG_CSTALL         USBD_CFG_CSTALL_Msk         /*!< Clear Stall */
@@ -181,7 +182,6 @@ extern const S_USBD_INFO_T gsInfo;
 #define USBD_CFG_EPMODE_OUT     (1UL << USBD_CFG_STATE_Pos)/*!< Out Endpoint */
 #define USBD_CFG_EPMODE_IN      (2UL << USBD_CFG_STATE_Pos)/*!< In Endpoint */
 #define USBD_CFG_TYPE_ISO       (1UL << USBD_CFG_ISOCH_Pos)/*!< Isochronous */
-
 
 /*@}*/ /* end of group USBD_EXPORTED_CONSTANTS */
 
@@ -202,7 +202,6 @@ extern const S_USBD_INFO_T gsInfo;
   */
 #define USBD_Maximum(a,b)        ((a)>(b) ? (a) : (b))
 
-
 /**
   * @brief      Compare two input numbers and return minimum one
   *
@@ -215,7 +214,6 @@ extern const S_USBD_INFO_T gsInfo;
   */
 #define USBD_Minimum(a,b)        ((a)<(b) ? (a) : (b))
 
-
 /**
   * @brief    Enable USB
   *
@@ -226,7 +224,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  To set USB ATTR control register to enable USB and PHY.
   *
   */
-#define USBD_ENABLE_USB()           ((uint32_t)(USBD->ATTR |= 0x7D0))
+#define USBD_ENABLE_USB()           (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->ATTR |= 0x7D0)):((uint32_t)(USBD->ATTR |= 0x7D0)))
 
 /**
   * @brief    Disable USB
@@ -238,7 +236,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  To set USB ATTR control register to disable USB.
   *
   */
-#define USBD_DISABLE_USB()          ((uint32_t)(USBD->ATTR &= ~USBD_USB_EN))
+#define USBD_DISABLE_USB()          (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->ATTR &= ~USBD_USB_EN)):((uint32_t)(USBD->ATTR &= ~USBD_USB_EN)))
 
 /**
   * @brief    Enable USB PHY
@@ -250,7 +248,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  To set USB ATTR control register to enable USB PHY.
   *
   */
-#define USBD_ENABLE_PHY()           ((uint32_t)(USBD->ATTR |= USBD_PHY_EN))
+#define USBD_ENABLE_PHY()           (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->ATTR |= USBD_PHY_EN)):((uint32_t)(USBD->ATTR |= USBD_PHY_EN)))
 
 /**
   * @brief    Disable USB PHY
@@ -262,7 +260,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  To set USB ATTR control register to disable USB PHY.
   *
   */
-#define USBD_DISABLE_PHY()          ((uint32_t)(USBD->ATTR &= ~USBD_PHY_EN))
+#define USBD_DISABLE_PHY()          (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->ATTR &= ~USBD_PHY_EN)):((uint32_t)(USBD->ATTR &= ~USBD_PHY_EN)))
 
 /**
   * @brief    Enable SE0. Force USB PHY transceiver to drive SE0.
@@ -274,7 +272,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Set DRVSE0 bit of USB_DRVSE0 register to enable software-disconnect function. Force USB PHY transceiver to drive SE0 to bus.
   *
   */
-#define USBD_SET_SE0()              ((uint32_t)(USBD->SE0 |= USBD_DRVSE0))
+#define USBD_SET_SE0()              (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->SE0 |= USBD_DRVSE0)):((uint32_t)(USBD->SE0 |= USBD_DRVSE0)))
 
 /**
   * @brief    Disable SE0
@@ -286,7 +284,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Clear DRVSE0 bit of USB_DRVSE0 register to disable software-disconnect function.
   *
   */
-#define USBD_CLR_SE0()              ((uint32_t)(USBD->SE0 &= ~USBD_DRVSE0))
+#define USBD_CLR_SE0()              (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->SE0 &= ~USBD_DRVSE0)):((uint32_t)(USBD->SE0 &= ~USBD_DRVSE0)))
 
 /**
   * @brief       Set USB device address
@@ -298,7 +296,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details     Write USB device address to USB_FADDR register.
   *
   */
-#define USBD_SET_ADDR(addr)         (USBD->FADDR = (addr))
+#define USBD_SET_ADDR(addr)         (((__PC() & NS_OFFSET) == NS_OFFSET)? (USBD_NS->FADDR = (addr)):(USBD->FADDR = (addr)))
 
 /**
   * @brief    Get USB device address
@@ -310,7 +308,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Read USB_FADDR register to get USB device address.
   *
   */
-#define USBD_GET_ADDR()             ((uint32_t)(USBD->FADDR))
+#define USBD_GET_ADDR()             (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->FADDR)):((uint32_t)(USBD->FADDR)))
 
 /**
   * @brief      Enable USB interrupt function
@@ -325,7 +323,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    Enable USB related interrupt functions specified by intr parameter.
   *
   */
-#define USBD_ENABLE_INT(intr)       (USBD->INTEN |= (intr))
+#define USBD_ENABLE_INT(intr)       (((__PC() & NS_OFFSET) == NS_OFFSET)? (USBD_NS->INTEN |= (intr)):(USBD->INTEN |= (intr)))
 
 /**
   * @brief    Get interrupt status
@@ -337,7 +335,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Return all interrupt flags of USB_INTSTS register.
   *
   */
-#define USBD_GET_INT_FLAG()         ((uint32_t)(USBD->INTSTS))
+#define USBD_GET_INT_FLAG()         (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->INTSTS)):((uint32_t)(USBD->INTSTS)))
 
 /**
   * @brief      Clear USB interrupt flag
@@ -352,7 +350,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    Clear USB related interrupt flags specified by flag parameter.
   *
   */
-#define USBD_CLR_INT_FLAG(flag)     (USBD->INTSTS = (flag))
+#define USBD_CLR_INT_FLAG(flag)     (((__PC() & NS_OFFSET) == NS_OFFSET)? (USBD_NS->INTSTS = (flag)):(USBD->INTSTS = (flag)))
 
 /**
   * @brief    Get endpoint status
@@ -364,7 +362,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Return all endpoint status.
   *
   */
-#define USBD_GET_EP_FLAG()          ((uint32_t)(USBD->EPSTS))
+#define USBD_GET_EP_FLAG()          (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->EPSTS)):((uint32_t)(USBD->EPSTS)))
 
 /**
   * @brief    Get USB bus state
@@ -382,7 +380,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Return USB_ATTR[13:12] and USB_ATTR[3:0] for USB bus events.
   *
   */
-#define USBD_GET_BUS_STATE()        ((uint32_t)(USBD->ATTR & 0x300F))
+#define USBD_GET_BUS_STATE()        (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->ATTR & 0x300F)):((uint32_t)(USBD->ATTR & 0x300F)))
 
 /**
   * @brief    Check cable connection state
@@ -395,7 +393,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details  Check the connection state by FLDET bit of USB_FLDET register.
   *
   */
-#define USBD_IS_ATTACHED()          ((uint32_t)(USBD->VBUSDET & USBD_VBUSDET_VBUSDET_Msk))
+#define USBD_IS_ATTACHED()          (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)(USBD_NS->VBUSDET & USBD_VBUSDET_VBUSDET_Msk)):((uint32_t)(USBD->VBUSDET & USBD_VBUSDET_VBUSDET_Msk)))
 
 /**
   * @brief      Stop USB transaction of the specified endpoint ID
@@ -407,7 +405,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    Write 1 to CLRRDY bit of USB_CFGPx register to stop USB transaction of the specified endpoint ID.
   *
   */
-#define USBD_STOP_TRANSACTION(ep)      (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_CLRRDY_Msk)
+#define USBD_STOP_TRANSACTION(ep)      (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_CLRRDY_Msk):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_CLRRDY_Msk))
 
 /**
   * @brief      Set USB DATA1 PID for the specified endpoint ID
@@ -420,7 +418,7 @@ extern const S_USBD_INFO_T gsInfo;
   *             Base on this setting, hardware will toggle PID between DATA0 and DATA1 automatically for IN token transactions.
   *
   */
-#define USBD_SET_DATA1(ep)          (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) |= USBD_CFG_DSQSYNC_Msk)
+#define USBD_SET_DATA1(ep)          (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFG + (uint32_t)((ep) << 4))) |= USBD_CFG_DSQSYNC_Msk):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) |= USBD_CFG_DSQSYNC_Msk))
 
 /**
   * @brief      Set USB DATA0 PID for the specified endpoint ID
@@ -433,7 +431,7 @@ extern const S_USBD_INFO_T gsInfo;
   *             Base on this setting, hardware will toggle PID between DATA0 and DATA1 automatically for IN token transactions.
   *
   */
-#define USBD_SET_DATA0(ep)          (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) &= (~USBD_CFG_DSQSYNC_Msk))
+#define USBD_SET_DATA0(ep)          (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFG + (uint32_t)((ep) << 4))) &= (~USBD_CFG_DSQSYNC_Msk)):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) &= (~USBD_CFG_DSQSYNC_Msk)))
 
 /**
   * @brief      Set USB payload size (IN data)
@@ -447,7 +445,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    This macro will write the transfer length to USB_MXPLDx register for IN data transaction.
   *
   */
-#define USBD_SET_PAYLOAD_LEN(ep, size)  (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].MXPLD + (uint32_t)((ep) << 4))) = (size))
+#define USBD_SET_PAYLOAD_LEN(ep, size)  (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].MXPLD + (uint32_t)((ep) << 4))) = (size)):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].MXPLD + (uint32_t)((ep) << 4))) = (size)))
 
 /**
   * @brief      Get USB payload size (OUT data)
@@ -459,7 +457,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    Get the data length of OUT data transaction by reading USB_MXPLDx register.
   *
   */
-#define USBD_GET_PAYLOAD_LEN(ep)        ((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].MXPLD + (uint32_t)((ep) << 4))))
+#define USBD_GET_PAYLOAD_LEN(ep)        (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].MXPLD + (uint32_t)((ep) << 4)))):((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].MXPLD + (uint32_t)((ep) << 4)))))
 
 /**
   * @brief      Configure endpoint
@@ -473,7 +471,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    This macro will write config parameter to USB_CFGx register of specified endpoint ID.
   *
   */
-#define USBD_CONFIG_EP(ep, config)      (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) = (config))
+#define USBD_CONFIG_EP(ep, config)      (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFG + (uint32_t)((ep) << 4))) = (config)):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFG + (uint32_t)((ep) << 4))) = (config)))
 
 /**
   * @brief      Set USB endpoint buffer
@@ -487,7 +485,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    This macro will set the SRAM offset for the specified endpoint ID.
   *
   */
-#define USBD_SET_EP_BUF_ADDR(ep, offset)    (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4))) = (offset))
+#define USBD_SET_EP_BUF_ADDR(ep, offset)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].BUFSEG + (uint32_t)((ep) << 4))) = (offset)):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4))) = (offset)))
 
 /**
   * @brief      Get the offset of the specified USB endpoint buffer
@@ -499,7 +497,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    This macro will return the SRAM offset of the specified endpoint ID.
   *
   */
-#define USBD_GET_EP_BUF_ADDR(ep)        ((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4))))
+#define USBD_GET_EP_BUF_ADDR(ep)        (((__PC() & NS_OFFSET) == NS_OFFSET)? ((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].BUFSEG + (uint32_t)((ep) << 4)))):((uint32_t)*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].BUFSEG + (uint32_t)((ep) << 4)))))
 
 /**
   * @brief       Set USB endpoint stall state
@@ -511,7 +509,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details     Set USB endpoint stall state for the specified endpoint ID. Endpoint will respond STALL token automatically.
   *
   */
-#define USBD_SET_EP_STALL(ep)        (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_SSTALL_Msk)
+#define USBD_SET_EP_STALL(ep)        (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_SSTALL_Msk):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) |= USBD_CFGP_SSTALL_Msk))
 
 /**
   * @brief       Clear USB endpoint stall state
@@ -521,8 +519,9 @@ extern const S_USBD_INFO_T gsInfo;
   * @return      None
   *
   * @details     Clear USB endpoint stall state for the specified endpoint ID. Endpoint will respond ACK/NAK token.
+  *
   */
-#define USBD_CLR_EP_STALL(ep)        (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) &= ~USBD_CFGP_SSTALL_Msk)
+#define USBD_CLR_EP_STALL(ep)        (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFGP + (uint32_t)((ep) << 4))) &= ~USBD_CFGP_SSTALL_Msk):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) &= ~USBD_CFGP_SSTALL_Msk))
 
 /**
   * @brief       Get USB endpoint stall state
@@ -535,7 +534,7 @@ extern const S_USBD_INFO_T gsInfo;
   * @details     Get USB endpoint stall state of the specified endpoint ID.
   *
   */
-#define USBD_GET_EP_STALL(ep)        (*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) & USBD_CFGP_SSTALL_Msk)
+#define USBD_GET_EP_STALL(ep)        (((__PC() & NS_OFFSET) == NS_OFFSET)? (*((__IO uint32_t *) ((uint32_t)&USBD_NS->EP[0].CFGP + (uint32_t)((ep) << 4))) & USBD_CFGP_SSTALL_Msk):(*((__IO uint32_t *) ((uint32_t)&USBD->EP[0].CFGP + (uint32_t)((ep) << 4))) & USBD_CFGP_SSTALL_Msk))
 
 /**
   * @brief      To support byte access between USB SRAM and system SRAM
@@ -562,7 +561,6 @@ __STATIC_INLINE void USBD_MemCopy(uint8_t dest[], uint8_t src[], uint32_t size)
     }
 }
 
-
 /**
   * @brief       Set USB endpoint stall state
   *
@@ -578,15 +576,25 @@ __STATIC_INLINE void USBD_SetStall(uint8_t epnum)
     uint32_t u32CfgAddr;
     uint32_t u32Cfg;
     uint32_t i;
+    USBD_T *pUSBD;
+
+    if((__PC() & NS_OFFSET) == NS_OFFSET)
+    {
+        pUSBD = USBD_NS;
+    }
+    else
+    {
+        pUSBD = USBD;
+    }
 
     for(i = 0UL; i < USBD_MAX_EP; i++)
     {
-        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFG; /* USBD_CFG0 */
+        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFG; /* USBD_CFG0 */
         u32Cfg = *((__IO uint32_t *)(u32CfgAddr));
 
         if((u32Cfg & 0xFUL) == epnum)
         {
-            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFGP; /* USBD_CFGP0 */
+            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFGP; /* USBD_CFGP0 */
             u32Cfg = *((__IO uint32_t *)(u32CfgAddr));
 
             *((__IO uint32_t *)(u32CfgAddr)) = (u32Cfg | USBD_CFGP_SSTALL);
@@ -609,15 +617,25 @@ __STATIC_INLINE void USBD_ClearStall(uint8_t epnum)
     uint32_t u32CfgAddr;
     uint32_t u32Cfg;
     uint32_t i;
+    USBD_T *pUSBD;
+
+    if((__PC() & NS_OFFSET) == NS_OFFSET)
+    {
+        pUSBD = USBD_NS;
+    }
+    else
+    {
+        pUSBD = USBD;
+    }
 
     for(i = 0UL; i < USBD_MAX_EP; i++)
     {
-        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFG; /* USBD_CFG0 */
+        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFG; /* USBD_CFG0 */
         u32Cfg = *((__IO uint32_t *)(u32CfgAddr));
 
         if((u32Cfg & 0xFUL) == epnum)
         {
-            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFGP; /* USBD_CFGP0 */
+            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFGP; /* USBD_CFGP0 */
             u32Cfg = *((__IO uint32_t *)(u32CfgAddr));
 
             *((__IO uint32_t *)(u32CfgAddr)) = (u32Cfg & ~USBD_CFGP_SSTALL);
@@ -639,18 +657,28 @@ __STATIC_INLINE void USBD_ClearStall(uint8_t epnum)
   */
 __STATIC_INLINE uint32_t USBD_GetStall(uint8_t epnum)
 {
-    uint32_t u32CfgAddr;
+    uint32_t u32CfgAddr = 0UL;
     uint32_t u32Cfg;
     uint32_t i;
+    USBD_T *pUSBD;
+
+    if((__PC() & NS_OFFSET) == NS_OFFSET)
+    {
+        pUSBD = USBD_NS;
+    }
+    else
+    {
+        pUSBD = USBD;
+    }
 
     for(i = 0UL; i < USBD_MAX_EP; i++)
     {
-        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFG; /* USBD_CFG0 */
+        u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFG; /* USBD_CFG0 */
         u32Cfg = *((__IO uint32_t *)(u32CfgAddr));
 
         if((u32Cfg & 0xFUL) == epnum)
         {
-            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&USBD->EP[0].CFGP; /* USBD_CFGP0 */
+            u32CfgAddr = (uint32_t)(i << 4) + (uint32_t)&pUSBD->EP[0].CFGP; /* USBD_CFGP0 */
             break;
         }
     }
@@ -658,20 +686,28 @@ __STATIC_INLINE uint32_t USBD_GetStall(uint8_t epnum)
     return ((*((__IO uint32_t *)(u32CfgAddr))) & USBD_CFGP_SSTALL);
 }
 
+extern uint8_t g_USBD_au8SetupPacket[8];
 extern volatile uint8_t g_USBD_u8RemoteWakeupEn;
-
 
 typedef void (*VENDOR_REQ)(void);           /*!< Functional pointer type definition for Vendor class */
 typedef void (*CLASS_REQ)(void);            /*!< Functional pointer type declaration for USB class request callback handler */
 typedef void (*SET_INTERFACE_REQ)(uint32_t u32AltInterface);    /*!< Functional pointer type declaration for USB set interface request callback handler */
 typedef void (*SET_CONFIG_CB)(void);       /*!< Functional pointer type declaration for USB set configuration request callback handler */
 
+extern const S_USBD_INFO_T *g_USBD_sInfo;
+
+extern VENDOR_REQ g_USBD_pfnVendorRequest;
+extern CLASS_REQ g_USBD_pfnClassRequest;
+extern SET_INTERFACE_REQ g_USBD_pfnSetInterface;
+extern SET_CONFIG_CB g_USBD_pfnSetConfigCallback;
+extern uint32_t g_USBD_u32EpStallLock;
 
 /*--------------------------------------------------------------------*/
 void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq, SET_INTERFACE_REQ pfnSetInterface);
 void USBD_Start(void);
 void USBD_GetSetupPacket(uint8_t *buf);
 void USBD_ProcessSetupPacket(void);
+void USBD_GetDescriptor(void);
 void USBD_StandardRequest(void);
 void USBD_PrepareCtrlIn(uint8_t pu8Buf[], uint32_t u32Size);
 void USBD_CtrlIn(void);
@@ -681,6 +717,7 @@ void USBD_SwReset(void);
 void USBD_SetVendorRequest(VENDOR_REQ pfnVendorReq);
 void USBD_SetConfigCallback(SET_CONFIG_CB pfnSetConfigCallback);
 void USBD_LockEpStall(uint32_t u32EpBitmap);
+
 
 /*@}*/ /* end of group USBD_EXPORTED_FUNCTIONS */
 
@@ -694,4 +731,4 @@ void USBD_LockEpStall(uint32_t u32EpBitmap);
 
 #endif /* __USBD_H__ */
 
-/*** (C) COPYRIGHT 2018 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2018-2020 Nuvoton Technology Corp. ***/

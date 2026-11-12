@@ -4,8 +4,9 @@
  * @brief    Debug Port and Semihost Setting Source File
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
 
@@ -57,13 +58,17 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp);
 
 #endif 
 
+#pragma pack(push)
+#pragma pack(1)
 typedef struct {
     char *name;
     uint32_t u32Addr;
     uint8_t u8NSIdx;
 } IP_T;
+#pragma pack(pop)
 
-IP_T ip_tbl[] = {
+#ifndef DEBUG_ENABLE_SEMIHOST
+static IP_T s_IpTbl[] = {
 {"SYS",SYS_BASE,0},
 {"CLK",CLK_BASE,0},
 {"INT",INT_BASE,0},
@@ -136,6 +141,7 @@ IP_T ip_tbl[] = {
 {"USCI1",USCI1_BASE, USCI1_Attr},
 {0,USCI1_BASE+4096, 0},
 };
+#endif
 
 int kbhit(void);
 int IsDebugFifoEmpty(void);
@@ -150,9 +156,11 @@ int ferror(FILE *stream);
 char GetChar(void);
 void SendChar_ToUART(int ch);
 void SendChar(int ch);
+int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0);
+void _sys_exit(int return_code)__attribute__((noreturn));
 
-#if defined(DEBUG_ENABLE_SEMIHOST)
-#if (defined(__ARMCC_VERSION) || defined(__ICCARM__))
+#if (defined(DEBUG_ENABLE_SEMIHOST) || defined(OS_USE_SEMIHOSTING))
+#if (defined(__ARMCC_VERSION) || defined(__ICCARM__) || defined(__GNUC__))
 /* The static buffer is used to speed up the semihost */
 static char g_buf[16];
 static char g_buf_len = 0;
@@ -168,7 +176,7 @@ static volatile int32_t g_ICE_Conneced = 1;
 
 uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 {
-    uint32_t *sp;
+    uint32_t *sp = 0;
     uint32_t inst;
 
     /* Check the used stack */
@@ -193,19 +201,22 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
     }
 #endif    
         
-    /* Get the instruction caused the hardfault */
-    inst = M16(sp[6]);
-    
-    
-    if(inst == 0xBEAB)
+    if (sp != 0)
     {
-        /* 
-            If the instruction is 0xBEAB, it means it is caused by BKPT without ICE connected.
-            We still return for output/input message to UART.
-        */
-        g_ICE_Conneced = 0; // Set a flag for ICE offline
-        sp[6] += 2; // return to next instruction
-        return lr;  // Keep lr in R0
+        /* Get the instruction caused the hardfault */
+        inst = M16(sp[6]);
+
+
+        if(inst == 0xBEAB)
+        {
+            /*
+                If the instruction is 0xBEAB, it means it is caused by BKPT without ICE connected.
+                We still return for output/input message to UART.
+            */
+            g_ICE_Conneced = 0; // Set a flag for ICE offline
+            sp[6] += 2; // return to next instruction
+            return lr;  // Keep lr in R0
+        }
     }
     
     /* It is casued by hardfault (Not semihost). Just process the hard fault here. */
@@ -242,6 +253,7 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 
 int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
 {
+    (void)n32In_R1;
     if(g_ICE_Conneced)
     {
         if(pn32Out_R0)
@@ -266,10 +278,10 @@ __attribute__((weak))
 #endif
 uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 {
-    extern void SCU_IRQHandler();
-    uint32_t *sp;
-    int32_t i;
-    uint32_t inst, addr,taddr,tdata;
+    extern void SCU_IRQHandler(void);
+    uint32_t *sp = 0ul;
+    uint32_t i;
+    uint32_t inst, addr,taddr = 0ul,tdata;
     int32_t secure;
     uint32_t rm,rn,rt, imm5, imm8;
     int32_t eFlag;
@@ -277,7 +289,7 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
     int32_t s;
 
     /* Check the used stack */
-    secure = (lr & 0x40ul)?1:0;
+    secure = (lr & 0x40ul)?1ul:0ul;
     if(secure)
     {
         /* Secure stack used */
@@ -296,9 +308,9 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
     {
         /* Non-secure stack used */
         if(lr & 4)
-            sp = (uint32_t *)__TZ_get_PSP_NS();
+            sp = (uint32_t *)(uint32_t)__TZ_get_PSP_NS();
         else
-            sp = (uint32_t *)__TZ_get_MSP_NS();
+            sp = (uint32_t *)(uint32_t)__TZ_get_MSP_NS();
     
     }
 #endif    
@@ -313,18 +325,21 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
         pc  = sp[6]
         psr = sp[7]
     */
-    
+
     printf("!!---------------------------------------------------------------!!\n");
     printf("                       <<< HardFault >>>\n");
     /* Get the instruction caused the hardfault */
-    addr = sp[6];
-    inst = M16(addr);
+    if (sp != 0)
+    {
+        addr = sp[6];
+        inst = M16(addr);
+    }
     eFlag = 0;
     if((!secure) && ((addr & NS_OFFSET) == 0) )
     {
         printf("  Non-secure CPU try to fetch secure code in 0x%x\n", addr);
         printf("  Try to check NSC region or SAU settings.\n");
-        
+
         eFlag = 1;
     }else if(inst == 0xBEAB)
     {
@@ -421,27 +436,27 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
         {
             /* It is happened in Nonsecure code */
             
-            for(i=0;i< sizeof(ip_tbl)-1;i++)
+            for(i=0;i< (uint32_t)(sizeof(s_IpTbl)/sizeof(IP_T)-1);i++)
             {
                 /* Case 1: Nonsecure code try to access secure IP. It also causes SCU violation */
-                if((taddr >= ip_tbl[i].u32Addr) && (taddr < (ip_tbl[i+1].u32Addr)))
+                if((taddr >= s_IpTbl[i].u32Addr) && (taddr < (s_IpTbl[i+1].u32Addr)))
                 {
-                    idx = ip_tbl[i].u8NSIdx;
+                    idx = s_IpTbl[i].u8NSIdx;
                     bit = idx & 0x1f;
                     idx = idx >> 5;
                     s = (SCU->PNSSET[idx] >> bit) & 1ul;
-                    printf("  Illegal access to %s %s in Nonsecure code.\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                    printf("  Illegal access to %s %s in Nonsecure code.\n",(s)?"Nonsecure":"Secure", s_IpTbl[i].name);
                     break;
                 }
                 
                 /* Case 2: Nonsecure code try to access Nonsecure IP but the IP is secure IP */
-                if((taddr >= (ip_tbl[i].u32Addr+NS_OFFSET)) && (taddr < (ip_tbl[i+1].u32Addr+NS_OFFSET)))
+                if((taddr >= (s_IpTbl[i].u32Addr+NS_OFFSET)) && (taddr < (s_IpTbl[i+1].u32Addr+NS_OFFSET)))
                 {
-                    idx = ip_tbl[i].u8NSIdx;
+                    idx = s_IpTbl[i].u8NSIdx;
                     bit = idx & 0x1f;
                     idx = idx >> 5;
                     s = (SCU->PNSSET[idx] >> bit) & 1ul;
-                    printf("  Illegal access to %s %s in Nonsecure code.\nIt may be set as secure IP here.\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                    printf("  Illegal access to %s %s in Nonsecure code.\nIt may be set as secure IP here.\n",(s)?"Nonsecure":"Secure", s_IpTbl[i].name);
                     break;
                 }
             }
@@ -454,15 +469,15 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
             if(taddr > NS_OFFSET)
             {
                 /* Case 3: Secure try to access secure IP through Nonsecure address. It also causes SCU violation */
-                for(i=0;i< sizeof(ip_tbl)-1;i++)
+                for(i=0;i< (uint32_t)(sizeof(s_IpTbl)/sizeof(IP_T)-1);i++)
                 {
-                    if((taddr >= (ip_tbl[i].u32Addr+NS_OFFSET)) && (taddr < (ip_tbl[i+1].u32Addr+NS_OFFSET)))
+                    if((taddr >= (s_IpTbl[i].u32Addr+NS_OFFSET)) && (taddr < (s_IpTbl[i+1].u32Addr+NS_OFFSET)))
                     {
-                        idx = ip_tbl[i].u8NSIdx;
+                        idx = s_IpTbl[i].u8NSIdx;
                         bit = idx & 0x1f;
                         idx = idx >> 5;
                         s = (SCU->PNSSET[idx] >> bit) & 1ul;
-                        printf("  Illegal to use Nonsecure address to access %s %s in Secure code\n",(s)?"Nonsecure":"Secure", ip_tbl[i].name);
+                        printf("  Illegal to use Nonsecure address to access %s %s in Secure code\n",(s)?"Nonsecure":"Secure", s_IpTbl[i].name);
                         break;
                     }
                 }
@@ -485,6 +500,9 @@ uint32_t ProcessHardFault(uint32_t lr, uint32_t msp, uint32_t psp)
 
 int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
 {
+    (void)n32In_R0;
+    (void)n32In_R1;
+    (void)pn32Out_R0;
     return 0;
 }
 
@@ -505,12 +523,12 @@ void SendChar_ToUART(int ch)
 {
 
     while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk){}
-    DEBUG_PORT->DAT = (uint32_t)ch;
     if((char)ch == '\n')
     {
-        while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk){}
         DEBUG_PORT->DAT = '\r';
+        while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk){}
     }
+    DEBUG_PORT->DAT = (uint32_t)ch;
 }
 
 #else
@@ -527,14 +545,6 @@ void SendChar_ToUART(int ch)
     if(ch)
     {
         // Push char
-        i32Tmp = i32Head+1;
-        if(i32Tmp > BUF_SIZE) i32Tmp = 0;
-        if(i32Tmp != i32Tail)
-        {
-            u8Buf[i32Head] = ch;
-            i32Head = i32Tmp;
-        }
-        
         if(ch == '\n')
         {
             i32Tmp = i32Head+1;
@@ -545,22 +555,30 @@ void SendChar_ToUART(int ch)
                 i32Head = i32Tmp;
             }
         }
+
+        i32Tmp = i32Head+1;
+        if(i32Tmp > BUF_SIZE) i32Tmp = 0;
+        if(i32Tmp != i32Tail)
+        {
+            u8Buf[i32Head] = ch;
+            i32Head = i32Tmp;
+        }
     }
     else
     {
         if(i32Tail == i32Head)
             return;
     }
-    
+
     // pop char
     do
     {
         i32Tmp = i32Tail + 1;
         if(i32Tmp > BUF_SIZE) i32Tmp = 0;
-        
-        if((DEBUG_PORT->FSR & UART_FSR_TX_FULL_Msk) == 0)
+
+        if((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) == 0)
         {
-            DEBUG_PORT->DATA = u8Buf[i32Tail];
+            DEBUG_PORT->DAT = u8Buf[i32Tail];
             i32Tail = i32Tmp;
         }
         else
@@ -581,9 +599,9 @@ void SendChar_ToUART(int ch)
 void SendChar(int ch)
 {
 #if defined(DEBUG_ENABLE_SEMIHOST)
-    
-    g_buf[g_buf_len++] = ch;
-    g_buf[g_buf_len] = '\0';
+
+    g_buf[(uint8_t)g_buf_len++] = (char)ch;
+    g_buf[(uint8_t)g_buf_len] = '\0';
     if(g_buf_len + 1 >= sizeof(g_buf) || ch == '\n' || ch == '\0')
     {
         /* Send the char */
@@ -739,6 +757,7 @@ void _ttywrch(int ch)
 
 int fputc(int ch, FILE *stream)
 {
+    (void)stream;
     SendChar(ch);
     return ch;
 }
@@ -754,12 +773,12 @@ int _write (int fd, char *ptr, int len)
     while(i--) {
         while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk);
 
-        DEBUG_PORT->DAT = *ptr++;
-
         if(*ptr == '\n') {
-            while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk);
             DEBUG_PORT->DAT = '\r';
+            while(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk);
         }
+
+        DEBUG_PORT->DAT = *ptr++;
     }
     return len;
 }
@@ -789,6 +808,7 @@ int _read (int fd, char *ptr, int len)
 
 int fgetc(FILE *stream)
 {
+    (void)stream;
     return ((int)GetChar());
 }
 
@@ -809,6 +829,7 @@ int fgetc(FILE *stream)
 
 int ferror(FILE *stream)
 {
+    (void)stream;
     return EOF;
 }
 #endif
@@ -830,7 +851,7 @@ label:
 # else
 void _sys_exit(int return_code)
 {
-
+    (void)return_code;
     /* Check if link with ICE */
     if(SH_DoCommand(0x18, 0x20026, NULL) == 0)
     {
@@ -845,6 +866,6 @@ label:
 
 
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/
 
 

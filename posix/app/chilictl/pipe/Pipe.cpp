@@ -162,8 +162,13 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 #endif
 	while (status == CA_ERROR_SUCCESS)
 	{
-		// Read the command bytes
-		rval = read(STDIN_FILENO, &msg.CommandId, 2);
+		// initialize the bytes on invalid, see below...
+        uint8_t command_bytes[2] = {0xFF,0xFF};
+        //Read the command bytes
+		rval = read(STDIN_FILENO, command_bytes, 2);
+        msg.CommandId = command_bytes[0];
+        msg.Length = command_bytes[1];
+		//rval = read(STDIN_FILENO, &msg.CommandId, 2);
 		if (rval == 0)
 		{
 			// End of file
@@ -174,7 +179,6 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 			status = CA_ERROR_FAIL;
 			break;
 		}
-
 		// Catch invalid length and command
 		if (msg.CommandId == 0xFF || msg.Length == 0xFF)
 		{
@@ -203,7 +207,8 @@ ca_error Pipe::run_pipe(const DeviceInfo &di)
 		if (rsp.CommandId != 0xFF)
 		{
 			std::lock_guard<std::mutex> lg(mIoMutex);
-			rval = write(STDOUT_FILENO, &rsp.CommandId, rsp.Length + 2);
+			//rval = write(STDOUT_FILENO, &rsp.CommandId, rsp.Length + 2);
+			rval = write(STDOUT_FILENO, &rsp, rsp.Length + 2);
 			if (rval < 0)
 			{
 				status = CA_ERROR_FAIL;

@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    Cyclic Redundancy Check(CRC) driver source file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include "NuMicro.h"
 
@@ -54,7 +55,10 @@ void CRC_Open(uint32_t u32Mode, uint32_t u32Attribute, uint32_t u32Seed, uint32_
     }
     else
     {
+        // CASCODA, 25/08/29; Changed CRC to CRC_S (tiniuclx, Aug 15,2019)
+        // pCRC = CRC;
         pCRC = CRC_S;
+        // CASCODA
     }
 
     pCRC->SEED = u32Seed;
@@ -84,7 +88,10 @@ uint32_t CRC_GetChecksum(void)
     }
     else
     {
+        // CASCODA, 25/08/29; Changed CRC to CRC_S (tiniuclx, Aug 15,2019)
+        // pCRC = CRC;
         pCRC = CRC_S;
+        // CASCODA
     }
 
     switch(pCRC->CTL & CRC_CTL_CRCMODE_Msk)
@@ -115,4 +122,4 @@ uint32_t CRC_GetChecksum(void)
 
 /*@}*/ /* end of group Standard_Driver */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

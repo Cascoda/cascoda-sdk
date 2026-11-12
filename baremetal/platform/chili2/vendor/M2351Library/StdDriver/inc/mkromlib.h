@@ -3,7 +3,8 @@
  * @version  V2.00
  * @brief    MaskROM library header file
  *
- * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __MKROM_LIB_H__
 #define __MKROM_LIB_H__
@@ -207,6 +208,8 @@ typedef struct
   * @details    Global USBD data for SecureISP USB
   * @note       This data is internal use in SecureISP operation
   */
+#pragma pack(push)
+#pragma pack(1)
 typedef struct
 {
     uint8_t             g_usbd_SetupPacket[8];  
@@ -232,7 +235,7 @@ typedef struct
     uint32_t            g_u32EpStallLock;              
 
 } BL_USBD_INFO_T;
-
+#pragma pack(pop)
 
 /*@}*/ /* end of group MKROM_EXPORTED_STRUCTS */
 
@@ -1131,4 +1134,4 @@ int32_t BL_USBDStart(void);
 
 #endif  /* __MKROM_LIB_H__ */
 
-/*** (C) COPYRIGHT 2018 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2018-2020 Nuvoton Technology Corp. ***/

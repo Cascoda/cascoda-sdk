@@ -42,7 +42,7 @@ extern "C" {
 #endif
 
 #if !defined(SERIAL_MAC_RX_LEN)
-#define SERIAL_MAC_RX_LEN (254) //!< Maximum serial transfer payload length
+#define SERIAL_MAC_RX_LEN (255) //!< Maximum serial transfer payload length
 #endif
 
 /** Structure of serial transfers */

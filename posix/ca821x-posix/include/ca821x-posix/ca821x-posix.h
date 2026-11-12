@@ -80,7 +80,8 @@ extern "C" {
  */
 ca_error ca821x_util_init(struct ca821x_dev               *pDeviceRef,
                           ca821x_errorhandler              errorHandler,
-                          union ca821x_util_init_extra_arg arg);
+                          union ca821x_util_init_extra_arg arg,
+                          bool exit_on_drop);
 
 /**
  * Generic function to initialise a specific device as found via ca821x_util_enumerate

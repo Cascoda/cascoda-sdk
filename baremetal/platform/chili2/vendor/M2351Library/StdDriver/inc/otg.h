@@ -3,7 +3,8 @@
  * @version  V3.00
  * @brief    M2351 series OTG driver header file
  *
- * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __OTG_H__
 #define __OTG_H__
@@ -61,7 +62,7 @@ extern "C"
   * @return None
   * @details This macro will set OTGEN bit of OTG_CTL register to enable OTG function.
   */
-#define OTG_ENABLE()    (OTG->CTL |= OTG_CTL_OTGEN_Msk)
+#define OTG_ENABLE()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->CTL |= OTG_CTL_OTGEN_Msk):(OTG->CTL |= OTG_CTL_OTGEN_Msk))
 
 /**
   * @brief This macro is used to disable OTG function
@@ -69,7 +70,7 @@ extern "C"
   * @return None
   * @details This macro will clear OTGEN bit of OTG_CTL register to disable OTG function.
   */
-#define OTG_DISABLE()    (OTG->CTL &= ~OTG_CTL_OTGEN_Msk)
+#define OTG_DISABLE()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->CTL &= ~OTG_CTL_OTGEN_Msk):(OTG->CTL &= ~OTG_CTL_OTGEN_Msk))
 
 /**
   * @brief This macro is used to enable USB PHY
@@ -78,7 +79,7 @@ extern "C"
   * @details When the USB role is selected as OTG device, use this macro to enable USB PHY.
   *          This macro will set OTGPHYEN bit of OTG_PHYCTL register to enable USB PHY.
   */
-#define OTG_ENABLE_PHY()    (OTG->PHYCTL |= OTG_PHYCTL_OTGPHYEN_Msk)
+#define OTG_ENABLE_PHY()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL |= OTG_PHYCTL_OTGPHYEN_Msk):(OTG->PHYCTL |= OTG_PHYCTL_OTGPHYEN_Msk))
 
 /**
   * @brief This macro is used to disable USB PHY
@@ -86,7 +87,7 @@ extern "C"
   * @return None
   * @details This macro will clear OTGPHYEN bit of OTG_PHYCTL register to disable USB PHY.
   */
-#define OTG_DISABLE_PHY()    (OTG->PHYCTL &= ~OTG_PHYCTL_OTGPHYEN_Msk)
+#define OTG_DISABLE_PHY()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL &= ~OTG_PHYCTL_OTGPHYEN_Msk):(OTG->PHYCTL &= ~OTG_PHYCTL_OTGPHYEN_Msk))
 
 /**
   * @brief This macro is used to enable ID detection function
@@ -94,7 +95,7 @@ extern "C"
   * @return None
   * @details This macro will set IDDETEN bit of OTG_PHYCTL register to enable ID detection function.
   */
-#define OTG_ENABLE_ID_DETECT()    (OTG->PHYCTL |= OTG_PHYCTL_IDDETEN_Msk)
+#define OTG_ENABLE_ID_DETECT()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL |= OTG_PHYCTL_IDDETEN_Msk):(OTG->PHYCTL |= OTG_PHYCTL_IDDETEN_Msk))
 
 /**
   * @brief This macro is used to disable ID detection function
@@ -102,7 +103,7 @@ extern "C"
   * @return None
   * @details This macro will clear IDDETEN bit of OTG_PHYCTL register to disable ID detection function.
   */
-#define OTG_DISABLE_ID_DETECT()    (OTG->PHYCTL &= ~OTG_PHYCTL_IDDETEN_Msk)
+#define OTG_DISABLE_ID_DETECT()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL &= ~OTG_PHYCTL_IDDETEN_Msk):(OTG->PHYCTL &= ~OTG_PHYCTL_IDDETEN_Msk))
 
 /**
   * @brief This macro is used to enable OTG wake-up function
@@ -110,7 +111,7 @@ extern "C"
   * @return None
   * @details This macro will set WKEN bit of OTG_CTL register to enable OTG wake-up function.
   */
-#define OTG_ENABLE_WAKEUP()    (OTG->CTL |= OTG_CTL_WKEN_Msk)
+#define OTG_ENABLE_WAKEUP()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->CTL |= OTG_CTL_WKEN_Msk):(OTG->CTL |= OTG_CTL_WKEN_Msk))
 
 /**
   * @brief This macro is used to disable OTG wake-up function
@@ -118,7 +119,7 @@ extern "C"
   * @return None
   * @details This macro will clear WKEN bit of OTG_CTL register to disable OTG wake-up function.
   */
-#define OTG_DISABLE_WAKEUP()    (OTG->CTL &= ~OTG_CTL_WKEN_Msk)
+#define OTG_DISABLE_WAKEUP()    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->CTL &= ~OTG_CTL_WKEN_Msk):(OTG->CTL &= ~OTG_CTL_WKEN_Msk))
 
 /**
   * @brief This macro is used to set the polarity of USB_VBUS_EN pin
@@ -128,7 +129,7 @@ extern "C"
   * @return None
   * @details This macro is used to set the polarity of external USB VBUS power switch enable signal.
   */
-#define OTG_SET_VBUS_EN_POL(u32Pol)    (OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBENPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBENPOL_Pos))
+#define OTG_SET_VBUS_EN_POL(u32Pol)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL = (OTG_NS->PHYCTL & (~OTG_PHYCTL_VBENPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBENPOL_Pos)):(OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBENPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBENPOL_Pos)))
 
 /**
   * @brief This macro is used to set the polarity of USB_VBUS_ST pin
@@ -138,7 +139,7 @@ extern "C"
   * @return None
   * @details This macro is used to set the polarity of external USB VBUS power switch status signal.
   */
-#define OTG_SET_VBUS_STS_POL(u32Pol)    (OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBSTSPOL_Pos))
+#define OTG_SET_VBUS_STS_POL(u32Pol)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->PHYCTL = (OTG_NS->PHYCTL & (~OTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBSTSPOL_Pos)):(OTG->PHYCTL = (OTG->PHYCTL & (~OTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol)<<OTG_PHYCTL_VBSTSPOL_Pos)))
 
 /**
   * @brief This macro is used to enable OTG related interrupts
@@ -159,7 +160,7 @@ extern "C"
   * @return None
   * @details This macro will enable OTG related interrupts specified by u32Mask parameter.
   */
-#define OTG_ENABLE_INT(u32Mask)    (OTG->INTEN |= (u32Mask))
+#define OTG_ENABLE_INT(u32Mask)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->INTEN |= (u32Mask)):(OTG->INTEN |= (u32Mask)))
 
 /**
   * @brief This macro is used to disable OTG related interrupts
@@ -180,7 +181,7 @@ extern "C"
   * @return None
   * @details This macro will disable OTG related interrupts specified by u32Mask parameter.
   */
-#define OTG_DISABLE_INT(u32Mask)    (OTG->INTEN &= ~(u32Mask))
+#define OTG_DISABLE_INT(u32Mask)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->INTEN &= ~(u32Mask)):(OTG->INTEN &= ~(u32Mask)))
 
 /**
   * @brief This macro is used to get OTG related interrupt flags
@@ -201,7 +202,7 @@ extern "C"
   * @return Interrupt flags of selected sources.
   * @details This macro will return OTG related interrupt flags specified by u32Mask parameter.
   */
-#define OTG_GET_INT_FLAG(u32Mask)    (OTG->INTSTS & (u32Mask))
+#define OTG_GET_INT_FLAG(u32Mask)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->INTSTS & (u32Mask)):(OTG->INTSTS & (u32Mask)))
 
 /**
   * @brief This macro is used to clear OTG related interrupt flags
@@ -222,7 +223,7 @@ extern "C"
   * @return None
   * @details This macro will clear OTG related interrupt flags specified by u32Mask parameter.
   */
-#define OTG_CLR_INT_FLAG(u32Mask)    (OTG->INTSTS = (u32Mask))
+#define OTG_CLR_INT_FLAG(u32Mask)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->INTSTS = (u32Mask)):(OTG->INTSTS = (u32Mask)))
 
 /**
   * @brief This macro is used to get OTG related status
@@ -236,7 +237,7 @@ extern "C"
   * @return The user specified status.
   * @details This macro will return OTG related status specified by u32Mask parameter.
   */
-#define OTG_GET_STATUS(u32Mask)    (OTG->STATUS & (u32Mask))
+#define OTG_GET_STATUS(u32Mask)    (((__PC() & NS_OFFSET) == NS_OFFSET)? (OTG_NS->STATUS & (u32Mask)):(OTG->STATUS & (u32Mask)))
 
 
 
@@ -253,4 +254,4 @@ extern "C"
 
 #endif /* __OTG_H__ */
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

@@ -6,8 +6,9 @@
  * @brief    M2351 series USCI I2C(UI2C) driver header file
  *
  * @note
- * Copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
  *
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __USCI_I2C_H__
 #define __USCI_I2C_H__
@@ -91,8 +92,17 @@ enum UI2C_SLAVE_EVENT
 #define UI2C_ERR_INT_MASK          (0x020U)    /*!< Error interrupt mask */
 #define UI2C_ACK_INT_MASK          (0x040U)    /*!< Acknowledge interrupt mask */
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* USCI_I2C Define Error Code                                                                              */
+/*---------------------------------------------------------------------------------------------------------*/
+#define UI2C_TIMEOUT               SystemCoreClock  /*!< UI2C time-out counter (1 second time-out) \hideinitializer */
+#define UI2C_OK                    ( 0L)            /*!< UI2C operation OK \hideinitializer */
+#define UI2C_ERR_FAIL              (-1L)            /*!< UI2C operation failed \hideinitializer */
+#define UI2C_ERR_TIMEOUT           (-2L)            /*!< UI2C operation abort due to timeout error \hideinitializer */
+
 /*@}*/ /* end of group USCI_I2C_EXPORTED_CONSTANTS */
 
+extern int32_t g_UI2C_i32ErrCode;
 
 /** @addtogroup USCI_I2C_EXPORTED_FUNCTIONS USCI_I2C Exported Functions
   @{
@@ -317,4 +327,4 @@ uint32_t UI2C_ReadMultiBytesTwoRegs(UI2C_T *ui2c, uint8_t u8SlaveAddr, uint16_t 
 
 #endif
 
-/*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2016-2020 Nuvoton Technology Corp. ***/

@@ -35,7 +35,7 @@
 
 #include "ca821x-posix/ca821x-types.h"
 
-#define MAX_BUF_SIZE 256
+#define MAX_BUF_SIZE 4096
 
 /**
  * Initialise the generic part of a pDeviceRef.

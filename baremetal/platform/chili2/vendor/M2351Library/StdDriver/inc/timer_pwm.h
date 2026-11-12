@@ -1,9 +1,10 @@
 /**************************************************************************//**
- * @file     timer.h
+ * @file     timer_pwm.h
  * @version  V3.00
  * @brief    Timer PWM Controller(Timer PWM) driver header file
  *
- * @copyright (C) 2017 Nuvoton Technology Corp. All rights reserved.
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ * @copyright Copyright (C) 2017-2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __TIMER_PWM_H__
 #define __TIMER_PWM_H__
@@ -171,7 +172,7 @@ extern "C"
   * @details    This macro is used to enable independent mode of TIMER PWM module and complementary mode will be disabled.
   * \hideinitializer
   */
-#define TPWM_ENABLE_INDEPENDENT_MODE(timer)     ((timer)->PWMCTL &= ~(1 << TIMER_PWMCTL_OUTMODE_Pos))
+#define TPWM_ENABLE_INDEPENDENT_MODE(timer)     ((timer)->PWMCTL &= ~(1ul << TIMER_PWMCTL_OUTMODE_Pos))
 
 /**
   * @brief      Enable Complementary Mode
@@ -742,4 +743,4 @@ void TPWM_SetBrakePinSource(TIMER_T *timer, uint32_t u32BrakePinNum);
 
 #endif /* __TIMER_PWM_H__ */
 
-/*** (C) COPYRIGHT 2017 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2017-2020 Nuvoton Technology Corp. ***/

@@ -32,7 +32,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cascoda-bm/cascoda_interface_core.h"
+#include "cascoda-bm/cascoda_evbme.h"
+#include "cascoda-bm/cascoda_interface.h"
 #include "cascoda-bm/cascoda_spi.h"
 #include "cascoda-bm/cascoda_types.h"
 #include "cascoda-bm/cascoda_wait.h"
@@ -40,23 +41,29 @@
 #include "ca821x_api.h"
 #include "mac_messages.h"
 
+#ifndef SPI_RX_FIFO_SIZE
+#define SPI_RX_FIFO_SIZE 7
+#endif
+
+#ifndef SPI_RX_FIFO_RESV
+#define SPI_RX_FIFO_RESV 4
+#endif
+
+#if !(SPI_RX_FIFO_RESV < SPI_RX_FIFO_SIZE)
+#error "SPI_RX_FIFO_RESV must be less than SPI_RX_FIFO_SIZE"
+#endif
+
 /******************************************************************************/
 /****** Global Variables for SPI Message Buffers                         ******/
 /******************************************************************************/
 /** Cyclic SPI receive message FIFO. Messages are read from the SPI and put into
  *  the next available index. */
 struct MAC_Message SPI_Receive_Buffer[SPI_RX_FIFO_SIZE];
-static int         SPI_FIFO_Start = 0;
-static int         SPI_FIFO_End   = 0;
-static bool        SPI_FIFO_Full  = false;
-static uint32_t    waterMark      = 0; //!< Actual current fifo level
-static uint32_t    highWaterMark  = 0; //!< Actual worst fifo level
-
-static volatile bool ExchangeInProgress = false; //!< SPI Exchange currently in progress (possibly dma)
-static volatile bool FinalExchange      = false; //!< If true, the RFSS pin will be set to high upon exchange completion
-#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-static volatile bool SpiExternallyInUse = false; //!< SPI is currently in use by an external device
-#endif
+static volatile int         SPI_FIFO_Start = 0;
+static volatile int         SPI_FIFO_End   = 0;
+static volatile bool        SPI_FIFO_Full  = false;
+static volatile uint32_t    waterMark      = 0; //!< Actual current fifo level
+static volatile uint32_t    highWaterMark  = 0; //!< Actual worst fifo level
 
 // Sync chaining system
 static volatile bool syncChainActive   = false; //!< Sync chaining is currently active
@@ -67,10 +74,6 @@ static const uint8_t syncChainMessage[] = {0x45, 0x02, 0x40, 0x00};
 /** Pointer to buffer to be used to store synchronous responses */
 static struct MAC_Message *SPI_Wait_Buf;
 
-#if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-static void (*SPI_External_Complete_callback)(void);
-#endif
-
 /******************************************************************************/
 /****** Static function declarations for cascoda_spi.c                   ******/
 /******************************************************************************/
@@ -79,6 +82,17 @@ static struct MAC_Message *SPI_GetFreeBuf();
 static struct MAC_Message *getBuf(uint8_t cmdid);
 static ca_error            SPI_WaitSlave(void);
 static void                SPI_Error(ca_error errcode);
+
+// declarations for secure functions
+void SetSpiExternallyInUse(bool in_use);
+bool GetSpiExternallyInUse();
+void SetSpiExternalCompleteCallback(void (*new_cb)(void));
+void CallSpiExternalCompleteCallback();
+
+void SetExchangeInProgress(bool val);
+bool IsExchangeInProgress();
+void SetFinalExchange(bool val);
+bool IsFinalExchange();
 
 bool SPI_IsFifoFull()
 {
@@ -114,7 +128,7 @@ static bool SPI_IsSingleFifoBufInUse()
 
 	BSP_DisableRFIRQ();
 	rval = (SPI_FIFO_End == ((SPI_FIFO_Start + 1) % SPI_RX_FIFO_SIZE)); //One item in the fifo
-	rval = rval && ExchangeInProgress;                                  //Currently being filled.
+	rval = rval && IsExchangeInProgress();                              //Currently being filled.
 	BSP_EnableRFIRQ();
 
 	return rval;
@@ -124,7 +138,7 @@ bool SPI_IsFifoAlmostFull()
 {
 	//This deals with the case that we are receiving a sync response
 	if (SPI_Wait_Buf)
-		return SPI_FIFO_Full;
+		return false;
 	//This deals with the case that the fifo is full (otherwise can't differentiate from empty)
 	if (SPI_FIFO_Full)
 		return true;
@@ -140,7 +154,7 @@ bool SPI_IsFifoAlmostFull()
 
 bool SPI_IsExchangeWithCA821xInProgress()
 {
-	return ExchangeInProgress;
+	return IsExchangeInProgress();
 }
 
 bool SPI_IsSyncChainInFlight()
@@ -178,7 +192,13 @@ void SPI_StopSyncChain(struct ca821x_dev *pDeviceRef)
 
 static void SPI_IncrementWaterMark()
 {
-	if (++waterMark > highWaterMark)
+    waterMark++;
+
+#ifdef CASCODA_SPI_BUF_TRACKING // NOTE: THIS IS A PRINT INSIDE AN INTERRUPT!
+    printf("@ SBT alloc, used: %d/%d\n", waterMark, SPI_RX_FIFO_SIZE);
+#endif
+    
+	if (waterMark > highWaterMark)
 	{
 		highWaterMark = waterMark;
 		ca_log_debg("New SPI hwm: %d", highWaterMark);
@@ -187,10 +207,14 @@ static void SPI_IncrementWaterMark()
 
 static void SPI_ExchangeBlocking(uint8_t *RxBuf, const uint8_t *TxBuf, uint8_t RxLen, uint8_t TxLen)
 {
-	ExchangeInProgress = true;
+	u32_t               starttime = 0;
+	SetExchangeInProgress(true);
 	BSP_SPIExchange(RxBuf, TxBuf, RxLen, TxLen);
-	while (ExchangeInProgress)
-		;
+	starttime = BSP_ReadAbsoluteTime();
+	while (IsExchangeInProgress())
+	{
+		BSP_ResetOnLoopStuck(starttime);
+	}
 }
 
 /**
@@ -235,6 +259,9 @@ void SPI_DequeueFullBuf()
 		SPI_FIFO_Start = (SPI_FIFO_Start + 1) % SPI_RX_FIFO_SIZE;
 		SPI_FIFO_Full  = false;
 		waterMark--;
+#ifdef CASCODA_SPI_BUF_TRACKING
+		printf("@ SBT dequeue, used: %d/%d\n", waterMark, SPI_RX_FIFO_SIZE);
+#endif
 		BSP_EnableRFIRQ();
 	}
 }
@@ -420,19 +447,70 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 	u8_t                triageBuf[2] = {0xFF, 0xFF}; //For the first 2 bytes of transfer
 	struct MAC_Message *pRxBuffer;
 	ca_error            error = CA_ERROR_SUCCESS;
+	u32_t               starttime = 0;
 	(void)pDeviceRef;
+
+    // To understand why "SPI_Wait_Buf && !pTxBuffer" is equivalent to
+    // checking if we are handling a sync response, please read this comment
+    // in full, because some context and knowledge of the code as a whole is
+    // required. NOTE: In the following explanation, the terms "request" and 
+    // "response" can be understood as "MOSI" and "MISO". This is not directly
+    // related to the CA821X API terminology of "request, confirm, indication,
+    // response".
+
+    // 1. About SPI_Wait_Buf
+    // This pointer is NULL, except when a sync request/response is in progress.
+    // See the function "SPI_Send()": Before the call to "SPI_Exchange()", the
+    // tx buffer's command ID is being checked. If it matches up with a SPI_SYNC
+    // command type, then the SPI_Wait_Buf is set to point to where the response
+    // should go.
+    // The SPI_Wait_Buf pointer is only set back to NULL in the function "SPI_SyncWait()",
+    // after the code execution exits from the while loop in which it is waiting for
+    // an interrupt from the MAC, which is sending the RESPONSE back.
+    // CONCLUSION ABOUT SPI_Wait_Buf:
+    // - During SYNC REQUEST AND RESPONSE, it is NOT NULL
+    // - Otherwise, it is NULL
+
+    // 2. About pTxBuffer
+    // pTxBuffer points to the buffer containing the data to be transmitted during
+    // the exchange that occurs in this "SPI_Exchange()" function.
+    // This is allowed to be NULL, in the case where an exchange doesn't care
+    // about sending data, but only about reading data (from MISO, aka the MAC).
+    // One such example where this occurs, is when we are reading data from the MAC,
+    // such as when receiving a SYNCHRONOUS (or ASYNCHRONOUS) command.
+    // The m2351 has an interrupt registered on a certain pin (ZIG), which the
+    // MAC can trigger in order to show that it wants to send something to the m2351.
+    // See "GPC_IRQHandler()", which is the interrupt in question. This function
+    // calls "DISPATCH_ReadCA821X()", which calls "SPI_Exchange(NULLP, pDeviceRef)".
+    // So, during a sync or async MISO message from the MAC, the "pTxBuffer" is always
+    // set to NULL.
+    // CONCLUSION ABOUT pTxBuffer
+    // - Always NULL if exchange is initiated by the MAC (whether ASYNC or SYNC)
+    // - Not NULL if exchange not initiated by the MAC
+
+    // 3. Combining things together
+    // - if (SPI_Wait_Buf != NULL) we know that we are currently either
+    // doing a SYNCHRONOUS REQUEST, or a SYNCHRONOUS RESPONSE 
+    // - if (pTxBuffer == NULL) we know that we are NOT doing a request (because
+    // a request involves sending data); we know that we ARE doing a RESPONSE 
+    // So SPI_WAIT_BUF && !pTxBuffer means that we are doing a SYNCHRONOUS RESPONSE
+
+	bool is_sync_response = SPI_Wait_Buf && !pTxBuffer;
 
 	/* If the receive fifo is full, and this isn't a sync response,
 	 * then we can't safely do SPI exchange.*/
-	if (SPI_FIFO_Full && (SPI_Wait_Buf && !pTxBuffer))
+	if (SPI_FIFO_Full && !is_sync_response)
 	{
 		ca_log_warn("SPI_Exchange failed - No buffers");
 		return CA_ERROR_NO_BUFFER;
 	}
 
+	starttime = BSP_ReadAbsoluteTime();
 	//Wait for previous SPI exchange to complete...
-	while (ExchangeInProgress)
-		;
+	while (IsExchangeInProgress())
+	{
+		BSP_ResetOnLoopStuck(starttime);
+	}
 
 	BSP_SetRFSSBHigh();
 
@@ -469,15 +547,15 @@ ca_error SPI_Exchange(const struct MAC_Message *pTxBuffer, struct ca821x_dev *pD
 		RxLen -= AlignMod;
 	}
 
-	FinalExchange = true;
+	SetFinalExchange(true);
 	if (TxLen != 0)
 	{
-		SPI_ExchangeBlocking(pRxBuffer->PData.Payload, pTxBuffer->PData.Payload, RxLen, TxLen);
+		SPI_ExchangeBlocking(pRxBuffer ? pRxBuffer->PData.Payload : NULLP, pTxBuffer->PData.Payload, RxLen, TxLen);
 	}
 	else
 	{
-		ExchangeInProgress = true;
-		BSP_SPIExchange(pRxBuffer->PData.Payload, pTxBuffer->PData.Payload, RxLen, TxLen);
+		SetExchangeInProgress(true);
+		BSP_SPIExchange(pRxBuffer ? pRxBuffer->PData.Payload : NULLP, pTxBuffer->PData.Payload, RxLen, TxLen);
 	}
 
 	if (setSyncChain)
@@ -522,6 +600,10 @@ static ca_error SPI_SyncWait(uint8_t cmdid)
 	BSP_DisableRFIRQ();
 	SPI_Wait_Buf = NULLP;
 	BSP_EnableRFIRQ();
+
+	if (status != CA_ERROR_SUCCESS) {
+		ca_log_warn("SPI_SyncWait failed with error %u, rspid = %u", status, rspid);
+	}
 
 	return status;
 }
@@ -576,23 +658,35 @@ static void SPI_Error(ca_error errcode)
 {
 	BSP_SetRFSSBHigh();
 	ca_log_crit("SPI Error %s", ca_error_str(errcode));
+	// If we are missing a synchronous response from the MAC, that is an unrecoverable
+	// error, so all we can do is reboot. First we send a reboot command upstream, so that
+	// the application controlling this Chili knows it needs to reinitialize. Then, we
+	// perform the actual reboot of the Chili once we are sure the command is received.
+	if (errcode == CA_ERROR_SPI_WAIT_TIMEOUT)
+	{
+		ca_log_crit("Rebooting Chili & sending upstream reboot command!");
+		uint8_t message[] = {DFU_REBOOT, 0x0};
+		MAC_Message(EVBME_DFU_CMD, sizeof(message), message);
+		WAIT_ms(50);
+		BSP_SystemReset(SYSRESET_APROM);
+	}
 }
 
 void SPI_ExchangeComplete()
 {
 #if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-	if (SpiExternallyInUse)
+	if (GetSpiExternallyInUse())
 	{
-		SPI_External_Complete_callback();
+		CallSpiExternalCompleteCallback();
 		return;
 	}
 #endif
-	if (FinalExchange)
+	if (IsFinalExchange())
 	{
 		BSP_SetRFSSBHigh(); // end access
-		FinalExchange = false;
+		SetFinalExchange(false);
 	}
-	ExchangeInProgress = false;
+	SetExchangeInProgress(false);
 }
 
 void SPI_Initialise(void)
@@ -607,7 +701,7 @@ void SPI_Initialise(void)
 bool SPI_GetExternallyInUseStatus(void)
 {
 #if CASCODA_EXTERNAL_FLASHCHIP_PRESENT
-	return SpiExternallyInUse;
+	return GetSpiExternallyInUse();
 #else
 	return false;
 #endif
@@ -618,7 +712,7 @@ ca_error SPI_SetExternallyInUseStatus(bool status, void (*callback)(void))
 {
 	if (!status)
 	{
-		SpiExternallyInUse = status;
+		SetSpiExternallyInUse(status);
 	}
 	else
 	{
@@ -630,9 +724,9 @@ ca_error SPI_SetExternallyInUseStatus(bool status, void (*callback)(void))
 			return CA_ERROR_BUSY;
 		}
 
-		SpiExternallyInUse = status;
+		SetSpiExternallyInUse(status);
 
-		SPI_External_Complete_callback = callback;
+		SetSpiExternalCompleteCallback(callback);
 
 		BSP_EnableRFIRQ();
 	}

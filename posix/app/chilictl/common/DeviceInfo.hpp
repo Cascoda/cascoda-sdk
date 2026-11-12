@@ -36,7 +36,9 @@ namespace ca {
 /**
  * C++ wrapper for the C ca_device_info struct, which owns its own memory.
  */
-class DeviceInfo : private ca_device_info
+//class DeviceInfo : private ca_device_info
+
+class DeviceInfo : ca_device_info
 {
 public:
 	/**

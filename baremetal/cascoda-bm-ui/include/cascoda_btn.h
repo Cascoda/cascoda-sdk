@@ -33,11 +33,12 @@
 #define CASCODA_BTN_H
 
 #include "cascoda-bm/cascoda_types.h"
+#include "cascoda-bm/cascoda_evbme.h"
 #include "ca821x_api.h"
 #include "ca821x_error.h"
 
 /* max. number of LED/Button pairs on board */
-#define NUM_LEDBTN 4
+#define NUM_LEDBTN 5
 
 /* minimum press time for additional de-bouncing in [ms] */
 #define BTN_MIN_PRESS_TIME 5
@@ -262,6 +263,6 @@ bool Btn_CanSleep(void);
  * \return status
  *
  */
-ca_error Btn_DevboardSleep(uint32_t aSleepTime, struct ca821x_dev* pDeviceRef);
+ca_error Btn_Sleep(enum wakeup_mode keep_radio_off_on_wakeup, uint32_t aSleepTime, struct ca821x_dev *pDeviceRef);
 
 #endif // CASCODA_BTN_H
