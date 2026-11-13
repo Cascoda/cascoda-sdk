@@ -57,6 +57,12 @@ jobs:
           # Make the new commit
           git pull --ff-only pages master
           git add .
+
+          if git diff --cached --quiet; then
+            echo "No documentation changes to publish. Skipping commit and push."
+            exit 0
+          fi
+
           git commit -m "Automatic publish from github.com/Cascoda/cascoda-sdk"
 
           # Push
